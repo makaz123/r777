@@ -87,6 +87,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     // { name: 'Dashboard', path: '/home' },
     { name: 'List of Clients', path: '/user-download-list' },
     { name: 'Assign Agent', path: '/agent-download-list' },
+    { name: 'Banner Settings', path: '/banner-settings' },
     { name: 'Market Analysis', path: '/my-market' },
     {
       name: 'Live Market',

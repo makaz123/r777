@@ -22,6 +22,7 @@ import soccerRoutes from './routes/soccerRoutes.js';
 import tennisRoutes from './routes/tennisRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import cashoutRoute from './routes/cashoutRoute.js';
+import bannerRoute from './routes/bannerRoute.js';
 import { setupWebSocket } from './socket/bettingSocket.js';
 
 dotenv.config();
@@ -78,6 +79,7 @@ app.use('/api', marketAnalizeRoutes);
 app.use('/api', matchSettingsRoutes);
 app.use('/api', manualResultRoutes);
 app.use('/api', cashoutRoute);
+app.use('/api', bannerRoute);
 
 // Static file serving
 const __filename = fileURLToPath(import.meta.url);

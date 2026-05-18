@@ -46,6 +46,7 @@ import InsertAgent from './pages/InsertAgent';
 import LiveCasino from './pages/LiveCasino';
 import TransactionPasswordSuccess from './pages/TransactionPasswordSuccess';
 import ChangePassword from './pages/ChangePassword';
+import BannerSettings from './pages/BannerSettings';
 
 function App() {
   return (
@@ -144,6 +145,7 @@ function App() {
                     path='/transaction-password-success'
                     element={<TransactionPasswordSuccess />}
                   />
+                  <Route path='/banner-settings' element={<BannerSettings />} />
                   <Route path='/casino-bet/:gameid' element={<CasinoBet />} />
                   <Route
                     path='/horse-racing-bet/:gameid'

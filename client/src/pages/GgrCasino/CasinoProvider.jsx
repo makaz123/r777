@@ -71,11 +71,14 @@ function CasinoProvider() {
   const autoLaunchAttempted = useRef(false);
 
   useEffect(() => {
-    setOpenCasino(!userInfo);
     setGameUrl(null);
     setIframeLoading(true);
     autoLaunchAttempted.current = false;
-  }, [provider, userInfo]);
+  }, [provider]);
+
+  useEffect(() => {
+    setOpenCasino(!userInfo);
+  }, [userInfo]);
 
   useEffect(() => {
     if (

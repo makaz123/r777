@@ -63,10 +63,10 @@ function Navbar() {
     { id: 'inOut', label: 'Chicken Road', path: '/inout' },
     { id: 'ezugi', label: 'Ezugi', path: '/' },
     { id: 'evolution', label: 'Evolution', path: '/evolution' },
-    { id: 'liveCasino', label: 'Live Casino', path: '/' },
+    { id: 'liveCasino', label: 'Live Casino', path: '/livecasino' },
     { id: 'vivo', label: 'Vivo', path: '/' },
     { id: 'betGames', label: 'Betgames', path: '/' },
-    { id: 'casino3', label: 'Casino 3', path: '/' },
+    { id: 'casino3', label: 'Casino 3', path: '/casino3' },
   ];
 
   const activeNav = useMemo(() => {

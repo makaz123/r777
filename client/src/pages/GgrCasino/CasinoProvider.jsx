@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -66,9 +66,26 @@ function CasinoProvider() {
       setLoading(false);
     }
   };
+  const autoLaunchAttempted = useRef(false);
+
   useEffect(() => {
     setOpenCasino(true);
+    autoLaunchAttempted.current = false;
   }, [provider]);
+
+  useEffect(() => {
+    if (
+      providerKey === 'evolution' &&
+      userInfo &&
+      userInfo.account !== 'demo' &&
+      !autoLaunchAttempted.current
+    ) {
+      autoLaunchAttempted.current = true;
+      handleGameClick({
+        game_uid: '8ef39602e589bf9f32fc351b1cbb338b',
+      });
+    }
+  }, [providerKey, userInfo]);
   // Provider not found
   if (!casinoData.providers[providerKey]) {
     return (

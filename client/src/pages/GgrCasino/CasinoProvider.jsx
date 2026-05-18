@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import aviatorBann from '../../assets/aviator-banner.jpg';
 import inOutBann from '../../assets/chickenroad-banner.jpg';
 import casinopoint100 from '../../assets/casinopoint100.webp';
+import royalCasino from '../../assets/royalcasino-banner.jpg';
 
 function CasinoProvider() {
   const navigate = useNavigate();
@@ -174,6 +175,10 @@ function CasinoProvider() {
       {providerKey === 'inout' && (
         <img src={inOutBann} alt='InOut Banner' className='block w-full' />
       )}
+
+      {/* {providerKey === 'casino3' && (
+        <img src={royalCasino} alt='InOut Banner' className='block w-full' />
+      )} */}
 
       {/* Loading */}
       {loading && (

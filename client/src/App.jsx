@@ -27,6 +27,8 @@ import OurVirtualCasino from './pages/Home/ourvirtual/CasinoList';
 import OurPremCasino from './pages/Home/ourpremcasino/CasinoList';
 import CasinoBet from './pages/CasinoBet/casinoBet';
 import CasinoProvider from './pages/GgrCasino/CasinoProvider';
+import Casino3 from './pages/GgrCasino/Casino3';
+import LiveCasino from './pages/GgrCasino/LiveCasino';
 import Inplay from './pages/Home/Inplay';
 function HomeGate() {
   const userInfo = useSelector((state) => state.auth.userInfo);
@@ -44,7 +46,8 @@ function App() {
             path='/:provider'
             element={<CasinoProvider key={location.pathname} />}
           />
-
+          <Route path='/casino3' element={<Casino3/>}/>
+          <Route path='/livecasino' element={<LiveCasino/>}/>
           <Route path='/' element={<HomeGate />} />
           <Route path='inplay' element={<Inplay />} />
           <Route path='cricket' element={<Cricket />} />

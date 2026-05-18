@@ -13,6 +13,7 @@ import FootballBet from './pages/gamedetails/FootballBet';
 import TennisBet from './pages/gamedetails/TennisBet';
 import AccountStatement from './pages/other/AccountStatement';
 import CurrentBets from './pages/other/CurrentBets';
+import UnsettledBet from './pages/other/UnsettledBet';
 import ActivityLog from './pages/other/ActivityLog';
 import ChangePassword from './pages/other/ChangePassword';
 import SetStake from './pages/other/SetStake';
@@ -55,6 +56,7 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route path='account-statement' element={<AccountStatement />} />
             <Route path='bethistroy' element={<CurrentBets />} />
+            <Route path='unsettled-bet' element={<UnsettledBet />} />
             <Route path='activity-log' element={<ActivityLog />} />
             <Route path='change-password' element={<ChangePassword />} />
             <Route path='set-stake' element={<SetStake />} />

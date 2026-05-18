@@ -402,7 +402,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 role='button'
                 tabIndex={0}
                 className='flex cursor-pointer items-center gap-[5px] border-b border-gray-300 px-2.5 py-2 text-[14px] text-[#045662] hover:bg-[#22b8cf] hover:text-white'
-                onClick={() => handleMainMenuClick('/bethistroy')}
+                onClick={() => handleMainMenuClick('/unsettled-bet')}
               >
                 <span>
                   <img src={unsettledIcon} alt='' className='w-[18px]' />

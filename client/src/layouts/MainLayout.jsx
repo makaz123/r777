@@ -39,7 +39,7 @@ function MainLayout() {
   const closeSidebar = () => setIsSidebarOpen(false);
 
   return (
-    <div className=''>
+    <>
       <Header
         showSidebarToggle={showSidebar}
         isSidebarOpen={isSidebarOpen}
@@ -61,7 +61,7 @@ function MainLayout() {
         </main>
       </div>
       <Footer onMenuClick={() => setRightMenu(true)} />
-    </div>
+    </>
   );
 }
 

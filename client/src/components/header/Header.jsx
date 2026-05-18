@@ -80,6 +80,7 @@ function Header({
       console.log(error?.response?.data || error.message);
     } finally {
       localStorage.removeItem('auth');
+      localStorage.removeItem('welcomePopupShown');
       dispatch(user_reset());
       dispatch(bet_reset());
       wsService.disconnect();

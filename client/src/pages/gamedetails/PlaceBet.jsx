@@ -471,8 +471,16 @@ function PlaceBet({
   })();
 
   const [stake, setStake] = useState('');
-  const [odds, setOdds] = useState(selectedBet?.odds || '');
-  const [betFor, setBetFor] = useState(selectedBet?.team || '');
+  const [odds, setOdds] = useState(
+    selectedBet?.odds !== undefined && selectedBet?.odds !== null
+      ? String(selectedBet.odds)
+      : ''
+  );
+  const [betFor, setBetFor] = useState(
+    selectedBet?.team !== undefined && selectedBet?.team !== null
+      ? String(selectedBet.team)
+      : ''
+  );
   const [betType, setBetType] = useState(selectedBet?.type || ''); // 'back' or 'lay'
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const prevBetKeyRef = React.useRef('');
@@ -497,8 +505,16 @@ function PlaceBet({
 
       // Only reset stake if the bet selection actually changed (different team/odds/sid)
       if (currentBetKey !== prevBetKeyRef.current) {
-        setBetFor(selectedBet.team || '');
-        setOdds(selectedBet.odds || '');
+        setBetFor(
+          selectedBet.team !== undefined && selectedBet.team !== null
+            ? String(selectedBet.team)
+            : ''
+        );
+        setOdds(
+          selectedBet.odds !== undefined && selectedBet.odds !== null
+            ? String(selectedBet.odds)
+            : ''
+        );
         setBetType(selectedBet.type || '');
         setStake(''); // Reset stake when bet selection changes
         prevBetKeyRef.current = currentBetKey;
@@ -1029,8 +1045,16 @@ function PlaceBet({
       return;
     }
     setStake('');
-    setOdds(selectedBet?.odds || '');
-    setBetFor(selectedBet?.team || '');
+    setOdds(
+      selectedBet?.odds !== undefined && selectedBet?.odds !== null
+        ? String(selectedBet.odds)
+        : ''
+    );
+    setBetFor(
+      selectedBet?.team !== undefined && selectedBet?.team !== null
+        ? String(selectedBet.team)
+        : ''
+    );
   };
 
   const handleSubmit = async () => {
@@ -1039,8 +1063,14 @@ function PlaceBet({
       return;
     }
 
-    if (!stake || !odds || !betFor) {
-      toast.error('Please fill in all required fields');
+    const isInvalid = (val) => val === '' || val === null || val === undefined;
+
+    if (isInvalid(stake) || isInvalid(odds) || isInvalid(betFor)) {
+      const missing = [];
+      if (isInvalid(stake)) missing.push('stake');
+      if (isInvalid(odds)) missing.push('odds');
+      if (isInvalid(betFor)) missing.push('betFor');
+      toast.error(`Please fill in all required fields. Missing: ${missing.join(', ')}`);
       return;
     }
 
@@ -1088,7 +1118,7 @@ function PlaceBet({
 
     const formData = {
       gameId: gameId,
-      sid: sid,
+      sid: sid !== undefined ? sid : (selectedBet?.sid || 4),
       otype: betType,
       oname: selectedBet?.oname || '',
       price: stakeNum,

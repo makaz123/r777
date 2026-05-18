@@ -1,0 +1,120 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;700&display=swap");
+@import "tailwindcss";
+body {
+  font-family: "Roboto Condensed", sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+}
+/* Custom scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.bg-body{
+  background-color: #ffffff !important;
+}
+.text-body{
+  color: #000000 !important;
+}
+.bg-primary{
+  background:linear-gradient(#022c43, #18b0c8)
+}
+.text-primary{
+  color: #FFFFFF;
+}
+.bg-secondary{
+  background-color: #2C3E50 !important;
+}
+.text-secondary{
+  color: #FFFFFF !important;
+}
+.sidebar-menu-bg{
+  background-color: #fff !important;
+}
+.sidebar-menu-text{
+  color: #000000 !important;
+}
+
+/* Blink animation */
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-blink {
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+/* Desktop background override for casino categories */
+@media (min-width: 768px) {
+  .md-desktop-bg {
+    background-color: #2C3E50 !important;
+    color: #FFFFFF !important;
+  }
+}
+
+
+.awesome {
+    animation: colorchange 1s infinite alternate;
+    -webkit-animation: colorchange 1s infinite alternate;
+    color: #5ecbdd;
+}
+
+@-webkit-keyframes colorchange {
+    0% {
+        color: #edfd08
+    }
+
+    10% {
+        color: #dc8bff
+    }
+
+    20% {
+        color: #1abc9c
+    }
+
+    30% {
+        color: #d35400
+    }
+
+    40% {
+        color: blue
+    }
+
+    50% {
+        color: #55fd08
+    }
+
+    60% {
+        color: #00c573
+    }
+
+    70% {
+        color: #2980b9
+    }
+
+    80% {
+        color: #f1c40f
+    }
+
+    90% {
+        color: #b80baf
+    }
+
+    to {
+        color: pink
+    }
+}

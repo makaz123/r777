@@ -1,0 +1,192 @@
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCricketData } from '../../redux/reducer/cricketSlice';
+import { FaCircle } from 'react-icons/fa';
+import { GiTv } from 'react-icons/gi';
+import Bm from '../../assets/bm-icon1.svg';
+import F from '../../assets/fancy-icon1.svg';
+import tv from '../../assets/tv.svg';
+import banner from '../../assets/banner/Cricket-banner.jpg';
+
+const Cell = ({ value, type }) => (
+  <div
+    className={`mx-[1px] my-[2px] flex h-6 items-center justify-center rounded-sm text-sm font-semibold ${type === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
+  >
+    {value}
+  </div>
+);
+
+export default function Cricket({
+  previewLimit,
+  viewMorePath = '/cricket',
+  showBanner = true,
+  showOnlyInplay = false,
+  onInplayCountChange,
+}) {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  // const { user } = useSelector((state) => state.user);
+  // console.log(user)
+  const { matches, loader, error } = useSelector((state) => state.cricket);
+  console.log('matches', matches);
+  useEffect(() => {
+    dispatch(fetchCricketData());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!onInplayCountChange) return;
+    const count = Array.isArray(matches)
+      ? matches.filter((m) => m.inplay).length
+      : 0;
+    onInplayCountChange(count);
+  }, [matches, onInplayCountChange]);
+
+  const filteredMatches = showOnlyInplay
+    ? matches.filter((m) => m.inplay)
+    : matches;
+  const visibleMatches =
+    previewLimit != null && Array.isArray(filteredMatches)
+      ? filteredMatches.slice(0, previewLimit)
+      : filteredMatches;
+  const hasMore =
+    previewLimit != null &&
+    Array.isArray(filteredMatches) &&
+    filteredMatches.length > previewLimit;
+
+  return (
+    <div className='w-full text-sm text-gray-900'>
+      {showBanner && <img src={banner} alt='' className='block w-full' />}
+      <div className='mt-2 flex h-[28px] items-center bg-[#18adc5] pl-[7px] font-bold text-white'>
+        Cricket
+      </div>
+
+      {/* ROWS */}
+      {visibleMatches?.length > 0 ? (
+        <>
+          <div className='hidden grid-cols-[1fr_55px_55px_55px_55px_55px_55px] border border-b-0 border-gray-300 bg-gray-100 font-bold md:grid'>
+            <div className='px-2 py-2'></div>
+            <div className='col-span-2 text-center'>1</div>
+            <div className='col-span-2 text-center'>X</div>
+            <div className='col-span-2 text-center'>2</div>
+          </div>
+
+          {visibleMatches.map((m) => (
+            <div key={m.id} className='border border-t-0 border-gray-300'>
+              {/* ================= DESKTOP VIEW ================= */}
+              <div
+                className='hidden cursor-pointer grid-cols-[1fr_55px_55px_55px_55px_55px_55px] hover:bg-gray-50 md:grid'
+                onClick={() =>
+                  navigate(`/cricket-bet/${m.game}/${m.id}`, {
+                    state: { time: m.time },
+                  })
+                }
+              >
+                <div className='flex items-center justify-between px-1.5'>
+                  <div className='flex items-center gap-1'>
+                    {!showOnlyInplay && (
+                      <div className='text-[14px] font-[400] text-[#333]'>
+                        {m.time}
+                      </div>
+                    )}
+                    {m.inplay && (
+                      <FaCircle className='h-[12px] w-[12px] text-[#33c054]' />
+                    )}
+                    <div className='text-[14px] font-[400] text-[#333]'>
+                      {m.game}
+                    </div>
+                  </div>
+                  <div className='flex items-center gap-[2px]'>
+                    {m.tv && <img src={tv} alt='tv' className='h-[17px]' />}
+                    {m.bm && <img src={Bm} alt='Bm' className='h-[17px]' />}
+                    {m.f && <img src={F} alt='F' className='h-[17px]' />}
+                  </div>
+                </div>
+
+                <Cell value={m.one.back} type='back' />
+                <Cell value={m.one.lay} type='lay' />
+
+                <Cell value={m.x.back} type='back' />
+                <Cell value={m.x.lay} type='lay' />
+
+                <Cell value={m.two.back} type='back' />
+                <Cell value={m.two.lay} type='lay' />
+              </div>
+
+              {/* ================= MOBILE VIEW ================= */}
+              <div className='space-y-2 bg-white p-1 md:hidden'>
+                {/* Game info */}
+                <div
+                  className='mb-0 flex items-center justify-between gap-2'
+                  onClick={() =>
+                    navigate(`/cricket-bet/${m.game}/${m.id}`, {
+                      state: { time: m.time },
+                    })
+                  }
+                >
+                  <div>
+                    <div className='text-[14px] font-bold text-[#333]'>
+                      {m.game}
+                    </div>
+                    {!showOnlyInplay && (
+                      <div className='text-[12px] font-[400] text-[#333]'>
+                        {m.time}
+                      </div>
+                    )}
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    {m.inplay && (
+                      <FaCircle className='h-[12px] w-[12px] text-[#28a745]' />
+                    )}
+                    {m.tv && <img src={tv} alt='tv' className='h-[17px]' />}
+                    {m.bm && <img src={Bm} alt='Bm' className='h-[17px]' />}
+                    {m.f && <img src={F} alt='F' className='h-[17px]' />}
+                  </div>
+                </div>
+
+                {/* Odds */}
+                <div
+                  className='grid grid-cols-3'
+                  onClick={() =>
+                    navigate(`/cricket-bet/${m.game}/${m.id}`, {
+                      state: { time: m.time },
+                    })
+                  }
+                >
+                  <div className='grid grid-cols-2'>
+                    <Cell value={m.one.back} type='back' />
+                    <Cell value={m.one.lay} type='lay' />
+                  </div>
+                  <div className='grid grid-cols-2'>
+                    <Cell value={m.x.back} type='back' />
+                    <Cell value={m.x.lay} type='lay' />
+                  </div>
+                  <div className='grid grid-cols-2'>
+                    <Cell value={m.two.back} type='back' />
+                    <Cell value={m.two.lay} type='lay' />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </>
+      ) : (
+        <div className='border border-gray-300 bg-white p-1 text-[14px] font-bold text-black'>
+          has no live event.
+        </div>
+      )}
+
+      {hasMore && (
+        <div className='flex justify-end border border-t-0 border-gray-300 bg-white py-1'>
+          <button
+            type='button'
+            onClick={() => navigate(viewMorePath)}
+            className='cursor-pointer px-2 text-[14px] font-semibold text-black hover:underline'
+          >
+            View More...
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

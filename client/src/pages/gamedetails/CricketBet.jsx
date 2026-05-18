@@ -30,7 +30,7 @@ function CricketBet() {
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
   const liveStreamBaseUrl =
     import.meta.env.VITE_LIVE_STREAM_BASE_URL ||
-    'https://test.bulkapi.co.in/api/v1';
+    'https://81habibi.com/api/v1';
   const { game, id } = useParams();
   const location = useLocation();
   const time = location.state?.time;
@@ -270,18 +270,18 @@ function CricketBet() {
 
   const matchOddsList = Array.isArray(bettingData)
     ? bettingData.filter(
-        (item) =>
-          item?.mname === 'MATCH_ODDS' || item?.mname === 'TOURNAMENT_WINNER'
-      )
+      (item) =>
+        item?.mname === 'MATCH_ODDS' || item?.mname === 'TOURNAMENT_WINNER'
+    )
     : [];
 
   console.log('matchodds from cricketbet', matchOddsList);
 
   const tiedMatchList = Array.isArray(bettingData)
     ? bettingData.filter(
-        (item) =>
-          item?.mname === 'Tied Match' || item?.mname === 'Bookmaker IPL CUP'
-      )
+      (item) =>
+        item?.mname === 'Tied Match' || item?.mname === 'Bookmaker IPL CUP'
+    )
     : [];
 
   const newtiedMatchList = Array.isArray(bettingData)
@@ -297,14 +297,14 @@ function CricketBet() {
   const fancy1Data =
     Array.isArray(fancy1List) && fancy1List.length > 0 && fancy1List[0].section
       ? fancy1List[0].section.map((sec) => ({
-          team: sec.nat,
-          sid: sec.sid,
-          odds: sec.odds,
-          max: sec.max,
-          min: sec.min,
-          mname: fancy1List[0].mname, // ✅ Access from first item
-          status: fancy1List[0].status, // ✅ Access from first item
-        }))
+        team: sec.nat,
+        sid: sec.sid,
+        odds: sec.odds,
+        max: sec.max,
+        min: sec.min,
+        mname: fancy1List[0].mname, // ✅ Access from first item
+        status: fancy1List[0].status, // ✅ Access from first item
+      }))
       : [];
 
   console.log('fancy1Data from cricketbet', fancy1Data);
@@ -313,14 +313,14 @@ function CricketBet() {
   const NormalData =
     Array.isArray(NormalList) && NormalList.length > 0 && NormalList[0].section
       ? NormalList[0].section.map((sec) => ({
-          team: sec.nat,
-          sid: sec.sid,
-          odds: sec.odds,
-          max: sec.max,
-          min: sec.min,
-          mname: NormalList[0].mname, // ✅ Access from first item
-          status: sec.gstatus, // ✅ Access from first item
-        }))
+        team: sec.nat,
+        sid: sec.sid,
+        odds: sec.odds,
+        max: sec.max,
+        min: sec.min,
+        mname: NormalList[0].mname, // ✅ Access from first item
+        status: sec.gstatus, // ✅ Access from first item
+      }))
       : [];
 
   console.log('NormalData from cricketbet', NormalList);
@@ -329,14 +329,14 @@ function CricketBet() {
   const khadoData =
     Array.isArray(khadoList) && khadoList.length > 0 && khadoList[0].section
       ? khadoList[0].section.map((sec) => ({
-          team: sec.nat,
-          sid: sec.sid,
-          odds: sec.odds,
-          max: sec.max,
-          min: sec.min,
-          mname: khadoList[0].mname, // ✅ Access from first item
-          status: sec.gstatus, // ✅ Access from first item
-        }))
+        team: sec.nat,
+        sid: sec.sid,
+        odds: sec.odds,
+        max: sec.max,
+        min: sec.min,
+        mname: khadoList[0].mname, // ✅ Access from first item
+        status: sec.gstatus, // ✅ Access from first item
+      }))
       : [];
 
   console.log('khadoData from cricketbet', khadoData);
@@ -344,17 +344,17 @@ function CricketBet() {
   const oddEvenList = bettingData?.filter((item) => item.mname === 'oddeven');
   const oddEvenData =
     Array.isArray(oddEvenList) &&
-    oddEvenList.length > 0 &&
-    oddEvenList[0].section
+      oddEvenList.length > 0 &&
+      oddEvenList[0].section
       ? oddEvenList[0].section.map((sec) => ({
-          team: sec.nat,
-          sid: sec.sid,
-          odds: sec.odds,
-          max: sec.max,
-          min: sec.min,
-          mname: oddEvenList[0].mname, // ✅ Access from first item
-          status: sec.gstatus, // ✅ Access from first item
-        }))
+        team: sec.nat,
+        sid: sec.sid,
+        odds: sec.odds,
+        max: sec.max,
+        min: sec.min,
+        mname: oddEvenList[0].mname, // ✅ Access from first item
+        status: sec.gstatus, // ✅ Access from first item
+      }))
       : [];
 
   console.log('oddEvenData from cricketbet', oddEvenData);

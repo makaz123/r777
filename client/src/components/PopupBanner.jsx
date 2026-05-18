@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { clearJustLoggedIn } from '../redux/reducer/authReducer';
 import api from '../redux/api';
 
 export default function PopupBanner() {
-  const { userInfo } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const { userInfo, justLoggedIn } = useSelector((state) => state.auth);
   const [show, setShow] = useState(false);
   const [bannerUrl, setBannerUrl] = useState(null);
 
   useEffect(() => {
-    // Only show if user is logged in
-    if (!userInfo) return;
-
-    // Check if we've already shown the popup this session
-    const hasSeenPopup = sessionStorage.getItem('hasSeenPopup');
-    if (hasSeenPopup) return;
+    // Only show if user just exactly logged in
+    if (!userInfo || !justLoggedIn) return;
 
     const fetchPopupBanner = async () => {
       try {
@@ -22,15 +20,17 @@ export default function PopupBanner() {
           // just use the first banner for the popup
           setBannerUrl(response.data.banners[0].imageUrl);
           setShow(true);
-          sessionStorage.setItem('hasSeenPopup', 'true');
         }
       } catch (error) {
         console.error('Failed to fetch popup banner:', error);
+      } finally {
+        // Clear the flag so it never shows again unless they log out and log back in
+        dispatch(clearJustLoggedIn());
       }
     };
     
     fetchPopupBanner();
-  }, [userInfo]);
+  }, [userInfo, justLoggedIn, dispatch]);
 
   if (!show || !bannerUrl) return null;
 

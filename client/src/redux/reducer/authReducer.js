@@ -233,6 +233,7 @@ const initialState = {
   passwordData: null,
   message: null,
   isPasswordChanged: null,
+  justLoggedIn: false,
 };
 
 // User slice
@@ -243,6 +244,9 @@ const userSlice = createSlice({
     messageClear: (state) => {
       state.errorMessage = '';
       state.successMessage = '';
+    },
+    clearJustLoggedIn: (state) => {
+      state.justLoggedIn = false;
     },
     user_reset: (state) => {
       state.userInfo = '';
@@ -273,6 +277,7 @@ const userSlice = createSlice({
         state.user = action.payload.data;
         state.userInfo = action.payload.data;
         state.isPasswordChanged = action.payload.data?.isPasswordChanged;
+        state.justLoggedIn = true;
         console.log('User Info:', state.userInfo);
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -289,6 +294,7 @@ const userSlice = createSlice({
         state.user = action.payload.data;
         state.userInfo = action.payload.data;
         state.isPasswordChanged = true;
+        state.justLoggedIn = true;
       })
       .addCase(demoLogin.rejected, (state, action) => {
         state.loading = false;
@@ -429,6 +435,7 @@ const userSlice = createSlice({
 export const {
   clearError,
   messageClear,
+  clearJustLoggedIn,
   user_reset,
   updateAvbalance,
   updateExposure,

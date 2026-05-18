@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -17,7 +17,7 @@ function CasinoProvider() {
   const { userInfo } = useSelector((state) => state.auth);
 
   const [showLoginPopup, setShowLoginPopup] = useState(false);
-  const [openCasino, setOpenCasino] = useState(true);
+  const [openCasino, setOpenCasino] = useState(!userInfo);
   const [loading, setLoading] = useState(false);
   const [gameUrl, setGameUrl] = useState(null);
 
@@ -66,9 +66,26 @@ function CasinoProvider() {
       setLoading(false);
     }
   };
+  const autoLaunchAttempted = useRef(false);
+
   useEffect(() => {
-    setOpenCasino(true);
-  }, [provider]);
+    setOpenCasino(!userInfo);
+    autoLaunchAttempted.current = false;
+  }, [provider, userInfo]);
+
+  useEffect(() => {
+    if (
+      providerKey === 'evolution' &&
+      userInfo &&
+      userInfo.account !== 'demo' &&
+      !autoLaunchAttempted.current
+    ) {
+      autoLaunchAttempted.current = true;
+      handleGameClick({
+        game_uid: '8ef39602e589bf9f32fc351b1cbb338b',
+      });
+    }
+  }, [providerKey, userInfo]);
   // Provider not found
   if (!casinoData.providers[providerKey]) {
     return (
@@ -131,31 +148,33 @@ function CasinoProvider() {
               No games found.
             </div>
           ) : (
-            <div className='mt-4 grid grid-cols-3 gap-3 md:grid-cols-6'>
-              {games.map((game) => (
-                <div
-                  key={`${game.id}-${game.game_uid}`}
-                  onClick={() => handleGameClick(game)}
-                  className='flex cursor-pointer flex-col'
-                >
-                  <div className='overflow-hidden rounded-md border-[3px] border-[#045662]'>
-                    <img
-                      src={game.icon}
-                      alt={game.game_name}
-                      loading='lazy'
-                      className='block h-[250px] w-full object-cover transition-transform duration-300'
-                      onError={(e) => {
-                        e.currentTarget.style.opacity = '0.4';
-                      }}
-                    />
-                  </div>
+            !(providerKey === 'evolution' && userInfo && userInfo.account !== 'demo') && (
+              <div className='mt-4 grid grid-cols-3 gap-3 md:grid-cols-6'>
+                {games.map((game) => (
+                  <div
+                    key={`${game.id}-${game.game_uid}`}
+                    onClick={() => handleGameClick(game)}
+                    className='flex cursor-pointer flex-col'
+                  >
+                    <div className='overflow-hidden rounded-md border-[3px] border-[#045662]'>
+                      <img
+                        src={game.icon}
+                        alt={game.game_name}
+                        loading='lazy'
+                        className='block h-[250px] w-full object-cover transition-transform duration-300'
+                        onError={(e) => {
+                          e.currentTarget.style.opacity = '0.4';
+                        }}
+                      />
+                    </div>
 
-                  <span className='flex w-full items-center justify-center truncate py-2 text-center text-[14px] font-bold'>
-                    {game.game_name}
-                  </span>
-                </div>
-              ))}
-            </div>
+                    <span className='flex w-full items-center justify-center truncate py-2 text-center text-[14px] font-bold'>
+                      {game.game_name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </>
       )}

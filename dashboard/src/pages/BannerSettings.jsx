@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../redux/api';
+import Navbar from '../components/Navbar';
 
 const BannerSettings = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -102,11 +103,13 @@ const BannerSettings = () => {
   };
 
   return (
-    <div className='p-6 max-w-6xl mx-auto'>
-      <div className='bg-white rounded shadow-md overflow-hidden mb-8'>
-        <div className='bg-gray-800 text-white px-4 py-3'>
-          <h2 className='text-lg font-semibold'>Upload Dynamic Banners</h2>
-        </div>
+    <>
+      <Navbar />
+      <div className='p-6 max-w-6xl mx-auto'>
+        <div className='bg-white rounded shadow-md overflow-hidden mb-8'>
+          <div className='bg-gray-800 text-white px-4 py-3'>
+            <h2 className='text-lg font-semibold'>Upload Dynamic Banners</h2>
+          </div>
         
         <div className='p-6'>
           <p className='text-sm text-gray-600 mb-6'>
@@ -208,6 +211,7 @@ const BannerSettings = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

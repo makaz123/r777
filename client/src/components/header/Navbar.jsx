@@ -61,7 +61,7 @@ function Navbar() {
     { id: 'rvGames', label: 'RV Games', path: '/' },
     { id: 'spribe', label: 'Aviator', path: '/spribe' },
     { id: 'inOut', label: 'Chicken Road', path: '/inout' },
-    { id: 'ezugi', label: 'Ezugi', path: '/' },
+    { id: 'ezugi', label: 'Ezugi', path: '/ezugi' },
     { id: 'evolution', label: 'Evolution', path: '/evolution' },
     { id: 'liveCasino', label: 'Live Casino', path: '/' },
     { id: 'vivo', label: 'Vivo', path: '/' },
@@ -86,6 +86,7 @@ function Navbar() {
     if (path.startsWith('/spribe')) return 'aviator';
     if (path.startsWith('/inout')) return 'chickenRoad';
     if (path.startsWith('/evolution')) return 'evolution';
+    if (path.startsWith('/ezugi')) return 'ezugi';
     if (path.startsWith('/ezugi')) return 'ezugi';
     if (path.startsWith('/vivo')) return 'vivo';
     if (path.startsWith('/betgames')) return 'betGames';

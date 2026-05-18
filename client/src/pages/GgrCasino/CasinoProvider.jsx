@@ -85,6 +85,17 @@ function CasinoProvider() {
         game_uid: '8ef39602e589bf9f32fc351b1cbb338b',
       });
     }
+    else if(
+      providerKey === 'ezugi' &&
+      userInfo &&
+      userInfo.account !== 'demo' &&
+      !autoLaunchAttempted.current
+    ) {
+      autoLaunchAttempted.current = true;
+      handleGameClick({
+        game_uid: 'd0e052b031dfcdb08d1803f4bcc618ef',
+      })
+    }
   }, [providerKey, userInfo]);
   // Provider not found
   if (!casinoData.providers[providerKey]) {

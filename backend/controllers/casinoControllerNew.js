@@ -4,9 +4,9 @@ import SubAdmin from '../models/subAdminModel.js';
 import { sendToUser, sendUserRefresh } from '../socket/bettingSocket.js';
 import { decrypt, encrypt } from '../utils/casinoCrypto.js';
 // 🔧 Casino API Configuration
-const API_TOKEN = '5a9926e5c7034571a366d23e745406';
-const API_SECRET = '13ca38878bb67da663bfa0037873d6';
-const SERVER_URL = 'https://bulkapi.org';
+const API_TOKEN = process.env.CASINO_API_TOKEN;
+const API_SECRET = process.env.CASINO_API_SECRET;
+const SERVER_URL = process.env.CASINO_API_URL;
 
 // . Start Casino Game
 export const startCasinoGame = async (req, res) => {

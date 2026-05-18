@@ -4,9 +4,9 @@ import SubAdmin from '../models/subAdminModel.js';
 import { sendToUser, sendUserRefresh } from '../socket/bettingSocket.js';
 import { decrypt, encrypt } from '../utils/casinoCrypto.js';
 // 🔧 Casino API Configuration
-const API_TOKEN = '5a9926e5c7034571a366d23e745406';
-const API_SECRET = '13ca38878bb67da663bfa0037873d6';
-const SERVER_URL = 'https://bulkapi.org';
+const API_TOKEN = process.env.CASINO_API_TOKEN;
+const API_SECRET = process.env.CASINO_API_SECRET;
+const SERVER_URL = process.env.CASINO_API_URL;
 
 // . Start Casino Game
 export const startCasinoGame = async (req, res) => {
@@ -405,9 +405,14 @@ export const casinoCallback = async (req, res) => {
         return res.json({ code: 1, msg: 'User not found' });
       }
 
-      // ✅ Calculate balance change: wallet_after - wallet_before
-      const balanceChange =
-        Number(wallet_after) - Number(wallet_before || currentUser.avbalance);
+      // ✅ Calculate balance change: wallet_after - wallet_before, or fallback to win - bet
+      let balanceChange = win - bet;
+      if (wallet_after !== undefined && wallet_before !== undefined) {
+        const calculatedChange = Number(wallet_after) - Number(wallet_before);
+        if (!isNaN(calculatedChange)) {
+          balanceChange = calculatedChange;
+        }
+      }
 
       // ✅ Update BOTH balance and avbalance to maintain consistency
       const updatedUser = await SubAdmin.findOneAndUpdate(
@@ -439,8 +444,8 @@ export const casinoCallback = async (req, res) => {
         game_name,
         game_round,
         bet_amount: bet,
-        win_amount: 0,
-        change: Number(change || -bet),
+        win_amount: win,
+        change: Number(change || balanceChange),
         wallet_before: Number(wallet_before || currentUser.avbalance),
         wallet_after: Number(updatedUser.avbalance),
         currency_code: currency_code || 'BDT',
@@ -452,7 +457,7 @@ export const casinoCallback = async (req, res) => {
 
       sendUserRefresh(updatedUser._id.toString());
 
-      console.log(`✅ BET stored | ${mobile} | Bet: ${bet}`);
+      console.log(`✅ BET stored | ${mobile} | Bet: ${bet} | Win: ${win}`);
     } else if (win > 0 && betRecord && betRecord.win_amount === 0) {
       /* -------------------------------------------------
        2️⃣ WIN CALLBACK (round settled)
@@ -463,9 +468,15 @@ export const casinoCallback = async (req, res) => {
         return res.json({ code: 1, msg: 'User not found' });
       }
 
-      // ✅ Calculate balance change: wallet_after - current avbalance
-      const balanceChange =
-        Number(wallet_after) - Number(currentUser.avbalance);
+      // ✅ Calculate balance change: wallet_after - current avbalance, or fallback to win
+      let balanceChange = win;
+      if (wallet_after !== undefined) {
+        const calculatedChange =
+          Number(wallet_after) - Number(currentUser.avbalance);
+        if (!isNaN(calculatedChange)) {
+          balanceChange = calculatedChange;
+        }
+      }
 
       // ✅ Update BOTH balance and avbalance to maintain consistency
       const updatedUser = await SubAdmin.findOneAndUpdate(

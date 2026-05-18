@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Login from './pages/auth/Login';
 import MainLayout from './layouts/MainLayout';
@@ -36,6 +36,7 @@ function HomeGate() {
 }
 
 function App() {
+  const location = useLocation();
   return (
     <>
       <Routes>

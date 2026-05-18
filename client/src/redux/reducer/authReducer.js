@@ -246,6 +246,7 @@ const userSlice = createSlice({
     },
     user_reset: (state) => {
       state.userInfo = '';
+      sessionStorage.removeItem('hasSeenPopup');
     },
     //New Websocket Updates
     updateAvbalance: (state, action) => {

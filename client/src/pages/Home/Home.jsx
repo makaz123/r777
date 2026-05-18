@@ -4,6 +4,7 @@ import Cricket from './Cricket';
 import Football from './Football';
 import Tennis from './Tennis';
 import BannerSlider from '../../components/BannerSlider';
+import PopupBanner from '../../components/PopupBanner';
 
 import bann1 from '../../assets/banner/bann1.jpg';
 import bann2 from '../../assets/banner/bann2.jpg';
@@ -17,6 +18,7 @@ const defaultBanners = [bann1, bann2, bann3, bann4, bann5, bann6, bann7];
 function Home() {
   return (
     <div className='w-full min-w-0 overflow-hidden'>
+      <PopupBanner />
       <BannerSlider pageType="home" defaultBanner={defaultBanners} />
       <Cricket previewLimit={5} viewMorePath='/cricket' showBanner={false} />
       <Football previewLimit={5} viewMorePath='/football' showBanner={false} />

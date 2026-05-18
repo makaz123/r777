@@ -130,6 +130,7 @@ const BannerSettings = () => {
               className='block w-full text-sm text-gray-700 border border-gray-300 rounded px-3 py-2 outline-none focus:border-blue-500'
             >
               <option value='home'>Home (Main)</option>
+              <option value='popup'>Popup Banner</option>
               <option value='cricket'>Cricket</option>
               <option value='football'>Football</option>
               <option value='tennis'>Tennis</option>

@@ -10,8 +10,11 @@ const BannerSettings = () => {
   const [existingBanners, setExistingBanners] = useState([]);
   const [selectedForDelete, setSelectedForDelete] = useState([]);
 
+  const [pageType, setPageType] = useState('home');
+
   const fetchBanners = async () => {
     try {
+      // By default fetch all banners across all pages for the admin panel
       const response = await api.get('/banner');
       if (response.data && response.data.banners) {
         setExistingBanners(response.data.banners);
@@ -45,6 +48,7 @@ const BannerSettings = () => {
 
     setLoading(true);
     const formData = new FormData();
+    formData.append('page', pageType);
     selectedFiles.forEach((file) => {
       formData.append('images', file);
     });
@@ -57,7 +61,7 @@ const BannerSettings = () => {
       });
 
       if (response.data.success) {
-        toast.success('Banners uploaded successfully!');
+        toast.success(`Banners uploaded successfully for ${pageType}!`);
         setSelectedFiles([]);
         setPreviewUrls([]);
         fetchBanners(); // Refresh the list
@@ -113,8 +117,27 @@ const BannerSettings = () => {
         
         <div className='p-6'>
           <p className='text-sm text-gray-600 mb-6'>
-            Upload one or multiple banner images here. These images will append to the current slideshow banners on the client's home page. You can upload up to 10 images at once.
+            Upload one or multiple banner images here. These images will append to the current slideshow banners on the selected page. You can upload up to 10 images at once.
           </p>
+
+          <div className='mb-6'>
+            <label className='block text-gray-700 font-medium mb-2'>
+              Target Page
+            </label>
+            <select 
+              value={pageType}
+              onChange={(e) => setPageType(e.target.value)}
+              className='block w-full text-sm text-gray-700 border border-gray-300 rounded px-3 py-2 outline-none focus:border-blue-500'
+            >
+              <option value='home'>Home (Main)</option>
+              <option value='cricket'>Cricket</option>
+              <option value='football'>Football</option>
+              <option value='tennis'>Tennis</option>
+              <option value='horse_racing'>Horse Racing</option>
+              <option value='greyhound'>Greyhound</option>
+              <option value='live_casino'>Live Casino</option>
+            </select>
+          </div>
           
           <div className='mb-6'>
             <label className='block text-gray-700 font-medium mb-2'>
@@ -196,6 +219,9 @@ const BannerSettings = () => {
                     alt='Banner' 
                     className='h-[120px] w-full object-cover rounded'
                   />
+                  <div className='absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded shadow uppercase'>
+                    {banner.page || 'home'}
+                  </div>
                   <div className='absolute top-3 right-3 bg-white rounded-full p-1 shadow'>
                     <input 
                       type='checkbox' 

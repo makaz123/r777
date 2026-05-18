@@ -8,6 +8,8 @@ import Bm from '../../assets/bm-icon1.svg';
 import F from '../../assets/fancy-icon1.svg';
 import tv from '../../assets/tv.svg';
 import banner from '../../assets/banner/Soccer-banner.jpg';
+import BannerSlider from '../../components/BannerSlider';
+
 const Cell = ({ value, type }) => (
   <div
     className={`mx-[1px] my-[2px] flex h-6 items-center justify-center rounded-sm text-sm font-semibold ${type === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
@@ -54,7 +56,7 @@ export default function Football({
   return (
     <div className='w-full text-sm text-gray-900'>
       {/* DESKTOP HEADER */}
-      {showBanner && <img src={banner} alt='' className='block w-full' />}
+      {showBanner && <BannerSlider pageType="football" defaultBanner={banner} />}
       <div className='mt-2 flex h-[28px] items-center bg-[#18adc5] pl-[7px] font-bold text-white'>
         Football
       </div>

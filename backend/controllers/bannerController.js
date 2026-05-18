@@ -14,6 +14,8 @@ export const uploadBanner = async (req, res) => {
       return res.status(400).json({ message: 'No images provided' });
     }
 
+    const { page = 'home' } = req.body;
+
     const newBanners = [];
 
     // Process all files concurrently
@@ -30,6 +32,7 @@ export const uploadBanner = async (req, res) => {
       // Create new banner
       const newBanner = new Banner({
         imageUrl: result.secure_url,
+        page: page,
         isActive: true,
       });
 
@@ -52,7 +55,12 @@ export const uploadBanner = async (req, res) => {
 
 export const getBanner = async (req, res) => {
   try {
-    const banners = await Banner.find({ isActive: true }).sort({ createdAt: -1 });
+    const { page } = req.query;
+    const filter = { isActive: true };
+    if (page) {
+      filter.page = page;
+    }
+    const banners = await Banner.find(filter).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, banners });
   } catch (error) {
     console.error('Error fetching banners:', error);

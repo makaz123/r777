@@ -7,7 +7,7 @@ import {
 } from 'react-icons/io';
 import { AiOutlineLogout } from 'react-icons/ai';
 import { NavLink, useLocation } from 'react-router-dom';
-import { MdLogout } from 'react-icons/md';
+import { MdArrowRightAlt, MdLogout } from 'react-icons/md';
 import { RiArrowDownSFill } from 'react-icons/ri';
 // import logo from "../assets/icons/theme-1709828838678-aura555.png";
 // import logo from "../../client/src/assets/icons/daimondpan (1).png"
@@ -84,7 +84,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   };
 
   const navItems = [
-    // { name: 'Dashboard', path: '/home' },
+    { name: 'Dashboard', path: '/home' },
     { name: 'List of Clients', path: '/user-download-list' },
     { name: 'Assign Agent', path: '/agent-download-list' },
     { name: 'Banner Settings', path: '/banner-settings' },
@@ -239,7 +239,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         {/* Mobile Header - Split into two rows */}
         <div className='hidden'>
           {/* Top row - Role and Name */}
-          <header className='bg-color flex h-[52px] items-center justify-between border-b border-gray-800 p-2'>
+          <header className='bg-gradient-to-b from-[#022c43] to-[#18b0c8] flex h-[52px] items-center justify-between border-b border-gray-800 p-2'>
             <div className='flex items-center gap-2'>
               <button
                 onClick={() => setSportsSidebarOpen(true)}
@@ -287,7 +287,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         </div>
 
         {/* Desktop Header */}
-        <header className='bg-color flex h-[52px] items-center justify-between'>
+        <header className='bg-gradient-to-b from-[#022c43] to-[#18b0c8] flex h-[52px] items-center justify-between'>
           <div className='flex h-[52px] items-center'>
             <NavLink
               to='/user-download-list'
@@ -415,19 +415,14 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4 }}
-                  className='absolute top-8 right-0 w-[200px] rounded-md bg-[#0088cc] py-1.5'
+                  className='absolute top-8 right-0 rounded-md bg-white border border-gray-400 py-1.5 w-full'
                 >
-                  <div className='cursor-pointer px-2 py-0.5 text-[13px] font-bold text-white hover:underline'>
-                    <NavLink to='/secureauth'>Secure Auth Verification</NavLink>
+                  <div className='cursor-pointer px-2 py-0.5 text-[14px] text-gray-700 flex items-center hover:bg-[#18b0c8]'>
+                    <MdArrowRightAlt size={22}/> <NavLink to='/ChangePassword'>Change Password</NavLink>
                   </div>
-                  <div className='cursor-pointer px-2 py-0.5 text-[13px] font-bold text-white hover:underline'>
-                    <NavLink to='/ChangePassword'>Change Password</NavLink>
-                  </div>
-                  <div
-                    onClick={logout}
-                    className='cursor-pointer px-2 py-0.5 text-[13px] font-bold text-white hover:underline'
-                  >
-                    LogOut
+                  <div className='cursor-pointer px-2 py-0.5 text-[14px] text-gray-700 flex items-center hover:bg-[#18b0c8]' 
+                  onClick={logout}>
+                    <MdArrowRightAlt size={22}/> Logout
                   </div>
                 </motion.div>
               )}

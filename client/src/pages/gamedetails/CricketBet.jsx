@@ -29,8 +29,7 @@ function CricketBet() {
   const key = import.meta.env.VITE_LIVE_STREAM_KEY;
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
   const liveStreamBaseUrl =
-    import.meta.env.VITE_LIVE_STREAM_BASE_URL ||
-    'https://81habibi.com/api/v1';
+    import.meta.env.VITE_LIVE_STREAM_BASE_URL || 'https://81habibi.com/api/v1';
   const { game, id } = useParams();
   const location = useLocation();
   const time = location.state?.time;
@@ -270,18 +269,18 @@ function CricketBet() {
 
   const matchOddsList = Array.isArray(bettingData)
     ? bettingData.filter(
-      (item) =>
-        item?.mname === 'MATCH_ODDS' || item?.mname === 'TOURNAMENT_WINNER'
-    )
+        (item) =>
+          item?.mname === 'MATCH_ODDS' || item?.mname === 'TOURNAMENT_WINNER'
+      )
     : [];
 
   console.log('matchodds from cricketbet', matchOddsList);
 
   const tiedMatchList = Array.isArray(bettingData)
     ? bettingData.filter(
-      (item) =>
-        item?.mname === 'Tied Match' || item?.mname === 'Bookmaker IPL CUP'
-    )
+        (item) =>
+          item?.mname === 'Tied Match' || item?.mname === 'Bookmaker IPL CUP'
+      )
     : [];
 
   const newtiedMatchList = Array.isArray(bettingData)
@@ -297,14 +296,14 @@ function CricketBet() {
   const fancy1Data =
     Array.isArray(fancy1List) && fancy1List.length > 0 && fancy1List[0].section
       ? fancy1List[0].section.map((sec) => ({
-        team: sec.nat,
-        sid: sec.sid,
-        odds: sec.odds,
-        max: sec.max,
-        min: sec.min,
-        mname: fancy1List[0].mname, // ✅ Access from first item
-        status: fancy1List[0].status, // ✅ Access from first item
-      }))
+          team: sec.nat,
+          sid: sec.sid,
+          odds: sec.odds,
+          max: sec.max,
+          min: sec.min,
+          mname: fancy1List[0].mname, // ✅ Access from first item
+          status: fancy1List[0].status, // ✅ Access from first item
+        }))
       : [];
 
   console.log('fancy1Data from cricketbet', fancy1Data);
@@ -313,14 +312,14 @@ function CricketBet() {
   const NormalData =
     Array.isArray(NormalList) && NormalList.length > 0 && NormalList[0].section
       ? NormalList[0].section.map((sec) => ({
-        team: sec.nat,
-        sid: sec.sid,
-        odds: sec.odds,
-        max: sec.max,
-        min: sec.min,
-        mname: NormalList[0].mname, // ✅ Access from first item
-        status: sec.gstatus, // ✅ Access from first item
-      }))
+          team: sec.nat,
+          sid: sec.sid,
+          odds: sec.odds,
+          max: sec.max,
+          min: sec.min,
+          mname: NormalList[0].mname, // ✅ Access from first item
+          status: sec.gstatus, // ✅ Access from first item
+        }))
       : [];
 
   console.log('NormalData from cricketbet', NormalList);
@@ -329,14 +328,14 @@ function CricketBet() {
   const khadoData =
     Array.isArray(khadoList) && khadoList.length > 0 && khadoList[0].section
       ? khadoList[0].section.map((sec) => ({
-        team: sec.nat,
-        sid: sec.sid,
-        odds: sec.odds,
-        max: sec.max,
-        min: sec.min,
-        mname: khadoList[0].mname, // ✅ Access from first item
-        status: sec.gstatus, // ✅ Access from first item
-      }))
+          team: sec.nat,
+          sid: sec.sid,
+          odds: sec.odds,
+          max: sec.max,
+          min: sec.min,
+          mname: khadoList[0].mname, // ✅ Access from first item
+          status: sec.gstatus, // ✅ Access from first item
+        }))
       : [];
 
   console.log('khadoData from cricketbet', khadoData);
@@ -344,17 +343,17 @@ function CricketBet() {
   const oddEvenList = bettingData?.filter((item) => item.mname === 'oddeven');
   const oddEvenData =
     Array.isArray(oddEvenList) &&
-      oddEvenList.length > 0 &&
-      oddEvenList[0].section
+    oddEvenList.length > 0 &&
+    oddEvenList[0].section
       ? oddEvenList[0].section.map((sec) => ({
-        team: sec.nat,
-        sid: sec.sid,
-        odds: sec.odds,
-        max: sec.max,
-        min: sec.min,
-        mname: oddEvenList[0].mname, // ✅ Access from first item
-        status: sec.gstatus, // ✅ Access from first item
-      }))
+          team: sec.nat,
+          sid: sec.sid,
+          odds: sec.odds,
+          max: sec.max,
+          min: sec.min,
+          mname: oddEvenList[0].mname, // ✅ Access from first item
+          status: sec.gstatus, // ✅ Access from first item
+        }))
       : [];
 
   console.log('oddEvenData from cricketbet', oddEvenData);
@@ -368,243 +367,29 @@ function CricketBet() {
         </div>
         {userInfo?.account !== 'demo' && (
           <>
-          <div className='flex md:hidden cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
-            <span className='font-bold'>Live TV</span>
-            {/* Toggle */}
-            <div className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
-              onClick={() => setshowlivetv((prev) => !prev)}>
-              <span className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}></span>
-            </div>
-          </div>
-          {showlivetv && (
-            <div className='w-full block md:hidden'>
-              {isLoadingStream ? (
-                <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
-                  <span>Loading stream...</span>
-                </div>
-              ) : (
-                <iframe
-                  src={
-                    liveStreamUrl ||
-                    `${liveStreamBaseUrl}/live-stream?gmid=${streamGmid}&key=${key_new}`
-                  }
-                  title='Watch Live'
-                  className='w-full'
-                  style={{ height: '50vh' }}
-                  allowFullScreen
-                  loading='lazy'
-                  allow='
-                  autoplay;
-                  encrypted-media;
-                  fullscreen;
-                  picture-in-picture;
-                  accelerometer;
-                  gyroscope
-                '
-                />
-              )}
-            </div>
-          )}
-          {!showLive && !isCheckingScoreCard && isScoreCardAvailable && (
-            <iframe
-              // src={`https://score.akamaized.uk/diamond-live-score?gmid=${gameid}`}
-              src={`${liveStreamBaseUrl}/live-score?key=${key_new}&gmid=${gameid}`}
-              allowFullScreen
-              className='w-full'
-              title='Live Score'
-              allow='
-                      autoplay;
-                      encrypted-media;
-                      fullscreen;
-                      picture-in-picture;
-                      accelerometer;
-                      gyroscope
-                    '
-            />
-          )}
-          </>
-        )}
-        
-        
-          <div className='flex items-center justify-around  text-[12px] font-bold lg:hidden bg-[#343a40] text-gray-400'>
-            <div className={`flex w-full items-center justify-center  p-2 ${showodds ? 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white' : ''}`}
-              onClick={() => {
-                setshowodds(true);
-                setShowLive(false);
-              }}
-            >
-              Market
-            </div>
-            <div className={`flex w-full items-center justify-center p-2 ${showodds ? '' : 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white'}`}
-              onClick={() => setshowodds(false)}
-            > Open Bets
-            </div>
-          </div>
-
-            {!showodds  && (
-              <div className='block lg:hidden'>
-                <MatchedBet gameid={gameid} />
-              </div>
-            )}
-            
-            {/** Match Odds */}
-            {matchOddsList.length > 0 && (
-              <MatchOdds
-                gameid={gameid}
-                onBetSelect={handleBetSelect}
-                matchOddsList={matchOddsList}
-                setitem={setitem}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                sid={4}
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** Bookmaker */}
-            {BookmakerList.length > 0 && (
-              <Bookmaker
-                gameid={gameid}
-                onBetSelect={handleBetSelect}
-                BookmakerList={BookmakerList}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** Tied Match */}
-            {tiedMatchList.length > 0 && (
-              <TiedMatch
-                onBetSelect={handleBetSelect}
-                tiedMatchList={tiedMatchList}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                gameid={gameid}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** Normal */}
-            {NormalData.length > 0 && (
-              <Normal
-                onBetSelect={handleBetSelect}
-                NormalData={NormalData}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                gameid={gameid}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** Fancy1  */}
-            {fancy1Data.length > 0 && (
-              <Fancy1
-                onBetSelect={handleBetSelect}
-                fancy1Data={fancy1Data}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                gameid={gameid}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** */}
-            {khadoData.length > 0 && (
-              <Khado
-                onBetSelect={handleBetSelect}
-                khadoData={khadoData}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                gameid={gameid}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** OddEven */}
-            {oddEvenData.length > 0 && (
-              <OddEven
-                onBetSelect={handleBetSelect}
-                oddEvenData={oddEvenData}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-                gameid={gameid}
-                team1={team1}
-                team2={team2}
-                eventName={match}
-                gameName='Cricket Game'
-                onBetChange={handleBetChange}
-                onClose={() => setSelectedBet(null)}
-              />
-            )}
-
-            {/** New Tied Match */}
-            {/* {newtiedMatchList.length > 0 && (
-              <TiedMatch
-                onBetSelect={handleBetSelect}
-                tiedMatchList={newtiedMatchList}
-                pendingBetAmounts={pendingBetAmounts}
-                selectedBet={selectedBet}
-              />
-            )} */}
-          
-       
-
-        
-      </div>
-
-      <div className='sticky top-[117px] hidden h-[calc(100vh-118px)] lg:block'>
-        <div className='w-[350px]'>
-
-        {userInfo?.account !== 'demo' && (
-          <div className='mb-1'>
-            <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
+            <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white md:hidden'>
               <span className='font-bold'>Live TV</span>
               {/* Toggle */}
-              <div className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
-                onClick={() => setshowlivetv((prev) => !prev)}>
-                <span className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}></span>
+              <div
+                className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
+                onClick={() => setshowlivetv((prev) => !prev)}
+              >
+                <span
+                  className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}
+                ></span>
               </div>
             </div>
             {showlivetv && (
-              <div className='w-full'>
+              <div className='block w-full md:hidden'>
                 {isLoadingStream ? (
                   <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
                     <span>Loading stream...</span>
                   </div>
                 ) : (
                   <iframe
-                    src={ liveStreamUrl || `${liveStreamBaseUrl}/live-stream?gmid=${streamGmid}&key=${key_new}`
+                    src={
+                      liveStreamUrl ||
+                      `${liveStreamBaseUrl}/live-stream?gmid=${streamGmid}&key=${key_new}`
                     }
                     title='Watch Live'
                     className='w-full'
@@ -612,6 +397,227 @@ function CricketBet() {
                     allowFullScreen
                     loading='lazy'
                     allow='
+                  autoplay;
+                  encrypted-media;
+                  fullscreen;
+                  picture-in-picture;
+                  accelerometer;
+                  gyroscope
+                '
+                  />
+                )}
+              </div>
+            )}
+            {!showLive && !isCheckingScoreCard && isScoreCardAvailable && (
+              <iframe
+                // src={`https://score.akamaized.uk/diamond-live-score?gmid=${gameid}`}
+                src={`${liveStreamBaseUrl}/live-score?key=${key_new}&gmid=${gameid}`}
+                allowFullScreen
+                className='w-full h-[26vh]'
+                title='Live Score'
+                allow='autoplay;
+                      encrypted-media;
+                      fullscreen;
+                      picture-in-picture;
+                      accelerometer;
+                      gyroscope
+                    '
+              />
+            )}
+          </>
+        )}
+
+        <div className='flex items-center justify-around bg-[#343a40] text-[12px] font-bold text-gray-400 lg:hidden'>
+          <div
+            className={`flex w-full items-center justify-center p-2 ${showodds ? 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white' : ''}`}
+            onClick={() => {
+              setshowodds(true);
+              setShowLive(false);
+            }}
+          >
+            Market
+          </div>
+          <div
+            className={`flex w-full items-center justify-center p-2 ${showodds ? '' : 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white'}`}
+            onClick={() => setshowodds(false)}
+          >
+            {' '}
+            Open Bets
+          </div>
+        </div>
+
+        {!showodds && (
+          <div className='block lg:hidden'>
+            <MatchedBet gameid={gameid} />
+          </div>
+        )}
+
+        {/** Match Odds */}
+        {matchOddsList.length > 0 && (
+          <MatchOdds
+            gameid={gameid}
+            onBetSelect={handleBetSelect}
+            matchOddsList={matchOddsList}
+            setitem={setitem}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            sid={4}
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** Bookmaker */}
+        {BookmakerList.length > 0 && (
+          <Bookmaker
+            gameid={gameid}
+            onBetSelect={handleBetSelect}
+            BookmakerList={BookmakerList}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** Tied Match */}
+        {tiedMatchList.length > 0 && (
+          <TiedMatch
+            onBetSelect={handleBetSelect}
+            tiedMatchList={tiedMatchList}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            gameid={gameid}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** Normal */}
+        {NormalData.length > 0 && (
+          <Normal
+            onBetSelect={handleBetSelect}
+            NormalData={NormalData}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            gameid={gameid}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** Fancy1  */}
+        {fancy1Data.length > 0 && (
+          <Fancy1
+            onBetSelect={handleBetSelect}
+            fancy1Data={fancy1Data}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            gameid={gameid}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** */}
+        {khadoData.length > 0 && (
+          <Khado
+            onBetSelect={handleBetSelect}
+            khadoData={khadoData}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            gameid={gameid}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** OddEven */}
+        {oddEvenData.length > 0 && (
+          <OddEven
+            onBetSelect={handleBetSelect}
+            oddEvenData={oddEvenData}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            gameid={gameid}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Cricket Game'
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** New Tied Match */}
+        {/* {newtiedMatchList.length > 0 && (
+              <TiedMatch
+                onBetSelect={handleBetSelect}
+                tiedMatchList={newtiedMatchList}
+                pendingBetAmounts={pendingBetAmounts}
+                selectedBet={selectedBet}
+              />
+            )} */}
+      </div>
+
+      <div className='sticky top-[117px] hidden h-[calc(100vh-118px)] lg:block'>
+        <div className='w-[350px]'>
+          {userInfo?.account !== 'demo' && (
+            <div className='mb-1'>
+              <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
+                <span className='font-bold'>Live TV</span>
+                {/* Toggle */}
+                <div
+                  className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
+                  onClick={() => setshowlivetv((prev) => !prev)}
+                >
+                  <span
+                    className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}
+                  ></span>
+                </div>
+              </div>
+              {showlivetv && (
+                <div className='w-full'>
+                  {isLoadingStream ? (
+                    <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
+                      <span>Loading stream...</span>
+                    </div>
+                  ) : (
+                    <iframe
+                      src={
+                        liveStreamUrl ||
+                        `${liveStreamBaseUrl}/live-stream?gmid=${streamGmid}&key=${key_new}`
+                      }
+                      title='Watch Live'
+                      className='w-full'
+                      style={{ height: '50vh' }}
+                      allowFullScreen
+                      loading='lazy'
+                      allow='
                     autoplay;
                     encrypted-media;
                     fullscreen;
@@ -619,12 +625,12 @@ function CricketBet() {
                     accelerometer;
                     gyroscope
                   '
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
             <span className='text-[14px]'>Matched Bet</span>

@@ -126,7 +126,9 @@ function MatchedBet({ gameid }) {
           </div>
         ))
       ) : (
-        <div className='flex items-center justify-center bg-white px-2 text-sm text-[#c7313f]'>No bets found</div>
+        <div className='flex items-center justify-center bg-white px-2 text-sm text-[#c7313f]'>
+          No bets found
+        </div>
       )}
     </div>
   );

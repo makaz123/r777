@@ -49,7 +49,12 @@ export const uploadBanner = async (req, res) => {
     });
   } catch (error) {
     console.error('Error uploading banners:', error);
-    return res.status(500).json({ success: false, message: 'Server error while uploading banners' });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: 'Server error while uploading banners',
+      });
   }
 };
 
@@ -77,7 +82,9 @@ export const deleteBanners = async (req, res) => {
 
     await Banner.deleteMany({ _id: { $in: bannerIds } });
 
-    return res.status(200).json({ success: true, message: 'Banners deleted successfully' });
+    return res
+      .status(200)
+      .json({ success: true, message: 'Banners deleted successfully' });
   } catch (error) {
     console.error('Error deleting banners:', error);
     return res.status(500).json({ success: false, message: 'Server error' });

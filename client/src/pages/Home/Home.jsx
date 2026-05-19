@@ -19,7 +19,7 @@ function Home() {
   return (
     <div className='w-full min-w-0 overflow-hidden'>
       <PopupBanner />
-      <BannerSlider pageType="home" defaultBanner={defaultBanners} />
+      <BannerSlider pageType='home' defaultBanner={defaultBanners} />
       <Cricket previewLimit={5} viewMorePath='/cricket' showBanner={false} />
       <Football previewLimit={5} viewMorePath='/football' showBanner={false} />
       <Tennis previewLimit={5} viewMorePath='/tennis' showBanner={false} />

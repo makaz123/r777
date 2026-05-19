@@ -1,6 +1,10 @@
 //Singleton Pattern to create a single instance of the Websocket
 import { host } from '../redux/api';
-import { updateAvbalance, updateExposure, getUser } from '../redux/reducer/authReducer';
+import {
+  updateAvbalance,
+  updateExposure,
+  getUser,
+} from '../redux/reducer/authReducer';
 import {
   getPendingBet,
   updateCashoutValues,
@@ -53,7 +57,9 @@ class WebSocketService {
         if (data.type === 'user_refresh_needed') {
           // Trigger a user data refresh via Redux
           if (!data.userId || data.userId === this.currentUserId) {
-            console.log('🔄 [WEBSOCKET] Casino callback received - refreshing user data');
+            console.log(
+              '🔄 [WEBSOCKET] Casino callback received - refreshing user data'
+            );
             dispatch(getUser());
           }
         }

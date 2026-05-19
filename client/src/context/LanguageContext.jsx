@@ -16,17 +16,17 @@ import assm from '../lang/assm.json';
 
 const languages = {
   en: { label: 'English', data: english },
-  hi: { label: 'हिन्दी', data: hindi },
-  bn: { label: 'বাংলা', data: ban },
-  gu: { label: 'ગુજરાતી', data: Gurjati },
-  kn: { label: 'ಕನ್ನಡ', data: kan },
-  ml: { label: 'മലയാളം', data: mal },
-  mr: { label: 'मराठी', data: mar },
-  or: { label: 'ଓଡ଼ିଆ', data: odia },
-  pa: { label: 'ਪੰਜਾਬੀ', data: pan },
-  ta: { label: 'தமிழ்', data: tamil },
-  te: { label: 'తెలుగు', data: telugu },
-  as: { label: 'অসমীয়া', data: assm },
+  hi: { label: 'Hindi', data: hindi },
+  bn: { label: 'Bangla', data: ban },
+  gu: { label: 'Gujarati', data: Gurjati },
+  kn: { label: 'Kannada', data: kan },
+  ml: { label: 'Malayalam', data: mal },
+  mr: { label: 'Marathi', data: mar },
+  or: { label: 'Odia', data: odia },
+  pa: { label: 'Punjabi', data: pan },
+  ta: { label: 'Tamil', data: tamil },
+  te: { label: 'Telugu', data: telugu },
+  as: { label: 'Assamese', data: assm },
 };
 
 const LanguageContext = createContext();

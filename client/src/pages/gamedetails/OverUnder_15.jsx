@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 
 function OverUnder_15({
   onBetSelect,
@@ -15,6 +16,7 @@ function OverUnder_15({
   onBetChange,
   onClose,
 }) {
+  const { t } = useTranslation();
   const backBg = ['bg-[#72bbef7f]', 'bg-[#72bbefbf]', 'bg-[#72bbef]'];
   const layBg = ['bg-[#faa9ba]', 'bg-[#faa9babf]', 'bg-[#faa9ba7f]'];
   const [showCashoutOptions, setShowCashoutOptions] = useState(false);
@@ -200,20 +202,20 @@ function OverUnder_15({
           >
             Cashout
           </button>
-          <span className='ml-2 hidden md:inline-block'>Max:{maxValue}</span>
+          <span className='ml-2 hidden md:inline-block'>{t('max', 'Max')}:{maxValue}</span>
         </div>
       </div>
       <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
         <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
-          <span className='block text-gray-400 md:hidden'>Max:{maxValue}</span>
+          <span className='block text-gray-400 md:hidden'>{t('max', 'Max')}:{maxValue}</span>
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />
         <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-          Back
+          {t('back', 'Back')}
         </div>
         <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-          Lay
+          {t('lay', 'Lay')}
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />
@@ -532,7 +534,7 @@ function OverUnder_15({
                 {isSuspended ? (
                   <div className='col-span-2 flex min-h-[36px] items-center justify-center bg-[#4b4b4b] md:col-span-6'>
                     <span className='font-bold tracking-wide text-red-600'>
-                      SUSPENDED
+                      {t('suspended', 'SUSPENDED')}
                     </span>
                   </div>
                 ) : (
@@ -643,7 +645,7 @@ function OverUnder_15({
           );
         })
       ) : (
-        <div className='py-4 text-center text-gray-500'>No data available</div>
+        <div className='py-4 text-center text-gray-500'>{t('no_data_available', 'No data available')}</div>
       )}
     </div>
   );

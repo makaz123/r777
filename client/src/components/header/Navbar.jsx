@@ -8,7 +8,10 @@ import { GiCricketBat } from 'react-icons/gi';
 import aviatorIcon from '../../assets/aviator-icon.svg';
 import sportsIcon from '../../assets/sports-icons.png';
 import inOutIcon from '../../assets/inout-iconB.svg';
+import { useTranslation } from '../../context/LanguageContext';
+
 function Navbar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -130,15 +133,13 @@ function Navbar() {
                   navigate(item.path);
                 }
               }}
-              className={`relative px-[11px] text-[14px] font-bold hover:bg-[#5ecbdd] ${
-                item.id === 'home' ? 'hidden xl:block' : ''
-              } ${
-                activeNav === item.id &&
-                item.id !== 'ezugi' &&
-                item.id !== 'ipl'
+              className={`relative px-[11px] text-[14px] font-bold hover:bg-[#5ecbdd] ${item.id === 'home' ? 'hidden xl:block' : ''
+                } ${activeNav === item.id &&
+                  item.id !== 'ezugi' &&
+                  item.id !== 'ipl'
                   ? 'bg-[#5ecbdd]'
                   : ''
-              } ${item.id === 'ezugi' || item.id === 'ipl' ? 'awesome' : ''} `}
+                } ${item.id === 'ezugi' || item.id === 'ipl' ? 'awesome' : ''} `}
             >
               {item.id !== 'spribe' && item.id !== 'inOut' && (
                 <span
@@ -166,21 +167,21 @@ function Navbar() {
               )}
 
               <span className='text-[12px] font-[700] whitespace-nowrap uppercase xl:text-[14px] xl:normal-case'>
-                {item.label}
+                {t(item.id, item.label)}
               </span>
 
               {(item.id === 'cricket' ||
                 item.id === 'tennis' ||
                 item.id === 'soccer') && (
-                <div className='absolute top-[6px] right-[3px] z-10 flex h-[10px] min-w-[33px] overflow-hidden rounded-[3px] bg-white text-[8px] xl:-top-[6px] xl:right-[3px] xl:h-[12px] xl:text-[10px]'>
-                  <span className='flex flex-1 animate-pulse items-center justify-center text-[6px] text-red-500 uppercase xl:text-[8px]'>
-                    Live
-                  </span>
-                  <span className='bg-red-500 px-[3px] py-[1px] leading-none text-white'>
-                    {inplayCounts[item.id] ?? 0}
-                  </span>
-                </div>
-              )}
+                  <div className='absolute top-[6px] right-[3px] z-10 flex h-[10px] min-w-[33px] overflow-hidden rounded-[3px] bg-white text-[8px] xl:-top-[6px] xl:right-[3px] xl:h-[12px] xl:text-[10px]'>
+                    <span className='flex flex-1 animate-pulse items-center justify-center text-[6px] text-red-500 uppercase xl:text-[8px]'>
+                      {t('live', 'Live')}
+                    </span>
+                    <span className='bg-red-500 px-[3px] py-[1px] leading-none text-white'>
+                      {inplayCounts[item.id] ?? 0}
+                    </span>
+                  </div>
+                )}
 
               {item.id === 'aviator' && (
                 <img

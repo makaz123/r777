@@ -9,6 +9,7 @@ import F from '../../assets/fancy-icon1.svg';
 import tv from '../../assets/tv.svg';
 import banner from '../../assets/banner/Tennis-banner.jpg';
 import BannerSlider from '../../components/BannerSlider';
+import { useTranslation } from '../../context/LanguageContext';
 
 const Cell = ({ value, type }) => (
   <div
@@ -25,6 +26,7 @@ export default function Tennis({
   showOnlyInplay = false,
   onInplayCountChange,
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { matches, loader, error } = useSelector((state) => state.tennis);
@@ -58,7 +60,7 @@ export default function Tennis({
       {/* DESKTOP HEADER */}
       {showBanner && <BannerSlider pageType='tennis' defaultBanner={banner} />}
       <div className='mt-2 flex h-[28px] items-center bg-[#18adc5] pl-[7px] font-bold text-white'>
-        Tennis
+        {t('tennis', 'Tennis')}
       </div>
 
       {/* ROWS */}
@@ -165,7 +167,7 @@ export default function Tennis({
         </>
       ) : (
         <div className='border border-gray-300 bg-white p-1 text-[14px] font-bold text-black'>
-          has no live event.
+          {t('no_live_events_txt', 'has no live event.')}
         </div>
       )}
 
@@ -176,7 +178,7 @@ export default function Tennis({
             onClick={() => navigate(viewMorePath)}
             className='cursor-pointer px-2 text-[14px] font-semibold text-black hover:underline'
           >
-            View More...
+            {t('view_more', 'View More...')}
           </button>
         </div>
       )}

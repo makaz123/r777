@@ -12,8 +12,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import brandLogo from '../../assets/brand_logo.svg';
 import { demoLogin, loginUser } from '../../redux/reducer/authReducer';
+import { useTranslation } from '../../context/LanguageContext';
 
 function LoginPopup({ open, onClose, onSuccess }) {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({ userName: '', password: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -25,7 +27,7 @@ function LoginPopup({ open, onClose, onSuccess }) {
   const handleLogin = async (e) => {
     e?.preventDefault?.();
     if (!formData.userName || !formData.password) {
-      toast.error('Please enter username and password');
+      toast.error(t('please_enter_username_password', 'Please enter username and password'));
       return;
     }
     try {
@@ -78,7 +80,7 @@ function LoginPopup({ open, onClose, onSuccess }) {
             className='fixed top-1/2 left-1/2 z-30 w-[95%] max-w-[460px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border-[5px] border-[#27a6c3] bg-white px-[15px] py-[10px] shadow-2xl'
           >
             <div className='relative flex items-center justify-center gap-2 text-black'>
-              <span className='text-[18px] font-bold'>Login</span>
+              <span className='text-[18px] font-bold'>{t('login', 'Login')}</span>
               <button
                 type='button'
                 onClick={onClose}
@@ -94,10 +96,10 @@ function LoginPopup({ open, onClose, onSuccess }) {
               className='flex flex-col gap-3 p-4 text-[14px] text-black'
             >
               <div>
-                <div>User ID</div>
+                <div>{t('user_id', 'User ID')}</div>
                 <input
                   type='text'
-                  placeholder='user id'
+                  placeholder={t('user_id_placeholder', 'user id')}
                   value={formData.userName}
                   onChange={(e) =>
                     setFormData({ ...formData, userName: e.target.value })
@@ -108,11 +110,11 @@ function LoginPopup({ open, onClose, onSuccess }) {
               </div>
 
               <div>
-                <div>Password</div>
+                <div>{t('password', 'Password')}</div>
                 <div className='relative'>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder='Password'
+                    placeholder={t('password', 'Password')}
                     value={formData.password}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
@@ -133,7 +135,7 @@ function LoginPopup({ open, onClose, onSuccess }) {
                 disabled={submitting}
                 className='flex w-full items-center justify-center rounded border-[1px] border-[#065265] bg-gradient-to-b from-[#6fe3f5] to-[#065265] py-2 text-[16px] text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.5)] hover:bg-gradient-to-t'
               >
-                {submitting ? 'Please wait…' : 'Login'}
+                {submitting ? t('please_wait', 'Please wait…') : t('login', 'Login')}
               </button>
 
               <button
@@ -142,7 +144,7 @@ function LoginPopup({ open, onClose, onSuccess }) {
                 disabled={submitting}
                 className='flex w-full items-center justify-center rounded border-[1px] border-[#065265] bg-gradient-to-b from-[#6fe3f5] to-[#065265] py-2 text-[16px] text-white [text-shadow:0_1px_1px_rgba(0,0,0,0.5)] hover:bg-gradient-to-t'
               >
-                Login with demo ID
+                {t('login_with_demo_id', 'Login with demo ID')}
               </button>
             </form>
           </motion.div>

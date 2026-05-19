@@ -426,6 +426,8 @@ import { getUser } from '../../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import LoginPopup from '../../components/auth/LoginPopup';
 import cancelIcon from '../../assets/icons/bt-iconCancel.jpg';
+import { useTranslation } from '../../context/LanguageContext';
+
 function PlaceBet({
   selectedBet,
   onBetChange,
@@ -442,6 +444,7 @@ function PlaceBet({
   minAmount,
   fancyScore,
 }) {
+  const { t } = useTranslation();
   console.log('selectedBet', selectedBet);
   const dispatch = useDispatch();
   const { loading, errorMessage, successMessage, pendingBetAmounts } =
@@ -1186,7 +1189,7 @@ function PlaceBet({
           className={`${betType === 'back' ? 'bg-[#beddf4]' : 'bg-[#f3dce2]'} grid grid-cols-[1fr_1fr] items-center border-b border-[#9fb4c2] py-0.5 text-black md:grid-cols-[1fr_140px_140px]`}
         >
           <div className='hidden px-2 py-1 text-right text-[14px] font-bold md:flex'>
-            {betFor} - MATCH ODDS
+            {betFor} - {t('match_odds_upper', 'MATCH ODDS')}
           </div>
 
           <div className='flex items-center px-0.5 md:w-auto'>
@@ -1296,7 +1299,7 @@ function PlaceBet({
               disabled={loading}
               className='mx-0.5 h-[30px] flex-1 rounded-[3px] bg-[#07af07] bg-gradient-to-b to-[#07af07] px-3 text-[14px] font-bold whitespace-nowrap text-white hover:from-[#026d02] md:h-[26px]'
             >
-              {loading ? 'Placing...' : 'Place Bet'}
+              {loading ? t('placing', 'Placing...') : t('place_bet', 'Place Bet')}
             </button>
 
             {/* Cancel */}
@@ -1304,7 +1307,7 @@ function PlaceBet({
               onClick={handleReset}
               className='mx-0.5 h-[30px] flex-1 rounded-[3px] bg-[#ff5071] bg-gradient-to-b to-[#ff5071] px-3 text-[14px] font-bold text-white hover:from-[#c30529] md:h-[26px]'
             >
-              Cancel
+              {t('cancel', 'Cancel')}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { FaArrowRight, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../redux/api';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 import {
   getPendingBetAmo,
   getPendingBet,
@@ -28,6 +29,7 @@ function MatchOdds({
   onClose,
 }) {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const { userInfo } = useSelector((state) => state.auth);
   const { eventName, cashoutValues, cashoutLoading, cashoutPL } = useSelector(
     (state) => state.bet
@@ -379,7 +381,9 @@ function MatchOdds({
   return (
     <div>
       <div className='text-secondary mt-1 flex items-center justify-between bg-[#18adc5] p-1'>
-        <span className='text-[13px] font-bold lg:text-[14px]'>MATCH_ODDS</span>
+        <span className='text-[13px] font-bold lg:text-[14px]'>
+          {t('match_odds', 'Match Odds')}
+        </span>
         <div>
           {hasCashoutAvailable && showCashoutOptions ? (
             <button
@@ -394,13 +398,7 @@ function MatchOdds({
             >
               <FaCheck className='text-xs' />
               <span>
-                {hasMergedValue
-                  ? `₹ ${mergedCashoutValue.toFixed(2)}`
-                  : cashoutLoading
-                    ? '...'
-                    : marketCashoutPL
-                      ? `₹ ${marketCashoutPL}`
-                      : 'Cash Out'}
+                {cashoutLoading ? '...' : t('cashout', 'Cash Out')}
               </span>
             </button>
           ) : hasCashoutAvailable ? (
@@ -411,30 +409,34 @@ function MatchOdds({
               }}
               className='cursor-pointer bg-[#198754] p-1 font-[400] text-white'
             >
-              Cashout
+              {t('cashout', 'Cashout')}
             </button>
           ) : (
             <button
               disabled
               className='cursor-not-allowed bg-[#198754] p-1 font-[400] text-white opacity-60'
             >
-              Cashout
+              {t('cashout', 'Cashout')}
             </button>
           )}
-          <span className='ml-2 hidden md:inline-block'>Max:{maxValue}</span>
+          <span className='ml-2 hidden md:inline-block'>
+            {t('max', 'Max')}:{maxValue}
+          </span>
         </div>
       </div>
       <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
         <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
-          <span className='block text-gray-400 md:hidden'>Max:{maxValue}</span>
+          <span className='block text-gray-400 md:hidden'>
+            {t('max', 'Max')}:{maxValue}
+          </span>
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />
         <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-          Back
+          {t('back', 'Back')}
         </div>
         <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-          Lay
+          {t('lay', 'Lay')}
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />
@@ -498,7 +500,14 @@ function MatchOdds({
               <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
                 {/* Team with suggestions */}
                 <div className='ml-2 truncate text-[13px] font-bold text-black lg:text-[14px]'>
-                  <div>{team}</div>
+                  <div className='flex items-center'>
+                    <span>{team}</span>
+                    {showCashoutOptions && (
+                      <span className={`text-[12px] font-bold ml-2 ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {cashoutLoading ? '...' : `₹ ${mergedCashoutValue.toFixed(2)}`}
+                      </span>
+                    )}
+                  </div>
                   {(() => {
                     if (!userInfo) return null;
                     // Check if selectedBet belongs to Match Odds market
@@ -783,7 +792,7 @@ function MatchOdds({
         })
       ) : (
         <div className='py-4 text-center text-gray-500'>
-          No match odds available
+          {t('no_data_to_display', 'No match odds available')}
         </div>
       )}
     </div>

@@ -38,6 +38,11 @@ function CasinoProvider() {
       return;
     }
 
+    if (userInfo?.account === 'demo') {
+      toast.error('Please Login With Real Id');
+      return;
+    }
+
     if ((userInfo?.avbalance ?? 0) <= 0) {
       toast.error('Insufficient balance');
       return;
@@ -80,6 +85,7 @@ function CasinoProvider() {
   useEffect(() => {
     setOpenCasino(!userInfo);
   }, [userInfo]);
+
 
   useEffect(() => {
     if (
@@ -203,7 +209,7 @@ function CasinoProvider() {
               userInfo &&
               userInfo.account !== 'demo'
             ) && (
-              <div className='mt-4 grid grid-cols-3 gap-3 md:grid-cols-6'>
+              <div className='mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 lg:grid-cols-6'>
                 {games.map((game) => (
                   <div
                     key={`${game.id}-${game.game_uid}`}

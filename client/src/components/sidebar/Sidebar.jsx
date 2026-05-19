@@ -25,6 +25,7 @@ import { wsService } from '../../services/WebsocketService';
 import api from '../../redux/api';
 import { MdOutlineArrowDropDown } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from '../../context/LanguageContext';
 
 const providerSpritePositions = {
   indianpoker: '0px -863px',
@@ -56,6 +57,7 @@ function groupMatchesByLeague(matches) {
 }
 
 function Sidebar({ onClose, view = 'popular', isOpen = false }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [expandedKeys, setExpandedKeys] = useState(() => new Set());
@@ -213,13 +215,24 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
           opacity: window.innerWidth >= 1024 ? 1 : isOpen ? 1 : 0,
         }}
         transition={{ duration: 0.4 }}
-        className={`scrollbar-hide fixed top-0 left-0 z-10 h-full w-full overflow-y-auto border-r border-gray-200 bg-[#ececec] sm:w-[270px] md:top-[129px] md:z-1 md:h-[calc(100vh-129px)] lg:sticky lg:w-[15%] xl:top-[117px] xl:h-[calc(100vh-117px)] ${
-          !isOpen ? 'pointer-events-none lg:pointer-events-auto' : ''
-        } `}
+        className={`scrollbar-hide fixed top-0 left-0 z-10 h-full w-full overflow-y-auto border-r border-gray-200 bg-[#ececec] sm:w-[270px] md:top-[129px] md:z-1 md:h-[calc(100vh-129px)] lg:sticky lg:w-[15%] xl:top-[117px] xl:h-[calc(100vh-117px)] ${!isOpen ? 'pointer-events-none lg:pointer-events-auto' : ''
+          } `}
       >
         {showPopular ? (
           <>
-            {sectionHeader('Popular')}
+            {(() => {
+              const mapKey = (key) => {
+                if (key === 'indianpoker') return 'indianPoker';
+                if (key === 'indianpoker2') return 'indianPoker2';
+                if (key === 'inout' || key === 'chickenroad') return 'inOut';
+                if (key === 'livecasino') return 'liveCasino';
+                if (key === 'betgames') return 'betGames';
+                if (key === 'casino3') return 'casino3';
+                return key;
+              };
+              window.__sidebarMapKey = mapKey; // store globally or pass down
+            })()}
+            {sectionHeader(t('popular', 'Popular'))}
             <ul className='text-[13px]'>
               {sportsNav.map((sport) => {
                 const sk = sportKey(sport.key);
@@ -232,9 +245,8 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                     <div
                       role='button'
                       tabIndex={0}
-                      className={`flex cursor-pointer items-center gap-2 px-2.5 py-2 text-[#045662] transition-colors hover:bg-[#d4e8ec] ${
-                        leagueOpen ? 'bg-[#d8e8eb]' : ''
-                      }`}
+                      className={`flex cursor-pointer items-center gap-2 px-2.5 py-2 text-[#045662] transition-colors hover:bg-[#d4e8ec] ${leagueOpen ? 'bg-[#d8e8eb]' : ''
+                        }`}
                       onClick={() => handleSportHeaderClick(sport)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -253,7 +265,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                         }}
                       />
                       <span className='flex min-w-0 flex-1 justify-between font-bold'>
-                        {sport.label}
+                        {t(window.__sidebarMapKey ? window.__sidebarMapKey(sport.key) : sport.key, sport.label)}
                         {sport.icon}
                       </span>
                     </div>
@@ -356,14 +368,16 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                       <img src={inOutIcon} alt='' className='h-[20px]' />
                     </span>
                   )}
-                  <span className='text-sm font-bold'>{p.label}</span>
+                  <span className='text-sm font-bold'>
+                    {t(window.__sidebarMapKey ? window.__sidebarMapKey(p.key) : p.key, p.label)}
+                  </span>
                 </li>
               ))}
             </ul>
           </>
         ) : (
           <>
-            {sectionHeader('Main Menu')}
+            {sectionHeader(t('main_menu', 'Main Menu'))}
             <div>
               <div
                 role='button'
@@ -374,7 +388,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={accountIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Account Statement</span>
+                <span>{t('account_statement', 'Account Statement')}</span>
               </div>
               <div
                 role='button'
@@ -385,7 +399,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={plIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Profit Loss Report</span>
+                <span>{t('profit_loss_report', 'Profit Loss Report')}</span>
               </div>
               <div
                 role='button'
@@ -396,7 +410,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={historyIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Bet History</span>
+                <span>{t('bet_history', 'Bet History')}</span>
               </div>
               <div
                 role='button'
@@ -407,7 +421,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={unsettledIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Unsettled Bet</span>
+                <span>{t('unsettled_bet', 'Unsettled Bet')}</span>
               </div>
               <div
                 role='button'
@@ -418,7 +432,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={valueIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Set Stake</span>
+                <span>{t('set_stake', 'Set Stake')}</span>
               </div>
               <div
                 role='button'
@@ -429,7 +443,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={passwordIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Change Password</span>
+                <span>{t('change_password_txt', 'Change Password')}</span>
               </div>
               <div
                 role='button'
@@ -440,13 +454,13 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={resultIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Results</span>
+                <span>{t('results', 'Results')}</span>
               </div>
               <div className='flex items-center gap-[5px] border-b border-gray-300 px-2.5 py-2 text-[14px] text-[#045662]'>
                 <span>
                   <img src={rulesIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Rules</span>
+                <span>{t('rules', 'Rules')}</span>
               </div>
               <div
                 role='button'
@@ -457,7 +471,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 <span>
                   <img src={logoutIcon} alt='' className='w-[18px]' />
                 </span>
-                <span>Logout</span>
+                <span>{t('logout', 'Logout')}</span>
               </div>
             </div>
           </>

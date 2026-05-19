@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateQuickStakes } from '../../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
+import { useTranslation } from '../../context/LanguageContext';
 
 const GAME_DEFAULTS = [
   { label: '1k', value: 1000 },
@@ -52,6 +53,7 @@ function buildButtons(defaults, savedValues) {
 }
 
 function ButtonValues({ onClose }) {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { userInfo, loading } = useSelector((state) => state.auth);
 
@@ -122,7 +124,7 @@ function ButtonValues({ onClose }) {
       <div className="w-[95%] max-w-4xl rounded-lg bg-white font-['Times_New_Roman'] shadow-lg md:w-[45%]">
         <div className='bg-primary flex items-center justify-between p-2'>
           <h2 className='text-secondary text-lg font-semibold'>
-            Set Button Value
+            {t('set_stake')}
           </h2>
           <button
             onClick={onClose}
@@ -137,19 +139,19 @@ function ButtonValues({ onClose }) {
               className={`${selectedTab === 'game' ? 'bg-secondary text-white' : 'bg-primary text-primary'} cursor-pointer px-4 py-1`}
               onClick={() => setSelectedTab('game')}
             >
-              Game Buttons
+              {t('sports')}
             </div>
             <div
               className={`${selectedTab === 'casino' ? 'bg-secondary text-white' : 'bg-primary text-primary'} cursor-pointer px-4 py-1`}
               onClick={() => setSelectedTab('casino')}
             >
-              Casino Buttons
+              {t('casino')}
             </div>
           </div>
           <div className='p-4'>
             <div className='mb-2 flex justify-between font-semibold'>
-              <span className='text-[#2C3E50]'>Price Label:</span>
-              <span className='text-[#2C3E50]'>Price Value:</span>
+              <span className='text-[#2C3E50]'>{t('price_label')}:</span>
+              <span className='text-[#2C3E50]'>{t('price_value')}:</span>
             </div>
 
             {buttons.map((btn, index) => (
@@ -174,7 +176,7 @@ function ButtonValues({ onClose }) {
               onClick={handleUpdate}
               disabled={loading}
             >
-              {loading ? 'Updating...' : 'Update'}
+              {loading ? `${t('update')}...` : t('update')}
             </button>
           </div>
         </div>

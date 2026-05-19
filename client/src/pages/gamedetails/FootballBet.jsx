@@ -9,6 +9,7 @@ import OverUnder_25 from './OverUnder_25';
 import OverUnder_35 from './OverUnder_35';
 import MatchedBet from './MatchedBet';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useTranslation } from '../../context/LanguageContext';
 import {
   createBet,
   createfancyBet,
@@ -21,6 +22,7 @@ import { host } from '../../redux/api';
 import { FaTv } from 'react-icons/fa6';
 import axios from 'axios';
 function FootballBet() {
+  const { t } = useTranslation();
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
   const liveStreamBaseUrl =
     import.meta.env.VITE_LIVE_STREAM_BASE_URLL ||
@@ -244,7 +246,7 @@ function FootballBet() {
         {userInfo?.account !== 'demo' && (
           <>
             <div className='flex md:hidden cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
-              <span className='font-bold'>Live TV</span>
+              <span className='font-bold'>{t('live_tv', 'Live TV')}</span>
               {/* Toggle */}
               <div className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
                 onClick={() => setshowlivetv((prev) => !prev)}>
@@ -255,7 +257,7 @@ function FootballBet() {
               <div className='w-full block md:hidden'>
                 {isLoadingStream ? (
                   <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
-                    <span>Loading stream...</span>
+                    <span>{t('loading', 'Loading stream...')}</span>
                   </div>
                 ) : (
                   <iframe
@@ -308,14 +310,14 @@ function FootballBet() {
               setShowLive(false);
             }}
           >
-            Market
+            {t('market', 'Market')}
           </div>
           <div
             className={`flex w-full items-center justify-center p-2 ${showodds ? '' : 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white'}`}
             onClick={() => setshowodds(false)}
           >
             {' '}
-            Open Bets
+            {t('open_bets', 'Open Bets')}
           </div>
         </div>
 
@@ -416,7 +418,7 @@ function FootballBet() {
         <div className='w-[350px]'>
           <div className='mb-1'>
             <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
-              <span className='font-bold'>Live TV</span>
+              <span className='font-bold'>{t('live_tv', 'Live TV')}</span>
               {/* Toggle */}
               <div
                 className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
@@ -431,7 +433,7 @@ function FootballBet() {
               <div className='w-full'>
                 {isLoadingStream ? (
                   <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
-                    <span>Loading stream...</span>
+                    <span>{t('loading', 'Loading stream...')}</span>
                   </div>
                 ) : (
                   <iframe
@@ -459,7 +461,7 @@ function FootballBet() {
           </div>
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
-            <span className='text-[14px]'>Matched Bet</span>
+            <span className='text-[14px]'>{t('matched_bet', 'Matched Bet')}</span>
           </div>
           <MatchedBet gameid={gameid} />
         </div>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 
 function OddEven({
   onBetSelect,
@@ -15,6 +16,7 @@ function OddEven({
   onBetChange,
   onClose,
 }) {
+  const { t } = useTranslation();
   const renderInlineBetSlip = (item) => {
     const isOddEvenBet = selectedBet?.gameType === 'oddeven';
     const isMatching =
@@ -275,10 +277,10 @@ function OddEven({
 
                         <div className='hidden flex-col items-center justify-center lg:flex'>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Min:{item.min}
+                            {t('min', 'Min')}:{item.min}
                           </span>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Max:{item.max}
+                            {t('max', 'Max')}:{item.max}
                           </span>
                         </div>
                       </>
@@ -290,7 +292,7 @@ function OddEven({
             })
           ) : (
             <div className='py-4 text-center text-gray-500'>
-              No data available
+              {t('no_data_available', 'No data available')}
             </div>
           )}
         </div>
@@ -409,10 +411,10 @@ function OddEven({
 
                         <div className='hidden flex-col items-center justify-center lg:flex'>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Min:{item.min}
+                            {t('min', 'Min')}:{item.min}
                           </span>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Max:{item.max}
+                            {t('max', 'Max')}:{item.max}
                           </span>
                         </div>
                       </>

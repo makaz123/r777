@@ -25,6 +25,7 @@ import cashoutRoute from './routes/cashoutRoute.js';
 import bannerRoute from './routes/bannerRoute.js';
 import { setupWebSocket } from './socket/bettingSocket.js';
 import casinoRoutesNew from './routes/casinoRoutesNew.js';
+import dashboardRoutes from './routes/admin/dashboardRoutes.js';
 dotenv.config();
 connectDB();
 
@@ -69,6 +70,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/casino', casinoRoutesNew);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', subRouteRoutes);
 app.use('/api', downlineRoutes);
 app.use('/api', userRoutes);

@@ -21,6 +21,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SportsSidebar from './SportsSidebar';
+import LanguageSelector from './language/LanguageSelector';
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -370,6 +371,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
 
           <div className='mr-4 flex items-center gap-4'>
+            <LanguageSelector />
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'

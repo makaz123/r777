@@ -11,7 +11,10 @@ import { FaKey } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { demoLogin, loginUser } from '../../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
+import { useTranslation } from '../../context/LanguageContext';
+
 function Login() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [formData, setFormData] = useState({
@@ -62,7 +65,7 @@ function Login() {
           <div className='mt-4 flex w-full flex-col items-center gap-3 rounded border border-[#0088CC] bg-[#fff] px-2 py-1 shadow-[0_0_5px_#fff]'>
             <div className='text-[#0088CC]'>
               <h4 className='flex items-center justify-center gap-1 text-[22px] font-[400]'>
-                Login
+                {t('login', 'Login')}
                 <BiSolidHandDown className='mt-1 text-[22px] font-[400]' />
               </h4>
             </div>
@@ -71,7 +74,7 @@ function Login() {
             <div className='flex w-full overflow-hidden rounded border border-[#ced4da]'>
               <input
                 type='text'
-                placeholder='Username'
+                placeholder={t('username', 'Username')}
                 value={formData.userName}
                 onChange={(e) =>
                   setFormData({ ...formData, userName: e.target.value })
@@ -87,7 +90,7 @@ function Login() {
             <div className='flex w-full overflow-hidden rounded border border-gray-300'>
               <input
                 type='password'
-                placeholder='Password'
+                placeholder={t('password', 'Password')}
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
@@ -104,7 +107,7 @@ function Login() {
               onClick={() => handleLogin(formData)}
               className='flex w-full items-center justify-center gap-2 rounded bg-[#0088CC] py-2 font-semibold text-white transition-colors hover:bg-[#0077b3]'
             >
-              Login
+              {t('login', 'Login')}
               <FaArrowRight className='text-white' />
             </button>
 
@@ -113,38 +116,38 @@ function Login() {
               onClick={handleDemoLogin}
               className='flex w-full items-center justify-center gap-2 rounded bg-[#0088CC] py-2 font-semibold text-white transition-colors hover:bg-[#0077b3]'
             >
-              Login with demo ID
+              {t('login_with_demo_id', 'Login with demo ID')}
               <FaArrowRight className='text-white' />
             </button>
 
             {/* reCAPTCHA Disclaimer */}
             <p className='text-center text-[12px] leading-relaxed font-[400] text-black'>
-              This site is protected by reCAPTCHA and the Google{' '}
+              {t('recaptcha_protected_prefix', 'This site is protected by reCAPTCHA and the Google ')}
               <a href='#' className='text-[#0088CC] underline'>
-                Privacy Policy
-              </a>{' '}
-              and{' '}
+                {t('privacy_policy', 'Privacy Policy')}
+              </a>
+              {t('and', ' and ')}
               <a href='#' className='text-[#0088CC] underline'>
-                Terms of Service
-              </a>{' '}
-              apply.
+                {t('terms_of_service', 'Terms of Service')}
+              </a>
+              {t('recaptcha_apply_suffix', ' apply.')}
             </p>
             {/* Download APK Link */}
             <div className='flex cursor-pointer items-center justify-center gap-2 text-[#0088CC] hover:underline'>
               <IoLogoAndroid className='text-[#0088CC]' />
-              <span className='font-medium text-[#0088CC]'>Download APK</span>
+              <span className='font-medium text-[#0088CC]'>{t('download_apk', 'Download APK')}</span>
             </div>
           </div>
         </div>
       </div>
       <div className='bg-primary text-primary fixed right-0 bottom-0 left-0 flex flex-col items-center justify-center p-2 lg:flex-row'>
         <div className='lg:underline-none flex w-full items-center justify-center gap-2 text-[12px] font-bold underline lg:justify-start lg:text-[16px]'>
-          <span className=''> Terms and Conditions </span>
-          <span className=''> Responsible Gaming </span>
+          <span className=''> {t('terms_and_conditions', 'Terms and Conditions')} </span>
+          <span className=''> {t('responsible_gaming', 'Responsible Gaming')} </span>
         </div>
         <div className='flex w-full items-center justify-center gap-2 lg:justify-start'>
           <h2 className='text-[20px] font-[700] lg:text-[24px]'>
-            24X7 Support
+            {t('support_24x7', '24X7 Support')}
           </h2>
         </div>
       </div>

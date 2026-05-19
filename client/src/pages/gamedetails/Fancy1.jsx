@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 
 function Fancy1({
   onBetSelect,
@@ -15,6 +16,7 @@ function Fancy1({
   onBetChange,
   onClose,
 }) {
+  const { t } = useTranslation();
   const renderInlineBetSlip = (item) => {
     const isFancy1Bet = selectedBet?.gameType === 'fancy1';
     const isMatching =
@@ -136,10 +138,10 @@ function Fancy1({
           <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px_60px]'>
             <div></div>
             <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-              Back
+              {t('back', 'Back')}
             </div>
             <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-              Lay
+              {t('lay', 'Lay')}
             </div>
             <div className='hidden lg:block'></div>
           </div>
@@ -238,10 +240,10 @@ function Fancy1({
 
                   <div className='hidden flex-col items-center justify-center lg:flex'>
                     <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      Min:{item.min}
+                      {t('min', 'Min')}:{item.min}
                     </span>
                     <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      Max:{item.max}
+                      {t('max', 'Max')}:{item.max}
                     </span>
                   </div>
                 </div>
@@ -250,7 +252,7 @@ function Fancy1({
             ))
           ) : (
             <div className='py-4 text-center text-gray-500'>
-              No data available
+              {t('no_data_available', 'No data available')}
             </div>
           )}
         </div>
@@ -258,10 +260,10 @@ function Fancy1({
           <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px_60px]'>
             <div></div>
             <div className='m-[1px] hidden items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black lg:flex'>
-              Back
+              {t('back', 'Back')}
             </div>
             <div className='m-[1px] hidden items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black lg:flex'>
-              Lay
+              {t('lay', 'Lay')}
             </div>
             <div></div>
           </div>
@@ -360,10 +362,10 @@ function Fancy1({
 
                   <div className='hidden flex-col items-center justify-center lg:flex'>
                     <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      Min:{item.min}
+                      {t('min', 'Min')}:{item.min}
                     </span>
                     <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      Max:{item.max}
+                      {t('max', 'Max')}:{item.max}
                     </span>
                   </div>
                 </div>

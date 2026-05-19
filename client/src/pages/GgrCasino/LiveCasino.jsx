@@ -113,9 +113,8 @@ function LiveCasino() {
               key={tab.id}
               type='button'
               onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 cursor-pointer flex-col items-center border-r border-[#c51a1b] px-[15px] py-[5px] transition-colors ${
-                isActive ? 'bg-[#c51a1b]' : 'bg-transparent hover:bg-[#3a3f47]'
-              }`}
+              className={`flex shrink-0 cursor-pointer flex-col items-center border-r border-[#c51a1b] px-[15px] py-[5px] transition-colors ${isActive ? 'bg-[#c51a1b]' : 'bg-transparent hover:bg-[#3a3f47]'
+                }`}
             >
               <img src={tab.icon} alt='' className='w-[30px]' />
               <span className='text-xs whitespace-nowrap sm:text-sm'>
@@ -135,7 +134,7 @@ function LiveCasino() {
           No games found.
         </div>
       ) : (
-        <div className='mt-4 grid grid-cols-3 gap-3 md:grid-cols-6'>
+        <div className='mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 lg:grid-cols-6'>
           {games.map((game) => (
             <div
               key={`${game.id}-${game.game_uid}`}

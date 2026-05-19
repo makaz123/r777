@@ -53,9 +53,9 @@ function App() {
           <Route path='cricket' element={<Cricket />} />
           <Route path='football' element={<Football />} />
           <Route path='tennis' element={<Tennis />} />
-          <Route path='cricket-bet/:game/:id' element={<CricketBet />} />
-          <Route path='football-bet/:game/:id' element={<FootballBet />} />
-          <Route path='tennis-bet/:game/:id' element={<TennisBet />} />
+          <Route path='cricket-bet/*' element={<CricketBet />} />
+          <Route path='football-bet/*' element={<FootballBet />} />
+          <Route path='tennis-bet/*' element={<TennisBet />} />
           <Route path='casino-bet/:match/:gameid' element={<CasinoBet />} />
 
           <Route element={<PrivateRoute />}>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { FaRegPlusSquare, FaRegMinusSquare } from 'react-icons/fa';
-import { IoMdClose } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCricketData } from '../redux/reducer/cricketSlice';
 import { fetchSoccerData } from '../redux/reducer/soccerSlice';
 import { fetchTennisData } from '../redux/reducer/tennisSlice';
+import { MdOutlineArrowDropDown } from 'react-icons/md';
+import { AiOutlineCloseSquare } from 'react-icons/ai';
 
 function SportsSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -15,12 +16,11 @@ function SportsSidebar({ isOpen, onClose }) {
   const { matches: soccerMatches } = useSelector((state) => state.soccer);
 
   useEffect(() => {
-    if (isOpen) {
       dispatch(fetchCricketData());
       dispatch(fetchTennisData());
       dispatch(fetchSoccerData());
-    }
-  }, [dispatch, isOpen]);
+
+  }, [dispatch]);
 
   const [expandedItems, setExpandedItems] = useState(new Set(['allSports']));
 
@@ -54,42 +54,6 @@ function SportsSidebar({ isOpen, onClose }) {
   const groupedTennis = groupMatchesByTitle(tennisMatches);
   const groupedSoccer = groupMatchesByTitle(soccerMatches);
 
-  const allSportsList = [
-    'Virtual sports',
-    'Motor Sports',
-    'Baseball',
-    'Rugby Union',
-    'Darts',
-    'American Football',
-    'Soccer',
-    'Esports',
-    'Boat Racing',
-    'Wrestling',
-    'Table Tennis',
-    'Badminton',
-    'Esoccer',
-    'Basketball',
-    'Volleyball',
-    'Snooker',
-    'Ice Hockey',
-    'E Games',
-    'Futsal',
-    'Handball',
-    'Kabaddi',
-    'Golf',
-    'Rugby League',
-    'Boxing',
-    'Beach Volleyball',
-    'Mixed Martial Arts',
-    'MotoGP',
-    'Chess',
-    'Cycling',
-    'Motorbikes',
-    'Athletics',
-    'Basketball 3X3',
-    'Sumo',
-  ];
-
   const createTitleKey = (sportKey, title) => {
     const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
     return `${sportKey}-${safeTitle}`;
@@ -102,19 +66,11 @@ function SportsSidebar({ isOpen, onClose }) {
       <FaRegPlusSquare className='inline flex-shrink-0 text-xs' />
     );
 
-  const TreeNode = ({ children }) => (
-    <div className='sports-tree-node'>
-      {children}
-      {/* {isLast && <span className='sports-tree-vline' />} */}
-    </div>
-  );
-
   const renderSportSection = (
     sportName,
     groupedData,
     sportKey,
     routePrefix,
-    isLast
   ) => {
     // console.log('renderSportSection:', { sportName, groupedData, sportKey });
     const titles = Object.keys(groupedData);
@@ -124,36 +80,32 @@ function SportsSidebar({ isOpen, onClose }) {
       <>
         <button
           onClick={() => toggleItem(sportKey)}
-          className='flex w-full cursor-pointer items-center gap-1.5 py-1.5 text-[#333] hover:text-[#0088cc]'
+          className='flex justify-between w-full cursor-pointer items-center gap-1.5 py-1.5 px-4 text-white hover:bg-[#18b0c8]'
         >
-          {sportName} <ToggleIcon expanded={isExpanded(sportKey)} />
+          {sportName} <MdOutlineArrowDropDown  />
         </button>
         {isExpanded(sportKey) && hasData && (
-          <div className='sports-tree'>
-            {titles.map((title, idx) => {
+          <div className='pl-6 pr-2 bg-blue-100'>
+            {titles.map((title) => {
               const titleKey = createTitleKey(sportKey, title);
               const matches = groupedData[title];
-              const isTitleLast = idx === titles.length - 1;
-
               return (
-                <TreeNode key={titleKey} isLast={isTitleLast}>
+                  <>
                   <button
                     onClick={() => toggleItem(titleKey)}
-                    className='flex w-full cursor-pointer items-center gap-1.5 py-[5px] text-[#333] hover:text-[#0088cc]'
+                    className='flex w-full cursor-pointer items-center gap-1.5 py-[5px] text-black'
                   >
-                    <span className='text-left'>{title}</span>{' '}
                     <ToggleIcon expanded={isExpanded(titleKey)} />
+                    <span className='text-left'>{title}</span>{' '}
+                    
                   </button>
                   {isExpanded(titleKey) && matches && matches.length > 0 && (
-                    <div className='sports-tree'>
-                      {matches.map((match, mIdx) => (
-                        <TreeNode
-                          key={match.id}
-                          isLast={mIdx === matches.length - 1}
-                        >
+                    <div className='pl-2 pr-2'>
+                      {matches.map((match) => (
+
                           <a
                             href='#'
-                            className='block py-1 text-[#333] transition-colors hover:text-[#0088cc]'
+                            className='flex items-center gap-1 py-1 text-black transition-colors'
                             onClick={(e) => {
                               e.preventDefault();
                               navigate(
@@ -161,14 +113,12 @@ function SportsSidebar({ isOpen, onClose }) {
                               );
                               onClose();
                             }}
-                          >
-                            {match.game}
+                          ><AiOutlineCloseSquare className='min-w-3 min-h-3'/> <span className='truncate'>{match.game}</span>
                           </a>
-                        </TreeNode>
                       ))}
                     </div>
                   )}
-                </TreeNode>
+                </>
               );
             })}
           </div>
@@ -179,39 +129,10 @@ function SportsSidebar({ isOpen, onClose }) {
 
   return (
     <>
-      {/* {isOpen && (
-        <div className='fixed inset-0 z-40 bg-black/50' onClick={onClose} />
-      )} */}
-
-      <aside
-        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[300px] transform bg-white shadow-xl transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[250px] text-white transform bg-[#007082] shadow-xl transition-transform duration-300 ease-in-out border-r border-gray-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } overflow-y-auto`}
       >
-        <div className='flex items-center justify-between px-3 py-[5px] leading-none'>
-          <span className='text-[28px]'>Sports</span>
-          <IoMdClose
-            className='cursor-pointer text-2xl hover:opacity-80'
-            onClick={onClose}
-          />
-        </div>
-
-        <div className='pl-4 text-[12px]'>
-          {/* Politics */}
-          <>
-            <button
-              onClick={() => toggleItem('politics')}
-              className='flex w-full cursor-pointer items-center gap-1.5 py-[5px] text-[#333] hover:text-[#0088cc]'
-            >
-              Politics <ToggleIcon expanded={isExpanded('politics')} />
-            </button>
-            {isExpanded('politics') && (
-              <div className='sports-tree'>
-                {/* Will be populated from API */}
-              </div>
-            )}
-          </>
-
           {/* Cricket */}
           {renderSportSection(
             'Cricket',
@@ -220,7 +141,6 @@ function SportsSidebar({ isOpen, onClose }) {
             '/cricket-bet',
             false
           )}
-
           {/* Football */}
           {renderSportSection(
             'Football',
@@ -229,7 +149,6 @@ function SportsSidebar({ isOpen, onClose }) {
             '/soccerbet',
             false
           )}
-
           {/* Tennis */}
           {renderSportSection(
             'Tennis',
@@ -239,25 +158,6 @@ function SportsSidebar({ isOpen, onClose }) {
             false
           )}
 
-          {/* Other sports */}
-          {allSportsList.map((sportName, idx) => {
-            const sportKey = `sport-${sportName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            const isLast = idx === allSportsList.length - 1;
-            return (
-              <>
-                <button
-                  onClick={() => toggleItem(sportKey)}
-                  className='flex w-full cursor-pointer items-center gap-1.5 py-1.5 text-[#333] hover:text-[#0088cc]'
-                >
-                  {sportName} <ToggleIcon expanded={isExpanded(sportKey)} />
-                </button>
-                {isExpanded(sportKey) && (
-                  <div className='sports-tree'>{/* Sub-items from API */}</div>
-                )}
-              </>
-            );
-          })}
-        </div>
       </aside>
     </>
   );

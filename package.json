@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "framer-motion": "^12.38.0",
+    "react-datepicker": "^9.1.0",
     "react-slick": "^0.31.0",
     "slick-carousel": "^1.8.1"
   }

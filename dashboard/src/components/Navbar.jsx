@@ -9,10 +9,7 @@ import { AiOutlineLogout } from 'react-icons/ai';
 import { NavLink, useLocation } from 'react-router-dom';
 import { MdArrowRightAlt, MdLogout } from 'react-icons/md';
 import { RiArrowDownSFill } from 'react-icons/ri';
-// import logo from "../assets/icons/theme-1709828838678-aura555.png";
-// import logo from "../../client/src/assets/icons/daimondpan (1).png"
-import logo from '../assets/icons/AURA444.png';
-import jdlogo from '../assets/jdlogo.png';
+import logo from '../assets/brand_logo.svg';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   getAdmin,
@@ -87,7 +84,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     { name: 'Dashboard', path: '/home' },
     { name: 'Clients', path: '/user-download-list' },
     // { name: 'Assign Agent', path: '/agent-download-list' },
-    { name: 'Banner Settings', path: '/banner-settings' },
+    
     { name: 'Sports Analysis', path: '/my-market' },
     { name: 'Casino Analysis', path: '/my-market' },
     {
@@ -98,7 +95,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
       ],
     },
     {
-      name: 'My Report',
+      name: 'Reports',
       submenu: [
         { name: 'Account Statement', path: '/AccountStatement' },
         { name: 'Current Bets', path: '/betlist' },
@@ -124,6 +121,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
       ],
     },
+    { name: 'Banner Settings', path: '/banner-settings' },
     // {
     //   name: 'Live Market',
     //   submenu: [
@@ -227,13 +225,13 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           <header className='flex h-[52px] items-center justify-between border-b border-gray-800 bg-gradient-to-b from-[#022c43] to-[#18b0c8] p-2'>
             <div className='flex items-center gap-2'>
               <button
-                onClick={() => setSportsSidebarOpen(true)}
+                onClick={() => setSportsSidebarOpen((prev) => !prev)}
                 className='flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded bg-[#2a2a2a] text-white'
                 style={{ boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)' }}
               >
                 <IoMdMenu className='text-xl' />
               </button>
-              <img src={jdlogo} alt='logo' className='h-[50px]' />
+              <img src={logo} alt='logo' className='h-[50px]' />
             </div>
             <div className='grid justify-items-end'>
               <div className='flex items-center gap-2'>
@@ -274,9 +272,18 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         {/* Desktop Header */}
         <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
           <div className='flex h-[52px] items-center'>
+          <button
+              type='button'
+              onClick={() => setSportsSidebarOpen((prev) => !prev)}
+              className='ml-3 mr-1 cursor-pointer text-white'
+              aria-expanded={sportsSidebarOpen}
+              aria-label='Toggle sports menu'
+            >
+              <IoMdMenu className='text-2xl' />
+            </button>
             <NavLink
               to='/user-download-list'
-              className='h-[52px]'
+              className='h-[32px] mr-10'
               onClick={(e) => {
                 if (onLogoClick) {
                   e.preventDefault();
@@ -285,29 +292,22 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                 }
               }}
             >
-              <img src={jdlogo} alt='logo' className='block h-full' />
+              <img src={logo} alt='logo' className='block h-full' />
             </NavLink>
-            <button
-              onClick={() => setSportsSidebarOpen(true)}
-              className='mr-1 cursor-pointer text-white'
-            >
-              <IoMdMenu className='text-2xl' />
-            </button>
-            <nav className='text-black'>
-              <ul className='relative mx-auto flex w-full flex-wrap'>
+           
+            <nav className='text-black h-full'>
+              <ul className='relative mx-auto flex w-full flex-wrap h-full items-center'>
                 {navItems.map((item, i) => (
                   <li
                     key={i}
-                    className='relative'
+                    className='relative h-full'
                     onMouseEnter={() => setHoveredItem(item.name)}
                     onMouseLeave={() => setHoveredItem(null)}
                   >
                     {item.path ? (
                       <NavLink
                         to={item.path}
-                        className={({ isActive }) =>
-                          `} block px-2.5 py-2 text-[13px] font-semibold whitespace-nowrap text-white transition-colors hover:bg-[#2c3e50]`
-                        }
+                        className='h-full px-1.5 flex items-center text-[14px] whitespace-nowrap text-white transition-colors hover:bg-gradient-to-b from-[#16a4bc] to-[#16a4bc]'
                         onClick={() => {
                           setActiveItem(item.name);
                           if (onNavClick) onNavClick();
@@ -317,16 +317,16 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                       </NavLink>
                     ) : (
                       <span
-                        className={`flex cursor-pointer items-center gap-[10px] px-3 py-2 text-[13px] font-semibold whitespace-nowrap text-white hover:bg-[#2c3e50] ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
+                        className={`flex cursor-pointer h-full items-center gap-[2px] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b from-[#16a4bc] to-[#16a4bc] ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
                       >
                         {item.name}
-                        <IoMdArrowDropdown className='w-3' />
+                        <IoMdArrowDropdown />
                       </span>
                     )}
 
                     {/* Submenu Dropdown */}
                     {item.submenu && hoveredItem === item.name && (
-                      <ul className='bg-color absolute top-full left-0 z-20 overflow-visible font-semibold whitespace-nowrap text-white shadow-lg'>
+                      <ul className='bg-[#16a4bc] absolute top-full left-0 z-20 overflow-visible font-semibold whitespace-nowrap text-white shadow-lg'>
                         {item.submenu
                           .filter(
                             (sub) =>
@@ -336,9 +336,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                               )
                           )
                           .map((sub, index) => (
-                            <li
-                              key={index}
-                              className='min-w-[200px] first:mt-2 hover:bg-[#2c3e50]'
+                            <li key={index}
+                              className='min-w-[200px] border border-[#25b3cd] border-t-[#25b3cd] border-b-[#128ca3] hover:bg-gradient-to-b from-[#0c889e]  to-[#0c889e]'
                             >
                               <NavLink
                                 to={sub.path}

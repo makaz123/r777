@@ -46,8 +46,8 @@ function App() {
             path='/:provider'
             element={<CasinoProvider key={location.pathname} />}
           />
-          <Route path='/casino3' element={<Casino3/>}/>
-          <Route path='/livecasino' element={<LiveCasino/>}/>
+          <Route path='/casino3' element={<Casino3 />} />
+          <Route path='/livecasino' element={<LiveCasino />} />
           <Route path='/' element={<HomeGate />} />
           <Route path='inplay' element={<Inplay />} />
           <Route path='cricket' element={<Cricket />} />

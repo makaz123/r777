@@ -296,8 +296,9 @@ function TennisBet() {
           </>
         )}
 
-        <div className='flex items-center justify-around  text-[12px] font-bold lg:hidden bg-[#343a40] text-gray-400'>
-          <div className={`flex w-full items-center justify-center  p-2 ${showodds ? 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white' : ''}`}
+        <div className='flex items-center justify-around bg-[#343a40] text-[12px] font-bold text-gray-400 lg:hidden'>
+          <div
+            className={`flex w-full items-center justify-center p-2 ${showodds ? 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white' : ''}`}
             onClick={() => {
               setshowodds(true);
               setShowLive(false);
@@ -305,9 +306,12 @@ function TennisBet() {
           >
             Market
           </div>
-          <div className={`flex w-full items-center justify-center p-2 ${showodds ? '' : 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white'}`}
+          <div
+            className={`flex w-full items-center justify-center p-2 ${showodds ? '' : 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white'}`}
             onClick={() => setshowodds(false)}
-          > Open Bets
+          >
+            {' '}
+            Open Bets
           </div>
         </div>
 
@@ -334,7 +338,6 @@ function TennisBet() {
             onClose={() => setSelectedBet(null)}
           />
         )}
-
       </div>
       <div className='sticky top-0 hidden h-fit lg:block'>
         <div className='w-[350px]'>
@@ -342,9 +345,13 @@ function TennisBet() {
             <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
               <span className='font-bold'>Live TV</span>
               {/* Toggle */}
-              <div className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
-                onClick={() => setshowlivetv((prev) => !prev)}>
-                <span className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}></span>
+              <div
+                className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
+                onClick={() => setshowlivetv((prev) => !prev)}
+              >
+                <span
+                  className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}
+                ></span>
               </div>
             </div>
             {showlivetv && (

@@ -92,8 +92,7 @@ function CasinoProvider() {
       handleGameClick({
         game_uid: '8ef39602e589bf9f32fc351b1cbb338b',
       });
-    }
-    else if(
+    } else if (
       providerKey === 'ezugi' &&
       userInfo &&
       userInfo.account !== 'demo' &&
@@ -102,7 +101,7 @@ function CasinoProvider() {
       autoLaunchAttempted.current = true;
       handleGameClick({
         game_uid: 'd0e052b031dfcdb08d1803f4bcc618ef',
-      })
+      });
     }
   }, [providerKey, userInfo]);
   // Provider not found
@@ -130,26 +129,30 @@ function CasinoProvider() {
   // Show game iframe
   if (gameUrl) {
     return (
-      <div className='relative h-screen w-full bg-black overflow-hidden'>
+      <div className='relative h-screen w-full overflow-hidden bg-black'>
         {iframeLoading && (
-          <div className='absolute inset-0 z-50 flex flex-col items-center justify-center bg-radial-gradient from-gray-900 to-black p-6 text-center animate-fade-in'>
+          <div className='bg-radial-gradient animate-fade-in absolute inset-0 z-50 flex flex-col items-center justify-center from-gray-900 to-black p-6 text-center'>
             {/* Spinning ring loader */}
             <div className='relative h-20 w-20'>
-              <div className='absolute inset-0 rounded-full border-4 border-t-yellow-500 border-r-transparent border-b-transparent border-l-transparent animate-spin duration-1000' />
-              <div className='absolute inset-2 rounded-full border-4 border-b-teal-500 border-t-transparent border-r-transparent border-l-transparent animate-spin duration-1500' />
-              <div className='absolute inset-4 rounded-full border-4 border-r-pink-500 border-t-transparent border-b-transparent border-l-transparent animate-spin duration-700' />
+              <div className='absolute inset-0 animate-spin rounded-full border-4 border-t-yellow-500 border-r-transparent border-b-transparent border-l-transparent duration-1000' />
+              <div className='absolute inset-2 animate-spin rounded-full border-4 border-t-transparent border-r-transparent border-b-teal-500 border-l-transparent duration-1500' />
+              <div className='absolute inset-4 animate-spin rounded-full border-4 border-t-transparent border-r-pink-500 border-b-transparent border-l-transparent duration-700' />
             </div>
-            
-            <h2 className='mt-8 text-2xl font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-teal-300 to-pink-500 [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]'>
-              {providerKey === 'evolution' ? 'Evolution Gaming' : providerKey === 'ezugi' ? 'Ezugi Live' : 'Casino Game'}
+
+            <h2 className='mt-8 bg-gradient-to-r from-yellow-400 via-teal-300 to-pink-500 bg-clip-text text-2xl font-bold tracking-widest text-transparent uppercase [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]'>
+              {providerKey === 'evolution'
+                ? 'Evolution Gaming'
+                : providerKey === 'ezugi'
+                  ? 'Ezugi Live'
+                  : 'Casino Game'}
             </h2>
-            
-            <p className='mt-3 text-sm tracking-wider text-gray-400 font-semibold animate-pulse'>
+
+            <p className='mt-3 animate-pulse text-sm font-semibold tracking-wider text-gray-400'>
               Securing connection and loading table streams...
             </p>
-            
-            <div className='mt-6 flex items-center gap-2 text-xs text-gray-500 border border-gray-800 rounded-full px-4 py-1.5 bg-black/40 backdrop-blur-sm'>
-              <span className='h-2 w-2 rounded-full bg-emerald-500 animate-ping' />
+
+            <div className='mt-6 flex items-center gap-2 rounded-full border border-gray-800 bg-black/40 px-4 py-1.5 text-xs text-gray-500 backdrop-blur-sm'>
+              <span className='h-2 w-2 animate-ping rounded-full bg-emerald-500' />
               <span>Encrypted Session Active</span>
             </div>
           </div>
@@ -195,7 +198,11 @@ function CasinoProvider() {
               No games found.
             </div>
           ) : (
-            !(providerKey === 'evolution' && userInfo && userInfo.account !== 'demo') && (
+            !(
+              providerKey === 'evolution' &&
+              userInfo &&
+              userInfo.account !== 'demo'
+            ) && (
               <div className='mt-4 grid grid-cols-3 gap-3 md:grid-cols-6'>
                 {games.map((game) => (
                   <div

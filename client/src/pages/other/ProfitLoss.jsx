@@ -92,7 +92,7 @@ function ProfitLoss() {
               Reset
             </button>
           </div>
-          
+
           <div className='scrollbar-hide mt-4 overflow-x-auto'>
             <table className='w-full min-w-[600px] border border-gray-300'>
               <thead>
@@ -130,13 +130,15 @@ function ProfitLoss() {
                       <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
                         {item.name || item.gameName || item.eventName || '-'}
                       </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm text-green-600 font-medium'>
+                      <td className='h-8 border border-gray-300 p-2 text-left text-sm font-medium text-green-600'>
                         {Number(item.WinAmount || 0).toFixed(2)}
                       </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm text-red-600 font-medium'>
+                      <td className='h-8 border border-gray-300 p-2 text-left text-sm font-medium text-red-600'>
                         {Number(item.LossAmount || 0).toFixed(2)}
                       </td>
-                      <td className={`h-8 border border-gray-300 p-2 text-left text-sm font-bold ${Number(item.myProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <td
+                        className={`h-8 border border-gray-300 p-2 text-left text-sm font-bold ${Number(item.myProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      >
                         {Number(item.myProfit || 0).toFixed(2)}
                       </td>
                     </tr>

@@ -428,48 +428,60 @@ export default function AgentLIst() {
 
       <div className='h-fit bg-[#f9f9f9] p-1 px-[15px] md:px-7.5'>
         <div className='my-[13px] flex items-center justify-between'>
-          <div className='text-[20px]'>Account List</div>
-          <button
-            className='flex items-center gap-1 rounded border border-gray-300 bg-[#0088cc] px-[15px] text-[12px] leading-[30px] font-bold text-white'
-            onClick={() => navigate('/agent-download-list/insertagent')}
-          >
-            Add Account
-          </button>
-        </div>
-
-        <div className='mb-4 flex flex-col justify-between text-[13px] md:flex-row'>
-          <div className='mb-2 flex items-center justify-center text-[#333] md:mb-0'>
-            <span className='mr-2'>Show</span>
-            <select
-              className='rounded border border-gray-300 px-2 py-1'
-              value={entries}
-              onChange={(e) => setEntries(Number(e.target.value))}
-            >
-              <option value='10'>10</option>
-              <option value='20'>20</option>
-              <option value='50'>50</option>
-              <option value='100'>100</option>
-              <option value='500'>500</option>
-            </select>
-            <span className='ml-2'>entries</span>
-          </div>
-          <div className='flex items-center justify-center'>
-            <span className='mr-2'>Search</span>
-            <input
-              type='text'
-              className='rounded border border-gray-300 bg-white px-2 py-1'
-              placeholder='Search...'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div
-              onClick={reloadPage}
-              className='ml-1 cursor-pointer rounded bg-[#0088cc] px-2 py-1 text-white'
-            >
-              load
+          <div className='grid'>
+            <div className='text-[20px]'>Client List</div>
+            <div className='flex items-center'>
+              <input
+                type='text'
+                className='rounded border border-gray-300 bg-white px-2 py-1 h-fit'
+                placeholder='Search...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <div className='flex w-fit cursor-pointer items-center gap-0.5 rounded-sm bg-red-700 px-2  text-white'
+                onClick={downloadPDF}>
+                <FaRegFilePdf className='size-4' /> PDF
+              </div>
+              <div className='flex w-fit cursor-pointer items-center gap-0.5 rounded-sm bg-green-700 px-2  text-white'
+                onClick={downloadExcel}>
+                <AiOutlineFileExcel className='size-4' /> Excel
+              </div>
             </div>
           </div>
+
+          <div className='flex'>
+            <div className='mb-2 flex items-center justify-center text-[#333] md:mb-0'>
+              <span className='mr-2'>Show</span>
+              <select className='rounded border border-gray-300 px-2 py-1'
+                value={entries}
+                onChange={(e) => setEntries(Number(e.target.value))}>
+                <option value='10'>10</option>
+                <option value='20'>20</option>
+                <option value='50'>50</option>
+                <option value='100'>100</option>
+                <option value='500'>500</option>
+              </select>
+              <span className='ml-2'>entries</span>
+            </div>
+
+            <button className='flex items-center gap-1 rounded border border-gray-300 bg-[#0088cc] px-[15px] text-[12px] leading-[30px] font-bold text-white'
+              onClick={() => navigate('/agent-download-list/insertagent')}>
+                Add Client Account
+            </button>
+            <button className='flex items-center gap-1 rounded border border-gray-300 bg-[#0088cc] px-[15px] text-[12px] leading-[30px] font-bold text-white'
+              onClick={() => navigate('/agent-download-list/insertagent')}>
+              Inactive List
+            </button>
+
+          </div>
+
+
+
+          
+          
         </div>
+
+
 
         <div className='flex border-b border-gray-300'>
           <div
@@ -487,19 +499,7 @@ export default function AgentLIst() {
         </div>
 
         <div className='flex space-x-2'>
-          <div
-            className='mt-3 flex w-fit cursor-pointer items-center gap-0.5 rounded-sm bg-red-700 px-2 py-1.5 text-white'
-            onClick={downloadPDF}
-          >
-            <FaRegFilePdf className='size-4' /> PDF
-          </div>
-
-          <div
-            className='mt-3 flex w-fit cursor-pointer items-center gap-0.5 rounded-sm bg-green-700 px-2 py-1.5 text-white'
-            onClick={downloadExcel}
-          >
-            <AiOutlineFileExcel className='size-4' /> Excel
-          </div>
+          
         </div>
 
         {/* Main content area with table */}

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 
 function Khado({
   onBetSelect,
@@ -15,6 +16,7 @@ function Khado({
   onBetChange,
   onClose,
 }) {
+  const { t } = useTranslation();
   console.log('khadoData from khado', khadoData);
 
   // Helper function to format max value (handle numbers and strings like "2L")
@@ -96,7 +98,7 @@ function Khado({
         <div className='grid grid-cols-[1fr_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px]'>
           <div></div>
           <div className='m-[1px] flex items-center justify-center rounded-t-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-            Back
+            {t('back', 'Back')}
           </div>
 
           <div className='hidden lg:block'></div>
@@ -182,10 +184,10 @@ function Khado({
 
                       <div className='hidden flex-col items-center justify-center lg:flex'>
                         <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                          Min:{item.min}
+                          {t('min', 'Min')}:{item.min}
                         </span>
                         <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                          Max:{item.max}
+                          {t('max', 'Max')}:{item.max}
                         </span>
                       </div>
                     </>
@@ -214,7 +216,7 @@ function Khado({
           })
         ) : (
           <div className='py-4 text-center text-gray-500'>
-            No data available
+            {t('no_data_available', 'No data available')}
           </div>
         )}
       </div>

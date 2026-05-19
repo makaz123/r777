@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { FaArrowRight } from 'react-icons/fa';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 
 function Meter({
   onBetSelect,
@@ -15,6 +16,7 @@ function Meter({
   onBetChange,
   onClose,
 }) {
+  const { t } = useTranslation();
   const renderInlineBetSlip = (item) => {
     const isMeterBet = selectedBet?.gameType === 'meter';
     const isMatching =
@@ -135,10 +137,10 @@ function Meter({
           <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px_60px]'>
             <div></div>
             <div className='flex items-center justify-center bg-[#72bbef] p-[2px] font-[16px] font-bold text-[#333]'>
-              Back
+              {t('back', 'Back')}
             </div>
             <div className='flex items-center justify-center bg-[#faa9ba] p-[2px] font-[16px] font-bold text-[#333]'>
-              Lay
+              {t('lay', 'Lay')}
             </div>
             <div className='hidden lg:block'></div>
           </div>
@@ -244,10 +246,10 @@ function Meter({
 
                         <div className='hidden flex-col items-center justify-center lg:flex'>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Min:{item.min}
+                            {t('min', 'Min')}:{item.min}
                           </span>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Max:{item.max}
+                            {t('max', 'Max')}:{item.max}
                           </span>
                         </div>
                       </>
@@ -259,7 +261,7 @@ function Meter({
             })
           ) : (
             <div className='py-4 text-center text-gray-500'>
-              No data available
+              {t('no_data_available', 'No data available')}
             </div>
           )}
         </div>
@@ -267,10 +269,10 @@ function Meter({
           <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px_60px]'>
             <div></div>
             <div className='hidden items-center justify-center bg-[#72bbef] p-[2px] font-[16px] font-bold text-[#333] lg:flex'>
-              Back
+              {t('back', 'Back')}
             </div>
             <div className='hidden items-center justify-center bg-[#faa9ba] p-[2px] font-[16px] font-bold text-[#333] lg:flex'>
-              Lay
+              {t('lay', 'Lay')}
             </div>
             <div></div>
           </div>
@@ -376,10 +378,10 @@ function Meter({
 
                         <div className='hidden flex-col items-center justify-center lg:flex'>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Min:{item.min}
+                            {t('min', 'Min')}:{item.min}
                           </span>
                           <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                            Max:{item.max}
+                            {t('max', 'Max')}:{item.max}
                           </span>
                         </div>
                       </>

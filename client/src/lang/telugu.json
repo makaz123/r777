@@ -986,7 +986,6 @@
   "no_binary_markets": "ఈ సమయంలో బైనరీ మార్కెట్‌లు లేవు",
   "no_competitons": "పోటీలు లేవు",
   "please_select_from_dropdown": "దయచేసి డ్రాప్‌డౌన్ నుండి ఈవెంట్‌ను ఎంచుకోండి",
-  "casinolobby": "క్యాసినో లాబీ",
   "horseracing": "గుర్రపు పందెం",
   "greyhoundracing": "గ్రేహౌండ్ రేసింగ్",
   "reddy": "రెడ్డి888",
@@ -1031,5 +1030,12 @@
   "speedCash": "స్పీడ్ క్యాష్",
   "two_factor_auth": "2FA",
   "credit": "క్రెడిట్",
-  "debit": "డెబిట్"
+  "debit": "డెబిట్",
+  "indianPoker": "భారతీయ పోకర్",
+  "indianPoker2": "భారతీయ పోకర్ 2",
+  "inOut": "చికెన్ రోడ్",
+  "liveCasino": "प्रत्यక్ష క్యాసినో",
+  "betGames": "బెట్‌గేమ్స్",
+  "casino3": "క్యాసినో 3",
+  "soccer": "సాకర్"
 }

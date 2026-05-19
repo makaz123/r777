@@ -9,6 +9,7 @@ import Fancy1 from './Fancy1';
 import Khado from './Khado';
 import OddEven from './OddEven';
 import MatchedBet from './MatchedBet';
+import { useTranslation } from '../../context/LanguageContext';
 
 import { getUser } from '../../redux/reducer/authReducer';
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,6 +27,7 @@ import { host } from '../../redux/api';
 import LiveTv from './LiveTv';
 import LiveScore from './LiveScore';
 function CricketBet() {
+  const { t } = useTranslation();
   const key = import.meta.env.VITE_LIVE_STREAM_KEY;
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
   const liveStreamBaseUrl =
@@ -377,7 +379,7 @@ function CricketBet() {
         {userInfo?.account !== 'demo' && (
           <>
             <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white md:hidden'>
-              <span className='font-bold'>Live TV</span>
+              <span className='font-bold'>{t('live_tv', 'Live TV')}</span>
               {/* Toggle */}
               <div
                 className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
@@ -392,7 +394,7 @@ function CricketBet() {
               <div className='block w-full md:hidden'>
                 {isLoadingStream ? (
                   <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
-                    <span>Loading stream...</span>
+                    <span>{t('loading', 'Loading stream...')}</span>
                   </div>
                 ) : (
                   <iframe
@@ -444,14 +446,14 @@ function CricketBet() {
               setShowLive(false);
             }}
           >
-            Market
+            {t('market', 'Market')}
           </div>
           <div
             className={`flex w-full items-center justify-center p-2 ${showodds ? '' : 'bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-white'}`}
             onClick={() => setshowodds(false)}
           >
             {' '}
-            Open Bets
+            {t('open_bets', 'Open Bets')}
           </div>
         </div>
 
@@ -598,7 +600,7 @@ function CricketBet() {
           {userInfo?.account !== 'demo' && (
             <div className='mb-1'>
               <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
-                <span className='font-bold'>Live TV</span>
+                <span className='font-bold'>{t('live_tv', 'Live TV')}</span>
                 {/* Toggle */}
                 <div
                   className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
@@ -613,7 +615,7 @@ function CricketBet() {
                 <div className='w-full'>
                   {isLoadingStream ? (
                     <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
-                      <span>Loading stream...</span>
+                      <span>{t('loading', 'Loading stream...')}</span>
                     </div>
                   ) : (
                     <iframe
@@ -642,7 +644,7 @@ function CricketBet() {
           )}
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
-            <span className='text-[14px]'>Matched Bet</span>
+            <span className='text-[14px]'>{t('matched_bet', 'Matched Bet')}</span>
           </div>
           <MatchedBet gameid={gameid} />
         </div>

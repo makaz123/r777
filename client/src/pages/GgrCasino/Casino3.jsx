@@ -60,6 +60,11 @@ function Casino3() {
       return;
     }
 
+    if (userInfo?.account === 'demo') {
+      toast.error('Please Login With Real Id');
+      return;
+    }
+
     if ((userInfo?.avbalance ?? 0) <= 0) {
       toast.error('Insufficient balance');
       return;

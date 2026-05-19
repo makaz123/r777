@@ -21,8 +21,8 @@ export default function LanguageSelector() {
 
   return (
     <div className="language-selector-wrapper" ref={dropdownRef}>
-      <button 
-        onClick={() => setIsOpen(!isOpen)} 
+      <button
+        onClick={() => setIsOpen(!isOpen)}
         className="lang-trigger-btn"
         aria-expanded={isOpen}
       >
@@ -55,8 +55,7 @@ export default function LanguageSelector() {
           position: relative;
           display: inline-block;
           font-family: 'Outfit', 'Inter', sans-serif;
-          z-index: 1000;
-        }
+         }
 
         .lang-trigger-btn {
           display: flex;
@@ -106,6 +105,9 @@ export default function LanguageSelector() {
           backdrop-filter: blur(20px);
           animation: langSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           margin: 0;
+          z-index:99;
+          overflow-y:scroll;
+          max-height:250px
         }
 
         @keyframes langSlideIn {

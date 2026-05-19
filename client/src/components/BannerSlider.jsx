@@ -11,11 +11,18 @@ export default function BannerSlider({ pageType, defaultBanner }) {
     const fetchBanner = async () => {
       try {
         const response = await api.get(`/banner?page=${pageType}`);
-        if (response.data && response.data.banners && response.data.banners.length > 0) {
-          setDynamicBanners(response.data.banners.map(b => b.imageUrl));
+        if (
+          response.data &&
+          response.data.banners &&
+          response.data.banners.length > 0
+        ) {
+          setDynamicBanners(response.data.banners.map((b) => b.imageUrl));
         }
       } catch (error) {
-        console.error(`Failed to fetch dynamic banners for ${pageType}:`, error);
+        console.error(
+          `Failed to fetch dynamic banners for ${pageType}:`,
+          error
+        );
       }
     };
     fetchBanner();
@@ -32,7 +39,12 @@ export default function BannerSlider({ pageType, defaultBanner }) {
     autoplaySpeed: 2000,
   };
 
-  const bannersToDisplay = dynamicBanners.length > 0 ? dynamicBanners : (Array.isArray(defaultBanner) ? defaultBanner : [defaultBanner]);
+  const bannersToDisplay =
+    dynamicBanners.length > 0
+      ? dynamicBanners
+      : Array.isArray(defaultBanner)
+        ? defaultBanner
+        : [defaultBanner];
 
   return (
     <div className='w-full min-w-0 overflow-hidden'>
@@ -42,7 +54,7 @@ export default function BannerSlider({ pageType, defaultBanner }) {
             key={i}
             src={item}
             alt={`${pageType} banner`}
-            className='block h-fit w-full object-cover'
+            className='block h-auto w-full'
           />
         ))}
       </Slider>

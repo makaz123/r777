@@ -52,7 +52,7 @@ function Home() {
               key={i}
               src={item}
               alt='banner'
-              className='block h-fit w-full object-cover'
+              className='block h-auto w-full'
             />
           ))}
         </Slider>

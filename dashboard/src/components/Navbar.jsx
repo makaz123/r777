@@ -85,90 +85,75 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
 
   const navItems = [
     { name: 'Dashboard', path: '/home' },
-    { name: 'List of Clients', path: '/user-download-list' },
-    { name: 'Assign Agent', path: '/agent-download-list' },
+    { name: 'Clients', path: '/user-download-list' },
+    // { name: 'Assign Agent', path: '/agent-download-list' },
     { name: 'Banner Settings', path: '/banner-settings' },
-    { name: 'Market Analysis', path: '/my-market' },
+    { name: 'Sports Analysis', path: '/my-market' },
+    { name: 'Casino Analysis', path: '/my-market' },
     {
-      name: 'Live Market',
+      name: 'Settlement',
       submenu: [
-        { name: 'Roulette', path: '/live-casino?cat=Roulette' },
-        { name: 'Teenpatti', path: '/live-casino?cat=Teenpatti' },
-        { name: 'Poker', path: '/live-casino?cat=Poker' },
-        { name: 'Baccarat', path: '/live-casino?cat=Baccarat' },
-        { name: 'Dragon Tiger', path: '/live-casino?cat=Dragon Tiger' },
-        { name: '32 Cards', path: '/live-casino?cat=32 Cards' },
-        { name: 'Andar Bahar', path: '/live-casino?cat=Andar Bahar' },
-        { name: 'Lucky 7', path: '/live-casino?cat=Lucky 7' },
-        { name: '3 Card Judgement', path: '/live-casino?cat=3 Card Judgement' },
-        { name: 'Worli', path: '/live-casino?cat=Worli' },
-        { name: 'Sports', path: '/live-casino?cat=Sports' },
-        { name: 'Bollywood', path: '/live-casino?cat=Bollywood' },
-        { name: 'Lottery', path: '/live-casino?cat=Lottery' },
-        { name: 'Queen', path: '/live-casino?cat=Queen' },
-        { name: 'Race', path: '/live-casino?cat=Race' },
-      ],
-    },
-    {
-      name: 'Live Virtual Market',
-      submenu: [
-        { name: '20-20 Teenpatti', path: '/casino-bet/teen20' },
-        { name: 'Muflis Teenpatti', path: '/casino-bet/teenmuf' },
-        { name: '1 Day Teenpatti', path: '/casino-bet/teen' },
-        { name: 'Lucky 7', path: '/casino-bet/lucky7' },
-        { name: '1 Day Dragon Tiger', path: '/casino-bet/dt6' },
+        { name: 'User', path: '/live-casino?cat=Roulette' },
+        { name: 'Master', path: '/live-casino?cat=Teenpatti' },
       ],
     },
     {
       name: 'My Report',
       submenu: [
-        // { name: 'Account Statement', path: '/my-account' },
         { name: 'Account Statement', path: '/AccountStatement' },
         { name: 'Current Bets', path: '/betlist' },
         { name: 'General Report', path: '/GeneralReport' },
         { name: 'Profit Loss', path: '/ProfitLoss' },
-        // { name: 'Event Profit/Loss', path: '/eventpl' },
-        // { name: 'Downline Profit/Loss', path: '/downpl' },
         { name: 'Casino Result Report', path: '/casinoResultReport' },
         { name: 'User Register Detail', path: '/RegisterDetail' },
         { name: 'Total Profit Loss', path: '/TotalProfitLoss' },
         { name: 'User Win Loss', path: '/UserWinLoss' },
       ],
     },
-
-    // { name: 'Multi Login', path: '/user-download-list' },
+    {
+      name: 'Cutting',
+      submenu: [
+        { name: 'Agent Master', path: '/live-casino?cat=Roulette' },
+        { name: 'Cutting History', path: '/live-casino?cat=Teenpatti' },
+      ],
+    },
+    {
+      name: 'Control',
+      submenu: [
+        { name: 'Game', path: '/live-casino?cat=Roulette' },
+        { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
+      ],
+    },
     // {
-    //   name: 'Downline List',
+    //   name: 'Live Market',
     //   submenu: [
-    //     { name: 'User Downline List', path: '/user-download-list' },
-    //     {
-    //       name: 'Agent Downline List',
-    //       path: '/agent-download-list',
-    //       reload: true,
-    //     },
+    //     { name: 'Roulette', path: '/live-casino?cat=Roulette' },
+    //     { name: 'Teenpatti', path: '/live-casino?cat=Teenpatti' },
+    //     { name: 'Poker', path: '/live-casino?cat=Poker' },
+    //     { name: 'Baccarat', path: '/live-casino?cat=Baccarat' },
+    //     { name: 'Dragon Tiger', path: '/live-casino?cat=Dragon Tiger' },
+    //     { name: '32 Cards', path: '/live-casino?cat=32 Cards' },
+    //     { name: 'Andar Bahar', path: '/live-casino?cat=Andar Bahar' },
+    //     { name: 'Lucky 7', path: '/live-casino?cat=Lucky 7' },
+    //     { name: '3 Card Judgement', path: '/live-casino?cat=3 Card Judgement' },
+    //     { name: 'Worli', path: '/live-casino?cat=Worli' },
+    //     { name: 'Sports', path: '/live-casino?cat=Sports' },
+    //     { name: 'Bollywood', path: '/live-casino?cat=Bollywood' },
+    //     { name: 'Lottery', path: '/live-casino?cat=Lottery' },
+    //     { name: 'Queen', path: '/live-casino?cat=Queen' },
+    //     { name: 'Race', path: '/live-casino?cat=Race' },
     //   ],
     // },
-    // { name: 'Security', path: '/secureauth' },
-
     // {
-    //   name: 'Banking',
+    //   name: 'Live Virtual Market',
     //   submenu: [
-    //     { name: 'User Banking', path: '/banking' },
-    //     { name: 'Master Banking', path: '/master-banking' },
+    //     { name: '20-20 Teenpatti', path: '/casino-bet/teen20' },
+    //     { name: 'Muflis Teenpatti', path: '/casino-bet/teenmuf' },
+    //     { name: '1 Day Teenpatti', path: '/casino-bet/teen' },
+    //     { name: 'Lucky 7', path: '/casino-bet/lucky7' },
+    //     { name: '1 Day Dragon Tiger', path: '/casino-bet/dt6' },
     //   ],
     // },
-    // { name: 'Password History', path: '/password-history' },
-    //   ...(userInfo?.role === 'supperadmin'
-    //     ? [
-    //         {
-    //           name: 'Manual Control',
-    //           submenu: [
-    //             { name: 'Match Control', path: '/match-control' },
-    //             { name: 'Result Control', path: '/result-control' },
-    //           ],
-    //         },
-    //       ]
-    //     : []),
   ];
 
   const logout = async () => {
@@ -239,7 +224,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         {/* Mobile Header - Split into two rows */}
         <div className='hidden'>
           {/* Top row - Role and Name */}
-          <header className='bg-gradient-to-b from-[#022c43] to-[#18b0c8] flex h-[52px] items-center justify-between border-b border-gray-800 p-2'>
+          <header className='flex h-[52px] items-center justify-between border-b border-gray-800 bg-gradient-to-b from-[#022c43] to-[#18b0c8] p-2'>
             <div className='flex items-center gap-2'>
               <button
                 onClick={() => setSportsSidebarOpen(true)}
@@ -287,7 +272,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         </div>
 
         {/* Desktop Header */}
-        <header className='bg-gradient-to-b from-[#022c43] to-[#18b0c8] flex h-[52px] items-center justify-between'>
+        <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
           <div className='flex h-[52px] items-center'>
             <NavLink
               to='/user-download-list'
@@ -415,14 +400,17 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4 }}
-                  className='absolute top-8 right-0 rounded-md bg-white border border-gray-400 py-1.5 w-full'
+                  className='absolute top-8 right-0 w-[180px] rounded-md border border-gray-400 bg-white py-1.5'
                 >
-                  <div className='cursor-pointer px-2 py-0.5 text-[14px] text-gray-700 flex items-center hover:bg-[#18b0c8]'>
-                    <MdArrowRightAlt size={22}/> <NavLink to='/ChangePassword'>Change Password</NavLink>
+                  <div className='flex cursor-pointer items-center px-2 py-0.5 text-[14px] text-gray-700 hover:bg-[#18b0c8] hover:text-white'>
+                    <MdArrowRightAlt size={22} />{' '}
+                    <NavLink to='/ChangePassword'>Change Password</NavLink>
                   </div>
-                  <div className='cursor-pointer px-2 py-0.5 text-[14px] text-gray-700 flex items-center hover:bg-[#18b0c8]' 
-                  onClick={logout}>
-                    <MdArrowRightAlt size={22}/> Logout
+                  <div
+                    className='flex cursor-pointer items-center px-2 py-0.5 text-[14px] text-gray-700 hover:bg-[#18b0c8] hover:text-white'
+                    onClick={logout}
+                  >
+                    <MdArrowRightAlt size={22} /> Logout
                   </div>
                 </motion.div>
               )}

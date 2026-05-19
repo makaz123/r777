@@ -1070,7 +1070,9 @@ function PlaceBet({
       if (isInvalid(stake)) missing.push('stake');
       if (isInvalid(odds)) missing.push('odds');
       if (isInvalid(betFor)) missing.push('betFor');
-      toast.error(`Please fill in all required fields. Missing: ${missing.join(', ')}`);
+      toast.error(
+        `Please fill in all required fields. Missing: ${missing.join(', ')}`
+      );
       return;
     }
 
@@ -1118,7 +1120,7 @@ function PlaceBet({
 
     const formData = {
       gameId: gameId,
-      sid: sid !== undefined ? sid : (selectedBet?.sid || 4),
+      sid: sid !== undefined ? sid : selectedBet?.sid || 4,
       otype: betType,
       oname: selectedBet?.oname || '',
       price: stakeNum,

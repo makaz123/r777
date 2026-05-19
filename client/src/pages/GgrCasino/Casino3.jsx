@@ -102,7 +102,11 @@ function Casino3() {
 
   return (
     <div className='w-full px-2 pb-2'>
-      <img src={royalCasino} alt='Royal Casino Banner' className='block w-full' />
+      <img
+        src={royalCasino}
+        alt='Royal Casino Banner'
+        className='block w-full'
+      />
 
       <div className='flex overflow-x-auto bg-[#2b2f35] text-white'>
         {TABS.map((tab) => {
@@ -117,7 +121,9 @@ function Casino3() {
               }`}
             >
               <img src={tab.icon} alt='' className='w-[30px]' />
-              <span className='whitespace-nowrap text-xs sm:text-sm'>{tab.label}</span>
+              <span className='text-xs whitespace-nowrap sm:text-sm'>
+                {tab.label}
+              </span>
             </button>
           );
         })}

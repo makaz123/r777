@@ -16,7 +16,11 @@ export default function PopupBanner() {
     const fetchPopupBanner = async () => {
       try {
         const response = await api.get('/banner?page=popup');
-        if (response.data && response.data.banners && response.data.banners.length > 0) {
+        if (
+          response.data &&
+          response.data.banners &&
+          response.data.banners.length > 0
+        ) {
           // just use the first banner for the popup
           setBannerUrl(response.data.banners[0].imageUrl);
           setShow(true);
@@ -28,33 +32,33 @@ export default function PopupBanner() {
         dispatch(clearJustLoggedIn());
       }
     };
-    
+
     fetchPopupBanner();
   }, [userInfo, justLoggedIn, dispatch]);
 
   if (!show || !bannerUrl) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+    <div
+      className='fixed inset-0 z-[9999] flex items-center justify-center p-4'
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
       onClick={() => setShow(false)}
     >
-      <div 
-        className="relative max-w-4xl w-full mx-auto"
+      <div
+        className='relative mx-auto w-full max-w-4xl'
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
+        <button
           onClick={() => setShow(false)}
-          className="absolute top-2 right-3 text-white hover:text-gray-300 transition font-bold text-3xl cursor-pointer z-10"
-          aria-label="Close"
+          className='absolute top-2 right-3 z-10 cursor-pointer text-3xl font-bold text-white transition hover:text-gray-300'
+          aria-label='Close'
         >
           &times;
         </button>
-        <img 
-          src={bannerUrl} 
-          alt="Promotional Popup" 
-          className="w-full h-auto object-contain rounded-lg shadow-2xl max-h-[85vh] mx-auto" 
+        <img
+          src={bannerUrl}
+          alt='Promotional Popup'
+          className='mx-auto h-auto max-h-[85vh] w-full rounded-lg object-contain shadow-2xl'
         />
       </div>
     </div>

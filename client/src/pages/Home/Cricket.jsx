@@ -57,7 +57,7 @@ export default function Cricket({
 
   return (
     <div className='w-full text-sm text-gray-900'>
-      {showBanner && <BannerSlider pageType="cricket" defaultBanner={banner} />}
+      {showBanner && <BannerSlider pageType='cricket' defaultBanner={banner} />}
       <div className='mt-2 flex h-[28px] items-center bg-[#18adc5] pl-[7px] font-bold text-white'>
         Cricket
       </div>

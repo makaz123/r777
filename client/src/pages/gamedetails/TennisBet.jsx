@@ -22,7 +22,15 @@ function TennisBet() {
   const liveStreamBaseUrl =
     import.meta.env.VITE_LIVE_STREAM_BASE_URLL ||
     'https://test.bulkapi.co.in/api/v1';
-  const { game, id } = useParams();
+  const params = useParams();
+  const splat = params['*'];
+  let game = '';
+  let id = '';
+  if (splat) {
+    const parts = splat.split('/');
+    id = parts[parts.length - 1];
+    game = parts.slice(0, parts.length - 1).join('/');
+  }
   const location = useLocation();
   const time = location.state?.time;
   const gameid = id;
@@ -231,32 +239,32 @@ function TennisBet() {
         </div>
         {userInfo?.account !== 'demo' && (
           <>
-          <div className='flex md:hidden cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
-            <span className='font-bold'>Live TV</span>
-            {/* Toggle */}
-            <div className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
-              onClick={() => setshowlivetv((prev) => !prev)}>
-              <span className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}></span>
+            <div className='flex md:hidden cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
+              <span className='font-bold'>Live TV</span>
+              {/* Toggle */}
+              <div className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
+                onClick={() => setshowlivetv((prev) => !prev)}>
+                <span className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}></span>
+              </div>
             </div>
-          </div>
-          {showlivetv && (
-            <div className='w-full block md:hidden'>
-              {isLoadingStream ? (
-                <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
-                  <span>Loading stream...</span>
-                </div>
-              ) : (
-                <iframe
-                  src={
-                    liveStreamUrl ||
-                    `${liveStreamBaseUrl}/live-stream?gmid=${gameid}&key=${key_new}`
-                  }
-                  title='Watch Live'
-                  className='w-full'
-                  style={{ height: '50vh' }}
-                  allowFullScreen
-                  loading='lazy'
-                  allow='
+            {showlivetv && (
+              <div className='w-full block md:hidden'>
+                {isLoadingStream ? (
+                  <div className='flex h-[50vh] w-full items-center justify-center bg-gray-200'>
+                    <span>Loading stream...</span>
+                  </div>
+                ) : (
+                  <iframe
+                    src={
+                      liveStreamUrl ||
+                      `${liveStreamBaseUrl}/live-stream?gmid=${gameid}&key=${key_new}`
+                    }
+                    title='Watch Live'
+                    className='w-full'
+                    style={{ height: '50vh' }}
+                    allowFullScreen
+                    loading='lazy'
+                    allow='
                   autoplay;
                   encrypted-media;
                   fullscreen;
@@ -264,18 +272,18 @@ function TennisBet() {
                   accelerometer;
                   gyroscope
                 '
-                />
-              )}
-            </div>
-          )}
-          {!showLive && !isCheckingScoreCard && isScoreCardAvailable && (
-            <iframe
-              // src={`https://score.akamaized.uk/diamond-live-score?gmid=${gameid}`}
-              src={`${liveStreamBaseUrl}/live-score?key=${key_new}&gmid=${gameid}`}
-              allowFullScreen
-              className='w-full'
-              title='Live Score'
-              allow='
+                  />
+                )}
+              </div>
+            )}
+            {!showLive && !isCheckingScoreCard && isScoreCardAvailable && (
+              <iframe
+                // src={`https://score.akamaized.uk/diamond-live-score?gmid=${gameid}`}
+                src={`https://tvnew.diamondcricketid.com/getiframe?eventid=${gameid}&sportid=2`}
+                allowFullScreen
+                className='w-full'
+                title='Live Score'
+                allow='
                       autoplay;
                       encrypted-media;
                       fullscreen;
@@ -283,8 +291,8 @@ function TennisBet() {
                       accelerometer;
                       gyroscope
                     '
-            />
-          )}
+              />
+            )}
           </>
         )}
 
@@ -303,12 +311,12 @@ function TennisBet() {
           </div>
         </div>
 
-        {!showodds  && (
+        {!showodds && (
           <div className='block lg:hidden'>
             <MatchedBet gameid={gameid} />
           </div>
         )}
-     
+
         {/** Match Odds */}
         {matchOddsList.length > 0 && (
           <MatchOdds

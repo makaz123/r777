@@ -31,7 +31,15 @@ function CricketBet() {
   const liveStreamBaseUrl =
     import.meta.env.VITE_LIVE_STREAM_BASE_URL ||
     'https://81habibi.com/api/v1';
-  const { game, id } = useParams();
+  const params = useParams();
+  const splat = params['*'];
+  let game = '';
+  let id = '';
+  if (splat) {
+    const parts = splat.split('/');
+    id = parts[parts.length - 1];
+    game = parts.slice(0, parts.length - 1).join('/');
+  }
   const location = useLocation();
   const time = location.state?.time;
   const gameid = id;

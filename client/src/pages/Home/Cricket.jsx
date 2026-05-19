@@ -9,6 +9,7 @@ import F from '../../assets/fancy-icon1.svg';
 import tv from '../../assets/tv.svg';
 import banner from '../../assets/banner/Cricket-banner.jpg';
 import BannerSlider from '../../components/BannerSlider';
+import { useTranslation } from '../../context/LanguageContext';
 
 const Cell = ({ value, type }) => (
   <div
@@ -25,6 +26,7 @@ export default function Cricket({
   showOnlyInplay = false,
   onInplayCountChange,
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   // const { user } = useSelector((state) => state.user);
@@ -59,7 +61,7 @@ export default function Cricket({
     <div className='w-full text-sm text-gray-900'>
       {showBanner && <BannerSlider pageType='cricket' defaultBanner={banner} />}
       <div className='mt-2 flex h-[28px] items-center bg-[#18adc5] pl-[7px] font-bold text-white'>
-        Cricket
+        {t('cricket', 'Cricket')}
       </div>
 
       {/* ROWS */}
@@ -173,7 +175,7 @@ export default function Cricket({
         </>
       ) : (
         <div className='border border-gray-300 bg-white p-1 text-[14px] font-bold text-black'>
-          has no live event.
+          {t('no_live_events_txt', 'has no live event.')}
         </div>
       )}
 
@@ -184,7 +186,7 @@ export default function Cricket({
             onClick={() => navigate(viewMorePath)}
             className='cursor-pointer px-2 text-[14px] font-semibold text-black hover:underline'
           >
-            View More...
+            {t('view_more', 'View More...')}
           </button>
         </div>
       )}

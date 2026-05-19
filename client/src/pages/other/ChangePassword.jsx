@@ -5,8 +5,10 @@ import {
   changePasswordBySelf,
   messageClear,
 } from '../../redux/reducer/authReducer';
+import { useTranslation } from '../../context/LanguageContext';
 
 function ChangePassword() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
@@ -26,12 +28,12 @@ function ChangePassword() {
     const { oldPassword, newPassword, confirmPassword } = formData;
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-      toast.error('Please fill all fields');
+      toast.error(t('please_fill_all_fields', 'Please fill all fields'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error('New Password and Confirm Password should be same');
+      toast.error(t('password_must_match', 'New Password and Confirm Password should be same'));
       return;
     }
 
@@ -39,7 +41,7 @@ function ChangePassword() {
       const response = await dispatch(
         changePasswordBySelf({ oldPassword, newPassword })
       ).unwrap();
-      toast.success(response?.message || 'Password changed successfully');
+      toast.success(response?.message || t('password_update_success_txt', 'Password changed successfully'));
       setFormData({
         oldPassword: '',
         newPassword: '',
@@ -47,7 +49,7 @@ function ChangePassword() {
       });
       dispatch(messageClear());
     } catch (error) {
-      toast.error(error?.message || 'Failed to change password');
+      toast.error(error?.message || t('failed_to_change_password', 'Failed to change password'));
       dispatch(messageClear());
     }
   };
@@ -56,7 +58,7 @@ function ChangePassword() {
     <div className='w-full p-0.5'>
       <div className='w-full border border-[#00000020] bg-white shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-normal'>Change Password</h4>
+          <h4 className='text-[16px] font-normal'>{t('change_password_txt', 'Change Password')}</h4>
         </div>
         <div className='mb-2 w-full px-2 lg:w-[50%]'>
           <form className='flex flex-col gap-2' onSubmit={handleSubmit}>
@@ -65,13 +67,13 @@ function ChangePassword() {
                 htmlFor='Current Password'
                 className='text-[16px] font-normal text-[#000000]'
               >
-                Current Password:
+                {t('current_password', 'Current Password:')}
               </label>
               <input
                 type='password'
                 id='Current Password'
                 name='oldPassword'
-                placeholder='Enter your current password'
+                placeholder={t('enter_old_password_txt', 'Enter your current password')}
                 value={formData.oldPassword}
                 onChange={handleChange}
                 className='border border-[#dbdbdb] p-1 outline-none'
@@ -82,13 +84,13 @@ function ChangePassword() {
                 htmlFor='New Password'
                 className='text-[16px] font-normal text-[#000000]'
               >
-                New Password:
+                {t('new_password', 'New Password:')}
               </label>
               <input
                 type='password'
                 id='New Password'
                 name='newPassword'
-                placeholder='Enter your new password'
+                placeholder={t('enter_new_password_txt', 'Enter your new password')}
                 value={formData.newPassword}
                 onChange={handleChange}
                 className='border border-[#dbdbdb] p-1 outline-none'
@@ -100,13 +102,13 @@ function ChangePassword() {
                 className='text-[16px] font-normal text-[#000000]'
               >
                 {' '}
-                Confirm Password:
+                {t('confirm_password', 'Confirm Password:')}
               </label>
               <input
                 type='password'
                 id='Confirm Password'
                 name='confirmPassword'
-                placeholder='Enter your confirm password'
+                placeholder={t('enter_confirm_password_txt', 'Enter your confirm password')}
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className='border border-[#dbdbdb] p-1 outline-none'
@@ -117,7 +119,7 @@ function ChangePassword() {
               disabled={loading}
               className='bg-primary text-primary w-full rounded-xs p-1 text-[16px] font-normal disabled:opacity-60'
             >
-              {loading ? 'Changing...' : 'Change Password'}
+              {loading ? t('changing', 'Changing...') : t('change_password_txt', 'Change Password')}
             </button>
           </form>
         </div>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getBetHistory } from '../../redux/reducer/betReducer';
+import { useTranslation } from '../../context/LanguageContext';
 
 function UnsettledBet() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { betHistory, loading, pagination } = useSelector((state) => state.bet);
 
@@ -71,7 +73,7 @@ function UnsettledBet() {
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>Unsettled Bet</h4>
+          <h4 className='text-[16px] font-[400]'>{t('unsettled_bet', 'Unsettled Bet')}</h4>
         </div>
         <div className='mb-2 w-full p-2'>
           <div className='flex flex-wrap gap-2'>
@@ -82,15 +84,15 @@ function UnsettledBet() {
               value={selectedGame}
               onChange={(e) => setSelectedGame(e.target.value)}
             >
-              <option value=''>All Sports</option>
-              <option value='Cricket Game'>Cricket</option>
-              <option value='Tennis Game'>Tennis</option>
-              <option value='Soccer Game'>Soccer</option>
-              <option value='Casino'>Casino</option>
-              <option value='Horse Racing Game'>Horse Racing</option>
-              <option value='Greyhound Racing Game'>Greyhound Racing</option>
-              <option value='Basket Ball Game'>Basket Ball</option>
-              <option value='Lottery Game'>Lottery</option>
+              <option value=''>{t('all_sports', 'All Sports')}</option>
+              <option value='Cricket Game'>{t('cricket', 'Cricket')}</option>
+              <option value='Tennis Game'>{t('tennis', 'Tennis')}</option>
+              <option value='Soccer Game'>{t('soccer', 'Soccer')}</option>
+              <option value='Casino'>{t('casino', 'Casino')}</option>
+              <option value='Horse Racing Game'>{t('horse_racing', 'Horse Racing')}</option>
+              <option value='Greyhound Racing Game'>{t('greyhound_racing', 'Greyhound Racing')}</option>
+              <option value='Basket Ball Game'>{t('basket_ball', 'Basket Ball')}</option>
+              <option value='Lottery Game'>{t('lottery', 'Lottery')}</option>
             </select>
             <input
               type='date'
@@ -116,20 +118,20 @@ function UnsettledBet() {
                 setPage(1);
               }}
             >
-              <option value='unsettel'>Unsettel</option>
+              <option value='unsettel'>{t('unsettel', 'Unsettel')}</option>
             </select>
             <button
               onClick={fetchBets}
               className='bg-primary text-primary h-[38px] w-full rounded-xs px-4 py-1 text-[16px] font-[400] lg:w-auto'
             >
-              Submit
+              {t('submit', 'Submit')}
             </button>
           </div>
           <div className='mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
             {/* First Row: Show Entries + Radio Buttons */}
             <div className='flex flex-col items-start gap-3 sm:flex-row sm:items-center'>
               <div className='flex items-center gap-2'>
-                <span className='text-[16px] font-[400]'>Show</span>
+                <span className='text-[16px] font-[400]'>{t('show', 'Show')}</span>
                 <select
                   name='entries'
                   id='entries'
@@ -146,7 +148,7 @@ function UnsettledBet() {
                   <option value='40'>40</option>
                   <option value='50'>50</option>
                 </select>
-                <span className='text-[16px] font-[400]'>Entries</span>
+                <span className='text-[16px] font-[400]'>{t('entries', 'Entries')}</span>
               </div>
               <div className='flex items-center gap-4'>
                 <label className='flex cursor-pointer items-center gap-2'>
@@ -158,7 +160,7 @@ function UnsettledBet() {
                     onChange={(e) => setBetType(e.target.value)}
                     className='h-4 w-4 cursor-pointer'
                   />
-                  <span className='text-[16px] font-[400]'>All</span>
+                  <span className='text-[16px] font-[400]'>{t('all', 'All')}</span>
                 </label>
                 <label className='flex cursor-pointer items-center gap-2'>
                   <input
@@ -169,7 +171,7 @@ function UnsettledBet() {
                     onChange={(e) => setBetType(e.target.value)}
                     className='h-4 w-4 cursor-pointer'
                   />
-                  <span className='text-[16px] font-[400]'>Back</span>
+                  <span className='text-[16px] font-[400]'>{t('back', 'Back')}</span>
                 </label>
                 <label className='flex cursor-pointer items-center gap-2'>
                   <input
@@ -180,7 +182,7 @@ function UnsettledBet() {
                     onChange={(e) => setBetType(e.target.value)}
                     className='h-4 w-4 cursor-pointer'
                   />
-                  <span className='text-[16px] font-[400]'>Lay</span>
+                  <span className='text-[16px] font-[400]'>{t('lay', 'Lay')}</span>
                 </label>
               </div>
             </div>
@@ -188,19 +190,19 @@ function UnsettledBet() {
             {/* Second Row: Total Bets and Total Amount */}
             <div className='flex items-center gap-4 border-l-0 border-[#c7c8ca] pl-0 lg:border-l lg:pl-4'>
               <span className='text-[16px] font-[400]'>
-                Total Bets: {totalBets}
+                {t('total_bets', 'Total Bets')}: {totalBets}
               </span>
               <span className='text-[16px] font-[400]'>
-                Total Amount: {totalAmount.toFixed(2)}
+                {t('total_amount', 'Total Amount')}: {totalAmount.toFixed(2)}
               </span>
             </div>
 
             {/* Third Row: Search */}
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>Search:</span>
+              <span className='text-[16px] font-[400]'>{t('search_label', 'Search:')}</span>
               <input
                 type='text'
-                placeholder='Search'
+                placeholder={t('search_placeholder', 'Search')}
                 className='h-[38px] w-[90px] border border-[#dbdbdb] p-1 outline-none lg:w-auto'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -212,25 +214,25 @@ function UnsettledBet() {
               <thead>
                 <tr className='bg-[#e0e6e6]'>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Sports
+                    {t('sports', 'Sports')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Event Name
+                    {t('event_name', 'Event Name')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Market Name
+                    {t('market_name', 'Market Name')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Nation
+                    {t('nation', 'Nation')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    User Rate
+                    {t('user_rate', 'User Rate')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Amount
+                    {t('amount', 'Amount')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Place Date
+                    {t('place_date', 'Place Date')}
                   </th>
                 </tr>
               </thead>
@@ -241,7 +243,7 @@ function UnsettledBet() {
                       colSpan='7'
                       className='h-8 border border-gray-300 p-2 text-center'
                     >
-                      Loading...
+                      {t('loading', 'Loading...')}
                     </td>
                   </tr>
                 ) : filteredBets.length > 0 ? (
@@ -283,7 +285,7 @@ function UnsettledBet() {
                       colSpan='7'
                       className='h-8 border border-gray-300 p-2 text-center'
                     >
-                      No data found
+                      {t('no_data_found', 'No data found')}
                     </td>
                   </tr>
                 )}
@@ -303,7 +305,7 @@ function UnsettledBet() {
                   }}
                   className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                 >
-                  First
+                  {t('first', 'First')}
                 </button>
                 <button
                   disabled={page <= 1}
@@ -313,7 +315,7 @@ function UnsettledBet() {
                   }}
                   className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                 >
-                  Previous
+                  {t('previous', 'Previous')}
                 </button>
                 <button
                   disabled={page >= (pagination?.pages || 1)}
@@ -323,7 +325,7 @@ function UnsettledBet() {
                   }}
                   className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                 >
-                  Next
+                  {t('next', 'Next')}
                 </button>
                 <button
                   disabled={page >= (pagination?.pages || 1)}
@@ -334,19 +336,19 @@ function UnsettledBet() {
                   }}
                   className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                 >
-                  Last
+                  {t('last', 'Last')}
                 </button>
               </div>
               <div className='flex items-center gap-2'>
-                <span className='text-sm'>Page</span>
+                <span className='text-sm'>{t('page', 'Page')}</span>
                 <span className='text-sm font-semibold'>{page}</span>
-                <span className='text-sm'>of</span>
+                <span className='text-sm'>{t('of', 'of')}</span>
                 <span className='text-sm font-semibold'>
                   {pagination?.pages || 0}
                 </span>
               </div>
               <div className='flex items-center gap-2'>
-                <span className='text-sm'>Go to Page</span>
+                <span className='text-sm'>{t('go_to_page', 'Go to Page')}</span>
                 <input
                   type='number'
                   min='1'

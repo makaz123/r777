@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getProLoss } from '../../redux/reducer/betReducer';
 import { getUser } from '../../redux/reducer/authReducer';
+import { useTranslation } from '../../context/LanguageContext';
 
 function ProfitLoss() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { proLossHistory, loading } = useSelector((state) => state.bet);
   const { userInfo } = useSelector((state) => state.auth);
@@ -59,13 +61,13 @@ function ProfitLoss() {
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>Profit & Loss Report</h4>
+          <h4 className='text-[16px] font-[400]'>{t('profit_loss_report', 'Profit & Loss Report')}</h4>
         </div>
         <div className='mb-2 w-full p-2'>
           <div className='flex flex-wrap gap-2'>
             <input
               type='date'
-              placeholder='Start Date'
+              placeholder={t('start_date', 'Start Date')}
               className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -73,7 +75,7 @@ function ProfitLoss() {
             />
             <input
               type='date'
-              placeholder='End Date'
+              placeholder={t('end_date', 'End Date')}
               className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
@@ -83,13 +85,13 @@ function ProfitLoss() {
               onClick={handleSubmit}
               className='bg-primary text-primary h-[38px] w-[80px] rounded-xs px-4 py-1 text-[16px] font-[400] lg:w-auto'
             >
-              Go
+              {t('go', 'Go')}
             </button>
             <button
               onClick={handleReset}
               className='bg-primary text-primary h-[38px] w-[80px] rounded-xs px-4 py-1 text-[16px] font-[400] lg:w-auto'
             >
-              Reset
+              {t('reset', 'Reset')}
             </button>
           </div>
 
@@ -98,16 +100,16 @@ function ProfitLoss() {
               <thead>
                 <tr className='bg-[#e0e6e6]'>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Event / Game Name
+                    {t('event_game_name', 'Event / Game Name')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Win Amount
+                    {t('win_amount', 'Win Amount')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Loss Amount
+                    {t('loss_amount', 'Loss Amount')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Net Profit
+                    {t('net_profit', 'Net Profit')}
                   </th>
                 </tr>
               </thead>
@@ -118,7 +120,7 @@ function ProfitLoss() {
                       colSpan='4'
                       className='h-8 border border-gray-300 p-2 text-center'
                     >
-                      Loading...
+                      {t('loading', 'Loading...')}
                     </td>
                   </tr>
                 ) : proLossHistory && proLossHistory.length > 0 ? (
@@ -149,7 +151,7 @@ function ProfitLoss() {
                       colSpan='4'
                       className='h-8 border border-gray-300 p-2 text-center'
                     >
-                      No data found
+                      {t('no_data_found', 'No data found')}
                     </td>
                   </tr>
                 )}

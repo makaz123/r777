@@ -315,7 +315,7 @@ function Header({
                   <span>
                     <img src={passwordIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>{t('change_password', 'Change Password')}</span>
+                  <span>{t('change_password_txt', 'Change Password')}</span>
                 </div>
                 <div
                   role='button'

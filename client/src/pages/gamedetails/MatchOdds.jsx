@@ -394,13 +394,7 @@ function MatchOdds({
             >
               <FaCheck className='text-xs' />
               <span>
-                {hasMergedValue
-                  ? `₹ ${mergedCashoutValue.toFixed(2)}`
-                  : cashoutLoading
-                    ? '...'
-                    : marketCashoutPL
-                      ? `₹ ${marketCashoutPL}`
-                      : 'Cash Out'}
+                {cashoutLoading ? '...' : 'Cash Out'}
               </span>
             </button>
           ) : hasCashoutAvailable ? (
@@ -498,7 +492,14 @@ function MatchOdds({
               <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
                 {/* Team with suggestions */}
                 <div className='ml-2 truncate text-[13px] font-bold text-black lg:text-[14px]'>
-                  <div>{team}</div>
+                  <div className='flex items-center'>
+                    <span>{team}</span>
+                    {showCashoutOptions && (
+                      <span className={`text-[12px] font-bold ml-2 ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {cashoutLoading ? '...' : `₹ ${mergedCashoutValue.toFixed(2)}`}
+                      </span>
+                    )}
+                  </div>
                   {(() => {
                     if (!userInfo) return null;
                     // Check if selectedBet belongs to Match Odds market

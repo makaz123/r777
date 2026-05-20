@@ -688,7 +688,6 @@ export default function AgentLIst() {
               },
               {
                 header: 'U Lock',
-                accessor: 'uLock',
                 cell: (row) => (
                   <input
                     type='checkbox'
@@ -701,7 +700,6 @@ export default function AgentLIst() {
               },
               {
                 header: 'B Lock',
-                accessor: 'betLock',
                 cell: (row) => (
                   <input
                     type='checkbox'
@@ -714,7 +712,6 @@ export default function AgentLIst() {
               },
               {
                 header: 'My %',
-                accessor: 'myPercent',
                 align: 'right',
                 cell: (row) => row.myPercent,
               },
@@ -740,7 +737,6 @@ export default function AgentLIst() {
               },
               {
                 header: 'Actions',
-                accessor: 'action',
                 cell: (row) =>
                   isFetchingAllUsers ? (
                     <div className='flex gap-1'>
@@ -826,19 +822,18 @@ export default function AgentLIst() {
 
               {/* Previous Button */}
               <button
-                className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
+                className='pgBtn px-[12px] py-[6px]'
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                Previous
+                Prev
               </button>
-
               {/* Page Numbers */}
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i}
-                  className={`ml-[2px] rounded-[2px] border border-[#0088cc] px-[13px] py-[6.5px] leading-none ${
-                    currentPage === i + 1 ? 'bg-[#0088cc] text-white' : 'pgBtn'
+                  className={`ml-[2px] rounded-[2px]  px-[13px] py-[6.5px] leading-none ${
+                    currentPage === i + 1 ? 'bg-gradient-to-b from-[#11859c] to-[#181818] text-white' : 'pgBtn'
                   }`}
                   onClick={() => handlePageChange(i + 1)}
                 >
@@ -963,44 +958,44 @@ export default function AgentLIst() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.4 }}
-                className='absolute top-[2%] left-1/2 w-full max-w-[520px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+                className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
               >
-                <div className='flex items-center justify-between bg-gradient-to-r from-[#26a69a] to-[#4db6ac] px-4 py-3 text-[18px] font-semibold text-white'>
-                  <span>Credit / Deposit</span>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+                  <span className='text-[16px] font-semibold'>Credit / Deposit</span>
                   <button
                     type='button'
                     onClick={closeCreditDepositModal}
-                    className='flex h-8 w-8 items-center justify-center rounded text-2xl leading-none text-white hover:bg-white/15'
                     aria-label='Close'
-                  >
-                    ×
+                    className='text-xl leading-none text-gray-200 font-bold'
+                    >
+                      ×
                   </button>
                 </div>
 
                 <form
                   onSubmit={handleCreditDepositSubmit}
-                  className='space-y-3 bg-white p-4'
+                  className='space-y-3 bg-sky-50 px-4 py-2'
                 >
                   {/* My Available */}
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
                       My Available
                     </label>
-                    <div className='flex min-w-0 flex-1 flex-wrap items-end gap-2'>
+                    <div className='flex min-w-0 flex-1 flex-wrap items-end gap-8'>
                       <input
                         type='text'
                         readOnly
-                        className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                        className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={userInfo?.avbalance ?? ''}
                       />
                       <div className='flex min-w-[80px] flex-1 flex-col gap-0.5'>
-                        <span className='text-[11px] font-semibold text-gray-700'>
+                        <span className='text-[14px]'>
                           After
                         </span>
                         <input
                           type='text'
                           readOnly
-                          className='w-full rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={
                             Number(userInfo?.avbalance || 0) -
                             Number(formData.balance || 0)
@@ -1011,26 +1006,26 @@ export default function AgentLIst() {
                   </div>
 
                   {/* Credit reference */}
-                  <div className='rounded-md border border-dashed border-gray-400 p-3'>
-                    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                  <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
+                    <div className='grid grid-cols-1 gap-8 sm:grid-cols-2'>
                       <div>
-                        <label className='mb-1 block font-semibold text-gray-800'>
+                        <label className='mb-1 block text-gray-950 text-[14px]'>
                           Old Cred Ref.
                         </label>
                         <input
                           type='text'
                           readOnly
-                          className='w-full rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 text-end outline-none'
                           value={currentUser.creditReference ?? ''}
                         />
                       </div>
                       <div>
-                        <label className='mb-1 block font-semibold text-gray-800'>
+                        <label className='mb-1 block text-gray-950 text-[14px]'>
                           New Cred Ref.
                         </label>
                         <input
                           type='text'
-                          className='w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-end outline-none'
+                          className='w-full rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                           placeholder=''
                           onChange={(e) =>
                             setFormData({
@@ -1045,44 +1040,23 @@ export default function AgentLIst() {
                   </div>
 
                   {/* Deposit block */}
-                  <div className='rounded-md border border-dashed border-gray-400 p-3'>
+                  <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
+                    
                     <div className='mb-3 flex flex-wrap items-end gap-2'>
-                      <span className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
-                        {userInfo?.userName}
-                      </span>
-                      <div className='flex min-w-0 flex-1 flex-wrap gap-2'>
-                        <input
-                          type='text'
-                          readOnly
-                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
-                          value={userInfo?.avbalance ?? ''}
-                        />
-                        <input
-                          type='text'
-                          readOnly
-                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
-                          value={
-                            Number(userInfo?.avbalance || 0) -
-                            Number(formData.balance || 0)
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className='mb-3 flex flex-wrap items-end gap-2'>
-                      <span className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                      <span className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
                         {currentUser.userName}
                       </span>
-                      <div className='flex min-w-0 flex-1 flex-wrap gap-2'>
+                      <div className='flex min-w-0 flex-1 flex-wrap gap-8'>
                         <input
                           type='text'
                           readOnly
-                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={currentUser.avbalance ?? ''}
                         />
                         <input
                           type='text'
                           readOnly
-                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={
                             Number(currentUser.avbalance || 0) +
                             Number(formData.balance || 0)
@@ -1091,14 +1065,14 @@ export default function AgentLIst() {
                       </div>
                     </div>
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                      <label className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
                         Add Deposit
                       </label>
                       <input
                         type='number'
                         min={0}
                         step='any'
-                        className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-end outline-none'
+                        className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -1109,12 +1083,12 @@ export default function AgentLIst() {
                       />
                     </div>
                     <div className='flex flex-wrap items-start gap-2'>
-                      <label className='min-w-[100px] shrink-0 pt-1.5 font-semibold text-gray-800'>
+                      <label className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
                         Remarks
                       </label>
                       <textarea
                         rows={3}
-                        className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-end outline-none'
+                        className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -1127,7 +1101,7 @@ export default function AgentLIst() {
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                    <label className='min-w-[175px] shrink-0 text-gray-950 text-[14px]'>
                       Master Password
                     </label>
                     <input
@@ -1147,14 +1121,14 @@ export default function AgentLIst() {
                   <div className='flex justify-end gap-2 pt-1'>
                     <button
                       type='submit'
-                      className='cursor-pointer rounded bg-[#26a69a] px-5 py-2 font-medium text-white hover:bg-[#20897f]'
+                      className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
                     >
                       Submit
                     </button>
                     <button
                       type='button'
                       onClick={closeCreditDepositModal}
-                      className='cursor-pointer rounded bg-[#26a69a] px-5 py-2 font-medium text-white hover:bg-[#20897f]'
+                      className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
                     >
                       Cancel
                     </button>
@@ -1172,143 +1146,144 @@ export default function AgentLIst() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.4 }}
-                className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
+                className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
               >
                 {/* Header */}
-                <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                  <span>Withdraw</span>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+                  <span className='text-[16px] font-semibold'>Withdraw</span>
                   {/* <span>Banking - Master Balance : {userInfo.avbalance}</span> */}
                   <button
                     onClick={() => setWithdrawPopup(false)}
-                    className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
+                    className='text-xl leading-none text-gray-200 font-bold'
                   >
                     ×
                   </button>
                 </div>
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>
-                    {userInfo.userName}
-                  </div>
-                  <div className='col-span-2 flex'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                        value={userInfo.avbalance}
-                        readOnly
-                      />
+                <div className=' bg-sky-50 px-4 py-1 space-y-3'>
+                  <div className='flex flex-wrap items-end gap-2'>
+                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                      {userInfo.userName}
+                    </label>
+                    <div className='flex flex-1 gap-8 items-end'>
+                      <div className='w-1/2'>
+                        <input
+                          type='text'
+                          value={userInfo.avbalance}
+                          readOnly
+                          className='w-full flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        />
+                      </div>
+                      <div className='w-1/2 flex flex-col gap-0.5'>
+                        <span className='text-[14px]'>
+                          After
+                        </span>
+                        <input
+                          type='text'
+                          className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          value={
+                            userInfo.avbalance + Number(formData.balance || 0)
+                          }
+                          readOnly
+                        />
+                      </div>
                     </div>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                        value={
-                          userInfo.avbalance + Number(formData.balance || 0)
-                        }
-                        readOnly
-                      />
-                    </div>
                   </div>
-                </div>
 
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>
-                    {currentUser.userName}
-                  </div>
-                  <div className='col-span-2 flex'>
-                    <div className='px-[15px]'>
+
+                  <div className='flex flex-wrap items-end gap-2'>
+                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                      {currentUser.userName}
+                    </label>
+                    <div className='flex flex-1 gap-8 items-end'>
                       <input
                         type='text'
-                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                        className='w-1/2 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={currentUser.avbalance}
                         readOnly
                       />
-                    </div>
-                    <div className='px-[15px]'>
                       <input
                         type='text'
-                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                        className='w-1/2 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={
                           currentUser.avbalance - Number(formData.balance || 0)
                         }
                         readOnly
                       />
+
                     </div>
                   </div>
+                  
+                  <form onSubmit={handleWithdwalDeposite}>
+                    <div className='mb-3 flex flex-wrap items-center gap-2'>
+                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                        Amount
+                      </label>
+                      <input
+                        type='text'
+                        className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            balance: e.target.value,
+                          })
+                        }
+                        value={formData.balance}
+                      />
+                    </div>
+
+                    <div className='mb-3 flex flex-wrap items-center gap-2'>
+                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      Remark
+                      </label>
+                      <textarea
+                        rows={3}
+                        className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            remark: e.target.value,
+                          })
+                        }
+                        value={formData.remark}
+                      ></textarea>
+                    </div>
+
+                    <div className='flex flex-wrap items-center gap-2'>
+                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                        Master Password
+                      </label>
+                      <input
+                        type='password'
+                        className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            masterPassword: e.target.value,
+                          })
+                        }
+                        value={formData.masterPassword}
+                      />
+                    </div>
+
+                    <div className='flex justify-end gap-2 border-t border-gray-200 py-2 mt-3'>
+                      <button
+                        type='submit'
+                        className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                        onClick={() => setType('withdrawal')}
+                      >
+                        Submit
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => setWithdrawPopup(false)}
+                        className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+
                 </div>
-                <form onSubmit={handleWithdwalDeposite}>
-                  <div className='mb-[14px] grid grid-cols-3 items-center'>
-                    <div className='col-span-1 px-[15px]'>Amount</div>
-                    <div className='col-span-2'>
-                      <div className='px-[15px]'>
-                        <input
-                          type='text'
-                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              balance: e.target.value,
-                            })
-                          }
-                          value={formData.balance}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='mb-[14px] grid grid-cols-3 items-center'>
-                    <div className='col-span-1 px-[15px]'>Remark</div>
-                    <div className='col-span-2'>
-                      <div className='px-[15px]'>
-                        <textarea
-                          type='text'
-                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              remark: e.target.value,
-                            })
-                          }
-                          value={formData.remark}
-                        ></textarea>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='mb-[14px] grid grid-cols-3 items-center'>
-                    <div className='col-span-1 px-[15px]'>Master Password</div>
-                    <div className='col-span-2'>
-                      <div className='px-[15px]'>
-                        <input
-                          type='password'
-                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              masterPassword: e.target.value,
-                            })
-                          }
-                          value={formData.masterPassword}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className='flex justify-end gap-2 px-[15px]'>
-                    <button
-                      className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                      onClick={() => setWithdrawPopup(false)}
-                    >
-                      BACK
-                    </button>
-                    <button
-                      className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
-                      onClick={() => setType('withdrawal')}
-                    >
-                      submit
-                    </button>
-                  </div>
-                </form>
               </motion.div>
             </div>
           )}
@@ -1432,7 +1407,7 @@ export default function AgentLIst() {
 
                 className='fixed top-8 w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
               >
-                <div className=' flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
                   <span className='text-[16px] font-semibold'>
                     {getLockPopupTitle()}
                   </span>
@@ -1505,79 +1480,77 @@ export default function AgentLIst() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.4 }}
-                className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
+                className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
               >
                 {/* Header */}
-                <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                  <span>Password </span>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+                  <span className='text-[16px] font-semibold'>Change Password</span>
                   <button
                     onClick={() => setPasswordPopup(false)}
-                    className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
+                    className='text-xl leading-none text-gray-200 font-bold'
                   >
                     ×
                   </button>
                 </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>New Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                      />
-                    </div>
+                <div className='bg-sky-50 px-5 pt-4 pb-1 space-y-3'>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      New Password
+                    </label>
+                    <input
+                      type='text'
+                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
                   </div>
-                </div>
 
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Confirm Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                      />
-                    </div>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      Confirm Password
+                    </label>
+                    <input
+                      type='text'
+                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
                   </div>
-                </div>
 
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='password'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            masterPassword: e.target.value,
-                          })
-                        }
-                        value={formData.masterPassword}
-                      />
-                    </div>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      Master Password
+                    </label>
+                    <input
+                      type='password'
+                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          masterPassword: e.target.value,
+                        })
+                      }
+                      value={formData.masterPassword}
+                    />
                   </div>
-                </div>
 
-                <div className='flex justify-end gap-2 px-[15px]'>
-                  <button
-                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                    onClick={() => setPasswordPopup(false)}
-                  >
-                    BACK
-                  </button>
-                  <button
-                    className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
-                    onClick={handleChangePassword}
-                  >
-                    submit
-                  </button>
+                  <div className='flex justify-end gap-2 border-t border-gray-200 py-1 mt-3'>
+                    <button
+                      type='submit'
+                      className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                      onClick={handleChangePassword}
+                    >
+                      Submit
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setPasswordPopup(false)}
+                      className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
                 </div>
               </motion.div>
             </div>

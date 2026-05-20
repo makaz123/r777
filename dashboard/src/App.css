@@ -37,12 +37,15 @@ body {
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
 }
 .pgBtn {
-  border: 1px solid #ffffff;
+  border: 1px solid #146578;
+  color: #fff;
+  background: linear-gradient(#5ecbdd, #146578)
+}
+.pgBtn:disabled {
+  opacity: .65;
 }
 .pgBtn:hover {
-  border-radius: 4px;
-  color: #fff;
-  background: linear-gradient(#146578, #5ecbdd)
+  background: linear-gradient(#146578, #5ecbdd);
 }
 .bg-color {
   background: #0088cc;

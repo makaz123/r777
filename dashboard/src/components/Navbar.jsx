@@ -87,12 +87,12 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     // { name: 'Assign Agent', path: '/agent-download-list' },
 
     { name: 'Sports Analysis', path: '/my-market' },
-    { name: 'Casino Analysis', path: '/my-market' },
+    { name: 'Casino Analysis', path: '/casino-analysis' },
     {
       name: 'Settlement',
       submenu: [
-        { name: 'User', path: '/live-casino?cat=Roulette' },
-        { name: 'Master', path: '/live-casino?cat=Teenpatti' },
+        { name: 'User', path: '/user-settlement' },
+        { name: 'Master', path: '/master-settlement' },
       ],
     },
     {

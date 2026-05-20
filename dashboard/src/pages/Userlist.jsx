@@ -813,7 +813,7 @@ export default function AgentLIst() {
             <div className='flex flex-wrap'>
               {/* First Button */}
               <button
-                className='pgBtn px-[13px] py-[6.5px]'
+                className='pgBtn px-[13px] py-[6.5px] rounded-l-sm'
                 onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
               >
@@ -832,7 +832,7 @@ export default function AgentLIst() {
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i}
-                  className={`ml-[2px] rounded-[2px]  px-[13px] py-[6.5px] leading-none ${
+                  className={`px-[13px] py-[6.5px] leading-none ${
                     currentPage === i + 1 ? 'bg-gradient-to-b from-[#11859c] to-[#181818] text-white' : 'pgBtn'
                   }`}
                   onClick={() => handlePageChange(i + 1)}
@@ -843,7 +843,7 @@ export default function AgentLIst() {
 
               {/* Next Button */}
               <button
-                className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
+                className='pgBtn px-[13px] py-[6.5px]'
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
@@ -852,7 +852,7 @@ export default function AgentLIst() {
 
               {/* Last Button */}
               <button
-                className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
+                className='pgBtn px-[13px] py-[6.5px] rounded-r-sm'
                 onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages}
               >

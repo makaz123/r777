@@ -1,5 +1,7 @@
 import betModel from '../../models/betModel.js';
 import SubAdmin from '../../models/subAdminModel.js';
+import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import { calculateOutcomeScenarios } from '../../utils/marketCalculationUtils.js';
 
 export const getDownlinePendingBetsByGame = async (req, res) => {
   const { id } = req;
@@ -1059,3 +1061,188 @@ export const parentsDetails = async (req, res) => {
     });
   }
 };
+
+export const getCasinoAnalysisList = async (req, res) => {
+  const { id } = req;
+
+  try {
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Admin not found' });
+    }
+
+    const downlines = await SubAdmin.aggregate([
+      { $match: { _id: admin._id } },
+      {
+        $graphLookup: {
+          from: 'subadmins',
+          startWith: '$code',
+          connectFromField: 'code',
+          connectToField: 'invite',
+          as: 'downline',
+          depthField: 'level',
+          restrictSearchWithMatch: { status: { $ne: 'delete' } },
+        },
+      },
+      {
+        $project: {
+          ids: { $map: { input: '$downline', as: 'u', in: '$$u._id' } },
+        },
+      },
+    ]);
+
+    const ids = (downlines[0]?.ids || []).map((x) => x.toString());
+
+    const defaultGames = [
+      'Indian Poker/ Live Casino',
+      'Indian Poker II',
+      'Evolution',
+      'Vivo',
+      'Betgames',
+      'Casino III',
+      'Spribe',
+      'Mac88',
+      'Chicken Road',
+      'Rvgames',
+      'Ezugi',
+    ];
+
+    const getCasinoCategory = (gameName, gameUid) => {
+      const name = (gameName || '').toLowerCase();
+      const uid = (gameUid || '').toLowerCase();
+
+      if (name.includes('evolution') || uid.includes('evolution'))
+        return 'Evolution';
+      if (name.includes('vivo') || uid.includes('vivo')) return 'Vivo';
+      if (name.includes('betgames') || uid.includes('betgames'))
+        return 'Betgames';
+      if (
+        name.includes('spribe') ||
+        name.includes('aviator') ||
+        uid.includes('spribe') ||
+        uid.includes('aviator')
+      )
+        return 'Spribe';
+      if (
+        name.includes('chicken') ||
+        name.includes('inout') ||
+        uid.includes('chicken') ||
+        uid.includes('inout')
+      )
+        return 'Chicken Road';
+      if (name.includes('poker2') || uid.includes('poker2'))
+        return 'Indian Poker II';
+      if (name.includes('poker') || uid.includes('poker'))
+        return 'Indian Poker/ Live Casino';
+      if (name.includes('mac88') || uid.includes('mac88')) return 'Mac88';
+      if (name.includes('casino3') || uid.includes('casino3'))
+        return 'Casino III';
+      if (name.includes('rvgames') || uid.includes('rvgames'))
+        return 'Rvgames';
+      if (name.includes('ezugi') || uid.includes('ezugi')) return 'Ezugi';
+
+      return 'Indian Poker/ Live Casino'; // Default fallback
+    };
+
+    const gameStatsMap = {};
+    defaultGames.forEach((game) => {
+      gameStatsMap[game] = {
+        eventName: game,
+        totalOrder: 0,
+        exposure: 0,
+        totalAmount: 0,
+        maxProfit: null,
+      };
+    });
+
+    if (ids.length > 0) {
+      const bets = await CasinoBetHistory.find({
+        userId: { $in: ids }
+      }).lean();
+
+      const userProfitPerGame = {};
+
+      bets.forEach((bet) => {
+        const key = getCasinoCategory(bet.game_name, bet.game_uid);
+        
+        const betAmount = Number(bet.bet_amount || 0);
+        const winAmount = Number(bet.win_amount || 0);
+        const userIdStr = bet.userId ? bet.userId.toString() : 'unknown';
+
+        if (!gameStatsMap[key]) {
+          gameStatsMap[key] = {
+            eventName: key,
+            totalOrder: 0,
+            exposure: 0,
+            totalAmount: 0,
+            maxProfit: null,
+          };
+        }
+
+        if (!userProfitPerGame[key]) {
+          userProfitPerGame[key] = {};
+        }
+        if (!userProfitPerGame[key][userIdStr]) {
+          userProfitPerGame[key][userIdStr] = 0;
+        }
+
+        userProfitPerGame[key][userIdStr] += (winAmount - betAmount);
+
+        gameStatsMap[key].totalOrder += 1;
+        gameStatsMap[key].totalAmount += betAmount;
+        gameStatsMap[key].exposure += 0;
+      });
+
+      Object.keys(userProfitPerGame).forEach((gameKey) => {
+        let maxVal = -Infinity;
+        let hasUsers = false;
+        
+        Object.values(userProfitPerGame[gameKey]).forEach((profit) => {
+          hasUsers = true;
+          if (profit > maxVal) {
+            maxVal = profit;
+          }
+        });
+        
+        if (hasUsers) {
+          gameStatsMap[gameKey].maxProfit = maxVal;
+        }
+      });
+    }
+
+    // Default any game with no play records to a max profit of 0
+    Object.keys(gameStatsMap).forEach((key) => {
+      if (gameStatsMap[key].maxProfit === null) {
+        gameStatsMap[key].maxProfit = 0;
+      }
+    });
+
+    const finalData = [];
+    defaultGames.forEach((game) => {
+      if (gameStatsMap[game] && gameStatsMap[game].totalOrder > 0) {
+        finalData.push(gameStatsMap[game]);
+      }
+    });
+
+    Object.keys(gameStatsMap).forEach((game) => {
+      if (!defaultGames.includes(game) && gameStatsMap[game].totalOrder > 0) {
+        finalData.push(gameStatsMap[game]);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: finalData,
+    });
+  } catch (error) {
+    console.error('Error fetching casino GGR list:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+

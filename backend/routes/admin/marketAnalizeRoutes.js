@@ -8,6 +8,7 @@ import {
   getMasterBookDownline,
   getPendingMarketAmounts,
   parentsDetails,
+  getCasinoAnalysisList,
 } from '../../controllers/admin/marketAnalyze.js';
 import { adminAuthMiddleware } from '../../middleware/authMiddleware.js';
 
@@ -35,6 +36,11 @@ router.get(
   '/get/casino-master-book-downline',
   adminAuthMiddleware,
   getCasinoMasterBookDownline
+);
+router.get(
+  '/get/casino-ggr-list',
+  adminAuthMiddleware,
+  getCasinoAnalysisList
 );
 
 export default router;

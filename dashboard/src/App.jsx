@@ -47,6 +47,8 @@ import LiveCasino from './pages/LiveCasino';
 import TransactionPasswordSuccess from './pages/TransactionPasswordSuccess';
 import ChangePassword from './pages/ChangePassword';
 import BannerSettings from './pages/BannerSettings';
+import CasinoAnalysis from './pages/CasinoAnalysis';
+import UserSettlement from './pages/UserSettlement';
 
 function App() {
   return (
@@ -117,6 +119,9 @@ function App() {
                   />
                   <Route path='/GeneralReport' element={<GeneralReport />} />
                   <Route path='/my-market' element={<MyMarket />} />
+                  <Route path='/casino-analysis' element={<CasinoAnalysis />} />
+                  <Route path='/user-settlement' element={<UserSettlement type="user" />} />
+                  <Route path='/master-settlement' element={<UserSettlement type="master" />} />
                   <Route path='/banking' element={<Banking />} />
                   <Route path='/master-banking' element={<MasterBanking />} />
                   <Route path='/commission' element={<Commision />} />

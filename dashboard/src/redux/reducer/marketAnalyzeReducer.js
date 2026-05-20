@@ -246,6 +246,22 @@ export const casinoMasterBookReducerDownline = createAsyncThunk(
   }
 );
 
+export const getCasinoAnalysis = createAsyncThunk(
+  'market/getCasinoAnalysis',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get('/get/casino-ggr-list', {
+        withCredentials: true,
+      });
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || { message: 'Fetch failed' }
+      );
+    }
+  }
+);
+
 const initialState = {
   message: null,
   errorMessage: null,
@@ -259,6 +275,8 @@ const initialState = {
   masterDataDownline: [],
   casinoMasterData: [],
   casinoMasterDataDownline: [],
+  casinoAnalysisData: [],
+  casinoAnalysisLoading: false,
   loading: false,
   lastUpdateddate: null,
 };
@@ -445,6 +463,19 @@ const marketSlice = createSlice({
       .addCase(casinoMasterBookReducerDownline.rejected, (state, action) => {
         state.loader = false;
         state.error = action.payload;
+      })
+      //For Casino GGR Analysis List
+      .addCase(getCasinoAnalysis.pending, (state) => {
+        state.casinoAnalysisLoading = true;
+        state.errorMessage = '';
+      })
+      .addCase(getCasinoAnalysis.fulfilled, (state, action) => {
+        state.casinoAnalysisLoading = false;
+        state.casinoAnalysisData = action.payload.data;
+      })
+      .addCase(getCasinoAnalysis.rejected, (state, action) => {
+        state.casinoAnalysisLoading = false;
+        state.errorMessage = action.payload?.message || 'Failed to fetch casino GGR data';
       });
   },
 });

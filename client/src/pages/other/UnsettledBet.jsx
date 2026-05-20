@@ -73,7 +73,9 @@ function UnsettledBet() {
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>{t('unsettled_bet', 'Unsettled Bet')}</h4>
+          <h4 className='text-[16px] font-[400]'>
+            {t('unsettled_bet', 'Unsettled Bet')}
+          </h4>
         </div>
         <div className='mb-2 w-full p-2'>
           <div className='flex flex-wrap gap-2'>
@@ -89,9 +91,15 @@ function UnsettledBet() {
               <option value='Tennis Game'>{t('tennis', 'Tennis')}</option>
               <option value='Soccer Game'>{t('soccer', 'Soccer')}</option>
               <option value='Casino'>{t('casino', 'Casino')}</option>
-              <option value='Horse Racing Game'>{t('horse_racing', 'Horse Racing')}</option>
-              <option value='Greyhound Racing Game'>{t('greyhound_racing', 'Greyhound Racing')}</option>
-              <option value='Basket Ball Game'>{t('basket_ball', 'Basket Ball')}</option>
+              <option value='Horse Racing Game'>
+                {t('horse_racing', 'Horse Racing')}
+              </option>
+              <option value='Greyhound Racing Game'>
+                {t('greyhound_racing', 'Greyhound Racing')}
+              </option>
+              <option value='Basket Ball Game'>
+                {t('basket_ball', 'Basket Ball')}
+              </option>
               <option value='Lottery Game'>{t('lottery', 'Lottery')}</option>
             </select>
             <input
@@ -131,7 +139,9 @@ function UnsettledBet() {
             {/* First Row: Show Entries + Radio Buttons */}
             <div className='flex flex-col items-start gap-3 sm:flex-row sm:items-center'>
               <div className='flex items-center gap-2'>
-                <span className='text-[16px] font-[400]'>{t('show', 'Show')}</span>
+                <span className='text-[16px] font-[400]'>
+                  {t('show', 'Show')}
+                </span>
                 <select
                   name='entries'
                   id='entries'
@@ -148,7 +158,9 @@ function UnsettledBet() {
                   <option value='40'>40</option>
                   <option value='50'>50</option>
                 </select>
-                <span className='text-[16px] font-[400]'>{t('entries', 'Entries')}</span>
+                <span className='text-[16px] font-[400]'>
+                  {t('entries', 'Entries')}
+                </span>
               </div>
               <div className='flex items-center gap-4'>
                 <label className='flex cursor-pointer items-center gap-2'>
@@ -160,7 +172,9 @@ function UnsettledBet() {
                     onChange={(e) => setBetType(e.target.value)}
                     className='h-4 w-4 cursor-pointer'
                   />
-                  <span className='text-[16px] font-[400]'>{t('all', 'All')}</span>
+                  <span className='text-[16px] font-[400]'>
+                    {t('all', 'All')}
+                  </span>
                 </label>
                 <label className='flex cursor-pointer items-center gap-2'>
                   <input
@@ -171,7 +185,9 @@ function UnsettledBet() {
                     onChange={(e) => setBetType(e.target.value)}
                     className='h-4 w-4 cursor-pointer'
                   />
-                  <span className='text-[16px] font-[400]'>{t('back', 'Back')}</span>
+                  <span className='text-[16px] font-[400]'>
+                    {t('back', 'Back')}
+                  </span>
                 </label>
                 <label className='flex cursor-pointer items-center gap-2'>
                   <input
@@ -182,7 +198,9 @@ function UnsettledBet() {
                     onChange={(e) => setBetType(e.target.value)}
                     className='h-4 w-4 cursor-pointer'
                   />
-                  <span className='text-[16px] font-[400]'>{t('lay', 'Lay')}</span>
+                  <span className='text-[16px] font-[400]'>
+                    {t('lay', 'Lay')}
+                  </span>
                 </label>
               </div>
             </div>
@@ -199,7 +217,9 @@ function UnsettledBet() {
 
             {/* Third Row: Search */}
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>{t('search_label', 'Search:')}</span>
+              <span className='text-[16px] font-[400]'>
+                {t('search_label', 'Search:')}
+              </span>
               <input
                 type='text'
                 placeholder={t('search_placeholder', 'Search')}

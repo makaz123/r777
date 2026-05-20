@@ -98,7 +98,9 @@ function SetStake() {
     <div className='w-full p-0.5'>
       <div className='w-full border border-[#00000020] bg-white shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-[#18adc5] px-[7px] py-1.5'>
-          <h4 className='text-[14px] font-bold text-white'>{t('set_stake', 'Set Stake')}</h4>
+          <h4 className='text-[14px] font-bold text-white'>
+            {t('set_stake', 'Set Stake')}
+          </h4>
         </div>
 
         <form onSubmit={handleSubmit} className='p-2'>

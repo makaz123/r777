@@ -122,7 +122,10 @@ function Login() {
 
             {/* reCAPTCHA Disclaimer */}
             <p className='text-center text-[12px] leading-relaxed font-[400] text-black'>
-              {t('recaptcha_protected_prefix', 'This site is protected by reCAPTCHA and the Google ')}
+              {t(
+                'recaptcha_protected_prefix',
+                'This site is protected by reCAPTCHA and the Google '
+              )}
               <a href='#' className='text-[#0088CC] underline'>
                 {t('privacy_policy', 'Privacy Policy')}
               </a>
@@ -135,15 +138,23 @@ function Login() {
             {/* Download APK Link */}
             <div className='flex cursor-pointer items-center justify-center gap-2 text-[#0088CC] hover:underline'>
               <IoLogoAndroid className='text-[#0088CC]' />
-              <span className='font-medium text-[#0088CC]'>{t('download_apk', 'Download APK')}</span>
+              <span className='font-medium text-[#0088CC]'>
+                {t('download_apk', 'Download APK')}
+              </span>
             </div>
           </div>
         </div>
       </div>
       <div className='bg-primary text-primary fixed right-0 bottom-0 left-0 flex flex-col items-center justify-center p-2 lg:flex-row'>
         <div className='lg:underline-none flex w-full items-center justify-center gap-2 text-[12px] font-bold underline lg:justify-start lg:text-[16px]'>
-          <span className=''> {t('terms_and_conditions', 'Terms and Conditions')} </span>
-          <span className=''> {t('responsible_gaming', 'Responsible Gaming')} </span>
+          <span className=''>
+            {' '}
+            {t('terms_and_conditions', 'Terms and Conditions')}{' '}
+          </span>
+          <span className=''>
+            {' '}
+            {t('responsible_gaming', 'Responsible Gaming')}{' '}
+          </span>
         </div>
         <div className='flex w-full items-center justify-center gap-2 lg:justify-start'>
           <h2 className='text-[20px] font-[700] lg:text-[24px]'>

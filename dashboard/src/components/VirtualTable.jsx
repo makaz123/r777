@@ -43,21 +43,16 @@ const VirtualTable = ({ data = [], columns = [] }) => {
     <div className='rounded-md'>
       <table className='w-full border-collapse'>
         {/* ✅ Header */}
-        <thead className='border-b'>
+        <thead className='border-b bg-[#016a82] text-white'>
           <tr>
             {columns.map((col, i) => (
               <th
                 key={i}
                 onClick={() => handleSort(col)}
-                className='cursor-pointer px-2 py-2 text-sm'
+                className='cursor-pointer border-r border-white px-2 py-2 text-sm'
               >
-                <span
-                  className={`flex items-center ${
-                    col.align === 'right' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
+                <span className='flex items-center'>
                   {col.header}
-
                   {/* Sort Icon */}
                   {sortConfig?.key === col.accessor && (
                     <span className='relative ml-1 block h-full'>
@@ -85,19 +80,19 @@ const VirtualTable = ({ data = [], columns = [] }) => {
           {sortedData.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className='py-4 text-center'>
-                📭 No Data Found
+                No Client found under your account.
               </td>
             </tr>
           ) : (
             sortedData.map((row, rowIndex) => (
               <tr
                 key={row._id || rowIndex}
-                className='cursor-pointer odd:bg-[rgba(0,0,0,0.05)]'
+                className='cursor-pointer odd:bg-[#0000000d]'
               >
                 {columns.map((col, i) => (
                   <td
                     key={i}
-                    className={`px-2 py-2 text-sm ${
+                    className={`p-2 text-sm border border-[#dee2e6] ${
                       col.align === 'right' ? 'text-right' : 'text-left'
                     }`}
                   >

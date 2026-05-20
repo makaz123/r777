@@ -1299,7 +1299,9 @@ function PlaceBet({
               disabled={loading}
               className='mx-0.5 h-[30px] flex-1 rounded-[3px] bg-[#07af07] bg-gradient-to-b to-[#07af07] px-3 text-[14px] font-bold whitespace-nowrap text-white hover:from-[#026d02] md:h-[26px]'
             >
-              {loading ? t('placing', 'Placing...') : t('place_bet', 'Place Bet')}
+              {loading
+                ? t('placing', 'Placing...')
+                : t('place_bet', 'Place Bet')}
             </button>
 
             {/* Cancel */}

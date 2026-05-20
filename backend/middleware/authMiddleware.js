@@ -28,7 +28,7 @@ export const optionalAuthMiddleware = (req, res, next) => {
   next();
 };
 
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   let token;
   if (
     req.headers.authorization &&
@@ -51,6 +51,26 @@ export const authMiddleware = (req, res, next) => {
       return res
         .status(403)
         .json({ message: 'Access denied, Only user can access' });
+    }
+
+    const user = await SubAdmin.findById(decodedToken.id).select(
+      'uLock status'
+    );
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    if (user.status !== 'active') {
+      return res
+        .status(403)
+        .json({ message: `Your Account is ${user.status}` });
+    }
+
+    if (user.uLock) {
+      return res.status(403).json({
+        message: 'Your account is locked.',
+        code: 'USER_LOCKED',
+      });
     }
 
     req.role = decodedToken.role;

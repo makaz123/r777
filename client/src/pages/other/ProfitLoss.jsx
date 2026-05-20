@@ -61,7 +61,9 @@ function ProfitLoss() {
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>{t('profit_loss_report', 'Profit & Loss Report')}</h4>
+          <h4 className='text-[16px] font-[400]'>
+            {t('profit_loss_report', 'Profit & Loss Report')}
+          </h4>
         </div>
         <div className='mb-2 w-full p-2'>
           <div className='flex flex-wrap gap-2'>

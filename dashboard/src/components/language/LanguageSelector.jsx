@@ -20,19 +20,19 @@ export default function LanguageSelector() {
   const activeLang = languages[currentLang] || languages.en;
 
   return (
-    <div className="language-selector-wrapper" ref={dropdownRef}>
-      <button 
-        onClick={() => setIsOpen(!isOpen)} 
-        className="lang-trigger-btn"
+    <div className='language-selector-wrapper' ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className='lang-trigger-btn'
         aria-expanded={isOpen}
       >
-        <span className="lang-icon">🌐</span>
-        <span className="lang-label">{activeLang.label}</span>
+        <span className='lang-icon'>🌐</span>
+        <span className='lang-label'>{activeLang.label}</span>
         <span className={`lang-arrow ${isOpen ? 'open' : ''}`}>▼</span>
       </button>
 
       {isOpen && (
-        <ul className="lang-dropdown-menu">
+        <ul className='lang-dropdown-menu'>
           {Object.entries(languages).map(([code, item]) => (
             <li key={code}>
               <button
@@ -42,7 +42,9 @@ export default function LanguageSelector() {
                 }}
                 className={`lang-option-btn ${code === currentLang ? 'active' : ''}`}
               >
-                <span className="lang-check">{code === currentLang ? '✓' : ''}</span>
+                <span className='lang-check'>
+                  {code === currentLang ? '✓' : ''}
+                </span>
                 <span>{item.label}</span>
               </button>
             </li>
@@ -50,7 +52,7 @@ export default function LanguageSelector() {
         </ul>
       )}
 
-      <style jsx="true">{`
+      <style jsx='true'>{`
         .language-selector-wrapper {
           position: relative;
           display: inline-block;
@@ -101,8 +103,9 @@ export default function LanguageSelector() {
           border-radius: 12px;
           padding: 6px;
           list-style: none;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5),
-                      0 8px 10px -6px rgba(0, 0, 0, 0.5);
+          box-shadow:
+            0 10px 25px -5px rgba(0, 0, 0, 0.5),
+            0 8px 10px -6px rgba(0, 0, 0, 0.5);
           backdrop-filter: blur(20px);
           animation: langSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           margin: 0;

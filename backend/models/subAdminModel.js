@@ -43,6 +43,8 @@ const subAdminSchema = new mongoose.Schema(
     invite: { type: String },
     masterPassword: { type: String },
     status: { type: String, default: 'active' },
+    uLock: { type: Boolean, default: false },
+    betLock: { type: Boolean, default: false },
     remark: { type: String },
     role: {
       type: String,

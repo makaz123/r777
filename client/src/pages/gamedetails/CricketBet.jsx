@@ -31,8 +31,7 @@ function CricketBet() {
   const key = import.meta.env.VITE_LIVE_STREAM_KEY;
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
   const liveStreamBaseUrl =
-    import.meta.env.VITE_LIVE_STREAM_BASE_URL ||
-    'https://81habibi.com/api/v1';
+    import.meta.env.VITE_LIVE_STREAM_BASE_URL || 'https://81habibi.com/api/v1';
   const params = useParams();
   const splat = params['*'];
   let game = '';
@@ -424,7 +423,7 @@ function CricketBet() {
                 // src={`https://score.akamaized.uk/diamond-live-score?gmid=${gameid}`}
                 src={`${liveStreamBaseUrl}/live-score?key=${key_new}&gmid=${gameid}`}
                 allowFullScreen
-                className='w-full h-[26vh]'
+                className='h-[26vh] w-full'
                 title='Live Score'
                 allow='autoplay;
                       encrypted-media;
@@ -644,7 +643,9 @@ function CricketBet() {
           )}
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
-            <span className='text-[14px]'>{t('matched_bet', 'Matched Bet')}</span>
+            <span className='text-[14px]'>
+              {t('matched_bet', 'Matched Bet')}
+            </span>
           </div>
           <MatchedBet gameid={gameid} />
         </div>

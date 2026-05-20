@@ -215,8 +215,9 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
           opacity: window.innerWidth >= 1024 ? 1 : isOpen ? 1 : 0,
         }}
         transition={{ duration: 0.4 }}
-        className={`scrollbar-hide fixed top-0 left-0 z-10 h-full w-full overflow-y-auto border-r border-gray-200 bg-[#ececec] sm:w-[270px] md:top-[129px] md:z-1 md:h-[calc(100vh-129px)] lg:sticky lg:w-[15%] xl:top-[117px] xl:h-[calc(100vh-117px)] ${!isOpen ? 'pointer-events-none lg:pointer-events-auto' : ''
-          } `}
+        className={`scrollbar-hide fixed top-0 left-0 z-10 h-full w-full overflow-y-auto border-r border-gray-200 bg-[#ececec] sm:w-[270px] md:top-[129px] md:z-1 md:h-[calc(100vh-129px)] lg:sticky lg:w-[15%] xl:top-[117px] xl:h-[calc(100vh-117px)] ${
+          !isOpen ? 'pointer-events-none lg:pointer-events-auto' : ''
+        } `}
       >
         {showPopular ? (
           <>
@@ -245,8 +246,9 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                     <div
                       role='button'
                       tabIndex={0}
-                      className={`flex cursor-pointer items-center gap-2 px-2.5 py-2 text-[#045662] transition-colors hover:bg-[#d4e8ec] ${leagueOpen ? 'bg-[#d8e8eb]' : ''
-                        }`}
+                      className={`flex cursor-pointer items-center gap-2 px-2.5 py-2 text-[#045662] transition-colors hover:bg-[#d4e8ec] ${
+                        leagueOpen ? 'bg-[#d8e8eb]' : ''
+                      }`}
                       onClick={() => handleSportHeaderClick(sport)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -265,7 +267,12 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                         }}
                       />
                       <span className='flex min-w-0 flex-1 justify-between font-bold'>
-                        {t(window.__sidebarMapKey ? window.__sidebarMapKey(sport.key) : sport.key, sport.label)}
+                        {t(
+                          window.__sidebarMapKey
+                            ? window.__sidebarMapKey(sport.key)
+                            : sport.key,
+                          sport.label
+                        )}
                         {sport.icon}
                       </span>
                     </div>
@@ -369,7 +376,12 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                     </span>
                   )}
                   <span className='text-sm font-bold'>
-                    {t(window.__sidebarMapKey ? window.__sidebarMapKey(p.key) : p.key, p.label)}
+                    {t(
+                      window.__sidebarMapKey
+                        ? window.__sidebarMapKey(p.key)
+                        : p.key,
+                      p.label
+                    )}
                   </span>
                 </li>
               ))}

@@ -409,9 +409,7 @@ function Bookmaker({
               }`}
             >
               <FaCheck className='text-xs' />
-              <span>
-                {cashoutLoading ? '...' : t('cashout', 'Cash Out')}
-              </span>
+              <span>{cashoutLoading ? '...' : t('cashout', 'Cash Out')}</span>
             </button>
           ) : hasCashoutAvailable ? (
             <button
@@ -514,8 +512,12 @@ function Bookmaker({
                   <div className='flex items-center'>
                     <span>{team}</span>
                     {showCashoutOptions && (
-                      <span className={`text-[12px] font-bold ml-2 ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {cashoutLoading ? '...' : `₹ ${mergedCashoutValue.toFixed(2)}`}
+                      <span
+                        className={`ml-2 text-[12px] font-bold ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {cashoutLoading
+                          ? '...'
+                          : `₹ ${mergedCashoutValue.toFixed(2)}`}
                       </span>
                     )}
                   </div>

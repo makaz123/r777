@@ -827,6 +827,11 @@ export const loginSubAdmin = async (req, res) => {
         .json({ message: `Your Account has been ${subAdmin.status} !` });
     }
 
+    if (subAdmin.uLock) {
+      await saveLoginHistory(userName, subAdmin._id, 'User Locked', req);
+      return res.status(403).json({ message: 'Your account is locked.' });
+    }
+
     // Generate unique session token
     const sessionToken = crypto.randomBytes(32).toString('hex');
     const deviceId = req.headers['user-agent'] || 'unknown-device';
@@ -2109,6 +2114,63 @@ export const userSetting = async (req, res) => {
     });
   } catch (error) {
     console.error('Update SubAdmin Error:', error);
+    return res
+      .status(500)
+      .json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const updateUserLock = async (req, res) => {
+  try {
+    const { id } = req;
+    const { userId, lockType, lock, masterPassword, remark } = req.body;
+
+    const normalizedLockType = lockType === 'bLock' ? 'betLock' : lockType;
+
+    if (!['uLock', 'betLock'].includes(normalizedLockType)) {
+      return res.status(400).json({ message: 'Invalid lock type.' });
+    }
+
+    if (typeof lock !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid lock value.' });
+    }
+
+    const subAdmin = await SubAdmin.findById(id);
+    if (!subAdmin) {
+      return res.status(404).json({ message: 'Sub-admin not found' });
+    }
+
+    const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid Master password.' });
+    }
+
+    const editUser = await SubAdmin.findById(userId);
+    if (!editUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    editUser[normalizedLockType] = lock;
+    if (normalizedLockType === 'betLock') {
+      editUser.bLock = undefined;
+    }
+    if (normalizedLockType === 'uLock' && lock) {
+      editUser.sessionToken = null;
+    }
+    if (remark) {
+      editUser.remark = remark;
+    }
+    await editUser.save();
+
+    const lockLabel = normalizedLockType === 'uLock' ? 'User lock' : 'Bet lock';
+    return res.status(200).json({
+      success: true,
+      message: lock
+        ? `${lockLabel} enabled successfully`
+        : `${lockLabel} disabled successfully`,
+    });
+  } catch (error) {
+    console.error('Update User Lock Error:', error);
     return res
       .status(500)
       .json({ message: 'Server error', error: error.message });

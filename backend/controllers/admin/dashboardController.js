@@ -101,7 +101,7 @@ export const getDashboardStats = async (req, res) => {
       betHistoryModel
         .find({
           userId: { $in: downlineIds },
-          status: { $in: [1, 2] }, // Settled win/loss bets
+          status: { $in: [0, 1, 2] }, // Placed (0) and settled (1, 2) bets
           ...dateFilterBet,
         })
         .lean(),

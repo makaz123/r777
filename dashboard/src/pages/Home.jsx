@@ -1,56 +1,34 @@
 import React from 'react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from 'recharts';
 import Navbar from '../components/Navbar';
 import Loader from '../components/Loader';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import {
-  getGraphData,
-  getGraphTodayData,
-} from '../redux/reducer/downlineReducer';
+import { getDashboardStats } from '../redux/reducer/dashboardReducer';
 import { useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { graphbackup, graphtoday, loading } = useSelector(
-    (state) => state.downline
+  const { stats, loading: dashboardLoading } = useSelector(
+    (state) => state.dashboardStats
   );
   const currentDate = new Date();
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(currentDate.getMonth() - 12);
   const formatDate = (date) => date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  const [startDate, setStartDate] = useState(formatDate(oneMonthAgo));
-  const [endDate, setEndDate] = useState(formatDate(currentDate));
+  const [fromDate, setFromDate] = useState(formatDate(oneMonthAgo));
+  const [toDate, setToDate] = useState(formatDate(currentDate));
+  const [selectedSport, setSelectedSport] = useState("Cricket");
 
   useEffect(() => {
-    dispatch(
-      getGraphData({
-        startDate,
-        endDate,
-      })
-    );
-    dispatch(
-      getGraphTodayData({
-        startDate: currentDate,
-        endDate: currentDate,
-      })
-    );
-  }, [dispatch]);
+    dispatch(getDashboardStats({ startDate: fromDate, endDate: toDate }));
+  }, [dispatch, fromDate, toDate]);
 
-  const PLdata = graphbackup?.report;
-  const LivePLdata = graphtoday?.report;
-  const Totaldata = graphbackup?.total;
-  console.log(graphtoday, 'myReportseventData');
+  const sportbookPL = stats?.sportsGameplay 
+    ? Object.values(stats.sportsGameplay).reduce((sum, sport) => sum + (sport.totalPL || 0), 0)
+    : 0;
 
   // Transform the data for the PieChart
   const transformBackupData = (data) => {
@@ -117,6 +95,13 @@ const Home = () => {
     'Ezugi P&L',
   ];
 
+
+
+
+
+
+
+
   return (
     <>
       <Navbar />
@@ -127,8 +112,8 @@ const Home = () => {
             <div className='mb-4 pr-[15px]'>
               <label className='block'>From Date:</label>
               <DatePicker
-                selected={fromDate}
-                onChange={(date) => setFromDate(date)}
+                selected={fromDate ? new Date(fromDate) : null}
+                onChange={(date) => setFromDate(date ? date.toISOString() : '')}
                 showTimeSelect
                 timeFormat='HH:mm'
                 timeIntervals={1}
@@ -140,8 +125,8 @@ const Home = () => {
             <div className='mb-4 px-[15px]'>
               <label className='block'>To Date:</label>
               <DatePicker
-                selected={fromDate}
-                onChange={(date) => setFromDate(date)}
+                selected={toDate ? new Date(toDate) : null}
+                onChange={(date) => setToDate(date ? date.toISOString() : '')}
                 showTimeSelect
                 timeFormat='HH:mm'
                 timeIntervals={1}
@@ -192,6 +177,14 @@ const Home = () => {
                   <th className='w-20 p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
+              <tbody>
+                {stats?.topWinningPlayers?.map((player, idx) => (
+                  <tr key={idx} className="border-b border-gray-200 text-[12px]">
+                    <td className="text-left p-1.5 w-80 border-r border-gray-200">{player.userName}</td>
+                    <td className="text-right p-1.5 w-20 text-green-500">{player.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
 
@@ -210,6 +203,14 @@ const Home = () => {
                   <th className='w-20 p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
+              <tbody>
+                {stats?.topLosingPlayers?.map((player, idx) => (
+                  <tr key={idx} className="border-b border-gray-200 text-[12px]">
+                    <td className="text-left p-1.5 w-80 border-r border-gray-200">{player.userName}</td>
+                    <td className="text-right p-1.5 w-20 text-red-500">{player.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
 
@@ -231,6 +232,15 @@ const Home = () => {
                   <th className='w-30 p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
+              <tbody>
+                {stats?.topWinningMarkets?.map((market, idx) => (
+                  <tr key={idx} className="border-b border-gray-200 text-[12px]">
+                    <td className="text-left p-1.5 w-30 border-r border-gray-200">{market.sport}</td>
+                    <td className="text-left p-1.5 w-30 border-r border-gray-200">{market.market}</td>
+                    <td className="text-right p-1.5 w-30 text-green-500">{market.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
 
@@ -252,6 +262,15 @@ const Home = () => {
                   <th className='w-30 p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
+              <tbody>
+                {stats?.topLosingMarkets?.map((market, idx) => (
+                  <tr key={idx} className="border-b border-gray-200 text-[12px]">
+                    <td className="text-left p-1.5 w-30 border-r border-gray-200">{market.sport}</td>
+                    <td className="text-left p-1.5 w-30 border-r border-gray-200">{market.market}</td>
+                    <td className="text-right p-1.5 w-30 text-red-500">{market.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </div>

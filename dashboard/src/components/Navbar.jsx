@@ -21,7 +21,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SportsSidebar from './SportsSidebar';
-import LanguageSelector from './language/LanguageSelector';
+
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -108,13 +108,13 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         { name: 'User Win Loss', path: '/UserWinLoss' },
       ],
     },
-    {
-      name: 'Cutting',
-      submenu: [
-        { name: 'Agent Master', path: '/live-casino?cat=Roulette' },
-        { name: 'Cutting History', path: '/live-casino?cat=Teenpatti' },
-      ],
-    },
+    // {
+    //   name: 'Cutting',
+    //   submenu: [
+    //     { name: 'Agent Master', path: '/live-casino?cat=Roulette' },
+    //     { name: 'Cutting History', path: '/live-casino?cat=Teenpatti' },
+    //   ],
+    // },
     {
       name: 'Control',
       submenu: [
@@ -216,9 +216,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   return (
     <>
       <div
-        className={`sticky top-0 z-10 w-full ${
-          location.pathname == '/login' ? 'hidden' : 'block'
-        }`}
+        className={`sticky top-0 z-10 w-full ${location.pathname == '/login' ? 'hidden' : 'block'
+          }`}
       >
         {/* Mobile Header - Split into two rows */}
         <div className='hidden'>
@@ -372,7 +371,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
 
           <div className='mr-4 flex items-center gap-4'>
-            <LanguageSelector />
+
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -434,8 +433,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   <NavLink
                     to={item.path}
                     className={({ isActive }) =>
-                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${
-                        isActive ? 'bg-color text-white' : 'text-black'
+                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${isActive ? 'bg-color text-white' : 'text-black'
                       }`
                     }
                     onClick={() => setActiveItem(item.name)}

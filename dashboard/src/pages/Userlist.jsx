@@ -22,13 +22,15 @@ import {
   getCreditRefHistory,
   updateExploserLimit,
   changePasswordByDownline,
+  updateUserLock,
 } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AiOutlineFileExcel } from 'react-icons/ai';
-
+import pdfIcon from '../assets/icons/pdf-icon.svg';
+import excelIcon from '../assets/icons/csv-icon.svg';
 import VirtualTable from '../components/VirtualTable';
 export default function AgentLIst() {
   const downloadPDF = () => {
@@ -120,7 +122,6 @@ export default function AgentLIst() {
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
-  const [creditPopup, setCreditPopup] = useState(false);
   const [patnerPopup, setPatnerPopup] = useState(false);
   const [depositPopup, setDepositPopup] = useState(false);
   const [withdrawPopup, setWithdrawPopup] = useState(false);
@@ -131,6 +132,10 @@ export default function AgentLIst() {
   const [showMetricsOpen, setShowMetricsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [passwordPopup, setPasswordPopup] = useState(false);
+  const [lockPopup, setLockPopup] = useState(false);
+  const [lockType, setLockType] = useState(null);
+  const [pendingLock, setPendingLock] = useState(false);
+  const [lockForm, setLockForm] = useState({ remark: '', masterPassword: '' });
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [type, setType] = useState('');
@@ -149,6 +154,7 @@ export default function AgentLIst() {
     masterPassword: '',
     status: 'active',
     confirmPassword: '',
+    remark: '',
   });
 
   useEffect(() => {
@@ -183,6 +189,98 @@ export default function AgentLIst() {
     }
   };
 
+  const openCreditDepositModal = (row) => {
+    setcurrentUser(row);
+    setFormData((prev) => ({
+      ...prev,
+      balance: '',
+      remark: '',
+      creditReference: '',
+      masterPassword: '',
+    }));
+    setDepositPopup(true);
+  };
+
+  const closeCreditDepositModal = () => {
+    setDepositPopup(false);
+    setFormData((prev) => ({
+      ...prev,
+      balance: '',
+      remark: '',
+      creditReference: '',
+      masterPassword: '',
+    }));
+  };
+
+  const handleCreditDepositSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentUser?._id) {
+      toast.error('No user selected.');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Please enter master password.');
+      return;
+    }
+
+    const depositAmount = parseFloat(formData.balance);
+    const hasDeposit = !Number.isNaN(depositAmount) && depositAmount > 0;
+
+    const newCredStr =
+      formData.creditReference === null || formData.creditReference === undefined
+        ? ''
+        : String(formData.creditReference).trim();
+    const newCredNum = parseFloat(newCredStr);
+    const oldCredNum = parseFloat(currentUser.creditReference);
+    const hasCreditChange =
+      newCredStr !== '' &&
+      !Number.isNaN(newCredNum) &&
+      newCredNum !== oldCredNum;
+
+    if (!hasDeposit && !hasCreditChange) {
+      toast.error('Enter a deposit amount and/or a new credit reference.');
+      return;
+    }
+
+    try {
+      const successParts = [];
+      if (hasCreditChange) {
+        const data = await dispatch(
+          updateCreditReference({
+            formData: {
+              creditReference: newCredNum,
+              masterPassword: formData.masterPassword,
+            },
+            userId: currentUser._id,
+          })
+        ).unwrap();
+        if (data?.message) successParts.push(data.message);
+      }
+      if (hasDeposit) {
+        const data = await dispatch(
+          withdrawalAndDeposite({
+            formData,
+            userId: currentUser._id,
+            type: 'deposite',
+          })
+        ).unwrap();
+        if (data?.message) successParts.push(data.message);
+      }
+      toast.success(successParts.join(' ') || 'Saved successfully.');
+      dispatch(
+        getAllOnlyUserAndDownline({
+          page: currentPage,
+          limit: entries,
+          searchQuery,
+        })
+      );
+      dispatch(getAdmin());
+      closeCreditDepositModal();
+    } catch (error) {
+      toast.error(error);
+    }
+  };
+
   const handleSetting = async (e) => {
     e.preventDefault();
     try {
@@ -195,26 +293,6 @@ export default function AgentLIst() {
       ).unwrap();
       toast.success(result.message);
       setSettingPopup(false);
-      dispatch(
-        getAllOnlyUserAndDownline({
-          page: currentPage,
-          limit: entries,
-          searchQuery,
-        })
-      );
-    } catch (error) {
-      toast.error(error);
-    }
-  };
-
-  const handleUpdateCredit = async (e) => {
-    e.preventDefault();
-    try {
-      const data = await dispatch(
-        updateCreditReference({ formData, userId: currentUser._id })
-      ).unwrap();
-      toast.success(data.message);
-      setCreditPopup(false);
       dispatch(
         getAllOnlyUserAndDownline({
           page: currentPage,
@@ -268,6 +346,66 @@ export default function AgentLIst() {
 
   const reloadPage = () => {
     window.location.reload();
+  };
+
+  const getLockFieldValue = (row, type) => {
+    if (type === 'betLock') return !!(row.betLock ?? row.bLock);
+    return !!row[type];
+  };
+
+  const getLockPopupTitle = () => {
+    if (lockType === 'betLock') {
+      return pendingLock ? 'Bet Lock' : 'Unlock Betting';
+    }
+    return pendingLock ? 'Lock User' : 'Unlock User';
+  };
+
+  const openLockPopup = (row, type) => {
+    setcurrentUser(row);
+    setLockType(type);
+    setPendingLock(!getLockFieldValue(row, type));
+    setLockForm({ remark: '', masterPassword: '' });
+    setLockPopup(true);
+  };
+
+  const closeLockPopup = () => {
+    setLockPopup(false);
+    setLockType(null);
+    setLockForm({ remark: '', masterPassword: '' });
+  };
+
+  const handleLockSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentUser?._id) {
+      toast.error('No user selected.');
+      return;
+    }
+    if (!lockForm.masterPassword) {
+      toast.error('Please enter master password.');
+      return;
+    }
+    try {
+      const result = await dispatch(
+        updateUserLock({
+          userId: currentUser._id,
+          lockType,
+          lock: pendingLock,
+          remark: lockForm.remark,
+          masterPassword: lockForm.masterPassword,
+        })
+      ).unwrap();
+      toast.success(result.message);
+      closeLockPopup();
+      dispatch(
+        getAllOnlyUserAndDownline({
+          page: currentPage,
+          limit: entries,
+          searchQuery,
+        })
+      );
+    } catch (error) {
+      toast.error(error);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -426,889 +564,576 @@ export default function AgentLIst() {
         </div>
       )}
 
-      <div className='h-fit bg-[#f9f9f9] p-1 px-[15px] md:px-7.5'>
-        <div className='my-[13px] flex items-center justify-between'>
-          <div className='grid'>
-            <div className='text-[20px]'>Client List</div>
-            <div className='flex items-center'>
-              <input
-                type='text'
-                className='rounded border border-gray-300 bg-white px-2 py-1 h-fit'
-                placeholder='Search...'
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <div className='flex w-fit cursor-pointer items-center gap-0.5 rounded-sm bg-red-700 px-2  text-white'
-                onClick={downloadPDF}>
-                <FaRegFilePdf className='size-4' /> PDF
-              </div>
-              <div className='flex w-fit cursor-pointer items-center gap-0.5 rounded-sm bg-green-700 px-2  text-white'
-                onClick={downloadExcel}>
-                <AiOutlineFileExcel className='size-4' /> Excel
+      <div className='h-fit bg-gray-200 p-4'>
+        <div className='rounded-md bg-white px-4 py-1'>
+          <div className='mb-2 flex items-center justify-between'>
+            <div className='grid'>
+              <div className='text-[14px] font-bold'>Client List</div>
+              <div className='flex items-center gap-1'>
+                <input
+                  type='text'
+                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  placeholder='Search'
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <input
+                  type='text'
+                    className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  placeholder='Search by client'
+                />
+                <img
+                  src={pdfIcon}
+                  alt=''
+                  className='w-[35px]'
+                  onClick={downloadPDF}
+                />
+                <img
+                  src={excelIcon}
+                  alt=''
+                  className='w-[35px]'
+                  onClick={downloadExcel}
+                />
               </div>
             </div>
-          </div>
 
-          <div className='flex'>
-            <div className='mb-2 flex items-center justify-center text-[#333] md:mb-0'>
-              <span className='mr-2'>Show</span>
-              <select className='rounded border border-gray-300 px-2 py-1'
-                value={entries}
-                onChange={(e) => setEntries(Number(e.target.value))}>
-                <option value='10'>10</option>
-                <option value='20'>20</option>
-                <option value='50'>50</option>
-                <option value='100'>100</option>
-                <option value='500'>500</option>
-              </select>
-              <span className='ml-2'>entries</span>
-            </div>
+            <div className='flex gap-2'>
+              <div className='mb-2 flex items-center justify-center font-semibold text-black md:mb-0'>
+                <span className='mr-2'>Show</span>
+                <select
+                  className='rounded border border-gray-300 px-2 py-1'
+                  value={entries}
+                  onChange={(e) => setEntries(Number(e.target.value))}
+                >
+                  <option value='10'>10</option>
+                  <option value='20'>20</option>
+                  <option value='50'>50</option>
+                  <option value='100'>100</option>
+                  <option value='500'>500</option>
+                </select>
+                <span className='ml-2'>entries</span>
+              </div>
 
-            <button className='flex items-center gap-1 rounded border border-gray-300 bg-[#0088cc] px-[15px] text-[12px] leading-[30px] font-bold text-white'
-              onClick={() => navigate('/agent-download-list/insertagent')}>
-                Add Client Account
-            </button>
-            <button className='flex items-center gap-1 rounded border border-gray-300 bg-[#0088cc] px-[15px] text-[12px] leading-[30px] font-bold text-white'
-              onClick={() => navigate('/agent-download-list/insertagent')}>
-              Inactive List
-            </button>
-
-          </div>
-
-
-
-          
-          
-        </div>
-
-
-
-        <div className='flex border-b border-gray-300'>
-          <div
-            className={`cursor-pointer px-4 py-2 ${activeTab === 'active' ? 'border border-gray-300 border-b-white bg-white text-gray-600' : 'text-[#0088cc]'}`}
-            onClick={() => setActiveTab('active')}
-          >
-            Active Users
-          </div>
-          <div
-            className={`cursor-pointer px-4 py-2 ${activeTab === 'deactive' ? 'border border-gray-300 border-b-white bg-white text-gray-600' : 'text-[#0088cc]'}`}
-            onClick={() => setActiveTab('deactive')}
-          >
-            Deactive Users
-          </div>
-        </div>
-
-        <div className='flex space-x-2'>
-          
-        </div>
-
-        {/* Main content area with table */}
-        {/* Table */}
-
-        <VirtualTable
-          data={onlyusers.filter((user) =>
-            activeTab === 'active'
-              ? user.status === 'active'
-              : user.status !== 'active'
-          )}
-          columns={[
-            {
-              header: 'Username',
-              accessor: 'userName',
-              cell: (row) => (
-                <span className='block w-fit rounded-[3px] bg-[#444] px-2 py-[1px] text-[14px] text-white uppercase'>
-                  {row.userName}
-                </span>
-              ),
-            },
-            {
-              header: 'Credit Ref.',
-              accessor: 'creditReference',
-              align: 'right',
-              cell: (row) => row.creditReference,
-            },
-            {
-              header: 'Balance',
-              accessor: 'balance',
-              align: 'right',
-              cell: (row) => row.balance || 0,
-            },
-            {
-              header: 'Exposure',
-              accessor: 'exposure',
-              align: 'right',
-              cell: (row) => row.exposure,
-            },
-            {
-              header: 'Exposure Limit',
-              accessor: 'exposureLimit',
-              align: 'right',
-              cell: (row) => row.exposureLimit || 0,
-            },
-            {
-              header: 'Avail. Bal.',
-              accessor: 'avbalance',
-              align: 'right',
-              cell: (row) => row.avbalance || 0,
-            },
-            {
-              header: 'Ref. P/L',
-              accessor: 'creditReferenceProfitLoss',
-              align: 'right',
-              cell: (row) =>
-                Number(row.bettingProfitLoss) +
-                Number(row.creditReferenceProfitLoss),
-            },
-            {
-              header: 'Account Type',
-              accessor: 'role',
-              cell: (row) => row.role,
-            },
-            {
-              header: 'Actions',
-              accessor: 'action',
-              cell: (row) =>
-                isFetchingAllUsers ? (
-                  <div className='flex gap-1'>
-                    <span
-                      className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                      onClick={() => {
-                        setDepositPopup(true);
-                        setcurrentUser(row);
-                      }}
-                    >
-                      D
-                    </span>
-                    <span
-                      className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                      onClick={() => {
-                        setWithdrawPopup(true);
-                        setcurrentUser(row);
-                      }}
-                    >
-                      W
-                    </span>
-                    <span
-                      className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                      onClick={() => {
-                        setPatnerPopup(true);
-                        setcurrentUser(row);
-                      }}
-                    >
-                      L
-                    </span>
-                    <span
-                      className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                      onClick={() => {
-                        setCreditPopup(true);
-                        setcurrentUser(row);
-                      }}
-                    >
-                      C
-                    </span>
-                    <span
-                      className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                      onClick={() => {
-                        setPasswordPopup(true);
-                        setcurrentUser(row);
-                      }}
-                    >
-                      P
-                    </span>
-                    <span
-                      className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                      onClick={() => {
-                        setSettingPopup(true);
-                        setcurrentUser(row);
-                      }}
-                    >
-                      S
-                    </span>
-                  </div>
-                ) : null,
-            },
-          ]}
-        />
-
-        {/* Pagination */}
-        <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
-          <div>
-            Showing {currentPage} to {totalPages} of {onlyusers?.length} entries
-          </div>
-          <div className='flex flex-wrap'>
-            {/* First Button */}
-            <button
-              className='pgBtn px-[13px] py-[6.5px]'
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
-            >
-              First
-            </button>
-
-            {/* Previous Button */}
-            <button
-              className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
-
-            {/* Page Numbers */}
-            {[...Array(totalPages)].map((_, i) => (
               <button
-                key={i}
-                className={`ml-[2px] rounded-[2px] border border-[#0088cc] px-[13px] py-[6.5px] leading-none ${
-                  currentPage === i + 1 ? 'bg-[#0088cc] text-white' : 'pgBtn'
-                }`}
-                onClick={() => handlePageChange(i + 1)}
+                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
+                onClick={() => navigate('/agent-download-list/insertagent')}
               >
-                {i + 1}
+                Add Client Account
               </button>
-            ))}
 
-            {/* Next Button */}
-            <button
-              className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-
-            {/* Last Button */}
-            <button
-              className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-            >
-              Last
-            </button>
+              <button
+                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
+                onClick={() =>
+                  setActiveTab((tab) =>
+                    tab === 'active' ? 'deactive' : 'active'
+                  )
+                }
+              >
+                {activeTab === 'active' ? 'Inactive List' : 'Active List'}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Credit reference popup */}
-        {creditPopup && (
-          <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
-            >
-              {/* Header */}
-              <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                <span>Credit</span>
+          <VirtualTable
+            data={onlyusers.filter((user) =>
+              activeTab === 'active'
+                ? user.status === 'active'
+                : user.status !== 'active'
+            )}
+            columns={[
+              {
+                header: 'Username',
+                accessor: 'userName',
+                cell: (row) => (
+                  <span className='block w-fit rounded-[3px] px-2 py-[1px] text-[14px] text-black'>
+                    {row.userName}
+                  </span>
+                ),
+              },
+              {
+                header: 'Credit Reference',
+                accessor: 'creditReference',
+                align: 'right',
+                cell: (row) => row.creditReference,
+              },
+              {
+                header: 'Balance',
+                accessor: 'balance',
+                align: 'right',
+                cell: (row) => row.balance || 0,
+              },
+              {
+                header: 'Pending Bal.',
+                accessor: 'pendingBal',
+                align: 'right',
+                cell: (row) => row.pendingBal || 0,
+              },
+              {
+                header: 'Available Bal.',
+                accessor: 'avbalance',
+                align: 'right',
+                cell: (row) => row.avbalance || 0,
+              },
+              {
+                header: 'Current P&L',
+                accessor: 'currentPL',
+                align: 'right',
+                cell: (row) => row.currentPL || 0,
+              },
+              {
+                header: 'Exposure',
+                accessor: 'exposure',
+                align: 'right',
+                cell: (row) => row.exposure,
+              },
+              {
+                header: 'U Lock',
+                accessor: 'uLock',
+                cell: (row) => (
+                  <input
+                    type='checkbox'
+                    checked={getLockFieldValue(row, 'uLock')}
+                    readOnly
+                    onClick={() => openLockPopup(row, 'uLock')}
+                    className='h-5 w-5 cursor-pointer accent-[#146578]'
+                  />
+                ),
+              },
+              {
+                header: 'B Lock',
+                accessor: 'betLock',
+                cell: (row) => (
+                  <input
+                    type='checkbox'
+                    checked={getLockFieldValue(row, 'betLock')}
+                    readOnly
+                    onClick={() => openLockPopup(row, 'betLock')}
+                    className='h-5 w-5 cursor-pointer accent-[#146578]'
+                  />
+                ),
+              },
+              {
+                header: 'My %',
+                accessor: 'myPercent',
+                align: 'right',
+                cell: (row) => row.myPercent,
+              },
+              // {
+              //   header: 'Exposure Limit',
+              //   accessor: 'exposureLimit',
+              //   align: 'right',
+              //   cell: (row) => row.exposureLimit || 0,
+              // },
+
+              // {
+              //   header: 'Ref. P/L',
+              //   accessor: 'creditReferenceProfitLoss',
+              //   align: 'right',
+              //   cell: (row) =>
+              //     Number(row.bettingProfitLoss) +
+              //     Number(row.creditReferenceProfitLoss),
+              // },
+              {
+                header: 'Type',
+                accessor: 'role',
+                cell: (row) => row.role,
+              },
+              {
+                header: 'Actions',
+                accessor: 'action',
+                cell: (row) =>
+                  isFetchingAllUsers ? (
+                    <div className='flex gap-1'>
+                      <span
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] leading-none text-white text-[11px] font-bold'
+                      >
+                        U
+                      </span>
+                      <span
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] leading-none text-white text-[11px] font-bold'
+                        onClick={() => openCreditDepositModal(row)}
+                      >
+                        D/C
+                      </span>
+                      <span
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] leading-none text-white text-[11px] font-bold'
+                        onClick={() => {
+                          setWithdrawPopup(true);
+                          setcurrentUser(row);
+                        }}
+                      >
+                        W
+                      </span>
+                      {/* <span
+                        className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
+                        onClick={() => {
+                          setPatnerPopup(true);
+                          setcurrentUser(row);
+                        }}
+                      >
+                        L
+                      </span> */}
+                      {/* C merged into D/C (Credit / Deposit modal) */}
+                      <span
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] leading-none text-black text-[11px] font-bold'
+                        onClick={() => {
+                          setPasswordPopup(true);
+                          setcurrentUser(row);
+                        }}
+                      >
+                        P
+                      </span>
+                      <span
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] leading-none text-black text-[11px] font-bold'
+                      >
+                        GC
+                      </span>
+                      <span
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] leading-none text-black text-[11px] font-bold'
+                      >
+                        CC
+                      </span>
+                      {/* <span
+                        className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
+                        onClick={() => {
+                          setSettingPopup(true);
+                          setcurrentUser(row);
+                        }}
+                      >
+                        S
+                      </span> */}
+                    </div>
+                  ) : null,
+              },
+            ]}
+          />
+
+          {/* Pagination */}
+          <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
+            <div>
+              Showing {currentPage} to {totalPages} of {onlyusers?.length}{' '}
+              entries
+            </div>
+            <div className='flex flex-wrap'>
+              {/* First Button */}
+              <button
+                className='pgBtn px-[13px] py-[6.5px]'
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+              >
+                First
+              </button>
+
+              {/* Previous Button */}
+              <button
+                className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              {[...Array(totalPages)].map((_, i) => (
                 <button
-                  onClick={() => setCreditPopup(false)}
-                  className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
+                  key={i}
+                  className={`ml-[2px] rounded-[2px] border border-[#0088cc] px-[13px] py-[6.5px] leading-none ${
+                    currentPage === i + 1 ? 'bg-[#0088cc] text-white' : 'pgBtn'
+                  }`}
+                  onClick={() => handlePageChange(i + 1)}
                 >
-                  ×
+                  {i + 1}
                 </button>
-              </div>
+              ))}
 
-              <form onSubmit={handleUpdateCredit}>
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Old Credit</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                        value={currentUser.creditReference}
-                      />
-                    </div>
-                  </div>
-                </div>
+              {/* Next Button */}
+              <button
+                className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
 
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>New Credit</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            creditReference: e.target.value,
-                          })
-                        }
-                        value={formData.creditReference}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='password'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            masterPassword: e.target.value,
-                          })
-                        }
-                        value={formData.masterPassword}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='flex justify-end gap-2 px-[15px]'>
-                  <button
-                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                    onClick={() => setCreditPopup(false)}
-                  >
-                    BACK
-                  </button>
-                  <button className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'>
-                    submit
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+              {/* Last Button */}
+              <button
+                className='pgBtn ml-[2px] px-[13px] py-[6.5px]'
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                Last
+              </button>
+            </div>
           </div>
-        )}
 
-        {/* exposure limit popup */}
-        {patnerPopup && (
-          <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
-            >
-              {/* Header */}
-              <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                <span>Exposure Limit</span>
-                <button
-                  onClick={() => setPatnerPopup(false)}
-                  className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateExploserLimit}>
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Old Limit</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                        value={currentUser.exposureLimit}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>New Limit</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            exposureLimit: e.target.value,
-                          })
-                        }
-                        value={formData.exposureLimit}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='password'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            masterPassword: e.target.value,
-                          })
-                        }
-                        value={formData.masterPassword}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='flex justify-end gap-2 px-[15px]'>
+          {/* exposure limit popup */}
+          {patnerPopup && (
+            <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
+              >
+                {/* Header */}
+                <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
+                  <span>Exposure Limit</span>
                   <button
-                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
                     onClick={() => setPatnerPopup(false)}
+                    className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
                   >
-                    BACK
-                  </button>
-                  <button className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'>
-                    submit
+                    ×
                   </button>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
 
-        {/* deposit popup */}
-        {depositPopup && (
-          <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
-            >
-              {/* Header */}
-              <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                <span>Deposit</span>
-                <button
-                  onClick={() => setDepositPopup(false)}
-                  className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
-                >
-                  ×
-                </button>
-              </div>
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>{userInfo.userName}</div>
-                <div className='col-span-2 flex'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={userInfo.avbalance}
-                      readOnly
-                    />
-                  </div>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={userInfo.avbalance - formData.balance}
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>
-                  {currentUser.userName}
-                </div>
-                <div className='col-span-2 flex'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={currentUser.avbalance}
-                      readOnly
-                    />
-                  </div>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={
-                        currentUser.avbalance + Number(formData.balance || 0)
-                      }
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-              <form onSubmit={handleWithdwalDeposite}>
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Amount</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                        onChange={(e) =>
-                          setFormData({ ...formData, balance: e.target.value })
-                        }
-                        value={formData.balance}
-                      />
+                <form onSubmit={handleUpdateExploserLimit}>
+                  <div className='mb-[14px] grid grid-cols-3 items-center'>
+                    <div className='col-span-1 px-[15px]'>Old Limit</div>
+                    <div className='col-span-2'>
+                      <div className='px-[15px]'>
+                        <input
+                          type='text'
+                          className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                          value={currentUser.exposureLimit}
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  <div className='mb-[14px] grid grid-cols-3 items-center'>
+                    <div className='col-span-1 px-[15px]'>New Limit</div>
+                    <div className='col-span-2'>
+                      <div className='px-[15px]'>
+                        <input
+                          type='text'
+                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              exposureLimit: e.target.value,
+                            })
+                          }
+                          value={formData.exposureLimit}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='mb-[14px] grid grid-cols-3 items-center'>
+                    <div className='col-span-1 px-[15px]'>Master Password</div>
+                    <div className='col-span-2'>
+                      <div className='px-[15px]'>
+                        <input
+                          type='password'
+                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              masterPassword: e.target.value,
+                            })
+                          }
+                          value={formData.masterPassword}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='flex justify-end gap-2 px-[15px]'>
+                    <button
+                      className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
+                      onClick={() => setPatnerPopup(false)}
+                    >
+                      BACK
+                    </button>
+                    <button className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'>
+                      submit
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Credit / Deposit popup */}
+          {depositPopup && currentUser && (
+            <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-black/45 text-[13px]'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='absolute top-[2%] left-1/2 w-full max-w-[520px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+              >
+                <div className='flex items-center justify-between bg-gradient-to-r from-[#26a69a] to-[#4db6ac] px-4 py-3 text-[18px] font-semibold text-white'>
+                  <span>Credit / Deposit</span>
+                  <button
+                    type='button'
+                    onClick={closeCreditDepositModal}
+                    className='flex h-8 w-8 items-center justify-center rounded text-2xl leading-none text-white hover:bg-white/15'
+                    aria-label='Close'
+                  >
+                    ×
+                  </button>
                 </div>
 
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Remark</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <textarea
+                <form
+                  onSubmit={handleCreditDepositSubmit}
+                  className='space-y-3 bg-white p-4'
+                >
+                  {/* My Available */}
+                  <div className='flex flex-wrap items-end gap-2'>
+                    <label className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                      My Available
+                    </label>
+                    <div className='flex min-w-0 flex-1 flex-wrap items-end gap-2'>
+                      <input
                         type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
+                        readOnly
+                        className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                        value={userInfo?.avbalance ?? ''}
+                      />
+                      <div className='flex min-w-[80px] flex-1 flex-col gap-0.5'>
+                        <span className='text-[11px] font-semibold text-gray-700'>
+                          After
+                        </span>
+                        <input
+                          type='text'
+                          readOnly
+                          className='w-full rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          value={
+                            Number(userInfo?.avbalance || 0) -
+                            Number(formData.balance || 0)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Credit reference */}
+                  <div className='rounded-md border border-dashed border-gray-400 p-3'>
+                    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                      <div>
+                        <label className='mb-1 block font-semibold text-gray-800'>
+                          Old Cred Ref.
+                        </label>
+                        <input
+                          type='text'
+                          readOnly
+                          className='w-full rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          value={currentUser.creditReference ?? ''}
+                        />
+                      </div>
+                      <div>
+                        <label className='mb-1 block font-semibold text-gray-800'>
+                          New Cred Ref.
+                        </label>
+                        <input
+                          type='text'
+                          className='w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-end outline-none'
+                          placeholder=''
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              creditReference: e.target.value,
+                            })
+                          }
+                          value={formData.creditReference ?? ''}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Deposit block */}
+                  <div className='rounded-md border border-dashed border-gray-400 p-3'>
+                    <div className='mb-3 flex flex-wrap items-end gap-2'>
+                      <span className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                        {userInfo?.userName}
+                      </span>
+                      <div className='flex min-w-0 flex-1 flex-wrap gap-2'>
+                        <input
+                          type='text'
+                          readOnly
+                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          value={userInfo?.avbalance ?? ''}
+                        />
+                        <input
+                          type='text'
+                          readOnly
+                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          value={
+                            Number(userInfo?.avbalance || 0) -
+                            Number(formData.balance || 0)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className='mb-3 flex flex-wrap items-end gap-2'>
+                      <span className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                        {currentUser.userName}
+                      </span>
+                      <div className='flex min-w-0 flex-1 flex-wrap gap-2'>
+                        <input
+                          type='text'
+                          readOnly
+                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          value={currentUser.avbalance ?? ''}
+                        />
+                        <input
+                          type='text'
+                          readOnly
+                          className='min-w-[80px] flex-1 rounded border border-gray-300 bg-[#b2ebf2] px-2 py-1.5 text-end outline-none'
+                          value={
+                            Number(currentUser.avbalance || 0) +
+                            Number(formData.balance || 0)
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className='mb-3 flex flex-wrap items-center gap-2'>
+                      <label className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                        Add Deposit
+                      </label>
+                      <input
+                        type='number'
+                        min={0}
+                        step='any'
+                        className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-end outline-none'
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            balance: e.target.value,
+                          })
+                        }
+                        value={formData.balance ?? ''}
+                      />
+                    </div>
+                    <div className='flex flex-wrap items-start gap-2'>
+                      <label className='min-w-[100px] shrink-0 pt-1.5 font-semibold text-gray-800'>
+                        Remarks
+                      </label>
+                      <textarea
+                        rows={3}
+                        className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 text-end outline-none'
                         onChange={(e) =>
                           setFormData({
                             ...formData,
                             remark: e.target.value,
                           })
                         }
-                        value={formData.remark}
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='password'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            masterPassword: e.target.value,
-                          })
-                        }
-                        value={formData.masterPassword}
+                        value={formData.remark ?? ''}
                       />
                     </div>
                   </div>
-                </div>
 
-                <div className='flex justify-end gap-2 px-[15px]'>
-                  <button
-                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                    onClick={() => setDepositPopup(false)}
-                  >
-                    BACK
-                  </button>
-                  <button
-                    className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
-                    onClick={() => setType('deposite')}
-                  >
-                    submit
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-
-        {/* withdraw popup */}
-        {withdrawPopup && (
-          <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
-            >
-              {/* Header */}
-              <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                <span>Withdraw</span>
-                {/* <span>Banking - Master Balance : {userInfo.avbalance}</span> */}
-                <button
-                  onClick={() => setWithdrawPopup(false)}
-                  className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
-                >
-                  ×
-                </button>
-              </div>
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>{userInfo.userName}</div>
-                <div className='col-span-2 flex'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={userInfo.avbalance}
-                      readOnly
-                    />
-                  </div>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={userInfo.avbalance + Number(formData.balance || 0)}
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>
-                  {currentUser.userName}
-                </div>
-                <div className='col-span-2 flex'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={currentUser.avbalance}
-                      readOnly
-                    />
-                  </div>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
-                      value={
-                        currentUser.avbalance - Number(formData.balance || 0)
-                      }
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-              <form onSubmit={handleWithdwalDeposite}>
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Amount</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                        onChange={(e) =>
-                          setFormData({ ...formData, balance: e.target.value })
-                        }
-                        value={formData.balance}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Remark</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <textarea
-                        type='text'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            remark: e.target.value,
-                          })
-                        }
-                        value={formData.remark}
-                      ></textarea>
-                    </div>
-                  </div>
-                </div>
-
-                <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
-                  <div className='col-span-2'>
-                    <div className='px-[15px]'>
-                      <input
-                        type='password'
-                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            masterPassword: e.target.value,
-                          })
-                        }
-                        value={formData.masterPassword}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className='flex justify-end gap-2 px-[15px]'>
-                  <button
-                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                    onClick={() => setWithdrawPopup(false)}
-                  >
-                    BACK
-                  </button>
-                  <button
-                    className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
-                    onClick={() => setType('withdrawal')}
-                  >
-                    submit
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-
-        {/*status change popup */}
-        {settingPopup && (
-          <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
-            >
-              {/* Header */}
-              <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                <span>Change Status</span>
-                <button
-                  onClick={() => setSettingPopup(false)}
-                  className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className='mb-4 flex items-center justify-between gap-2 px-[15px] text-[13px]'>
-                <span className='ml-2'>{currentUser.name}</span>
-              </div>
-
-              {/* Status Buttons */}
-              <div className='mb-4 grid grid-cols-3 gap-3 px-[15px]'>
-                {/* Active Button */}
-                <button
-                  onClick={() => setFormData({ ...formData, status: 'active' })}
-                  className={`flex flex-col items-center rounded border p-3 ${
-                    formData.status === 'active'
-                      ? 'bg-green-500 text-white'
-                      : 'border-green-500 text-green-600'
-                  }`}
-                >
-                  <FaCheckCircle size={20} />
-                  <span>Active</span>
-                </button>
-
-                {/* Suspend Button */}
-                <button
-                  onClick={() =>
-                    setFormData({ ...formData, status: 'suspend' })
-                  }
-                  className={`flex flex-col items-center rounded border p-3 ${
-                    formData.status === 'suspend'
-                      ? 'bg-red-500 text-white'
-                      : 'border-red-500 text-red-600'
-                  }`}
-                >
-                  <FaBan size={20} />
-                  <span>Suspend</span>
-                </button>
-
-                {/* Locked Button */}
-                <button
-                  onClick={() => setFormData({ ...formData, status: 'locked' })}
-                  className={`flex flex-col items-center rounded border p-3 ${
-                    formData.status === 'locked'
-                      ? 'bg-gray-700 text-white'
-                      : 'border-gray-400 text-gray-700'
-                  }`}
-                >
-                  <FaLock size={20} />
-                  <span>Locked</span>
-                </button>
-              </div>
-
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>Master Password</div>
-                <div className='col-span-2'>
-                  <div className='px-[15px]'>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <label className='min-w-[100px] shrink-0 font-semibold text-gray-800'>
+                      Master Password
+                    </label>
                     <input
                       type='password'
-                      className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          masterPassword: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className='flex justify-end gap-2 px-[15px]'>
-                <button
-                  className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                  onClick={() => setSettingPopup(false)}
-                >
-                  BACK
-                </button>
-                <button
-                  className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
-                  onClick={handleSetting}
-                >
-                  submit
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* change Password popup */}
-        {passwordPopup && (
-          <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
-            >
-              {/* Header */}
-              <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
-                <span>Password </span>
-                <button
-                  onClick={() => setPasswordPopup(false)}
-                  className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>New Password</div>
-                <div className='col-span-2'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>Confirm Password</div>
-                <div className='col-span-2'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='text'
-                      className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>Master Password</div>
-                <div className='col-span-2'>
-                  <div className='px-[15px]'>
-                    <input
-                      type='password'
-                      className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                      autoComplete='off'
+                      className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -1318,26 +1143,446 @@ export default function AgentLIst() {
                       value={formData.masterPassword}
                     />
                   </div>
-                </div>
-              </div>
 
-              <div className='flex justify-end gap-2 px-[15px]'>
-                <button
-                  className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
-                  onClick={() => setPasswordPopup(false)}
-                >
-                  BACK
-                </button>
-                <button
-                  className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
-                  onClick={handleChangePassword}
-                >
-                  submit
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+                  <div className='flex justify-end gap-2 pt-1'>
+                    <button
+                      type='submit'
+                      className='cursor-pointer rounded bg-[#26a69a] px-5 py-2 font-medium text-white hover:bg-[#20897f]'
+                    >
+                      Submit
+                    </button>
+                    <button
+                      type='button'
+                      onClick={closeCreditDepositModal}
+                      className='cursor-pointer rounded bg-[#26a69a] px-5 py-2 font-medium text-white hover:bg-[#20897f]'
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* withdraw popup */}
+          {withdrawPopup && (
+            <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
+              >
+                {/* Header */}
+                <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
+                  <span>Withdraw</span>
+                  {/* <span>Banking - Master Balance : {userInfo.avbalance}</span> */}
+                  <button
+                    onClick={() => setWithdrawPopup(false)}
+                    className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className='mb-[14px] grid grid-cols-3 items-center'>
+                  <div className='col-span-1 px-[15px]'>
+                    {userInfo.userName}
+                  </div>
+                  <div className='col-span-2 flex'>
+                    <div className='px-[15px]'>
+                      <input
+                        type='text'
+                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                        value={userInfo.avbalance}
+                        readOnly
+                      />
+                    </div>
+                    <div className='px-[15px]'>
+                      <input
+                        type='text'
+                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                        value={
+                          userInfo.avbalance + Number(formData.balance || 0)
+                        }
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className='mb-[14px] grid grid-cols-3 items-center'>
+                  <div className='col-span-1 px-[15px]'>
+                    {currentUser.userName}
+                  </div>
+                  <div className='col-span-2 flex'>
+                    <div className='px-[15px]'>
+                      <input
+                        type='text'
+                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                        value={currentUser.avbalance}
+                        readOnly
+                      />
+                    </div>
+                    <div className='px-[15px]'>
+                      <input
+                        type='text'
+                        className='w-full border border-[#666] bg-[#ddd] p-1 px-[10px] py-[6px] text-end outline-0'
+                        value={
+                          currentUser.avbalance - Number(formData.balance || 0)
+                        }
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                </div>
+                <form onSubmit={handleWithdwalDeposite}>
+                  <div className='mb-[14px] grid grid-cols-3 items-center'>
+                    <div className='col-span-1 px-[15px]'>Amount</div>
+                    <div className='col-span-2'>
+                      <div className='px-[15px]'>
+                        <input
+                          type='text'
+                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              balance: e.target.value,
+                            })
+                          }
+                          value={formData.balance}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='mb-[14px] grid grid-cols-3 items-center'>
+                    <div className='col-span-1 px-[15px]'>Remark</div>
+                    <div className='col-span-2'>
+                      <div className='px-[15px]'>
+                        <textarea
+                          type='text'
+                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] text-end outline-0'
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              remark: e.target.value,
+                            })
+                          }
+                          value={formData.remark}
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='mb-[14px] grid grid-cols-3 items-center'>
+                    <div className='col-span-1 px-[15px]'>Master Password</div>
+                    <div className='col-span-2'>
+                      <div className='px-[15px]'>
+                        <input
+                          type='password'
+                          className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              masterPassword: e.target.value,
+                            })
+                          }
+                          value={formData.masterPassword}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='flex justify-end gap-2 px-[15px]'>
+                    <button
+                      className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
+                      onClick={() => setWithdrawPopup(false)}
+                    >
+                      BACK
+                    </button>
+                    <button
+                      className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
+                      onClick={() => setType('withdrawal')}
+                    >
+                      submit
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/*status change popup */}
+          {settingPopup && (
+            <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
+              >
+                {/* Header */}
+                <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
+                  <span>Change Status</span>
+                  <button
+                    onClick={() => setSettingPopup(false)}
+                    className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className='mb-4 flex items-center justify-between gap-2 px-[15px] text-[13px]'>
+                  <span className='ml-2'>{currentUser.name}</span>
+                </div>
+
+                {/* Status Buttons */}
+                <div className='mb-4 grid grid-cols-3 gap-3 px-[15px]'>
+                  {/* Active Button */}
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, status: 'active' })
+                    }
+                    className={`flex flex-col items-center rounded border p-3 ${
+                      formData.status === 'active'
+                        ? 'bg-green-500 text-white'
+                        : 'border-green-500 text-green-600'
+                    }`}
+                  >
+                    <FaCheckCircle size={20} />
+                    <span>Active</span>
+                  </button>
+
+                  {/* Suspend Button */}
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, status: 'suspend' })
+                    }
+                    className={`flex flex-col items-center rounded border p-3 ${
+                      formData.status === 'suspend'
+                        ? 'bg-red-500 text-white'
+                        : 'border-red-500 text-red-600'
+                    }`}
+                  >
+                    <FaBan size={20} />
+                    <span>Suspend</span>
+                  </button>
+
+                  {/* Locked Button */}
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, status: 'locked' })
+                    }
+                    className={`flex flex-col items-center rounded border p-3 ${
+                      formData.status === 'locked'
+                        ? 'bg-gray-700 text-white'
+                        : 'border-gray-400 text-gray-700'
+                    }`}
+                  >
+                    <FaLock size={20} />
+                    <span>Locked</span>
+                  </button>
+                </div>
+
+                <div className='mb-[14px] grid grid-cols-3 items-center'>
+                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-2'>
+                    <div className='px-[15px]'>
+                      <input
+                        type='password'
+                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            masterPassword: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className='flex justify-end gap-2 px-[15px]'>
+                  <button
+                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
+                    onClick={() => setSettingPopup(false)}
+                  >
+                    BACK
+                  </button>
+                  <button
+                    className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
+                    onClick={handleSetting}
+                  >
+                    submit
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Lock User popup */}
+          {lockPopup && (
+            <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+              <motion.div
+                initial={{ opacity: 0, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 0 }}
+
+                className='fixed top-8 w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
+              >
+                <div className=' flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+                  <span className='text-[16px] font-semibold'>
+                    {getLockPopupTitle()}
+                  </span>
+                  <button
+                    type='button'
+                    onClick={closeLockPopup}
+                    className='text-xl leading-none text-gray-200 font-bold'
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <form onSubmit={handleLockSubmit} className='px-4 pt-4 pb-2 bg-sky-50'>
+                  <div className='mb-3 flex items-center gap-3'>
+                    <label className='w-[150px] shrink-0 text-gray-900 text-[14px]'>
+                      Remark
+                    </label>
+                    <input
+                      type='text'
+                      className='w-full border border-gray-800 px-2 py-1 outline-none bg-white'
+                      value={lockForm.remark}
+                      onChange={(e) =>
+                        setLockForm({ ...lockForm, remark: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className='mb-2 flex items-center gap-3'>
+                    <label className='w-[150px] shrink-0  text-gray-900 text-[14px]'>
+                      Master Password
+                    </label>
+                    <input
+                      type='password'
+                      className='w-full border border-gray-800 px-2 py-1 outline-none bg-white'
+                      value={lockForm.masterPassword}
+                      onChange={(e) =>
+                        setLockForm({
+                          ...lockForm,
+                          masterPassword: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className='flex justify-end gap-2 border-t border-gray-300 pt-1'>
+                    <button
+                      type='submit'
+                      className='text-[14px] rounded border bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-white'
+                    >
+                      Submit
+                    </button>
+                    <button
+                      type='button'
+                      onClick={closeLockPopup}
+                      className='text-[14px] rounded border bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-white'
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* change Password popup */}
+          {passwordPopup && (
+            <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='absolute top-[2%] left-1/2 w-full max-w-[530px] -translate-x-1/2 overflow-hidden rounded-lg bg-white p-[14px] shadow-lg'
+              >
+                {/* Header */}
+                <div className='flex items-center justify-between px-[15px] pb-5 text-[20px]'>
+                  <span>Password </span>
+                  <button
+                    onClick={() => setPasswordPopup(false)}
+                    className='flex h-[35px] w-[35px] items-center justify-center rounded-full bg-[#0088cc] text-xl text-white'
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className='mb-[14px] grid grid-cols-3 items-center'>
+                  <div className='col-span-1 px-[15px]'>New Password</div>
+                  <div className='col-span-2'>
+                    <div className='px-[15px]'>
+                      <input
+                        type='text'
+                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className='mb-[14px] grid grid-cols-3 items-center'>
+                  <div className='col-span-1 px-[15px]'>Confirm Password</div>
+                  <div className='col-span-2'>
+                    <div className='px-[15px]'>
+                      <input
+                        type='text'
+                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className='mb-[14px] grid grid-cols-3 items-center'>
+                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-2'>
+                    <div className='px-[15px]'>
+                      <input
+                        type='password'
+                        className='w-full rounded-sm border border-gray-300 p-1 px-[10px] py-[6px] outline-0'
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            masterPassword: e.target.value,
+                          })
+                        }
+                        value={formData.masterPassword}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className='flex justify-end gap-2 px-[15px]'>
+                  <button
+                    className='cursor-pointer rounded-sm bg-gray-800 px-3 py-2 text-white'
+                    onClick={() => setPasswordPopup(false)}
+                  >
+                    BACK
+                  </button>
+                  <button
+                    className='cursor-pointer rounded-sm bg-[#0088cc] px-3 py-2 text-white'
+                    onClick={handleChangePassword}
+                  >
+                    submit
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

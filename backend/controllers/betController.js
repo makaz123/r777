@@ -14,6 +14,18 @@ import {
 
 dotenv.config();
 
+const rejectIfBetLocked = (user, res) => {
+  if (user?.uLock) {
+    res.status(403).json({ message: 'Your account is locked.' });
+    return true;
+  }
+  if (user?.betLock || user?.bLock) {
+    res.status(403).json({ message: 'Betting is locked for your account' });
+    return true;
+  }
+  return false;
+};
+
 const MARKET_NAME_TO_API = {
   'Match Odds': 'MATCH_ODDS',
   'Tied Match': 'TIED_MATCH',
@@ -270,6 +282,7 @@ const placeCasinoBet = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (rejectIfBetLocked(user, res)) return;
 
     // Check if Casino is locked for this user
     const casinoLockEntry = user.gamelock?.find(
@@ -824,6 +837,7 @@ const placeBet = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (rejectIfBetLocked(user, res)) return;
 
     // Check if this sport is locked for the user
     if (gameName && user.gamelock) {
@@ -1323,6 +1337,7 @@ export const placeFancyBet = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (rejectIfBetLocked(user, res)) return;
 
     // Check if this sport is locked for the user
     if (gameName && user.gamelock) {

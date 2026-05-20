@@ -275,7 +275,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             <button
               type='button'
               onClick={() => setSportsSidebarOpen((prev) => !prev)}
-              className='ml-3 mr-1 cursor-pointer text-white'
+              className='mr-1 ml-3 cursor-pointer text-white'
               aria-expanded={sportsSidebarOpen}
               aria-label='Toggle sports menu'
             >
@@ -283,7 +283,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </button>
             <NavLink
               to='/user-download-list'
-              className='h-[32px] mr-10'
+              className='mr-10 h-[32px]'
               onClick={(e) => {
                 if (onLogoClick) {
                   e.preventDefault();
@@ -295,8 +295,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               <img src={logo} alt='logo' className='block h-full' />
             </NavLink>
 
-            <nav className='text-black h-full'>
-              <ul className='relative mx-auto flex w-full flex-wrap h-full items-center'>
+            <nav className='h-full text-black'>
+              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center'>
                 {navItems.map((item, i) => (
                   <li
                     key={i}
@@ -307,7 +307,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                     {item.path ? (
                       <NavLink
                         to={item.path}
-                        className='h-full px-1.5 flex items-center text-[14px] whitespace-nowrap text-white transition-colors hover:bg-gradient-to-b from-[#16a4bc] to-[#16a4bc]'
+                        className='flex h-full items-center from-[#16a4bc] to-[#16a4bc] px-1.5 text-[14px] whitespace-nowrap text-white transition-colors hover:bg-gradient-to-b'
                         onClick={() => {
                           setActiveItem(item.name);
                           if (onNavClick) onNavClick();
@@ -317,7 +317,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                       </NavLink>
                     ) : (
                       <span
-                        className={`flex cursor-pointer h-full items-center gap-[2px] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b from-[#16a4bc] to-[#16a4bc] ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
+                        className={`flex h-full cursor-pointer items-center gap-[2px] from-[#16a4bc] to-[#16a4bc] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
                       >
                         {item.name}
                         <IoMdArrowDropdown />
@@ -326,7 +326,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
 
                     {/* Submenu Dropdown */}
                     {item.submenu && hoveredItem === item.name && (
-                      <ul className='bg-[#16a4bc] absolute top-full left-0 z-20 overflow-visible font-semibold whitespace-nowrap text-white shadow-lg'>
+                      <ul className='absolute top-full left-0 z-20 overflow-visible bg-[#16a4bc] font-semibold whitespace-nowrap text-white shadow-lg'>
                         {item.submenu
                           .filter(
                             (sub) =>
@@ -336,8 +336,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                               )
                           )
                           .map((sub, index) => (
-                            <li key={index}
-                              className='min-w-[200px] border border-[#25b3cd] border-t-[#25b3cd] border-b-[#128ca3] hover:bg-gradient-to-b from-[#0c889e]  to-[#0c889e]'
+                            <li
+                              key={index}
+                              className='min-w-[200px] border border-[#25b3cd] border-t-[#25b3cd] border-b-[#128ca3] from-[#0c889e] to-[#0c889e] hover:bg-gradient-to-b'
                             >
                               <NavLink
                                 to={sub.path}

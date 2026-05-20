@@ -204,12 +204,16 @@ function TiedMatch({
           >
             Cashout
           </button>
-          <span className='ml-2 hidden md:inline-block'>{t('max', 'Max')}:{maxValue}</span>
+          <span className='ml-2 hidden md:inline-block'>
+            {t('max', 'Max')}:{maxValue}
+          </span>
         </div>
       </div>
       <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
         <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
-          <span className='block text-gray-400 md:hidden'>{t('max', 'Max')}:{maxValue}</span>
+          <span className='block text-gray-400 md:hidden'>
+            {t('max', 'Max')}:{maxValue}
+          </span>
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />

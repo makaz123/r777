@@ -179,10 +179,12 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
-    const playerList = Object.entries(playerPLMap).map(([userName, amount]) => ({
-      userName,
-      amount,
-    }));
+    const playerList = Object.entries(playerPLMap).map(
+      ([userName, amount]) => ({
+        userName,
+        amount,
+      })
+    );
 
     const topWinningPlayers = playerList
       .filter((p) => p.amount > 0)
@@ -264,19 +266,19 @@ export const getDashboardStats = async (req, res) => {
 
     // 9. Calculate Sports Gameplay Details
     const sportsBreakdown = {
-      'Cricket': {
+      Cricket: {
         sport: 'Cricket',
         totalBets: 0,
         totalBetAmount: 0,
         totalPL: 0,
       },
-      'Tennis': {
+      Tennis: {
         sport: 'Tennis',
         totalBets: 0,
         totalBetAmount: 0,
         totalPL: 0,
       },
-      'Soccer': {
+      Soccer: {
         sport: 'Soccer',
         totalBets: 0,
         totalBetAmount: 0,
@@ -378,8 +380,7 @@ export const getDashboardStats = async (req, res) => {
         return 'Casino III P&L';
       if (name.includes('rvgames') || uid.includes('rvgames'))
         return 'Rvgames P&L';
-      if (name.includes('ezugi') || uid.includes('ezugi'))
-        return 'Ezugi P&L';
+      if (name.includes('ezugi') || uid.includes('ezugi')) return 'Ezugi P&L';
 
       return 'Indian Poker/ Live Casino P&L'; // Default fallback
     };

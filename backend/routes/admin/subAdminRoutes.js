@@ -32,6 +32,7 @@ import {
   updateExploserLimit,
   updateGameLock,
   updatePartnership,
+  updateUserLock,
   userSetting,
   withdrowalAndDeposite,
 } from '../../controllers/admin/subAdminController.js';
@@ -58,6 +59,7 @@ router.put(
 router.put('/withdrowal-deposite', adminAuthMiddleware, withdrowalAndDeposite);
 router.put('/update/partnership', adminAuthMiddleware, updatePartnership);
 router.put('/user-setting', adminAuthMiddleware, userSetting);
+router.put('/user-lock', adminAuthMiddleware, updateUserLock);
 router.delete('/sub-admin/delete/:userId', adminAuthMiddleware, deleteSubAdmin);
 router.delete(
   '/restore/user/:userId/:masterPassword',

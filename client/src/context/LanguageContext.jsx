@@ -57,7 +57,9 @@ export const LanguageProvider = ({ children }) => {
   };
 
   return (
-    <LanguageContext.Provider value={{ currentLang, changeLanguage, t, languages }}>
+    <LanguageContext.Provider
+      value={{ currentLang, changeLanguage, t, languages }}
+    >
       {children}
     </LanguageContext.Provider>
   );

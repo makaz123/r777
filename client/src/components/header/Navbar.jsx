@@ -133,13 +133,15 @@ function Navbar() {
                   navigate(item.path);
                 }
               }}
-              className={`relative px-[11px] text-[14px] font-bold hover:bg-[#5ecbdd] ${item.id === 'home' ? 'hidden xl:block' : ''
-                } ${activeNav === item.id &&
-                  item.id !== 'ezugi' &&
-                  item.id !== 'ipl'
+              className={`relative px-[11px] text-[14px] font-bold hover:bg-[#5ecbdd] ${
+                item.id === 'home' ? 'hidden xl:block' : ''
+              } ${
+                activeNav === item.id &&
+                item.id !== 'ezugi' &&
+                item.id !== 'ipl'
                   ? 'bg-[#5ecbdd]'
                   : ''
-                } ${item.id === 'ezugi' || item.id === 'ipl' ? 'awesome' : ''} `}
+              } ${item.id === 'ezugi' || item.id === 'ipl' ? 'awesome' : ''} `}
             >
               {item.id !== 'spribe' && item.id !== 'inOut' && (
                 <span
@@ -173,15 +175,15 @@ function Navbar() {
               {(item.id === 'cricket' ||
                 item.id === 'tennis' ||
                 item.id === 'soccer') && (
-                  <div className='absolute top-[6px] right-[3px] z-10 flex h-[10px] min-w-[33px] overflow-hidden rounded-[3px] bg-white text-[8px] xl:-top-[6px] xl:right-[3px] xl:h-[12px] xl:text-[10px]'>
-                    <span className='flex flex-1 animate-pulse items-center justify-center text-[6px] text-red-500 uppercase xl:text-[8px]'>
-                      {t('live', 'Live')}
-                    </span>
-                    <span className='bg-red-500 px-[3px] py-[1px] leading-none text-white'>
-                      {inplayCounts[item.id] ?? 0}
-                    </span>
-                  </div>
-                )}
+                <div className='absolute top-[6px] right-[3px] z-10 flex h-[10px] min-w-[33px] overflow-hidden rounded-[3px] bg-white text-[8px] xl:-top-[6px] xl:right-[3px] xl:h-[12px] xl:text-[10px]'>
+                  <span className='flex flex-1 animate-pulse items-center justify-center text-[6px] text-red-500 uppercase xl:text-[8px]'>
+                    {t('live', 'Live')}
+                  </span>
+                  <span className='bg-red-500 px-[3px] py-[1px] leading-none text-white'>
+                    {inplayCounts[item.id] ?? 0}
+                  </span>
+                </div>
+              )}
 
               {item.id === 'aviator' && (
                 <img

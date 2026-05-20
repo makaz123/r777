@@ -275,7 +275,9 @@ function AccountStatement() {
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>{t('account_statement', 'Account Statement')}</h4>
+          <h4 className='text-[16px] font-[400]'>
+            {t('account_statement', 'Account Statement')}
+          </h4>
         </div>
         <div className='mb-2 w-full p-2'>
           <div className='flex flex-wrap gap-2'>
@@ -308,9 +310,15 @@ function AccountStatement() {
                 setGoToPage(1);
               }}
             >
-              <option value='deposits'>{t('deposit_withdraw_reports', 'Deposite/Withdraw Reports')}</option>
-              <option value='sports'>{t('sport_reports', 'Sport Reports')}</option>
-              <option value='casino'>{t('casino_reports', 'Casino Reports')}</option>
+              <option value='deposits'>
+                {t('deposit_withdraw_reports', 'Deposite/Withdraw Reports')}
+              </option>
+              <option value='sports'>
+                {t('sport_reports', 'Sport Reports')}
+              </option>
+              <option value='casino'>
+                {t('casino_reports', 'Casino Reports')}
+              </option>
             </select>
             <button
               onClick={handleSubmit}
@@ -321,7 +329,9 @@ function AccountStatement() {
           </div>
           <div className='mt-4 flex items-center justify-between gap-2'>
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>{t('show', 'Show')}</span>
+              <span className='text-[16px] font-[400]'>
+                {t('show', 'Show')}
+              </span>
               <select
                 name='entries'
                 id='entries'
@@ -339,10 +349,14 @@ function AccountStatement() {
                 <option value='40'>40</option>
                 <option value='50'>50</option>
               </select>
-              <span className='text-[16px] font-[400]'>{t('entries', 'Entries')}</span>
+              <span className='text-[16px] font-[400]'>
+                {t('entries', 'Entries')}
+              </span>
             </div>
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>{t('search_label', 'Search:')}</span>
+              <span className='text-[16px] font-[400]'>
+                {t('search_label', 'Search:')}
+              </span>
               <input
                 type='text'
                 placeholder={t('search_placeholder', 'Search')}
@@ -560,7 +574,9 @@ function AccountStatement() {
                   </span>
                 </div>
                 <div className='flex items-center gap-2'>
-                  <span className='text-sm'>{t('go_to_page', 'Go to Page')}</span>
+                  <span className='text-sm'>
+                    {t('go_to_page', 'Go to Page')}
+                  </span>
                   <input
                     type='number'
                     min='1'

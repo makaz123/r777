@@ -16,10 +16,9 @@ function SportsSidebar({ isOpen, onClose }) {
   const { matches: soccerMatches } = useSelector((state) => state.soccer);
 
   useEffect(() => {
-      dispatch(fetchCricketData());
-      dispatch(fetchTennisData());
-      dispatch(fetchSoccerData());
-
+    dispatch(fetchCricketData());
+    dispatch(fetchTennisData());
+    dispatch(fetchSoccerData());
   }, [dispatch]);
 
   const [expandedItems, setExpandedItems] = useState(new Set(['allSports']));
@@ -70,7 +69,7 @@ function SportsSidebar({ isOpen, onClose }) {
     sportName,
     groupedData,
     sportKey,
-    routePrefix,
+    routePrefix
   ) => {
     // console.log('renderSportSection:', { sportName, groupedData, sportKey });
     const titles = Object.keys(groupedData);
@@ -80,41 +79,41 @@ function SportsSidebar({ isOpen, onClose }) {
       <>
         <button
           onClick={() => toggleItem(sportKey)}
-          className='flex justify-between w-full cursor-pointer items-center gap-1.5 py-1.5 px-4 text-white hover:bg-[#18b0c8]'
+          className='flex w-full cursor-pointer items-center justify-between gap-1.5 px-4 py-1.5 text-white hover:bg-[#18b0c8]'
         >
-          {sportName} <MdOutlineArrowDropDown  />
+          {sportName} <MdOutlineArrowDropDown />
         </button>
         {isExpanded(sportKey) && hasData && (
-          <div className='pl-6 pr-2 bg-blue-100'>
+          <div className='bg-blue-100 pr-2 pl-6'>
             {titles.map((title) => {
               const titleKey = createTitleKey(sportKey, title);
               const matches = groupedData[title];
               return (
-                  <>
+                <>
                   <button
                     onClick={() => toggleItem(titleKey)}
                     className='flex w-full cursor-pointer items-center gap-1.5 py-[5px] text-black'
                   >
                     <ToggleIcon expanded={isExpanded(titleKey)} />
                     <span className='text-left'>{title}</span>{' '}
-                    
                   </button>
                   {isExpanded(titleKey) && matches && matches.length > 0 && (
-                    <div className='pl-2 pr-2'>
+                    <div className='pr-2 pl-2'>
                       {matches.map((match) => (
-
-                          <a
-                            href='#'
-                            className='flex items-center gap-1 py-1 text-black transition-colors'
-                            onClick={(e) => {
-                              e.preventDefault();
-                              navigate(
-                                `${routePrefix}/${match.title}/${match.game}/${match.id}`
-                              );
-                              onClose();
-                            }}
-                          ><AiOutlineCloseSquare className='min-w-3 min-h-3'/> <span className='truncate'>{match.game}</span>
-                          </a>
+                        <a
+                          href='#'
+                          className='flex items-center gap-1 py-1 text-black transition-colors'
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(
+                              `${routePrefix}/${match.title}/${match.game}/${match.id}`
+                            );
+                            onClose();
+                          }}
+                        >
+                          <AiOutlineCloseSquare className='min-h-3 min-w-3' />{' '}
+                          <span className='truncate'>{match.game}</span>
+                        </a>
                       ))}
                     </div>
                   )}
@@ -129,35 +128,35 @@ function SportsSidebar({ isOpen, onClose }) {
 
   return (
     <>
-      <aside className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[250px] text-white transform bg-[#007082] shadow-xl transition-transform duration-300 ease-in-out border-r border-gray-300 ${
+      <aside
+        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[250px] transform border-r border-gray-300 bg-[#007082] text-white shadow-xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } overflow-y-auto`}
       >
-          {/* Cricket */}
-          {renderSportSection(
-            'Cricket',
-            groupedCricket,
-            'cricket',
-            '/cricket-bet',
-            false
-          )}
-          {/* Football */}
-          {renderSportSection(
-            'Football',
-            groupedSoccer,
-            'football',
-            '/soccerbet',
-            false
-          )}
-          {/* Tennis */}
-          {renderSportSection(
-            'Tennis',
-            groupedTennis,
-            'tennis',
-            '/tennis-bet',
-            false
-          )}
-
+        {/* Cricket */}
+        {renderSportSection(
+          'Cricket',
+          groupedCricket,
+          'cricket',
+          '/cricket-bet',
+          false
+        )}
+        {/* Football */}
+        {renderSportSection(
+          'Football',
+          groupedSoccer,
+          'football',
+          '/soccerbet',
+          false
+        )}
+        {/* Tennis */}
+        {renderSportSection(
+          'Tennis',
+          groupedTennis,
+          'tennis',
+          '/tennis-bet',
+          false
+        )}
       </aside>
     </>
   );

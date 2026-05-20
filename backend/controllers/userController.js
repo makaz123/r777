@@ -102,6 +102,11 @@ export const loginUser = async (req, res) => {
         .json({ message: `Your Account is ${user.status}...` });
     }
 
+    if (user.uLock) {
+      await saveLoginHistory(userName, user._id, 'User Locked', req);
+      return res.status(403).json({ message: 'Your account is locked.' });
+    }
+
     if (user.role !== 'user') {
       await saveLoginHistory(userName, user._id, 'Login With Admin Id', req);
       return res

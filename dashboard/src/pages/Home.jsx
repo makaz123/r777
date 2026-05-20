@@ -1,31 +1,17 @@
 import React from 'react';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from 'recharts';
 import Navbar from '../components/Navbar';
 import Loader from '../components/Loader';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import {
-  getGraphData,
-  getGraphTodayData,
-} from '../redux/reducer/downlineReducer';
 import { getDashboardStats } from '../redux/reducer/dashboardReducer';
 import { useEffect } from 'react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+
 const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { graphbackup, graphtoday, loading } = useSelector(
-    (state) => state.downline
-  );
   const { stats, loading: dashboardLoading } = useSelector(
     (state) => state.dashboardStats
   );
@@ -33,80 +19,14 @@ const Home = () => {
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(currentDate.getMonth() - 12);
   const formatDate = (date) => date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  const [startDate, setStartDate] = useState(formatDate(oneMonthAgo));
-  const [endDate, setEndDate] = useState(formatDate(currentDate));
   const [fromDate, setFromDate] = useState(formatDate(oneMonthAgo));
   const [toDate, setToDate] = useState(formatDate(currentDate));
   const [selectedSport, setSelectedSport] = useState("Cricket");
 
   useEffect(() => {
-    dispatch(
-      getGraphData({
-        startDate,
-        endDate,
-      })
-    );
-    dispatch(
-      getGraphTodayData({
-        startDate: currentDate,
-        endDate: currentDate,
-      })
-    );
-  }, [dispatch, startDate, endDate, currentDate]);
-
-  useEffect(() => {
     dispatch(getDashboardStats({ startDate: fromDate, endDate: toDate }));
   }, [dispatch, fromDate, toDate]);
 
-  const PLdata = graphbackup?.report;
-  const LivePLdata = graphtoday?.report;
-  const Totaldata = graphbackup?.total;
-  console.log(graphtoday, 'myReportseventData');
-
-  // Transform the data for the PieChart
-  const transformBackupData = (data) => {
-    return data?.map((item) => ({
-      name: item.name,
-      value: Math.abs(item.myProfit), // Using absolute value for display
-      originalProfit: item.myProfit, // Keeping original value for reference
-    }));
-  };
-  const transformLiveData = (data) => {
-    return data?.map((item) => ({
-      name: item.name,
-      value: Math.abs(item.myProfit), // Using absolute value for display
-      originalProfit: item.myProfit, // Keeping original value for reference
-    }));
-  };
-
-  const COLORS = [
-    '#0088FE',
-    '#00C49F',
-    '#FFBB28',
-    '#FF8042',
-    '#8884D8',
-    '#82CA9D',
-  ];
-  const formatNumber = (v) => {
-    const num = Math.abs(Number(v));
-    if (isNaN(num)) return 0;
-    return Number.isInteger(num)
-      ? num
-      : num.toFixed(v.toString().split('.')[1]?.length === 1 ? 1 : 2);
-  };
-  // Custom tooltip formatter to show profit/loss
-  const customTooltipFormatter = (value, name, props) => {
-    const originalProfit = props.payload.originalProfit;
-    const profitText =
-      originalProfit < 0
-        ? `Loss: ${formatNumber(originalProfit)}`
-        : `Profit: ${formatNumber(originalProfit)}`;
-    return [`${formatNumber(value)}`, `${name} (${profitText})`];
-  };
-
-
-
-  
   const sportbookPL = stats?.sportsGameplay 
     ? Object.values(stats.sportsGameplay).reduce((sum, sport) => sum + (sport.totalPL || 0), 0)
     : 0;
@@ -133,6 +53,7 @@ const Home = () => {
     "Rvgames P&L",
     "Ezugi P&L",
   ];
+
 
 
 

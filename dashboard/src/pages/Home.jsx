@@ -71,7 +71,7 @@ const Home = () => {
     return [`${formatNumber(value)}`, `${name} (${profitText})`];
   };
 
-  const [fromDate, setFromDate] = useState('2026-05-18T00:00');
+ 
   const summaryCards = [
     'P&L',
     'COMMISSION',

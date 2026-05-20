@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { FaSortUp, FaSortDown } from 'react-icons/fa';
-
+// import { FaSortUp, FaSortDown } from 'react-icons/fa';
+import { BiSortAlt2 } from "react-icons/bi";
 const VirtualTable = ({ data = [], columns = [] }) => {
   const [sortConfig, setSortConfig] = useState(null);
 
@@ -54,19 +54,9 @@ const VirtualTable = ({ data = [], columns = [] }) => {
                 <span className='flex items-center'>
                   {col.header}
                   {/* Sort Icon */}
-                  {sortConfig?.key === col.accessor && (
-                    <span className='relative ml-1 block h-full'>
-                      {sortConfig.direction === 'asc' ? (
-                        <>
-                          <FaSortUp className='absolute top-1/2 -translate-y-1/2' />
-                          <FaSortDown className='absolute top-1/2 -translate-y-1/2 text-gray-400' />
-                        </>
-                      ) : (
-                        <>
-                          <FaSortUp className='absolute top-1/2 -translate-y-1/2 text-gray-400' />
-                          <FaSortDown className='absolute top-1/2 -translate-y-1/2' />
-                        </>
-                      )}
+                  {col.accessor && (
+                    <span className='ml-1 flex'>
+                        <BiSortAlt2 size={18}/>
                     </span>
                   )}
                 </span>

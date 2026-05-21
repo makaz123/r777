@@ -294,26 +294,7 @@ export default function InsertAgent() {
                       />
                     </div>
                   </div>
-                  <div className='flex items-center border border-gray-300'>
-                    <div className='flex-1/4 border-r border-gray-300 px-2 py-2.5 font-light'>
-                      Rolling Commission
-                    </div>
-                    <div className='flex-3/4 px-2 py-2.5'>
-                      <input
-                        type='text'
-                        className='w-full bg-white px-2 py-0.5 disabled:cursor-not-allowed disabled:bg-gray-100'
-                        placeholder='0'
-                        disabled={isUserAccount}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            rollingCommission: e.target.value,
-                          })
-                        }
-                        value={formData.rollingCommission}
-                      />
-                    </div>
-                  </div>
+                  {/* Rolling Commission removed — use Commission % only (match odds wins) */}
                 </div>
 
                 <div className='mt-5'>

@@ -21,7 +21,16 @@ import {
   sendExposureUpdates,
   sendOpenBetsUpdates,
 } from '../../socket/bettingSocket.js';
-import { updateAllUplines } from './subAdminController.js';
+import {
+  applyMatchOddsWinCommissionOnSettlement,
+  creditAgentCommissionEarned,
+  updateAllUplines,
+} from './subAdminController.js';
+import {
+  calculateWinCommission,
+  isMatchOddsGameType,
+  parseCommissionPercent,
+} from '../../utils/partnershipCommissionUtils.js';
 
 // Fancy game types that require score-based settlement
 const FANCY_GAME_TYPES = ['Normal', 'meter', 'line', 'ball', 'khado'];
@@ -444,6 +453,7 @@ export const settleManualResult = async (req, res) => {
 
         let totalUpdated = 0;
         let betHistoryTotalPL = 0; // Sum of individual bet P/L from betHistoryModel
+        let totalMatchOddsCommission = 0;
         for (const historyRecord of betHistoryRecords) {
           let historyStatus;
           let historyResultAmount;
@@ -497,6 +507,19 @@ export const settleManualResult = async (req, res) => {
             }
           }
 
+          if (
+            isMatchOddsGameType(bet.gameType) &&
+            historyProfitLossChange > 0
+          ) {
+            const rate = parseCommissionPercent(user?.commition);
+            const { netProfit, commission } = calculateWinCommission(
+              historyProfitLossChange,
+              rate
+            );
+            historyProfitLossChange = netProfit;
+            totalMatchOddsCommission += commission;
+          }
+
           betHistoryTotalPL += historyProfitLossChange;
 
           await betHistoryModel.updateOne(
@@ -531,16 +554,40 @@ export const settleManualResult = async (req, res) => {
         // balance uses betModel settlement (handles offset exposure correctly)
         // bettingProfitLoss uses betHistoryModel sum (single source of truth for P/L)
         if (settlementResult.userUpdates) {
-          const bplChange =
+          let finalUpdates = settlementResult.userUpdates;
+          let bplChange =
             betHistoryRecords.length > 0
               ? betHistoryTotalPL
               : settlementResult.userUpdates.profitLossChange;
+
+          if (betHistoryRecords.length > 0 && totalMatchOddsCommission > 0) {
+            finalUpdates = {
+              balanceChange:
+                settlementResult.userUpdates.balanceChange -
+                totalMatchOddsCommission,
+              avBalanceChange:
+                settlementResult.userUpdates.avBalanceChange -
+                totalMatchOddsCommission,
+              profitLossChange: betHistoryTotalPL,
+            };
+            await creditAgentCommissionEarned(user, totalMatchOddsCommission);
+          } else if (betHistoryRecords.length === 0) {
+            const commissionResult =
+              await applyMatchOddsWinCommissionOnSettlement(
+                bet,
+                user,
+                settlementResult
+              );
+            finalUpdates = commissionResult.settlementResult.userUpdates;
+            bplChange = finalUpdates.profitLossChange;
+          }
+
           console.log(
-            `[MANUAL $inc] betId=${bet._id} userId=${bet.userId} balanceChange=${settlementResult.userUpdates.balanceChange} bplChange=${bplChange} (betHistory P/L: ${betHistoryTotalPL}, betModel P/L: ${settlementResult.userUpdates.profitLossChange})`
+            `[MANUAL $inc] betId=${bet._id} userId=${bet.userId} balanceChange=${finalUpdates.balanceChange} bplChange=${bplChange} matchOddsCommission=${totalMatchOddsCommission}`
           );
           await SubAdmin.findByIdAndUpdate(bet.userId, {
             $inc: {
-              balance: settlementResult.userUpdates.balanceChange,
+              balance: finalUpdates.balanceChange,
               bettingProfitLoss: bplChange,
             },
           });

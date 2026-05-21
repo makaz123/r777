@@ -30,7 +30,7 @@ const TransactionPasswordSuccess = () => {
           mind, do not share this password with anyone.
         </p>
         <p className='mt-3 text-[20px] leading-tight'>
-          Thank you, Team r777.com
+          Thank you, Team r7777.sbs
         </p>
 
         <div className='my-6 border-t border-gray-300' />
@@ -48,7 +48,7 @@ const TransactionPasswordSuccess = () => {
           इस पासवर्ड को किसी के साथ शेयर ना करें।
         </p>
         <p className='mt-3 text-[20px] leading-tight'>
-          धन्यवाद, टीम jdbookbet.com
+          धन्यवाद, टीम r7777.sbs
         </p>
 
         <div className='mt-6 flex justify-center'>

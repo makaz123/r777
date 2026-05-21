@@ -16,7 +16,7 @@ import {
   getAdmin,
   setCurrentPage,
   updateCreditReference,
-  getAllOnlyUserAndDownline,
+  getDownlineList,
   withdrawalAndDeposite,
   userSetting,
   getCreditRefHistory,
@@ -32,7 +32,7 @@ import { AiOutlineFileExcel } from 'react-icons/ai';
 import pdfIcon from '../assets/icons/pdf-icon.svg';
 import excelIcon from '../assets/icons/csv-icon.svg';
 import VirtualTable from '../components/VirtualTable';
-export default function AgentLIst() {
+export default function Userlist() {
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.text('User List', 14, 15);
@@ -116,9 +116,8 @@ export default function AgentLIst() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, currentPage, totalPages, onlyusers } = useSelector(
-    (state) => state.auth
-  );
+  const { userInfo, currentPage, totalPages, onlyusers, downlineViewer } =
+    useSelector((state) => state.auth);
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -175,10 +174,11 @@ export default function AgentLIst() {
       ).unwrap();
       toast.success(data.message);
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
       dispatch(getAdmin());
@@ -268,10 +268,11 @@ export default function AgentLIst() {
       }
       toast.success(successParts.join(' ') || 'Saved successfully.');
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
       dispatch(getAdmin());
@@ -294,10 +295,11 @@ export default function AgentLIst() {
       toast.success(result.message);
       setSettingPopup(false);
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
     } catch (error) {
@@ -314,10 +316,11 @@ export default function AgentLIst() {
       toast.success(data.message);
       setPatnerPopup(false);
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
     } catch (error) {
@@ -328,10 +331,11 @@ export default function AgentLIst() {
   useEffect(() => {
     setIsFetchingAllUsers(true);
     dispatch(
-      getAllOnlyUserAndDownline({
+      getDownlineList({
         page: currentPage,
         limit: entries,
         searchQuery,
+        listType: 'all',
       })
     );
   }, [dispatch, currentPage, entries, searchQuery]);
@@ -397,10 +401,11 @@ export default function AgentLIst() {
       toast.success(result.message);
       closeLockPopup();
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
     } catch (error) {
@@ -498,6 +503,13 @@ export default function AgentLIst() {
                   ({formatNumber(userInfo?.uplineBettingProfitLoss)})
                 </div>
               </div>
+              <div className='col-span-1 flex justify-between px-5'>
+                <div className='flex-1/2'>My Share</div>
+                <div className='flex-1/2 font-semibold text-green-300'>
+                  {downlineViewer?.myPercentLabel ??
+                    `${100 - (userInfo?.partnership || 0)}%`}
+                </div>
+              </div>
             </div>
           )}
 
@@ -568,7 +580,7 @@ export default function AgentLIst() {
         <div className='rounded-md bg-white px-4 py-1'>
           <div className='mb-2 flex items-center justify-between'>
             <div className='grid'>
-              <div className='text-[14px] font-bold'>Client List</div>
+              <div className='text-[14px] font-bold'>Downline List</div>
               <div className='flex items-center gap-1'>
                 <input
                   type='text'
@@ -580,7 +592,7 @@ export default function AgentLIst() {
                 <input
                   type='text'
                     className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
-                  placeholder='Search by client'
+                  placeholder='Search account'
                 />
                 <img
                   src={pdfIcon}
@@ -618,7 +630,7 @@ export default function AgentLIst() {
                 className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
                 onClick={() => navigate('/agent-download-list/insertagent')}
               >
-                Add Client Account
+                Add Account
               </button>
 
               <button
@@ -657,10 +669,23 @@ export default function AgentLIst() {
                 cell: (row) => row.creditReference,
               },
               {
+                header: 'Role',
+                accessor: 'role',
+                cell: (row) => (
+                  <span className='rounded bg-[#444] px-2 py-0.5 text-xs text-white uppercase'>
+                    {row.role}
+                  </span>
+                ),
+              },
+              {
                 header: 'Balance',
                 accessor: 'balance',
                 align: 'right',
-                cell: (row) => row.balance || 0,
+                cell: (row) =>
+                  row.role === 'user'
+                    ? row.balance || 0
+                    : (row.baseBalance || 0) +
+                      (row.uplineBettingProfitLoss || 0),
               },
               {
                 header: 'Pending Bal.',
@@ -713,7 +738,30 @@ export default function AgentLIst() {
               {
                 header: 'My %',
                 align: 'right',
-                cell: (row) => row.myPercent,
+                cell: (row) => {
+                  if (row.myPercent) return row.myPercent;
+                  if (row.role === 'user') {
+                    const pct =
+                      row.downlineSharePercent ??
+                      row.commition ??
+                      downlineViewer?.mySharePercent ??
+                      0;
+                    return `${pct}%`;
+                  }
+                  const downline =
+                    row.downlineSharePercent ?? row.partnership ?? 0;
+                  const mine =
+                    row.viewerShareOnRow ??
+                    row.mySharePercent ??
+                    100 - downline;
+                  return `${downline}% / ${mine}%`;
+                },
+              },
+              {
+                header: 'Commission',
+                align: 'right',
+                cell: (row) =>
+                  row.role === 'user' ? row.commition || '0' : '—',
               },
               // {
               //   header: 'Exposure Limit',
@@ -730,11 +778,6 @@ export default function AgentLIst() {
               //     Number(row.bettingProfitLoss) +
               //     Number(row.creditReferenceProfitLoss),
               // },
-              {
-                header: 'Type',
-                accessor: 'role',
-                cell: (row) => row.role,
-              },
               {
                 header: 'Actions',
                 cell: (row) =>

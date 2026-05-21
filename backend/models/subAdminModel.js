@@ -32,9 +32,12 @@ const subAdminSchema = new mongoose.Schema(
     totalAvbalance: { type: Number, default: 0 },
     exposure: { type: Number, default: 0 },
     totalExposure: { type: Number, default: 0 },
-    exposureLimit: { type: Number, default: 0 },
+    exposureLimit: { type: Number, default: null },
     creditReference: { type: Number, default: 0 },
+    /** Legacy UI field — not used for match-odds win commission (see commissionEarned). */
     rollingCommission: { type: Number, default: 0 },
+    /** Total commission earned from downline match-odds wins (auto-credited on settlement). */
+    commissionEarned: { type: Number, default: 0 },
     phone: { type: Number, required: true },
     isPasswordChanged: { type: Boolean, default: false },
     password: { type: String, required: true },

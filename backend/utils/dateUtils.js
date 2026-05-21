@@ -1,4 +1,11 @@
 export const getDateRangeUTC = (startDate, endDate) => {
+  if (startDate?.includes('T') || endDate?.includes('T')) {
+    return {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate),
+    };
+  }
+
   const startDay = startDate.substring(0, 10);
   const endDay = endDate.substring(0, 10);
 

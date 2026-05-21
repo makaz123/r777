@@ -1521,9 +1521,24 @@ export const getDownlineList = async (req, res) => {
           isEndUser ? viewerMySharePercent : parentSharePercent
         );
 
+        const balance =
+          isEndUser
+            ? roundMoney(row.balance || 0)
+            : roundMoney(
+                (row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0)
+              );
+        const avbalance = roundMoney(row.avbalance || 0);
+        const pendingBal = roundMoney(-balance);
+        const currentPL = roundMoney(avbalance - balance);
+        const totalExposure = roundMoney(exposure);
+
         return {
           ...row,
-          exposure,
+          exposure: totalExposure,
+          totalExposure,
+          pendingBal,
+          currentPL,
+          balance,
           downlinePartnership,
           parentSharePercent,
           downlineKeepPercent,

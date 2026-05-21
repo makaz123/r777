@@ -47,6 +47,7 @@ import LiveCasino from './pages/LiveCasino';
 import TransactionPasswordSuccess from './pages/TransactionPasswordSuccess';
 import ChangePassword from './pages/ChangePassword';
 import BannerSettings from './pages/BannerSettings';
+import Notifications from './pages/Notifications';
 import CasinoAnalysis from './pages/CasinoAnalysis';
 import UserSettlement from './pages/UserSettlement';
 
@@ -61,6 +62,7 @@ function App() {
                 <Route path='/' element={<Login />} />
                 <Route path='/' element={<PrivateRoute />}>
                   <Route path='/home' element={<Home />} />
+                  <Route path='/notifications' element={<Notifications />} />
                   <Route path='/user-download-list' element={<Userlist />} />
                   <Route
                     path='/user-download-list/insertuser'

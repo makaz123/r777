@@ -498,16 +498,35 @@ export default function Userlist() {
                 </div>
               </div>
               <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Upline P/L</div>
+                <div className='flex-1/2'>Total Downline P/L</div>
                 <div className='flex-1/2'>
-                  ({formatNumber(userInfo?.uplineBettingProfitLoss)})
+                  {formatNumber(
+                    downlineViewer?.totalPL ?? userInfo?.uplineBettingProfitLoss
+                  )}
                 </div>
               </div>
               <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>My Share</div>
-                <div className='flex-1/2 font-semibold text-green-300'>
+                <div className='flex-1/2'>My P/L (share)</div>
+                <div
+                  className={`flex-1/2 font-semibold ${
+                    (downlineViewer?.myPL ?? 0) >= 0
+                      ? 'text-green-300'
+                      : 'text-red-300'
+                  }`}
+                >
+                  {formatNumber(downlineViewer?.myPL ?? 0)} (
                   {downlineViewer?.myPercentLabel ??
                     `${userInfo?.partnership ?? 0}%`}
+                  )
+                </div>
+              </div>
+              <div className='col-span-1 flex justify-between px-5'>
+                <div className='flex-1/2'>Upline P/L (share)</div>
+                <div className='flex-1/2'>
+                  {formatNumber(downlineViewer?.uplinePL ?? 0)} (
+                  {downlineViewer?.uplinePercentLabel ??
+                    `${100 - (userInfo?.partnership || 0)}%`}
+                  )
                 </div>
               </div>
             </div>
@@ -700,10 +719,39 @@ export default function Userlist() {
                 cell: (row) => row.avbalance || 0,
               },
               {
-                header: 'Current P&L',
-                accessor: 'currentPL',
+                header: 'Total P/L',
                 align: 'right',
-                cell: (row) => row.currentPL || 0,
+                cell: (row) => formatNumber(row.rawBettingPL ?? row.bettingProfitLoss ?? 0),
+              },
+              {
+                header: 'My P/L',
+                align: 'right',
+                cell: (row) => (
+                  <span
+                    className={
+                      (row.myPLShare ?? 0) >= 0
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {formatNumber(row.myPLShare ?? 0)}
+                  </span>
+                ),
+              },
+              {
+                header: 'Upline P/L',
+                align: 'right',
+                cell: (row) => (
+                  <span
+                    className={
+                      (row.uplinePLShare ?? 0) >= 0
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {formatNumber(row.uplinePLShare ?? 0)}
+                  </span>
+                ),
               },
               {
                 header: 'Exposure',

@@ -21,6 +21,7 @@ import {
   isMatchOddsGameType,
   parseCommissionPercent,
   roundMoney,
+  splitProfitLossByMyShare,
 } from '../../utils/partnershipCommissionUtils.js';
 
 const countUplines = async (user) => {
@@ -151,7 +152,7 @@ const updateAdmin = async (id) => {
         }
         DownlineTotalBettingProfitLoss += getDownlineUplineBettingContribution({
           totalPL: userBettingPL,
-          partnershipPercent: 0,
+          partnershipPercent: admin.partnership,
           isEndUser: true,
         });
 
@@ -1497,6 +1498,14 @@ export const getDownlineList = async (req, res) => {
           ? `${parentSharePercent}%`
           : `${parentSharePercent}% / ${downlineKeepPercent}%`;
 
+        const rawBettingPL = isEndUser
+          ? roundMoney(row.bettingProfitLoss || 0)
+          : roundMoney(row.bettingProfitLoss || 0);
+        const plSplit = splitProfitLossByMyShare(
+          rawBettingPL,
+          isEndUser ? viewerMySharePercent : parentSharePercent
+        );
+
         return {
           ...row,
           exposure,
@@ -1508,6 +1517,9 @@ export const getDownlineList = async (req, res) => {
           myPartnershipPercent: viewerMySharePercent,
           mySharePercent: parentSharePercent,
           myPercent,
+          rawBettingPL: plSplit.totalPL,
+          myPLShare: plSplit.myPL,
+          uplinePLShare: plSplit.uplinePL,
           uplinePartnershipPercent: isEndUser
             ? viewerUplineSharePercent
             : downlineKeepPercent,
@@ -1531,6 +1543,10 @@ export const getDownlineList = async (req, res) => {
         uplinePercentLabel: `${viewerUplineSharePercent}%`,
         role: admin.role,
         userName: admin.userName,
+        ...splitProfitLossByMyShare(
+          admin.uplineBettingProfitLoss || 0,
+          viewerMySharePercent
+        ),
       },
       data,
       totalUsers,

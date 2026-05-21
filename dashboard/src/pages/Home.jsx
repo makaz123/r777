@@ -1,31 +1,72 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Navbar from '../components/Navbar';
-import Loader from '../components/Loader';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { getDashboardStats } from '../redux/reducer/dashboardReducer';
-import { useEffect } from 'react';
+import { getCurrentDashboardWeekRange } from '../utils/dashboardWeekRange';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const Home = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { stats, loading: dashboardLoading } = useSelector(
-    (state) => state.dashboardStats
+  const { stats } = useSelector((state) => state.dashboardStats);
+
+  const initialWeekRef = useRef(getCurrentDashboardWeekRange());
+  const [pendingFrom, setPendingFrom] = useState(
+    () => new Date(initialWeekRef.current.startDate)
   );
-  const currentDate = new Date();
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(currentDate.getMonth() - 12);
-  const formatDate = (date) => date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  const [fromDate, setFromDate] = useState(formatDate(oneMonthAgo));
-  const [toDate, setToDate] = useState(formatDate(currentDate));
+  const [pendingTo, setPendingTo] = useState(
+    () => new Date(initialWeekRef.current.endDate)
+  );
   const [selectedSport, setSelectedSport] = useState('Cricket');
+  const weekKeyRef = useRef(initialWeekRef.current.weekKey);
+
+  const fetchStats = useCallback(
+    (startDate, endDate) => {
+      dispatch(getDashboardStats({ startDate, endDate }));
+    },
+    [dispatch]
+  );
+
+  const applyCurrentWeek = useCallback(() => {
+    const week = getCurrentDashboardWeekRange();
+    weekKeyRef.current = week.weekKey;
+    setPendingFrom(new Date(week.startDate));
+    setPendingTo(new Date(week.endDate));
+    return week;
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (!pendingFrom || !pendingTo) return;
+    fetchStats(pendingFrom.toISOString(), pendingTo.toISOString());
+  }, [fetchStats, pendingFrom, pendingTo]);
+
+  const checkWeekRollover = useCallback(() => {
+    const week = getCurrentDashboardWeekRange();
+    if (week.weekKey !== weekKeyRef.current) {
+      weekKeyRef.current = week.weekKey;
+      setPendingFrom(new Date(week.startDate));
+      setPendingTo(new Date(week.endDate));
+      fetchStats(week.startDate, week.endDate);
+    }
+  }, [fetchStats]);
 
   useEffect(() => {
-    dispatch(getDashboardStats({ startDate: fromDate, endDate: toDate }));
-  }, [dispatch, fromDate, toDate]);
+    const week = initialWeekRef.current;
+    fetchStats(week.startDate, week.endDate);
+  }, [fetchStats]);
+
+  // Auto-reset to new week after Sunday 11:59 PM (Monday 00:00 = new weekKey)
+  useEffect(() => {
+    const intervalId = setInterval(checkWeekRollover, 60 * 1000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') checkWeekRollover();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [checkWeekRollover]);
 
   const sportbookPL = stats?.sportsGameplay
     ? Object.values(stats.sportsGameplay).reduce(
@@ -67,8 +108,8 @@ const Home = () => {
             <div className='mb-4 pr-[15px]'>
               <label className='block'>From Date:</label>
               <DatePicker
-                selected={fromDate ? new Date(fromDate) : null}
-                onChange={(date) => setFromDate(date ? date.toISOString() : '')}
+                selected={pendingFrom}
+                onChange={(date) => setPendingFrom(date)}
                 showTimeSelect
                 timeFormat='HH:mm'
                 timeIntervals={1}
@@ -80,8 +121,8 @@ const Home = () => {
             <div className='mb-4 px-[15px]'>
               <label className='block'>To Date:</label>
               <DatePicker
-                selected={toDate ? new Date(toDate) : null}
-                onChange={(date) => setToDate(date ? date.toISOString() : '')}
+                selected={pendingTo}
+                onChange={(date) => setPendingTo(date)}
                 showTimeSelect
                 timeFormat='HH:mm'
                 timeIntervals={1}
@@ -92,19 +133,17 @@ const Home = () => {
 
             <div className='flex gap-1 px-[15px]'>
               <button
-                onClick={() =>
-                  dispatch(
-                    getDashboardStats({ startDate: fromDate, endDate: toDate })
-                  )
-                }
+                type='button'
+                onClick={handleSubmit}
                 className='rounded-l border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-[14px] text-white'
               >
                 Submit
               </button>
               <button
+                type='button'
                 onClick={() => {
-                  setFromDate(formatDate(oneMonthAgo));
-                  setToDate(formatDate(currentDate));
+                  const week = applyCurrentWeek();
+                  fetchStats(week.startDate, week.endDate);
                 }}
                 className='rounded-r border border-[#dc3545] bg-[#dc3545] px-3 py-1.5 text-[14px] text-white'
               >

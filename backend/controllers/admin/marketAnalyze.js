@@ -1139,8 +1139,7 @@ export const getCasinoAnalysisList = async (req, res) => {
       if (name.includes('mac88') || uid.includes('mac88')) return 'Mac88';
       if (name.includes('casino3') || uid.includes('casino3'))
         return 'Casino III';
-      if (name.includes('rvgames') || uid.includes('rvgames'))
-        return 'Rvgames';
+      if (name.includes('rvgames') || uid.includes('rvgames')) return 'Rvgames';
       if (name.includes('ezugi') || uid.includes('ezugi')) return 'Ezugi';
 
       return 'Indian Poker/ Live Casino'; // Default fallback
@@ -1159,14 +1158,14 @@ export const getCasinoAnalysisList = async (req, res) => {
 
     if (ids.length > 0) {
       const bets = await CasinoBetHistory.find({
-        userId: { $in: ids }
+        userId: { $in: ids },
       }).lean();
 
       const userProfitPerGame = {};
 
       bets.forEach((bet) => {
         const key = getCasinoCategory(bet.game_name, bet.game_uid);
-        
+
         const betAmount = Number(bet.bet_amount || 0);
         const winAmount = Number(bet.win_amount || 0);
         const userIdStr = bet.userId ? bet.userId.toString() : 'unknown';
@@ -1188,7 +1187,7 @@ export const getCasinoAnalysisList = async (req, res) => {
           userProfitPerGame[key][userIdStr] = 0;
         }
 
-        userProfitPerGame[key][userIdStr] += (winAmount - betAmount);
+        userProfitPerGame[key][userIdStr] += winAmount - betAmount;
 
         gameStatsMap[key].totalOrder += 1;
         gameStatsMap[key].totalAmount += betAmount;
@@ -1198,14 +1197,14 @@ export const getCasinoAnalysisList = async (req, res) => {
       Object.keys(userProfitPerGame).forEach((gameKey) => {
         let maxVal = -Infinity;
         let hasUsers = false;
-        
+
         Object.values(userProfitPerGame[gameKey]).forEach((profit) => {
           hasUsers = true;
           if (profit > maxVal) {
             maxVal = profit;
           }
         });
-        
+
         if (hasUsers) {
           gameStatsMap[gameKey].maxProfit = maxVal;
         }
@@ -1245,4 +1244,3 @@ export const getCasinoAnalysisList = async (req, res) => {
     });
   }
 };
-

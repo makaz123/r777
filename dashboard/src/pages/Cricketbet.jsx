@@ -1017,61 +1017,23 @@ export default function Cricketbet() {
 
             <div className='md-mt-0 sm:w-full md:w-[40%]'>
               <div>
-                <div>
-                  <div
-                    className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'
-                    onClick={() => setUrl(!url)}
-                  >
-                    Live Streaming
-                  </div>
-                  {url ? (
-                    <iframe
-                      src={`https://test.bulkapi.co.in/api/v1/live-stream?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
-                      title='Watch Live'
-                      className='w-full rounded-lg'
-                      style={{ height: '50vh' }}
-                      allowFullScreen
-                      loading='lazy'
-                      allow='
-                      autoplay;
-                      encrypted-media;
-                      fullscreen;
-                      picture-in-picture;
-                      accelerometer;
-                      gyroscope
-                    '
-                    />
-                  ) : null}
-                </div>
-
-                <div className='mt-4'>
-                  <div
-                    className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'
-                    onClick={() => setScoreUrl(!scoreUrl)}
-                  >
-                    Score Card
-                  </div>
-                  {scoreUrl ? (
-                    <iframe
-                      src={`https://test.bulkapi.co.in/api/v1/live-score?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
-                      allowFullScreen
-                      className='w-full rounded-lg'
-                      title='Live Score'
-                      allow='
-                      autoplay;
-                      encrypted-media;
-                      fullscreen;
-                      picture-in-picture;
-                      accelerometer;
-                      gyroscope
-                    '
-                    />
-                  ) : null}
-                </div>
-
                 {!isFromMarket && (
                   <>
-                    <div className='mt-4 flex min-h-[42px] cursor-pointer items-center justify-between rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
+                    <div className='bg-[#27a6c3] px-2.5 py-[3px]'>
+                      <div className='flex gap-2'>
+                        <div>
+                          Odds <span>0</span>
+                        </div>
+                        <div>
+                          BM <span>0</span>
+                        </div>
+                        <div>
+                          Fancy <span>0</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className='flex min-h-[42px] cursor-pointer items-center justify-between rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                       <span>My Bets</span>
                       <div
                         className='h-full rounded-sm bg-[#2c3e50] px-2.5 py-1.5'

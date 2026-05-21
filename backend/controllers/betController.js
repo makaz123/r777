@@ -4283,8 +4283,8 @@ export const getProfitlossHistory = async (req, res) => {
         casinoQuery.createdAt = getDateRangeUTC(startDate, endDate);
       }
       const rawCasinoBets = await CasinoBetHistory.find(casinoQuery).lean();
-      
-      casinoBets = rawCasinoBets.map(cb => ({
+
+      casinoBets = rawCasinoBets.map((cb) => ({
         _id: cb._id,
         userId: cb.userId,
         userName: cb.userName,
@@ -4299,7 +4299,9 @@ export const getProfitlossHistory = async (req, res) => {
         profitLossChange: cb.change,
         resultAmount: Math.abs(cb.change),
         status: cb.change >= 0 ? 1 : 2,
-        toObject: function() { return this; }
+        toObject: function () {
+          return this;
+        },
       }));
     }
 

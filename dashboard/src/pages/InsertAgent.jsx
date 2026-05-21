@@ -159,6 +159,25 @@ export default function InsertAgent() {
                         <div></div>
                       </div>
                     </div>
+                    <div className="border border-black rounded-md px-[15px] pt-2 pb-5 relative mt-3">
+                      {/* Title */}
+                      <span className="absolute -top-3 left-3 bg-white px-1 font-semibold text-[14px]">
+                      Partnership Sharing:
+                      </span>
+
+                      {/* Form Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
+                        <div>
+                          <div className='text-center mb-2.5'></div>
+                          <div className='text-center mb-4 flex justify-center items-center font-bold text-[13px]'>Downline Sharing: 
+                            <input type='text' className='w-[15%] h-[30px] py-[1px] px-2 rounded-sm border border-[#ced4da] text-gray-500 font-light' value={1}/> 
+                            <span className='text-[#a1aed4] px-0.5'>%</span>
+                            <span>(1%)</span>
+                          </div>
+                        </div>
+                        <div></div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className='pl-[15px] w-1/2'>

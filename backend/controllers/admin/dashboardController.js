@@ -4,6 +4,7 @@ import DepositHistory from '../../models/depositeHistoryModel.js';
 import TransactionHistory from '../../models/transtionHistoryModel.js';
 import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import { getCurrentDashboardWeekRange } from '../../utils/dashboardWeekRange.js';
 import { getDateRangeUTC } from '../../utils/dateUtils.js';
 
 // Helper to round float values to exactly two decimal places
@@ -17,7 +18,13 @@ const round2 = (val) => {
  */
 export const getDashboardStats = async (req, res) => {
   const { id } = req; // Logged-in admin user ID
-  const { startDate, endDate } = req.query;
+  let { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    const week = getCurrentDashboardWeekRange();
+    startDate = week.startDate;
+    endDate = week.endDate;
+  }
 
   try {
     // 1. Retrieve the admin

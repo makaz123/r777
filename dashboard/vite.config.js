@@ -15,6 +15,10 @@ export default defineConfig({
         __dirname,
         '../backend/utils/partnershipCommissionUtils.js'
       ),
+      '@dashboard-week-range': path.resolve(
+        __dirname,
+        '../backend/utils/dashboardWeekRange.js'
+      ),
     },
   },
 });

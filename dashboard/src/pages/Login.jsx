@@ -25,6 +25,12 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (localStorage.getItem('auth')) {
+      dispatch(getAdmin());
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
     if (userInfo) {
       navigate('/home', { replace: true });
     }

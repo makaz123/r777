@@ -54,7 +54,7 @@ const TransactionPasswordSuccess = () => {
         <div className='mt-6 flex justify-center'>
           <button
             type='button'
-            onClick={() => navigate('/', { replace: true })}
+            onClick={() => navigate('/login', { replace: true })}
             className='rounded bg-gray-800 px-10 py-2 text-white hover:bg-gray-900'
           >
             Back

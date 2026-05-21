@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import './index.css';
 import './App.css';
 import Home from './pages/Home';
@@ -59,8 +64,9 @@ function App() {
           <div className='relative'>
             <div className='w-full'>
               <Routes>
-                <Route path='/' element={<Login />} />
-                <Route path='/' element={<PrivateRoute />}>
+                <Route path='/login' element={<Login />} />
+                <Route path='/' element={<Navigate to='/login' replace />} />
+                <Route element={<PrivateRoute />}>
                   <Route path='/home' element={<Home />} />
                   <Route path='/notifications' element={<Notifications />} />
                   <Route path='/user-download-list' element={<Userlist />} />

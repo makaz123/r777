@@ -167,7 +167,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     } finally {
       localStorage.removeItem('auth');
       dispatch(user_reset());
-      navigate('/', { replace: true });
+      navigate('/login', { replace: true });
     }
   };
 
@@ -227,7 +227,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   return (
     <>
       <div
-        className={`sticky top-0 z-999 w-full ${
+        className={`sticky top-0 z-10 w-full ${
           location.pathname == '/login' ? 'hidden' : 'block'
         }`}
       >

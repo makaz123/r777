@@ -1,46 +1,64 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { getAdmin, userLogout } from '../redux/reducer/authReducer';
 import Spinner from './Spinner';
 import api from '../redux/api';
 
 const PrivateRoute = () => {
   const dispatch = useDispatch();
-  const { userInfo } = useSelector((state) => state.auth);
-  const [ok, setOk] = useState(true);
+  const navigate = useNavigate();
+  const { userInfo, loading, error } = useSelector((state) => state.auth);
 
-  // Memoize the userInfo processing to avoid unnecessary computations
   const processedUserInfo = useMemo(() => {
     return userInfo ? userInfo : null;
   }, [userInfo]);
 
-  api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (
-        error.response?.status === 401 &&
-        error.response?.data?.code === 'SESSION_EXPIRED'
-      ) {
-        // Clear user data and redirect to login
-        dispatch(userLogout());
-        window.location.href = '/';
-      }
-      return Promise.reject(error);
-    }
-  );
+  const hasToken = useMemo(() => !!localStorage.getItem('auth'), []);
 
   useEffect(() => {
-    if (!processedUserInfo) {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      (err) => {
+        if (
+          err.response?.status === 401 &&
+          err.response?.data?.code === 'SESSION_EXPIRED'
+        ) {
+          dispatch(userLogout());
+          navigate('/login', { replace: true });
+        }
+        return Promise.reject(err);
+      }
+    );
+
+    return () => api.interceptors.response.eject(interceptor);
+  }, [dispatch, navigate]);
+
+  useEffect(() => {
+    if (!hasToken) {
+      return;
+    }
+    if (!processedUserInfo && !loading) {
       dispatch(getAdmin());
     }
-  }, [dispatch, processedUserInfo]);
+  }, [dispatch, hasToken, processedUserInfo, loading]);
 
   useEffect(() => {
-    setOk(!!processedUserInfo);
-  }, [processedUserInfo]);
+    if (error && !loading) {
+      localStorage.removeItem('auth');
+      navigate('/login', { replace: true });
+    }
+  }, [error, loading, navigate]);
 
-  return ok ? <Outlet /> : <Spinner />;
+  if (!hasToken) {
+    return <Navigate to='/login' replace />;
+  }
+
+  if (!processedUserInfo) {
+    return loading ? <Spinner /> : <Navigate to='/login' replace />;
+  }
+
+  return <Outlet />;
 };
 
 export default PrivateRoute;

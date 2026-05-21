@@ -6,6 +6,7 @@ import {
   getPartnershipUplineShare,
   isMatchOddsGameType,
   parseCommissionPercent,
+  splitProfitLossByMyShare,
 } from '../utils/partnershipCommissionUtils.js';
 
 describe('partnershipCommissionUtils', () => {
@@ -22,14 +23,14 @@ describe('partnershipCommissionUtils', () => {
     expect(getPartnershipUplineShare(100, 0)).toBe(0);
   });
 
-  test('end user contributes full downline P/L to parent', () => {
+  test('end user contributes my-share portion only to parent admin', () => {
     expect(
       getDownlineUplineBettingContribution({
-        totalPL: 800,
+        totalPL: 1000,
         partnershipPercent: 60,
         isEndUser: true,
       })
-    ).toBe(800);
+    ).toBe(600);
   });
 
   test('agent contributes partnership share of total P/L (all markets)', () => {
@@ -40,6 +41,23 @@ describe('partnershipCommissionUtils', () => {
         isEndUser: false,
       })
     ).toBe(600);
+  });
+
+  test('split P/L: user wins 100, my share 20% → my 20 upline 80', () => {
+    const { myPL, uplinePL, totalPL } = splitProfitLossByMyShare(100, 20);
+    expect(totalPL).toBe(100);
+    expect(myPL).toBe(20);
+    expect(uplinePL).toBe(80);
+  });
+
+  test('end-user downline contributes only my share to admin totals', () => {
+    expect(
+      getDownlineUplineBettingContribution({
+        totalPL: 100,
+        partnershipPercent: 20,
+        isEndUser: true,
+      })
+    ).toBe(20);
   });
 
   test('commission on winning is match-odds profit only', () => {

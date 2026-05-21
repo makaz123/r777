@@ -32,7 +32,7 @@ export const calculateWinCommission = (winProfit, commissionPercent) => {
   return { netProfit, commission };
 };
 
-/** Partnership % on downline agent = upline's share of total downline P/L. */
+/** Parent's share of downline P/L when partnership is stored on the agent row. */
 export const getPartnershipUplineShare = (totalPL, partnershipPercent) => {
   const pl = Number(totalPL) || 0;
   const pct = Number(partnershipPercent) || 0;
@@ -41,14 +41,34 @@ export const getPartnershipUplineShare = (totalPL, partnershipPercent) => {
   return roundMoney((pl * pct) / 100);
 };
 
-/** How much of a downline's P/L counts toward this admin's upline totals. */
+/**
+ * Split downline P/L by your partnership (my share %).
+ * Example: user P/L +100, my share 20% → myPL +20, uplinePL +80
+ */
+export const splitProfitLossByMyShare = (totalPL, mySharePercent) => {
+  const pl = Number(totalPL) || 0;
+  const myPct = Number(mySharePercent) || 0;
+  if (pl === 0 || myPct <= 0) {
+    return { myPL: 0, uplinePL: roundMoney(pl), totalPL: roundMoney(pl) };
+  }
+  if (myPct >= 100) {
+    return { myPL: roundMoney(pl), uplinePL: 0, totalPL: roundMoney(pl) };
+  }
+  const myPL = roundMoney((pl * myPct) / 100);
+  const uplinePL = roundMoney(pl - myPL);
+  return { myPL, uplinePL, totalPL: roundMoney(pl) };
+};
+
+/** How much of a downline's P/L counts toward this admin's bettingProfitLoss. */
 export const getDownlineUplineBettingContribution = ({
   totalPL,
   partnershipPercent,
   isEndUser,
 }) => {
   const total = Number(totalPL) || 0;
-  if (isEndUser) return roundMoney(total);
+  if (isEndUser) {
+    return splitProfitLossByMyShare(total, partnershipPercent).myPL;
+  }
   return getPartnershipUplineShare(total, partnershipPercent);
 };
 

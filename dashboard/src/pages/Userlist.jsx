@@ -128,7 +128,7 @@ export default function Userlist() {
   const [currentUser, setcurrentUser] = useState(null);
   const [isFetchingAllUsers, setIsFetchingAllUsers] = useState(null);
   const [showMetrics, setShowMetrics] = useState(false);
-  const [showMetricsOpen, setShowMetricsOpen] = useState(false);
+  const [showMetricsOpen, setShowMetricsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
   const [passwordPopup, setPasswordPopup] = useState(false);
   const [lockPopup, setLockPopup] = useState(false);
@@ -349,6 +349,48 @@ export default function Userlist() {
       : num.toFixed(v.toString().split('.')[1]?.length === 1 ? 1 : 2);
   };
 
+  const formatMoney = (v) => {
+    const n = Number(v);
+    if (Number.isNaN(n)) return '0.00';
+    return n.toFixed(2);
+  };
+
+  const plColorClass = (v) =>
+    Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
+
+  const summary = userInfo?.accountSummary;
+  const roleDisplay =
+    summary?.userType ||
+    (userInfo?.role === 'white'
+      ? 'White Label'
+      : userInfo?.role?.charAt(0).toUpperCase() + userInfo?.role?.slice(1));
+
+  const MetricTooltipRow = ({ label, tooltip, children, alignTooltip = 'center' }) => (
+    <p className='group relative block w-fit'>
+      <span className='relative inline-block cursor-help'>
+        <span className='text-white/90'>{label}</span>
+        <span
+          className={`pointer-events-none absolute top-full z-[100] mt-2 hidden w-max min-w-[220px] max-w-[300px] group-hover:block ${
+            alignTooltip === 'right'
+              ? 'right-0 translate-x-0'
+              : alignTooltip === 'left'
+                ? 'left-0 -translate-x-0'
+                : 'left-1/2 -translate-x-1/2'
+          }`}
+        >
+          <span className='relative block rounded-md bg-black px-3 py-2.5 text-center text-xs leading-snug text-white shadow-xl'>
+            <span
+              className='absolute -top-1.5 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[7px] border-b-[7px] border-x-transparent border-b-black'
+              aria-hidden
+            />
+            {tooltip}
+          </span>
+        </span>
+      </span>
+      {children}
+    </p>
+  );
+
   const reloadPage = () => {
     window.location.reload();
   };
@@ -457,142 +499,164 @@ export default function Userlist() {
       />
 
       {showMetrics && (
-        <div className='bg-[#2c3e50] p-5 text-white'>
-          <div className='flex w-full items-center justify-center'>
+        <div
+          className='relative z-20 overflow-visible border-b border-[#0a3d4d] px-4 py-3 pb-4 text-sm text-white'
+          style={{
+            background:
+              'linear-gradient(90deg, #0d4a5f 0%, #1a6b7a 45%, #0d5c6e 100%)',
+          }}
+        >
+          <div className='flex w-full items-center justify-center pb-1'>
             <FaRegArrowAltCircleUp
-              size={20}
+              size={18}
               onClick={() => setShowMetricsOpen((prev) => !prev)}
-              className={showMetricsOpen ? 'rotate-180' : ''}
+              className={`cursor-pointer transition-transform ${showMetricsOpen ? 'rotate-180' : ''}`}
             />
           </div>
 
           {showMetricsOpen && (
-            <div className='mt-3 grid grid-cols-3 gap-2'>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Balance</div>
-                <div className='flex-1/2'>
-                  INR {formatNumber(userInfo?.totalBalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Exposure</div>
-                <div className='flex-1/2'>
-                  ({formatNumber(userInfo?.exposure)})
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Available Balance</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.agentAvbalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Balance</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.avbalance || 0)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Avail. bal.</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.totalAvbalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Downline P/L</div>
-                <div className='flex-1/2'>
-                  {formatNumber(
-                    downlineViewer?.totalPL ?? userInfo?.uplineBettingProfitLoss
-                  )}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>My P/L (share)</div>
-                <div
-                  className={`flex-1/2 font-semibold ${
-                    (downlineViewer?.myPL ?? 0) >= 0
-                      ? 'text-green-300'
-                      : 'text-red-300'
-                  }`}
+            <div className='grid grid-cols-2 gap-x-6 gap-y-2 md:grid-cols-5'>
+              <div className='space-y-1'>
+                <MetricTooltipRow
+                  label='User ID : '
+                  tooltip='Your username.'
                 >
-                  {formatNumber(downlineViewer?.myPL ?? 0)} (
-                  {downlineViewer?.myPercentLabel ??
-                    `${userInfo?.partnership ?? 0}%`}
-                  )
-                </div>
+                  <span className='font-medium'>
+                    {summary?.userId ?? userInfo?.userName}
+                  </span>
+                </MetricTooltipRow>
+                <MetricTooltipRow
+                  label='User Type : '
+                  tooltip='Your user role.'
+                >
+                  <span className='font-medium'>{roleDisplay}</span>
+                </MetricTooltipRow>
               </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Upline P/L (share)</div>
-                <div className='flex-1/2'>
-                  {formatNumber(downlineViewer?.uplinePL ?? 0)} (
-                  {downlineViewer?.uplinePercentLabel ??
-                    `${100 - (userInfo?.partnership || 0)}%`}
-                  )
-                </div>
+
+              <div className='space-y-1'>
+                <MetricTooltipRow
+                  label='Given Bal : '
+                  tooltip='Aapko Upper Se Diya Gaya Balance.'
+                >
+                  <span
+                    className={plColorClass(
+                      summary?.givenBal ?? userInfo?.creditReference
+                    )}
+                  >
+                    {formatMoney(
+                      summary?.givenBal ?? userInfo?.creditReference ?? 0
+                    )}
+                  </span>
+                </MetricTooltipRow>
+                <MetricTooltipRow
+                  label='Available : '
+                  tooltip='Aapke Client Ko Dene Ke Baad Bacha Hua Balance.'
+                >
+                  <span
+                    className={plColorClass(
+                      summary?.available ?? userInfo?.avbalance
+                    )}
+                  >
+                    {formatMoney(summary?.available ?? userInfo?.avbalance ?? 0)}
+                  </span>
+                </MetricTooltipRow>
+              </div>
+
+              <div className='space-y-1'>
+                <MetricTooltipRow
+                  label='Up Line (dena) : '
+                  tooltip={
+                    summary?.uplineTooltip ??
+                    'Upper Level Ke Saath Hisab Ka Len-Den.'
+                  }
+                >
+                  <span
+                    className={plColorClass(
+                      summary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
+                    )}
+                  >
+                    {formatMoney(
+                      summary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
+                    )}
+                  </span>
+                </MetricTooltipRow>
+                <MetricTooltipRow
+                  label='Down Line (dena) : '
+                  tooltip={
+                    summary?.downlineTooltip ??
+                    'Down Line Ke Saath Hisab Ka Len-Den.'
+                  }
+                >
+                  <span
+                    className={plColorClass(
+                      summary?.downlineDena ??
+                        downlineViewer?.totalPL ??
+                        userInfo?.uplineBettingProfitLoss ??
+                        0
+                    )}
+                  >
+                    {formatMoney(
+                      summary?.downlineDena ??
+                        downlineViewer?.totalPL ??
+                        userInfo?.uplineBettingProfitLoss ??
+                        0
+                    )}
+                  </span>
+                </MetricTooltipRow>
+              </div>
+
+              <div className='space-y-1'>
+                <MetricTooltipRow
+                  label='Current P&L : '
+                  tooltip='Upline + Downline Ka Bina Settle Kiya Hua Profit & Loss Account.'
+                >
+                  <span
+                    className={plColorClass(
+                      summary?.currentWeekPL ?? downlineViewer?.myPL ?? 0
+                    )}
+                  >
+                    {formatMoney(summary?.currentWeekPL ?? 0)}
+                  </span>
+                </MetricTooltipRow>
+                <MetricTooltipRow
+                  label='Exposure : '
+                  tooltip='Your current market exposure with all kind of games that your clients are playing currently.'
+                >
+                  <span
+                    className={plColorClass(
+                      summary?.exposureDisplay ??
+                        summary?.myShareExposure ??
+                        0
+                    )}
+                  >
+                    {formatMoney(
+                      summary?.exposureDisplay ??
+                        summary?.myShareExposure ??
+                        0
+                    )}
+                  </span>
+                </MetricTooltipRow>
+              </div>
+
+              <div className='space-y-1 md:col-span-1'>
+                <MetricTooltipRow
+                  label='My P&L : '
+                  tooltip='Mera Profit & Loss Account.'
+                  alignTooltip='center'
+                >
+                  <span
+                    className={`font-semibold ${plColorClass(
+                      summary?.myPLTillDate ?? downlineViewer?.myPL ?? 0
+                    )}`}
+                  >
+                    {formatMoney(
+                      summary?.myPLTillDate ?? downlineViewer?.myPL ?? 0
+                    )}
+                  </span>
+                </MetricTooltipRow>
               </div>
             </div>
           )}
-
-          {/* <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.totalBalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Exposure
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR{' '}
-                <span className='text-red-600'>
-                  ({formatNumber(userInfo?.exposure)})
-                </span>
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Available Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.agentAvbalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.avbalance || 0)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Avail. bal.
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.totalAvbalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Upline P/L
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR{' '}
-                <span
-                  className={`${
-                    userInfo.uplineBettingProfitLoss <= 0
-                      ? 'text-red-500'
-                      : 'text-green-500'
-                  }`}
-                >
-                  ({formatNumber(userInfo?.uplineBettingProfitLoss)})
-                </span>
-              </div>
-            </div> */}
         </div>
       )}
 

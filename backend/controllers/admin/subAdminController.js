@@ -14,6 +14,13 @@ import SubAdmin from '../../models/subAdminModel.js';
 import TransactionHistory from '../../models/transtionHistoryModel.js';
 import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import { calculateAllExposure } from '../../utils/exposureUtils.js';
+import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import {
+  aggregateWeekProfitLoss,
+  buildAccountSummary,
+  getCurrentWeekRange,
+  getDownlineUserIds,
+} from '../../utils/accountSummaryUtils.js';
 import {
   adjustUserUpdatesForCommission,
   calculateWinCommission,
@@ -1111,12 +1118,20 @@ export const getSubAdmin = async (req, res) => {
     }
     await updateAdmin(id);
 
-    //  Fetch the updated admin data after updateAdmin
-    const updatedAdmin = await SubAdmin.findById(id);
+    const updatedAdmin = await SubAdmin.findById(id).lean();
+    const weekRange = getCurrentWeekRange();
+    const downlineUserIds = await getDownlineUserIds(SubAdmin, updatedAdmin.code);
+    const weekPLTotal = await aggregateWeekProfitLoss(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      weekRange
+    );
+    const accountSummary = buildAccountSummary(updatedAdmin, weekPLTotal);
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: updatedAdmin,
+      data: { ...updatedAdmin, accountSummary },
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);

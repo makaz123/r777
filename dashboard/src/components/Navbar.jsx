@@ -227,7 +227,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   return (
     <>
       <div
-        className={`sticky top-0 z-10 w-full ${
+        className={`sticky top-0 z-999 w-full ${
           location.pathname == '/login' ? 'hidden' : 'block'
         }`}
       >
@@ -308,7 +308,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </NavLink>
 
             <nav className='h-full text-black'>
-              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center'>
+              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center z-999'>
                 {visibleNavItems.map((item, i) => (
                   <li
                     key={i}

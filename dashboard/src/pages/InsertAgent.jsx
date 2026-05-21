@@ -1,8 +1,14 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import {
+  clampDownlineSharingPercent,
+  getParentShareStoredOnDownline,
+  getRemainingMySharePercent,
+  getViewerMySharePercent,
+} from '@partnership-utils';
 import { addAdmin, getAdmin } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
@@ -45,6 +51,50 @@ export default function InsertAgent() {
     status: 'active',
   });
   const isUserAccount = formData.accountType === 'user';
+  const [downlineSharingInput, setDownlineSharingInput] = useState('');
+
+  const parentMyShare = useMemo(
+    () => getViewerMySharePercent(userInfo?.partnership),
+    [userInfo?.partnership]
+  );
+
+  const downlineSharingPercent = useMemo(
+    () =>
+      downlineSharingInput === ''
+        ? 0
+        : clampDownlineSharingPercent(downlineSharingInput, parentMyShare),
+    [downlineSharingInput, parentMyShare]
+  );
+
+  const remainingMyShare = useMemo(
+    () => getRemainingMySharePercent(parentMyShare, downlineSharingPercent),
+    [parentMyShare, downlineSharingPercent]
+  );
+
+  const handleDownlineSharingChange = (e) => {
+    const raw = e.target.value;
+    if (raw !== '' && !/^\d*\.?\d*$/.test(raw)) return;
+
+    const capped =
+      raw === '' ? '' : String(clampDownlineSharingPercent(raw, parentMyShare));
+
+    setDownlineSharingInput(capped);
+    setFormData((prev) => ({
+      ...prev,
+      partnership:
+        capped === '' ? null : getParentShareStoredOnDownline(parentMyShare, capped),
+    }));
+  };
+
+  const handleAccountTypeChange = (accountType) => {
+    const isUser = accountType === 'user';
+    setDownlineSharingInput('');
+    setFormData((prev) => ({
+      ...prev,
+      accountType,
+      partnership: isUser ? null : prev.partnership,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,12 +102,23 @@ export default function InsertAgent() {
       toast.error('Password and Confirm Password do not match');
       return;
     }
+    if (!isUserAccount && downlineSharingInput === '') {
+      toast.error('Downline sharing is required for agent accounts');
+      return;
+    }
+    if (
+      !isUserAccount &&
+      downlineSharingPercent > parentMyShare
+    ) {
+      toast.error(`Downline sharing cannot exceed your my share (${parentMyShare}%)`);
+      return;
+    }
     if (userInfo) {
       try {
         const result = await dispatch(addAdmin(formData)).unwrap();
         toast.success(result.message);
         dispatch(getAdmin());
-        navigate('/agent-download-list');
+        navigate('/user-download-list');
       } catch (error) {
         toast.error(error);
       }
@@ -96,12 +157,7 @@ export default function InsertAgent() {
                           </label>
 
                           <select className="border border-gray-300 rounded-sm px-2 py-1 outline-none focus:border-[#4ecddd] bg-white text-gray-700"
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              accountType: e.target.value,
-                            })
-                          }
+                          onChange={(e) => handleAccountTypeChange(e.target.value)}
                           value={formData.accountType}
                           >
                             <option>Select User Type</option>
@@ -129,10 +185,10 @@ export default function InsertAgent() {
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
-                                userName: e.target.value,
+                                name: e.target.value,
                               })
                             }
-                            value={formData.userName}
+                            value={formData.name}
                           />
                         </div>
 
@@ -159,6 +215,36 @@ export default function InsertAgent() {
                         <div></div>
                       </div>
                     </div>
+                    {!isUserAccount && formData.accountType && (
+                    <div className="border border-black rounded-md px-[15px] pt-2 pb-5 relative mt-3">
+                      {/* Title */}
+                      <span className="absolute -top-3 left-3 bg-white px-1 font-semibold text-[14px]">
+                      Partnership Sharing:
+                      </span>
+
+                      {/* Form Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6">
+                        <div>
+                          <div className='text-center mb-2.5'></div>
+                          <div className='text-center mb-4 flex justify-center items-center font-bold text-[13px]'>Downline Sharing: 
+                            <input
+                              type='text'
+                              inputMode='decimal'
+                              className='w-[15%] h-[30px] py-[1px] px-2 rounded-sm border border-[#ced4da] text-gray-500 font-light'
+                              value={downlineSharingInput}
+                              onChange={handleDownlineSharingChange}
+                              max={parentMyShare}
+                            /> 
+                            <span className='text-[#a1aed4] px-0.5'>%</span>
+                            <span className='text-black ml-1'>
+                              (My Sharing {remainingMyShare}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div></div>
+                      </div>
+                    </div>
+                    )}
                   </div>
 
                   <div className='pl-[15px] w-1/2'>

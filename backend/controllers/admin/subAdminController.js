@@ -27,6 +27,7 @@ import {
   getDownlineUplineBettingContribution,
   isMatchOddsGameType,
   parseCommissionPercent,
+  getViewerMySharePercent,
   roundMoney,
   splitProfitLossByMyShare,
 } from '../../utils/partnershipCommissionUtils.js';
@@ -669,6 +670,16 @@ export const createSubAdmin = async (req, res) => {
       return res
         .status(400)
         .json({ message: 'Partnership should be between 0 and 100' });
+    }
+
+    if (accountType !== 'user') {
+      const parentMyShareCap = getViewerMySharePercent(admin.partnership);
+      const parsedPartnership = Number(partnership) || 0;
+      if (parsedPartnership > parentMyShareCap) {
+        return res.status(400).json({
+          message: `Partnership cannot exceed your my share (${parentMyShareCap}%)`,
+        });
+      }
     }
     // Skip balance check for superadmin
     if (role !== 'superadmin' && role !== 'supperadmin') {

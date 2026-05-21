@@ -4,6 +4,7 @@ import { FaArrowRight, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../../redux/api';
 import PlaceBet from './PlaceBet';
+import { useTranslation } from '../../context/LanguageContext';
 import {
   getPendingBetAmo,
   getPendingBet,
@@ -27,6 +28,7 @@ function Bookmaker({
   onClose,
 }) {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const { userInfo } = useSelector((state) => state.auth);
   const { eventName, cashoutValues, cashoutLoading, cashoutPL } = useSelector(
     (state) => state.bet
@@ -391,7 +393,9 @@ function Bookmaker({
   return (
     <div>
       <div className='text-secondary mt-1 flex items-center justify-between bg-[#18adc5] p-1'>
-        <span className='text-[13px] font-bold lg:text-[14px]'>Bookmaker</span>
+        <span className='text-[13px] font-bold lg:text-[14px]'>
+          {t('bookmaker', 'Bookmaker')}
+        </span>
         <div>
           {hasCashoutAvailable && showCashoutOptions ? (
             <button
@@ -405,15 +409,7 @@ function Bookmaker({
               }`}
             >
               <FaCheck className='text-xs' />
-              <span>
-                {hasMergedValue
-                  ? `₹ ${mergedCashoutValue.toFixed(2)}`
-                  : cashoutLoading
-                    ? '...'
-                    : marketCashoutPL
-                      ? `₹ ${marketCashoutPL}`
-                      : 'Cash Out'}
-              </span>
+              <span>{cashoutLoading ? '...' : t('cashout', 'Cash Out')}</span>
             </button>
           ) : hasCashoutAvailable ? (
             <button
@@ -423,34 +419,34 @@ function Bookmaker({
               }}
               className='cursor-pointer bg-[#198754] p-1 font-[400] text-white'
             >
-              Cashout
+              {t('cashout', 'Cashout')}
             </button>
           ) : (
             <button
               disabled
               className='cursor-not-allowed bg-[#198754] p-1 font-[400] text-white opacity-60'
             >
-              Cashout
+              {t('cashout', 'Cashout')}
             </button>
           )}
           <span className='ml-2 hidden md:inline-block'>
-            Min:{minValue} Max:{formatMax(maxValue)}
+            {t('min', 'Min')}:{minValue} {t('max', 'Max')}:{formatMax(maxValue)}
           </span>
         </div>
       </div>
       <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
         <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
           <span className='block text-gray-400 md:hidden'>
-            Min:{minValue} Max:{formatMax(maxValue)}
+            {t('min', 'Min')}:{minValue} {t('max', 'Max')}:{formatMax(maxValue)}
           </span>
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />
         <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-          Back
+          {t('back', 'Back')}
         </div>
         <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-          Lay
+          {t('lay', 'Lay')}
         </div>
         <div className='hidden md:block' />
         <div className='hidden md:block' />
@@ -513,7 +509,18 @@ function Bookmaker({
               <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
                 {/* Team Name with suggestions */}
                 <div className='ml-2 truncate text-[13px] font-bold text-black lg:text-[14px]'>
-                  <div>{team}</div>
+                  <div className='flex items-center'>
+                    <span>{team}</span>
+                    {showCashoutOptions && (
+                      <span
+                        className={`ml-2 text-[12px] font-bold ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {cashoutLoading
+                          ? '...'
+                          : `₹ ${mergedCashoutValue.toFixed(2)}`}
+                      </span>
+                    )}
+                  </div>
                   {(() => {
                     if (!userInfo) return null;
                     const isBookmakerBet =
@@ -694,7 +701,7 @@ function Bookmaker({
                 {isSuspended ? (
                   <div className='col-span-2 flex min-h-[36px] items-center justify-center bg-[#4b4b4b] md:col-span-6'>
                     <span className='font-bold tracking-wide text-red-600'>
-                      SUSPENDED
+                      {t('suspended', 'SUSPENDED')}
                     </span>
                   </div>
                 ) : (
@@ -806,7 +813,7 @@ function Bookmaker({
         })
       ) : (
         <div className='py-4 text-center text-gray-500'>
-          No bookmaker data available
+          {t('no_data_to_display', 'No bookmaker data available')}
         </div>
       )}
     </div>

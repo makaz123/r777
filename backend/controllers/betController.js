@@ -14,6 +14,18 @@ import {
 
 dotenv.config();
 
+const rejectIfBetLocked = (user, res) => {
+  if (user?.uLock) {
+    res.status(403).json({ message: 'Your account is locked.' });
+    return true;
+  }
+  if (user?.betLock || user?.bLock) {
+    res.status(403).json({ message: 'Betting is locked for your account' });
+    return true;
+  }
+  return false;
+};
+
 const MARKET_NAME_TO_API = {
   'Match Odds': 'MATCH_ODDS',
   'Tied Match': 'TIED_MATCH',
@@ -24,6 +36,7 @@ import betHistoryModel from '../models/betHistoryModel.js';
 import betModel from '../models/betModel.js';
 import SubAdmin from '../models/subAdminModel.js';
 import TransactionHistory from '../models/transtionHistoryModel.js';
+import CasinoBetHistory from '../models/casinoBetHistory.model.js';
 import { getDateRangeUTC } from '../utils/dateUtils.js';
 import { isCasinoGame } from './casinoController.js';
 const { updateAllUplines } = await import('./admin/subAdminController.js');
@@ -269,6 +282,7 @@ const placeCasinoBet = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (rejectIfBetLocked(user, res)) return;
 
     // Check if Casino is locked for this user
     const casinoLockEntry = user.gamelock?.find(
@@ -823,6 +837,7 @@ const placeBet = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (rejectIfBetLocked(user, res)) return;
 
     // Check if this sport is locked for the user
     if (gameName && user.gamelock) {
@@ -1322,6 +1337,7 @@ export const placeFancyBet = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    if (rejectIfBetLocked(user, res)) return;
 
     // Check if this sport is locked for the user
     if (gameName && user.gamelock) {
@@ -4199,8 +4215,40 @@ export const getProfitlossHistory = async (req, res) => {
 
     const bets = await betHistoryModel.find(betQuery);
 
+    // Fetch and merge casino bets from CasinoBetHistory
+    let casinoBets = [];
+    if (!gameName || gameName.toLowerCase() === 'casino') {
+      const casinoQuery = {
+        userId: id,
+      };
+      if (startDate && endDate) {
+        casinoQuery.createdAt = getDateRangeUTC(startDate, endDate);
+      }
+      const rawCasinoBets = await CasinoBetHistory.find(casinoQuery).lean();
+      
+      casinoBets = rawCasinoBets.map(cb => ({
+        _id: cb._id,
+        userId: cb.userId,
+        userName: cb.userName,
+        gameName: 'Casino',
+        eventName: cb.game_name || cb.game_uid || 'Casino Game',
+        marketName: 'Round ' + cb.game_round,
+        market_id: cb.game_round,
+        betResult: cb.change >= 0 ? 'WIN' : 'LOSE',
+        createdAt: cb.createdAt,
+        date: cb.createdAt,
+        betType: 'casino_settled',
+        profitLossChange: cb.change,
+        resultAmount: Math.abs(cb.change),
+        status: cb.change >= 0 ? 1 : 2,
+        toObject: function() { return this; }
+      }));
+    }
+
+    const allBets = [...bets, ...casinoBets];
+
     if (fullFilterMode) {
-      const betsWithMarketId = bets.map((bet) => ({
+      const betsWithMarketId = allBets.map((bet) => ({
         ...bet.toObject(),
         marketId: bet.market_id ? bet.market_id.match(/\d+/g)?.pop() : null,
       }));
@@ -4209,11 +4257,11 @@ export const getProfitlossHistory = async (req, res) => {
         data: {
           report: betsWithMarketId,
           total: {
-            totalBets: bets.length,
-            totalWinAmount: bets
+            totalBets: allBets.length,
+            totalWinAmount: allBets
               .filter((b) => b.status === 1)
               .reduce((sum, b) => sum + (b.resultAmount || 0), 0),
-            totalLossAmount: bets
+            totalLossAmount: allBets
               .filter((b) => b.status === 2)
               .reduce((sum, b) => sum + (b.resultAmount || 0), 0),
           },
@@ -4235,7 +4283,7 @@ export const getProfitlossHistory = async (req, res) => {
 
     const processedRounds = new Set();
 
-    for (const bet of bets) {
+    for (const bet of allBets) {
       // const key = bet[groupKey]?.trim() || "Unknown";
       let key;
       if (eventName && !gameName && !marketName) {
@@ -4273,7 +4321,7 @@ export const getProfitlossHistory = async (req, res) => {
           processedRounds.add(roundKey);
 
           // Get all bets for this round
-          const roundBets = bets.filter(
+          const roundBets = allBets.filter(
             (b) =>
               b.roundId === bet.roundId &&
               b.gameId === bet.gameId &&

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { updateQuickStakes } from '../../redux/reducer/authReducer';
+import { useTranslation } from '../../context/LanguageContext';
 
 const DEFAULT_VALUES = [100, 500, 1000, 5000, 10000, 50000];
 
@@ -46,6 +47,7 @@ function buildRowsFromUser(quickStakes) {
 }
 
 function SetStake() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { userInfo, loading } = useSelector((state) => state.auth);
   const [rows, setRows] = useState(() => buildRowsFromUser(null));
@@ -96,7 +98,9 @@ function SetStake() {
     <div className='w-full p-0.5'>
       <div className='w-full border border-[#00000020] bg-white shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-[#18adc5] px-[7px] py-1.5'>
-          <h4 className='text-[14px] font-bold text-white'>Set Stake</h4>
+          <h4 className='text-[14px] font-bold text-white'>
+            {t('set_stake', 'Set Stake')}
+          </h4>
         </div>
 
         <form onSubmit={handleSubmit} className='p-2'>
@@ -104,13 +108,13 @@ function SetStake() {
             <thead>
               <tr className='border-b border-[#dbdbdb] bg-[#f5f5f5]'>
                 <th className='w-[60px] border border-[#dbdbdb] px-2 py-1.5 text-left font-semibold'>
-                  ID
+                  {t('id', 'ID')}
                 </th>
                 <th className='border border-[#dbdbdb] px-2 py-1.5 text-left font-semibold'>
-                  Button Name
+                  {t('button_name', 'Button Name')}
                 </th>
                 <th className='border border-[#dbdbdb] px-2 py-1.5 text-left font-semibold'>
-                  Button Value
+                  {t('button_value', 'Button Value')}
                 </th>
               </tr>
             </thead>
@@ -151,7 +155,7 @@ function SetStake() {
             disabled={loading}
             className='mt-3 rounded-sm bg-[#18adc5] px-6 py-1.5 text-[14px] font-semibold text-white hover:bg-[#159bb0] disabled:opacity-60'
           >
-            {loading ? 'Submitting...' : 'Submit'}
+            {loading ? t('submitting', 'Submitting...') : t('submit', 'Submit')}
           </button>
         </form>
       </div>

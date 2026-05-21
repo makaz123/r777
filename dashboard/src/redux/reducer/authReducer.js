@@ -337,6 +337,27 @@ export const userSetting = createAsyncThunk(
   }
 );
 
+export const updateUserLock = createAsyncThunk(
+  'subAdmin/update-user-lock',
+  async (info, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/user-lock`, info, {
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // ✅ Delete a sub-admin
 export const deleteSubAdmin = createAsyncThunk(
   'auth/user_delete',

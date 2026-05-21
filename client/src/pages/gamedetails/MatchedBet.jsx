@@ -48,7 +48,10 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getBetHistory } from '../../redux/reducer/betReducer';
+import { useTranslation } from '../../context/LanguageContext';
+
 function MatchedBet({ gameid }) {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { betHistory, loading, pagination } = useSelector((state) => state.bet);
   useEffect(() => {
@@ -94,13 +97,13 @@ function MatchedBet({ gameid }) {
       {/* Table Headers */}
       <div className='grid grid-cols-4 border-b border-gray-300 bg-[#028dad] text-white'>
         <div className='col-span-2 flex items-center border border-white px-2 py-1 text-left text-sm'>
-          Matched Bet
+          {t('matched_bet', 'Matched Bet')}
         </div>
         <div className='flex items-center border border-white px-2 py-1 text-right text-sm'>
-          Odds
+          {t('odds', 'Odds')}
         </div>
         <div className='flex items-center border border-white px-2 py-1 text-right text-sm'>
-          Stake
+          {t('stake', 'Stake')}
         </div>
       </div>
 
@@ -126,7 +129,9 @@ function MatchedBet({ gameid }) {
           </div>
         ))
       ) : (
-        <div className='flex h-8 items-center justify-center bg-white px-2 py-1 text-sm text-gray-500'></div>
+        <div className='flex items-center justify-center bg-white px-2 text-sm text-[#c7313f]'>
+          {t('no_bets_found', 'No bets found')}
+        </div>
       )}
     </div>
   );

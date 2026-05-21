@@ -1,5 +1,6 @@
 import React from 'react';
 import { MdSportsCricket } from 'react-icons/md';
+import LanguageSelector from '../language/LanguageSelector';
 
 const matches = [
   {
@@ -120,6 +121,9 @@ function MobileNav({ selected, setSelected }) {
               </span>
             </div>
           ))}
+        </div>
+        <div className='flex shrink-0 items-center px-2 py-1'>
+          <LanguageSelector />
         </div>
       </div>
     </div>

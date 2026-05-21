@@ -32,8 +32,11 @@ import {
   updateExploserLimit,
   updateGameLock,
   updatePartnership,
+  updateUserLock,
   userSetting,
   withdrowalAndDeposite,
+  getSettlementUsers,
+  settleUser,
 } from '../../controllers/admin/subAdminController.js';
 import { adminAuthMiddleware } from '../../middleware/authMiddleware.js';
 
@@ -43,6 +46,10 @@ const router = express.Router();
 router.post('/sub-admin/create', adminAuthMiddleware, createSubAdmin);
 router.post('/sub-admin/login', loginSubAdmin);
 router.get('/sub-admin/getuserbyid', adminAuthMiddleware, getSubAdmin);
+
+// Settlement routes
+router.get('/sub-admin/settlement-users', adminAuthMiddleware, getSettlementUsers);
+router.post('/sub-admin/settle', adminAuthMiddleware, settleUser);
 
 router.get('/get/all-user', adminAuthMiddleware, getAllUser);
 router.get('/get/delete-user', adminAuthMiddleware, getDeleteUser);
@@ -58,6 +65,7 @@ router.put(
 router.put('/withdrowal-deposite', adminAuthMiddleware, withdrowalAndDeposite);
 router.put('/update/partnership', adminAuthMiddleware, updatePartnership);
 router.put('/user-setting', adminAuthMiddleware, userSetting);
+router.put('/user-lock', adminAuthMiddleware, updateUserLock);
 router.delete('/sub-admin/delete/:userId', adminAuthMiddleware, deleteSubAdmin);
 router.delete(
   '/restore/user/:userId/:masterPassword',

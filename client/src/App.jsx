@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Login from './pages/auth/Login';
 import MainLayout from './layouts/MainLayout';
@@ -27,6 +27,8 @@ import OurVirtualCasino from './pages/Home/ourvirtual/CasinoList';
 import OurPremCasino from './pages/Home/ourpremcasino/CasinoList';
 import CasinoBet from './pages/CasinoBet/casinoBet';
 import CasinoProvider from './pages/GgrCasino/CasinoProvider';
+import Casino3 from './pages/GgrCasino/Casino3';
+import LiveCasino from './pages/GgrCasino/LiveCasino';
 import Inplay from './pages/Home/Inplay';
 function HomeGate() {
   const userInfo = useSelector((state) => state.auth.userInfo);
@@ -34,6 +36,7 @@ function HomeGate() {
 }
 
 function App() {
+  const location = useLocation();
   return (
     <>
       <Routes>
@@ -43,15 +46,16 @@ function App() {
             path='/:provider'
             element={<CasinoProvider key={location.pathname} />}
           />
-
+          <Route path='/casino3' element={<Casino3 />} />
+          <Route path='/livecasino' element={<LiveCasino />} />
           <Route path='/' element={<HomeGate />} />
           <Route path='inplay' element={<Inplay />} />
           <Route path='cricket' element={<Cricket />} />
           <Route path='football' element={<Football />} />
           <Route path='tennis' element={<Tennis />} />
-          <Route path='cricket-bet/:game/:id' element={<CricketBet />} />
-          <Route path='football-bet/:game/:id' element={<FootballBet />} />
-          <Route path='tennis-bet/:game/:id' element={<TennisBet />} />
+          <Route path='cricket-bet/*' element={<CricketBet />} />
+          <Route path='football-bet/*' element={<FootballBet />} />
+          <Route path='tennis-bet/*' element={<TennisBet />} />
           <Route path='casino-bet/:match/:gameid' element={<CasinoBet />} />
 
           <Route element={<PrivateRoute />}>

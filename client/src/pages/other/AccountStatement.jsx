@@ -5,6 +5,7 @@ import {
   getBetHistory,
 } from '../../redux/reducer/betReducer';
 import ResultInfoPopup from './ResultInfoPopup';
+import { useTranslation } from '../../context/LanguageContext';
 
 // Format date as DD/MM/YYYY HH:MM:SS
 const formatStatementDate = (dateStr) => {
@@ -54,6 +55,7 @@ const getSettlementGroupKey = (row, index) => {
 };
 
 function AccountStatement() {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { transHistory, betHistory, loading, pagination } = useSelector(
     (state) => state.bet
@@ -273,14 +275,16 @@ function AccountStatement() {
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>Account Statement</h4>
+          <h4 className='text-[16px] font-[400]'>
+            {t('account_statement', 'Account Statement')}
+          </h4>
         </div>
         <div className='mb-2 w-full p-2'>
           <div className='flex flex-wrap gap-2'>
             <div className='flex gap-2'>
               <input
                 type='date'
-                placeholder='Start Date'
+                placeholder={t('start_date', 'Start Date')}
                 className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -288,7 +292,7 @@ function AccountStatement() {
               />
               <input
                 type='date'
-                placeholder='End Date'
+                placeholder={t('end_date', 'End Date')}
                 className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -306,20 +310,28 @@ function AccountStatement() {
                 setGoToPage(1);
               }}
             >
-              <option value='deposits'>Deposite/Withdraw Reports</option>
-              <option value='sports'>Sport Reports</option>
-              <option value='casino'>Casino Reports</option>
+              <option value='deposits'>
+                {t('deposit_withdraw_reports', 'Deposite/Withdraw Reports')}
+              </option>
+              <option value='sports'>
+                {t('sport_reports', 'Sport Reports')}
+              </option>
+              <option value='casino'>
+                {t('casino_reports', 'Casino Reports')}
+              </option>
             </select>
             <button
               onClick={handleSubmit}
               className='bg-primary text-primary h-[38px] w-full rounded-xs px-4 py-1 text-[16px] font-[400] lg:w-auto'
             >
-              Submit
+              {t('submit', 'Submit')}
             </button>
           </div>
           <div className='mt-4 flex items-center justify-between gap-2'>
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>Show</span>
+              <span className='text-[16px] font-[400]'>
+                {t('show', 'Show')}
+              </span>
               <select
                 name='entries'
                 id='entries'
@@ -337,13 +349,17 @@ function AccountStatement() {
                 <option value='40'>40</option>
                 <option value='50'>50</option>
               </select>
-              <span className='text-[16px] font-[400]'>Entries</span>
+              <span className='text-[16px] font-[400]'>
+                {t('entries', 'Entries')}
+              </span>
             </div>
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>Search:</span>
+              <span className='text-[16px] font-[400]'>
+                {t('search_label', 'Search:')}
+              </span>
               <input
                 type='text'
-                placeholder='Search'
+                placeholder={t('search_placeholder', 'Search')}
                 className='h-[38px] w-[90px] border border-[#dbdbdb] p-1 outline-none lg:w-auto'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -355,30 +371,30 @@ function AccountStatement() {
               <thead>
                 <tr className='bg-[#e0e6e6]'>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Date
+                    {t('date', 'Date')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Sr no
+                    {t('sr_no', 'Sr no')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Credit
+                    {t('credit', 'Credit')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Debit
+                    {t('debit', 'Debit')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Pts
+                    {t('pts', 'Pts')}
                   </th>
                   <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    Remark
+                    {t('remark', 'Remark')}
                   </th>
                   {showSettlementBalanceColumns && (
                     <>
                       <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                        Balance Before
+                        {t('balance_before', 'Balance Before')}
                       </th>
                       <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                        Balance After
+                        {t('balance_after', 'Balance After')}
                       </th>
                     </>
                   )}
@@ -391,7 +407,7 @@ function AccountStatement() {
                       colSpan={showSettlementBalanceColumns ? 8 : 6}
                       className='h-8 border border-gray-300 p-2 text-center'
                     >
-                      Loading...
+                      {t('loading', 'Loading...')}
                     </td>
                   </tr>
                 ) : reportType === 'deposits' && paginatedData.length > 0 ? (
@@ -487,8 +503,8 @@ function AccountStatement() {
                       {reportType === 'deposits' ||
                       reportType === 'sports' ||
                       reportType === 'casino'
-                        ? 'No data found'
-                        : 'Coming soon'}
+                        ? t('no_data_found', 'No data found')
+                        : t('coming_soon', 'Coming soon')}
                     </td>
                   </tr>
                 )}
@@ -515,7 +531,7 @@ function AccountStatement() {
                     }}
                     className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                   >
-                    First
+                    {t('first', 'First')}
                   </button>
                   <button
                     disabled={page <= 1}
@@ -525,7 +541,7 @@ function AccountStatement() {
                     }}
                     className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                   >
-                    Previous
+                    {t('previous', 'Previous')}
                   </button>
                   <button
                     disabled={page >= paginationInfo.pages}
@@ -535,7 +551,7 @@ function AccountStatement() {
                     }}
                     className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                   >
-                    Next
+                    {t('next', 'Next')}
                   </button>
                   <button
                     disabled={page >= paginationInfo.pages}
@@ -546,19 +562,21 @@ function AccountStatement() {
                     }}
                     className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
                   >
-                    Last
+                    {t('last', 'Last')}
                   </button>
                 </div>
                 <div className='flex items-center gap-2'>
-                  <span className='text-sm'>Page</span>
+                  <span className='text-sm'>{t('page', 'Page')}</span>
                   <span className='text-sm font-semibold'>{page}</span>
-                  <span className='text-sm'>of</span>
+                  <span className='text-sm'>{t('of', 'of')}</span>
                   <span className='text-sm font-semibold'>
                     {paginationInfo.pages || 0}
                   </span>
                 </div>
                 <div className='flex items-center gap-2'>
-                  <span className='text-sm'>Go to Page</span>
+                  <span className='text-sm'>
+                    {t('go_to_page', 'Go to Page')}
+                  </span>
                   <input
                     type='number'
                     min='1'

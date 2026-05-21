@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import aviatorBann from '../../assets/aviator-banner.jpg';
 import inOutBann from '../../assets/chickenroad-banner.jpg';
 import casinopoint100 from '../../assets/casinopoint100.webp';
+import royalCasino from '../../assets/royalcasino-banner.jpg';
 
 function CasinoProvider() {
   const navigate = useNavigate();
@@ -17,9 +18,10 @@ function CasinoProvider() {
   const { userInfo } = useSelector((state) => state.auth);
 
   const [showLoginPopup, setShowLoginPopup] = useState(false);
-  const [openCasino, setOpenCasino] = useState(true);
+  const [openCasino, setOpenCasino] = useState(!userInfo);
   const [loading, setLoading] = useState(false);
   const [gameUrl, setGameUrl] = useState(null);
+  const [iframeLoading, setIframeLoading] = useState(true);
 
   const providerKey = (provider || '').toLowerCase();
 
@@ -33,6 +35,11 @@ function CasinoProvider() {
 
     if (!userInfo) {
       setShowLoginPopup(true);
+      return;
+    }
+
+    if (userInfo?.account === 'demo') {
+      toast.error('Please Login With Real Id');
       return;
     }
 
@@ -51,6 +58,7 @@ function CasinoProvider() {
       );
 
       if (res?.success) {
+        setIframeLoading(true);
         // Option 1: Open inside iframe
         setGameUrl(res.gameUrl);
 
@@ -66,9 +74,41 @@ function CasinoProvider() {
       setLoading(false);
     }
   };
+  const autoLaunchAttempted = useRef(false);
+
   useEffect(() => {
-    setOpenCasino(true);
+    setGameUrl(null);
+    setIframeLoading(true);
+    autoLaunchAttempted.current = false;
   }, [provider]);
+
+  useEffect(() => {
+    setOpenCasino(!userInfo);
+  }, [userInfo]);
+
+  useEffect(() => {
+    if (
+      providerKey === 'evolution' &&
+      userInfo &&
+      userInfo.account !== 'demo' &&
+      !autoLaunchAttempted.current
+    ) {
+      autoLaunchAttempted.current = true;
+      handleGameClick({
+        game_uid: '8ef39602e589bf9f32fc351b1cbb338b',
+      });
+    } else if (
+      providerKey === 'ezugi' &&
+      userInfo &&
+      userInfo.account !== 'demo' &&
+      !autoLaunchAttempted.current
+    ) {
+      autoLaunchAttempted.current = true;
+      handleGameClick({
+        game_uid: 'd0e052b031dfcdb08d1803f4bcc618ef',
+      });
+    }
+  }, [providerKey, userInfo]);
   // Provider not found
   if (!casinoData.providers[providerKey]) {
     return (
@@ -94,12 +134,40 @@ function CasinoProvider() {
   // Show game iframe
   if (gameUrl) {
     return (
-      <div className='h-screen w-full bg-black'>
+      <div className='relative h-screen w-full overflow-hidden bg-black'>
+        {iframeLoading && (
+          <div className='bg-radial-gradient animate-fade-in absolute inset-0 z-50 flex flex-col items-center justify-center from-gray-900 to-black p-6 text-center'>
+            {/* Spinning ring loader */}
+            <div className='relative h-20 w-20'>
+              <div className='absolute inset-0 animate-spin rounded-full border-4 border-t-yellow-500 border-r-transparent border-b-transparent border-l-transparent duration-1000' />
+              <div className='absolute inset-2 animate-spin rounded-full border-4 border-t-transparent border-r-transparent border-b-teal-500 border-l-transparent duration-1500' />
+              <div className='absolute inset-4 animate-spin rounded-full border-4 border-t-transparent border-r-pink-500 border-b-transparent border-l-transparent duration-700' />
+            </div>
+
+            <h2 className='mt-8 bg-gradient-to-r from-yellow-400 via-teal-300 to-pink-500 bg-clip-text text-2xl font-bold tracking-widest text-transparent uppercase [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]'>
+              {providerKey === 'evolution'
+                ? 'Evolution Gaming'
+                : providerKey === 'ezugi'
+                  ? 'Ezugi Live'
+                  : 'Casino Game'}
+            </h2>
+
+            <p className='mt-3 animate-pulse text-sm font-semibold tracking-wider text-gray-400'>
+              Securing connection and loading table streams...
+            </p>
+
+            <div className='mt-6 flex items-center gap-2 rounded-full border border-gray-800 bg-black/40 px-4 py-1.5 text-xs text-gray-500 backdrop-blur-sm'>
+              <span className='h-2 w-2 animate-ping rounded-full bg-emerald-500' />
+              <span>Encrypted Session Active</span>
+            </div>
+          </div>
+        )}
         <iframe
           src={gameUrl}
           title='Casino Game'
           className='h-full w-full border-0'
           allowFullScreen
+          onLoad={() => setIframeLoading(false)}
         />
       </div>
     );
@@ -116,6 +184,10 @@ function CasinoProvider() {
         <img src={inOutBann} alt='InOut Banner' className='block w-full' />
       )}
 
+      {/* {providerKey === 'casino3' && (
+        <img src={royalCasino} alt='InOut Banner' className='block w-full' />
+      )} */}
+
       {/* Loading */}
       {loading && (
         <div className='flex h-40 items-center justify-center text-sm text-white'>
@@ -131,31 +203,37 @@ function CasinoProvider() {
               No games found.
             </div>
           ) : (
-            <div className='mt-4 grid grid-cols-3 gap-3 md:grid-cols-6'>
-              {games.map((game) => (
-                <div
-                  key={`${game.id}-${game.game_uid}`}
-                  onClick={() => handleGameClick(game)}
-                  className='flex cursor-pointer flex-col'
-                >
-                  <div className='overflow-hidden rounded-md border-[3px] border-[#045662]'>
-                    <img
-                      src={game.icon}
-                      alt={game.game_name}
-                      loading='lazy'
-                      className='block h-[250px] w-full object-cover transition-transform duration-300'
-                      onError={(e) => {
-                        e.currentTarget.style.opacity = '0.4';
-                      }}
-                    />
-                  </div>
+            !(
+              providerKey === 'evolution' &&
+              userInfo &&
+              userInfo.account !== 'demo'
+            ) && (
+              <div className='mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6'>
+                {games.map((game) => (
+                  <div
+                    key={`${game.id}-${game.game_uid}`}
+                    onClick={() => handleGameClick(game)}
+                    className='flex cursor-pointer flex-col'
+                  >
+                    <div className='overflow-hidden rounded-md border-[3px] border-[#045662]'>
+                      <img
+                        src={game.icon}
+                        alt={game.game_name}
+                        loading='lazy'
+                        className='block h-[250px] w-full object-cover transition-transform duration-300'
+                        onError={(e) => {
+                          e.currentTarget.style.opacity = '0.4';
+                        }}
+                      />
+                    </div>
 
-                  <span className='flex w-full items-center justify-center truncate py-2 text-center text-[14px] font-bold'>
-                    {game.game_name}
-                  </span>
-                </div>
-              ))}
-            </div>
+                    <span className='flex w-full items-center justify-center truncate py-2 text-center text-[14px] font-bold'>
+                      {game.game_name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </>
       )}

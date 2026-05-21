@@ -827,6 +827,11 @@ export const loginSubAdmin = async (req, res) => {
         .json({ message: `Your Account has been ${subAdmin.status} !` });
     }
 
+    if (subAdmin.uLock) {
+      await saveLoginHistory(userName, subAdmin._id, 'User Locked', req);
+      return res.status(403).json({ message: 'Your account is locked.' });
+    }
+
     // Generate unique session token
     const sessionToken = crypto.randomBytes(32).toString('hex');
     const deviceId = req.headers['user-agent'] || 'unknown-device';
@@ -2115,6 +2120,63 @@ export const userSetting = async (req, res) => {
   }
 };
 
+export const updateUserLock = async (req, res) => {
+  try {
+    const { id } = req;
+    const { userId, lockType, lock, masterPassword, remark } = req.body;
+
+    const normalizedLockType = lockType === 'bLock' ? 'betLock' : lockType;
+
+    if (!['uLock', 'betLock'].includes(normalizedLockType)) {
+      return res.status(400).json({ message: 'Invalid lock type.' });
+    }
+
+    if (typeof lock !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid lock value.' });
+    }
+
+    const subAdmin = await SubAdmin.findById(id);
+    if (!subAdmin) {
+      return res.status(404).json({ message: 'Sub-admin not found' });
+    }
+
+    const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid Master password.' });
+    }
+
+    const editUser = await SubAdmin.findById(userId);
+    if (!editUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    editUser[normalizedLockType] = lock;
+    if (normalizedLockType === 'betLock') {
+      editUser.bLock = undefined;
+    }
+    if (normalizedLockType === 'uLock' && lock) {
+      editUser.sessionToken = null;
+    }
+    if (remark) {
+      editUser.remark = remark;
+    }
+    await editUser.save();
+
+    const lockLabel = normalizedLockType === 'uLock' ? 'User lock' : 'Bet lock';
+    return res.status(200).json({
+      success: true,
+      message: lock
+        ? `${lockLabel} enabled successfully`
+        : `${lockLabel} disabled successfully`,
+    });
+  } catch (error) {
+    console.error('Update User Lock Error:', error);
+    return res
+      .status(500)
+      .json({ message: 'Server error', error: error.message });
+  }
+};
+
 export const changePasswordBySelf = async (req, res) => {
   const { id } = req; // Sub-admin ID (admin making the change)
   try {
@@ -3051,6 +3113,210 @@ export const getRegisterDetailReport = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching register detail report:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+export const getSettlementUsers = async (req, res) => {
+  try {
+    const { id, role } = req;
+    const { roleType } = req.query; // 'user' or 'master'
+    
+    // Find the admin making the request
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // Only fetch direct downlines (since settlement is direct)
+    let filter = { status: { $ne: 'delete' }, invite: admin.code };
+    
+    if (roleType === 'user') {
+      filter.role = 'user';
+    } else if (roleType === 'master') {
+      filter.role = { $nin: ['user', 'supperadmin'] };
+    } else if (role === 'supperadmin' || role === 'superadmin') {
+      filter.role = { $ne: 'supperadmin' };
+    }
+
+    const downlines = await SubAdmin.find(filter).lean();
+
+    const creditors = [];
+    const debtors = [];
+
+    downlines.forEach((user) => {
+      // clientPL = baseBalance - creditReference
+      // If clientPL > 0, admin owes user (Creditor / dena hai)
+      // If clientPL < 0, user owes admin (Debtor / lena hai)
+      const pl = user.creditReferenceProfitLoss || 0;
+      
+      const userData = {
+        _id: user._id,
+        userName: user.userName,
+        role: user.role,
+        balance: user.balance,
+        baseBalance: user.baseBalance,
+        creditReference: user.creditReference,
+        clientPL: pl
+      };
+
+      if (pl > 0) {
+        creditors.push(userData);
+      } else if (pl < 0) {
+        debtors.push(userData);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      creditors,
+      debtors
+    });
+  } catch (error) {
+    console.error('Error in getSettlementUsers:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+export const settleUser = async (req, res) => {
+  try {
+    const { id } = req; // Admin making the change
+    const { userId, amount, remarks, masterPassword } = req.body;
+
+    const parsedAmount = Number(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({ message: 'Valid positive amount is required' });
+    }
+
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // Verify Master Password
+    const isMatch = await verifyMasterPassword(admin, masterPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid Master password.' });
+    }
+
+    const editUser = await SubAdmin.findById(userId);
+    if (!editUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const pl = editUser.creditReferenceProfitLoss || 0;
+    if (pl === 0) {
+      return res.status(400).json({ message: 'User has no outstanding balance to settle' });
+    }
+
+    const settleRemark = `Settlement: ${remarks || ''}`.trim();
+
+    // Determine if user is Creditor or Debtor
+    if (pl > 0) {
+      // User is Creditor (admin owes user). Admin pays user cash, so we withdraw from user.
+      if (parsedAmount > pl) {
+         return res.status(400).json({ message: 'Cannot settle more than the outstanding P/L' });
+      }
+      
+      editUser.balance -= parsedAmount;
+      editUser.avbalance = Math.max(0, editUser.avbalance - parsedAmount);
+      editUser.baseBalance -= parsedAmount;
+      editUser.remark = settleRemark;
+      editUser.creditReferenceProfitLoss = editUser.baseBalance - editUser.creditReference;
+
+      if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
+         admin.balance += parsedAmount;
+         admin.baseBalance += parsedAmount;
+         admin.avbalance += parsedAmount;
+      }
+
+      await admin.save();
+      await editUser.save();
+
+      await WithdrawalHistory.create({
+        userName: editUser.userName,
+        amount: parsedAmount,
+        remark: settleRemark,
+        invite: admin.code,
+      });
+
+      await TransactionHistory.create({
+        userId: editUser._id,
+        userName: editUser.userName,
+        withdrawl: parsedAmount,
+        deposite: 0,
+        amount: editUser.avbalance,
+        from: admin.userName,
+        to: editUser.userName,
+        remark: settleRemark,
+        invite: admin.code,
+      });
+
+    } else if (pl < 0) {
+      // User is Debtor (user owes admin). User pays admin cash, so we deposit to user.
+      const absPl = Math.abs(pl);
+      if (parsedAmount > absPl) {
+         return res.status(400).json({ message: 'Cannot settle more than the outstanding P/L' });
+      }
+
+      if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
+        if (parsedAmount > admin.avbalance) {
+          return res.status(400).json({ message: 'Insufficient balance to settle' });
+        }
+      }
+
+      editUser.balance += parsedAmount;
+      editUser.avbalance += parsedAmount;
+      editUser.baseBalance += parsedAmount;
+      editUser.remark = settleRemark;
+      editUser.creditReferenceProfitLoss = editUser.baseBalance - editUser.creditReference;
+
+      if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
+        admin.balance -= parsedAmount;
+        admin.baseBalance -= parsedAmount;
+        admin.avbalance = Math.max(0, admin.avbalance - parsedAmount);
+      }
+
+      await admin.save();
+      await editUser.save();
+
+      await DepositHistory.create({
+        userName: editUser.userName,
+        amount: parsedAmount,
+        remark: settleRemark,
+        invite: admin.code,
+      });
+
+      await TransactionHistory.create({
+        userId: editUser._id,
+        userName: editUser.userName,
+        withdrawl: 0,
+        deposite: parsedAmount,
+        amount: editUser.avbalance,
+        from: admin.userName,
+        to: editUser.userName,
+        remark: settleRemark,
+        invite: admin.code,
+      });
+    }
+
+    await updateAdmin(id);
+    await updateAllUplines(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Settlement completed successfully'
+    });
+  } catch (error) {
+    console.error('Error in settleUser:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error',

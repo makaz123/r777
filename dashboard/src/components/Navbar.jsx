@@ -7,12 +7,9 @@ import {
 } from 'react-icons/io';
 import { AiOutlineLogout } from 'react-icons/ai';
 import { NavLink, useLocation } from 'react-router-dom';
-import { MdLogout } from 'react-icons/md';
+import { MdArrowRightAlt, MdLogout } from 'react-icons/md';
 import { RiArrowDownSFill } from 'react-icons/ri';
-// import logo from "../assets/icons/theme-1709828838678-aura555.png";
-// import logo from "../../client/src/assets/icons/daimondpan (1).png"
-import logo from '../assets/icons/AURA444.png';
-import jdlogo from '../assets/jdlogo.png';
+import logo from '../assets/brand_logo.svg';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   getAdmin,
@@ -24,6 +21,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SportsSidebar from './SportsSidebar';
+
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -84,91 +82,77 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   };
 
   const navItems = [
-    // { name: 'Dashboard', path: '/home' },
-    { name: 'List of Clients', path: '/user-download-list' },
-    { name: 'Assign Agent', path: '/agent-download-list' },
-    { name: 'Banner Settings', path: '/banner-settings' },
-    { name: 'Market Analysis', path: '/my-market' },
+    { name: 'Dashboard', path: '/home' },
+    { name: 'Clients', path: '/user-download-list' },
+    // { name: 'Assign Agent', path: '/agent-download-list' },
+
+    { name: 'Sports Analysis', path: '/my-market' },
+    { name: 'Casino Analysis', path: '/casino-analysis' },
     {
-      name: 'Live Market',
+      name: 'Settlement',
       submenu: [
-        { name: 'Roulette', path: '/live-casino?cat=Roulette' },
-        { name: 'Teenpatti', path: '/live-casino?cat=Teenpatti' },
-        { name: 'Poker', path: '/live-casino?cat=Poker' },
-        { name: 'Baccarat', path: '/live-casino?cat=Baccarat' },
-        { name: 'Dragon Tiger', path: '/live-casino?cat=Dragon Tiger' },
-        { name: '32 Cards', path: '/live-casino?cat=32 Cards' },
-        { name: 'Andar Bahar', path: '/live-casino?cat=Andar Bahar' },
-        { name: 'Lucky 7', path: '/live-casino?cat=Lucky 7' },
-        { name: '3 Card Judgement', path: '/live-casino?cat=3 Card Judgement' },
-        { name: 'Worli', path: '/live-casino?cat=Worli' },
-        { name: 'Sports', path: '/live-casino?cat=Sports' },
-        { name: 'Bollywood', path: '/live-casino?cat=Bollywood' },
-        { name: 'Lottery', path: '/live-casino?cat=Lottery' },
-        { name: 'Queen', path: '/live-casino?cat=Queen' },
-        { name: 'Race', path: '/live-casino?cat=Race' },
+        { name: 'User', path: '/user-settlement' },
+        { name: 'Master', path: '/master-settlement' },
       ],
     },
     {
-      name: 'Live Virtual Market',
+      name: 'Reports',
       submenu: [
-        { name: '20-20 Teenpatti', path: '/casino-bet/teen20' },
-        { name: 'Muflis Teenpatti', path: '/casino-bet/teenmuf' },
-        { name: '1 Day Teenpatti', path: '/casino-bet/teen' },
-        { name: 'Lucky 7', path: '/casino-bet/lucky7' },
-        { name: '1 Day Dragon Tiger', path: '/casino-bet/dt6' },
-      ],
-    },
-    {
-      name: 'My Report',
-      submenu: [
-        // { name: 'Account Statement', path: '/my-account' },
         { name: 'Account Statement', path: '/AccountStatement' },
         { name: 'Current Bets', path: '/betlist' },
         { name: 'General Report', path: '/GeneralReport' },
         { name: 'Profit Loss', path: '/ProfitLoss' },
-        // { name: 'Event Profit/Loss', path: '/eventpl' },
-        // { name: 'Downline Profit/Loss', path: '/downpl' },
         { name: 'Casino Result Report', path: '/casinoResultReport' },
         { name: 'User Register Detail', path: '/RegisterDetail' },
         { name: 'Total Profit Loss', path: '/TotalProfitLoss' },
         { name: 'User Win Loss', path: '/UserWinLoss' },
       ],
     },
-
-    // { name: 'Multi Login', path: '/user-download-list' },
     // {
-    //   name: 'Downline List',
+    //   name: 'Cutting',
     //   submenu: [
-    //     { name: 'User Downline List', path: '/user-download-list' },
-    //     {
-    //       name: 'Agent Downline List',
-    //       path: '/agent-download-list',
-    //       reload: true,
-    //     },
+    //     { name: 'Agent Master', path: '/live-casino?cat=Roulette' },
+    //     { name: 'Cutting History', path: '/live-casino?cat=Teenpatti' },
     //   ],
     // },
-    // { name: 'Security', path: '/secureauth' },
-
+    {
+      name: 'Control',
+      submenu: [
+        { name: 'Game', path: '/live-casino?cat=Roulette' },
+        { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
+      ],
+    },
+    { name: 'Banner Settings', path: '/banner-settings' },
     // {
-    //   name: 'Banking',
+    //   name: 'Live Market',
     //   submenu: [
-    //     { name: 'User Banking', path: '/banking' },
-    //     { name: 'Master Banking', path: '/master-banking' },
+    //     { name: 'Roulette', path: '/live-casino?cat=Roulette' },
+    //     { name: 'Teenpatti', path: '/live-casino?cat=Teenpatti' },
+    //     { name: 'Poker', path: '/live-casino?cat=Poker' },
+    //     { name: 'Baccarat', path: '/live-casino?cat=Baccarat' },
+    //     { name: 'Dragon Tiger', path: '/live-casino?cat=Dragon Tiger' },
+    //     { name: '32 Cards', path: '/live-casino?cat=32 Cards' },
+    //     { name: 'Andar Bahar', path: '/live-casino?cat=Andar Bahar' },
+    //     { name: 'Lucky 7', path: '/live-casino?cat=Lucky 7' },
+    //     { name: '3 Card Judgement', path: '/live-casino?cat=3 Card Judgement' },
+    //     { name: 'Worli', path: '/live-casino?cat=Worli' },
+    //     { name: 'Sports', path: '/live-casino?cat=Sports' },
+    //     { name: 'Bollywood', path: '/live-casino?cat=Bollywood' },
+    //     { name: 'Lottery', path: '/live-casino?cat=Lottery' },
+    //     { name: 'Queen', path: '/live-casino?cat=Queen' },
+    //     { name: 'Race', path: '/live-casino?cat=Race' },
     //   ],
     // },
-    // { name: 'Password History', path: '/password-history' },
-    //   ...(userInfo?.role === 'supperadmin'
-    //     ? [
-    //         {
-    //           name: 'Manual Control',
-    //           submenu: [
-    //             { name: 'Match Control', path: '/match-control' },
-    //             { name: 'Result Control', path: '/result-control' },
-    //           ],
-    //         },
-    //       ]
-    //     : []),
+    // {
+    //   name: 'Live Virtual Market',
+    //   submenu: [
+    //     { name: '20-20 Teenpatti', path: '/casino-bet/teen20' },
+    //     { name: 'Muflis Teenpatti', path: '/casino-bet/teenmuf' },
+    //     { name: '1 Day Teenpatti', path: '/casino-bet/teen' },
+    //     { name: 'Lucky 7', path: '/casino-bet/lucky7' },
+    //     { name: '1 Day Dragon Tiger', path: '/casino-bet/dt6' },
+    //   ],
+    // },
   ];
 
   const logout = async () => {
@@ -232,23 +216,22 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   return (
     <>
       <div
-        className={`sticky top-0 z-10 w-full ${
-          location.pathname == '/login' ? 'hidden' : 'block'
-        }`}
+        className={`sticky top-0 z-10 w-full ${location.pathname == '/login' ? 'hidden' : 'block'
+          }`}
       >
         {/* Mobile Header - Split into two rows */}
         <div className='hidden'>
           {/* Top row - Role and Name */}
-          <header className='bg-color flex h-[52px] items-center justify-between border-b border-gray-800 p-2'>
+          <header className='flex h-[52px] items-center justify-between border-b border-gray-800 bg-gradient-to-b from-[#022c43] to-[#18b0c8] p-2'>
             <div className='flex items-center gap-2'>
               <button
-                onClick={() => setSportsSidebarOpen(true)}
+                onClick={() => setSportsSidebarOpen((prev) => !prev)}
                 className='flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded bg-[#2a2a2a] text-white'
                 style={{ boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)' }}
               >
                 <IoMdMenu className='text-xl' />
               </button>
-              <img src={jdlogo} alt='logo' className='h-[50px]' />
+              <img src={logo} alt='logo' className='h-[50px]' />
             </div>
             <div className='grid justify-items-end'>
               <div className='flex items-center gap-2'>
@@ -287,11 +270,20 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         </div>
 
         {/* Desktop Header */}
-        <header className='bg-color flex h-[52px] items-center justify-between'>
+        <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
           <div className='flex h-[52px] items-center'>
+            <button
+              type='button'
+              onClick={() => setSportsSidebarOpen((prev) => !prev)}
+              className='mr-1 ml-3 cursor-pointer text-white'
+              aria-expanded={sportsSidebarOpen}
+              aria-label='Toggle sports menu'
+            >
+              <IoMdMenu className='text-2xl' />
+            </button>
             <NavLink
               to='/user-download-list'
-              className='h-[52px]'
+              className='mr-10 h-[32px]'
               onClick={(e) => {
                 if (onLogoClick) {
                   e.preventDefault();
@@ -300,29 +292,22 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                 }
               }}
             >
-              <img src={jdlogo} alt='logo' className='block h-full' />
+              <img src={logo} alt='logo' className='block h-full' />
             </NavLink>
-            <button
-              onClick={() => setSportsSidebarOpen(true)}
-              className='mr-1 cursor-pointer text-white'
-            >
-              <IoMdMenu className='text-2xl' />
-            </button>
-            <nav className='text-black'>
-              <ul className='relative mx-auto flex w-full flex-wrap'>
+
+            <nav className='h-full text-black'>
+              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center'>
                 {navItems.map((item, i) => (
                   <li
                     key={i}
-                    className='relative'
+                    className='relative h-full'
                     onMouseEnter={() => setHoveredItem(item.name)}
                     onMouseLeave={() => setHoveredItem(null)}
                   >
                     {item.path ? (
                       <NavLink
                         to={item.path}
-                        className={({ isActive }) =>
-                          `} block px-2.5 py-2 text-[13px] font-semibold whitespace-nowrap text-white transition-colors hover:bg-[#2c3e50]`
-                        }
+                        className='flex h-full items-center from-[#16a4bc] to-[#16a4bc] px-1.5 text-[14px] whitespace-nowrap text-white transition-colors hover:bg-gradient-to-b'
                         onClick={() => {
                           setActiveItem(item.name);
                           if (onNavClick) onNavClick();
@@ -332,16 +317,16 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                       </NavLink>
                     ) : (
                       <span
-                        className={`flex cursor-pointer items-center gap-[10px] px-3 py-2 text-[13px] font-semibold whitespace-nowrap text-white hover:bg-[#2c3e50] ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
+                        className={`flex h-full cursor-pointer items-center gap-[2px] from-[#16a4bc] to-[#16a4bc] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
                       >
                         {item.name}
-                        <IoMdArrowDropdown className='w-3' />
+                        <IoMdArrowDropdown />
                       </span>
                     )}
 
                     {/* Submenu Dropdown */}
                     {item.submenu && hoveredItem === item.name && (
-                      <ul className='bg-color absolute top-full left-0 z-20 overflow-visible font-semibold whitespace-nowrap text-white shadow-lg'>
+                      <ul className='absolute top-full left-0 z-20 overflow-visible bg-[#16a4bc] font-semibold whitespace-nowrap text-white shadow-lg'>
                         {item.submenu
                           .filter(
                             (sub) =>
@@ -353,7 +338,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                           .map((sub, index) => (
                             <li
                               key={index}
-                              className='min-w-[200px] first:mt-2 hover:bg-[#2c3e50]'
+                              className='min-w-[200px] border border-[#25b3cd] border-t-[#25b3cd] border-b-[#128ca3] from-[#0c889e] to-[#0c889e] hover:bg-gradient-to-b'
                             >
                               <NavLink
                                 to={sub.path}
@@ -386,6 +371,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
 
           <div className='mr-4 flex items-center gap-4'>
+
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -415,19 +401,17 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4 }}
-                  className='absolute top-8 right-0 w-[200px] rounded-md bg-[#0088cc] py-1.5'
+                  className='absolute top-8 right-0 w-[180px] rounded-md border border-gray-400 bg-white py-1.5'
                 >
-                  <div className='cursor-pointer px-2 py-0.5 text-[13px] font-bold text-white hover:underline'>
-                    <NavLink to='/secureauth'>Secure Auth Verification</NavLink>
-                  </div>
-                  <div className='cursor-pointer px-2 py-0.5 text-[13px] font-bold text-white hover:underline'>
+                  <div className='flex cursor-pointer items-center px-2 py-0.5 text-[14px] text-gray-700 hover:bg-[#18b0c8] hover:text-white'>
+                    <MdArrowRightAlt size={22} />{' '}
                     <NavLink to='/ChangePassword'>Change Password</NavLink>
                   </div>
                   <div
+                    className='flex cursor-pointer items-center px-2 py-0.5 text-[14px] text-gray-700 hover:bg-[#18b0c8] hover:text-white'
                     onClick={logout}
-                    className='cursor-pointer px-2 py-0.5 text-[13px] font-bold text-white hover:underline'
                   >
-                    LogOut
+                    <MdArrowRightAlt size={22} /> Logout
                   </div>
                 </motion.div>
               )}
@@ -449,8 +433,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   <NavLink
                     to={item.path}
                     className={({ isActive }) =>
-                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${
-                        isActive ? 'bg-color text-white' : 'text-black'
+                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${isActive ? 'bg-color text-white' : 'text-black'
                       }`
                     }
                     onClick={() => setActiveItem(item.name)}

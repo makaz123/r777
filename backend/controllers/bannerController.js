@@ -14,6 +14,8 @@ export const uploadBanner = async (req, res) => {
       return res.status(400).json({ message: 'No images provided' });
     }
 
+    const { page = 'home' } = req.body;
+
     const newBanners = [];
 
     // Process all files concurrently
@@ -30,6 +32,7 @@ export const uploadBanner = async (req, res) => {
       // Create new banner
       const newBanner = new Banner({
         imageUrl: result.secure_url,
+        page: page,
         isActive: true,
       });
 
@@ -46,13 +49,23 @@ export const uploadBanner = async (req, res) => {
     });
   } catch (error) {
     console.error('Error uploading banners:', error);
-    return res.status(500).json({ success: false, message: 'Server error while uploading banners' });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: 'Server error while uploading banners',
+      });
   }
 };
 
 export const getBanner = async (req, res) => {
   try {
-    const banners = await Banner.find({ isActive: true }).sort({ createdAt: -1 });
+    const { page } = req.query;
+    const filter = { isActive: true };
+    if (page) {
+      filter.page = page;
+    }
+    const banners = await Banner.find(filter).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, banners });
   } catch (error) {
     console.error('Error fetching banners:', error);
@@ -69,7 +82,9 @@ export const deleteBanners = async (req, res) => {
 
     await Banner.deleteMany({ _id: { $in: bannerIds } });
 
-    return res.status(200).json({ success: true, message: 'Banners deleted successfully' });
+    return res
+      .status(200)
+      .json({ success: true, message: 'Banners deleted successfully' });
   } catch (error) {
     console.error('Error deleting banners:', error);
     return res.status(500).json({ success: false, message: 'Server error' });

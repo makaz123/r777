@@ -8,7 +8,10 @@ import { GiCricketBat } from 'react-icons/gi';
 import aviatorIcon from '../../assets/aviator-icon.svg';
 import sportsIcon from '../../assets/sports-icons.png';
 import inOutIcon from '../../assets/inout-iconB.svg';
+import { useTranslation } from '../../context/LanguageContext';
+
 function Navbar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -61,12 +64,12 @@ function Navbar() {
     { id: 'rvGames', label: 'RV Games', path: '/' },
     { id: 'spribe', label: 'Aviator', path: '/spribe' },
     { id: 'inOut', label: 'Chicken Road', path: '/inout' },
-    { id: 'ezugi', label: 'Ezugi', path: '/' },
+    { id: 'ezugi', label: 'Ezugi', path: '/ezugi' },
     { id: 'evolution', label: 'Evolution', path: '/evolution' },
-    { id: 'liveCasino', label: 'Live Casino', path: '/' },
+    { id: 'liveCasino', label: 'Live Casino', path: '/livecasino' },
     { id: 'vivo', label: 'Vivo', path: '/' },
     { id: 'betGames', label: 'Betgames', path: '/' },
-    { id: 'casino3', label: 'Casino 3', path: '/' },
+    { id: 'casino3', label: 'Casino 3', path: '/casino3' },
   ];
 
   const activeNav = useMemo(() => {
@@ -86,6 +89,7 @@ function Navbar() {
     if (path.startsWith('/spribe')) return 'aviator';
     if (path.startsWith('/inout')) return 'chickenRoad';
     if (path.startsWith('/evolution')) return 'evolution';
+    if (path.startsWith('/ezugi')) return 'ezugi';
     if (path.startsWith('/ezugi')) return 'ezugi';
     if (path.startsWith('/vivo')) return 'vivo';
     if (path.startsWith('/betgames')) return 'betGames';
@@ -165,7 +169,7 @@ function Navbar() {
               )}
 
               <span className='text-[12px] font-[700] whitespace-nowrap uppercase xl:text-[14px] xl:normal-case'>
-                {item.label}
+                {t(item.id, item.label)}
               </span>
 
               {(item.id === 'cricket' ||
@@ -173,7 +177,7 @@ function Navbar() {
                 item.id === 'soccer') && (
                 <div className='absolute top-[6px] right-[3px] z-10 flex h-[10px] min-w-[33px] overflow-hidden rounded-[3px] bg-white text-[8px] xl:-top-[6px] xl:right-[3px] xl:h-[12px] xl:text-[10px]'>
                   <span className='flex flex-1 animate-pulse items-center justify-center text-[6px] text-red-500 uppercase xl:text-[8px]'>
-                    Live
+                    {t('live', 'Live')}
                   </span>
                   <span className='bg-red-500 px-[3px] py-[1px] leading-none text-white'>
                     {inplayCounts[item.id] ?? 0}

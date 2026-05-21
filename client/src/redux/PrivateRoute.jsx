@@ -23,7 +23,7 @@ const PrivateRoute = () => {
   useEffect(() => {
     // If no token, redirect to login immediately
     if (!hasToken) {
-      navigate('/login');
+      navigate('/');
       setIsChecking(false);
       return;
     }
@@ -45,7 +45,7 @@ const PrivateRoute = () => {
     // If there's an error and we're not loading, redirect to login
     if (error && !loading) {
       localStorage.removeItem('auth');
-      navigate('/login');
+      navigate('/');
       setIsChecking(false);
     }
   }, [error, loading, navigate]);

@@ -28,6 +28,9 @@ import { bet_reset } from '../../redux/reducer/betReducer';
 import ExposureDetails from './ExposureDetails';
 import Navbar from './Navbar';
 import LoginPopup from '../auth/LoginPopup';
+import LanguageSelector from '../language/LanguageSelector';
+import { useTranslation } from '../../context/LanguageContext';
+
 function Header({
   onMenuToggle,
   isSidebarOpen,
@@ -36,6 +39,7 @@ function Header({
   rightMenu: rightMenuProp,
   setRightMenu: setRightMenuProp,
 }) {
+  const { t } = useTranslation();
   const [isExposureDetailsOpen, setExposureDetailsOpen] = useState(false);
   const [rightMenuInternal, setRightMenuInternal] = useState(false);
   const rightMenu =
@@ -80,6 +84,7 @@ function Header({
       console.log(error?.response?.data || error.message);
     } finally {
       localStorage.removeItem('auth');
+      localStorage.removeItem('welcomePopupShown');
       dispatch(user_reset());
       dispatch(bet_reset());
       wsService.disconnect();
@@ -132,7 +137,8 @@ function Header({
             onClick={() => navigate('/')}
           />
         </div>
-        <div className='flex flex-1/2 items-center justify-end gap-4 px-1 text-[12px]'>
+        <div className='flex flex-1/2 items-center justify-end gap-2 px-1 text-[12px] md:gap-4'>
+          <LanguageSelector />
           {userInfo ? (
             <div className='flex flex-col md:flex-row md:items-center md:gap-4'>
               <div className='flex gap-1'>
@@ -169,7 +175,7 @@ function Header({
               onClick={() => setShowLoginPopup(true)}
               className='flex cursor-pointer items-center justify-center gap-1 rounded-[10px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-[8px] text-[14px] font-bold'
             >
-              <FaUser /> LOG IN
+              <FaUser /> {t('log_in', 'LOG IN')}
             </button>
           )}
         </div>
@@ -178,7 +184,7 @@ function Header({
       <Navbar />
       {userInfo?.account === 'demo' && (
         <div className='fixed top-0 left-1/2 -translate-x-1/2 rounded-b-md bg-red-600 px-8 text-[13px] text-white'>
-          Demo Account
+          {t('demo_account', 'Demo Account')}
         </div>
       )}
 
@@ -221,12 +227,12 @@ function Header({
                 className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'
                 onClick={openModal}
               >
-                <p>Exposure</p>
+                <p>{t('exposure', 'Exposure')}</p>
                 <p className='text-black'>{userInfo?.exposure?.toFixed(2)}</p>
               </div>
 
               <div className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'>
-                <p>P&L</p>
+                <p>{t('p_and_l', 'P&L')}</p>
                 <p className='text-black'>
                   {userInfo?.bettingProfitLoss?.toFixed(2)}
                 </p>
@@ -246,7 +252,7 @@ function Header({
                   <span>
                     <img src={accountIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Account Statement</span>
+                  <span>{t('account_statement', 'Account Statement')}</span>
                 </div>
                 <div
                   role='button'
@@ -259,7 +265,7 @@ function Header({
                   <span>
                     <img src={plIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Profit Loss Report</span>
+                  <span>{t('profit_loss_report', 'Profit Loss Report')}</span>
                 </div>
                 <div
                   role='button'
@@ -272,7 +278,7 @@ function Header({
                   <span>
                     <img src={historyIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Bet History</span>
+                  <span>{t('bet_history', 'Bet History')}</span>
                 </div>
                 <div
                   role='button'
@@ -285,7 +291,7 @@ function Header({
                   <span>
                     <img src={unsettledIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Unsettled Bet</span>
+                  <span>{t('unsettled_bet', 'Unsettled Bet')}</span>
                 </div>
                 <div
                   role='button'
@@ -296,7 +302,7 @@ function Header({
                   <span>
                     <img src={valueIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Set Stake</span>
+                  <span>{t('set_stake', 'Set Stake')}</span>
                 </div>
                 <div
                   role='button'
@@ -309,7 +315,7 @@ function Header({
                   <span>
                     <img src={passwordIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Change Password</span>
+                  <span>{t('change_password_txt', 'Change Password')}</span>
                 </div>
                 <div
                   role='button'
@@ -322,7 +328,7 @@ function Header({
                   <span>
                     <img src={resultIcon} alt='' className='w-[18px]' />
                   </span>
-                  <span>Results</span>
+                  <span>{t('results', 'Results')}</span>
                 </div>
               </>
             )}
@@ -331,7 +337,7 @@ function Header({
               <span>
                 <img src={rulesIcon} alt='' className='w-[18px]' />
               </span>
-              <span>Rules</span>
+              <span>{t('rules', 'Rules')}</span>
             </div>
             <div
               className='flex items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
@@ -340,7 +346,7 @@ function Header({
               <span>
                 <img src={logoutIcon} alt='' className='w-[18px]' />
               </span>
-              <span>Logout</span>
+              <span>{t('logout', 'Logout')}</span>
             </div>
           </motion.div>
         </>

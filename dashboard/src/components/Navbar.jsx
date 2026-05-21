@@ -156,15 +156,16 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   ];
 
   const logout = async () => {
+    setShowLogoutPopup(false);
     try {
       const data = await dispatch(userLogout()).unwrap();
-      localStorage.removeItem('auth');
-      toast.success(data.message);
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 500);
+      toast.success(data?.message || 'Logged out successfully');
     } catch (error) {
       toast.error(error);
+    } finally {
+      localStorage.removeItem('auth');
+      dispatch(user_reset());
+      navigate('/', { replace: true });
     }
   };
 

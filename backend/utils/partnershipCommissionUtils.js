@@ -20,6 +20,39 @@ export const parseCommissionPercent = (commition) => {
   return Math.min(n, 100);
 };
 
+export const parsePartnershipPercent = (partnership) => {
+  const raw = String(partnership ?? '')
+    .trim()
+    .replace('%', '');
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(n, 100);
+};
+
+/** Viewer's "my share" cap when assigning partnership to a new downline agent. */
+export const getViewerMySharePercent = (partnership) =>
+  roundMoney(Math.max(0, parsePartnershipPercent(partnership)));
+
+/** Downline % taken from the viewer's my-share pool (capped at maxMyShare). */
+export const clampDownlineSharingPercent = (raw, maxMyShare) => {
+  const max = Number(maxMyShare) || 0;
+  return roundMoney(Math.min(parsePartnershipPercent(raw), max));
+};
+
+/** Remaining my share after allocating downlineSharing from the viewer pool. */
+export const getRemainingMySharePercent = (parentMyShare, downlineSharing) => {
+  const parent = Number(parentMyShare) || 0;
+  const down = clampDownlineSharingPercent(downlineSharing, parent);
+  return roundMoney(Math.max(0, parent - down));
+};
+
+/**
+ * Value stored on a new agent row: parent's share from that downline's P/L.
+ * UI "downline sharing" = % given from the parent's my-share pool.
+ */
+export const getParentShareStoredOnDownline = (parentMyShare, downlineSharing) =>
+  getRemainingMySharePercent(parentMyShare, downlineSharing);
+
 /** Commission is taken from net win profit (match odds only). */
 export const calculateWinCommission = (winProfit, commissionPercent) => {
   const profit = Number(winProfit) || 0;

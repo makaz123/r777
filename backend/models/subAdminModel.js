@@ -38,7 +38,7 @@ const subAdminSchema = new mongoose.Schema(
     rollingCommission: { type: Number, default: 0 },
     /** Total commission earned from downline match-odds wins (auto-credited on settlement). */
     commissionEarned: { type: Number, default: 0 },
-    phone: { type: Number, required: true },
+    phone: { type: Number, required: false },
     isPasswordChanged: { type: Boolean, default: false },
     password: { type: String, required: true },
     secret: { type: Number, default: 1 },

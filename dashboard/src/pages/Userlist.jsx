@@ -507,7 +507,7 @@ export default function Userlist() {
                 <div className='flex-1/2'>My Share</div>
                 <div className='flex-1/2 font-semibold text-green-300'>
                   {downlineViewer?.myPercentLabel ??
-                    `${100 - (userInfo?.partnership || 0)}%`}
+                    `${userInfo?.partnership ?? 0}%`}
                 </div>
               </div>
             </div>
@@ -742,19 +742,21 @@ export default function Userlist() {
                   if (row.myPercent) return row.myPercent;
                   if (row.role === 'user') {
                     const pct =
-                      row.downlineSharePercent ??
-                      row.commition ??
+                      row.parentSharePercent ??
                       downlineViewer?.mySharePercent ??
                       0;
                     return `${pct}%`;
                   }
-                  const downline =
-                    row.downlineSharePercent ?? row.partnership ?? 0;
                   const mine =
+                    row.parentSharePercent ??
                     row.viewerShareOnRow ??
-                    row.mySharePercent ??
-                    100 - downline;
-                  return `${downline}% / ${mine}%`;
+                    row.partnership ??
+                    0;
+                  const theirs =
+                    row.downlineKeepPercent ??
+                    row.downlineSharePercent ??
+                    100 - mine;
+                  return `${mine}% / ${theirs}%`;
                 },
               },
               {

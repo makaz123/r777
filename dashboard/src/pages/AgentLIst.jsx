@@ -399,14 +399,14 @@ export default function AgentLIst() {
     downlineViewer?.partnership ??
     (Number(userInfo?.partnership) || 0);
   const mySharePercent =
-    downlineViewer?.mySharePercent ?? Math.max(0, 100 - pct);
-
-  const uplineShare = pct
-    ? Math.round(totalUplinePL * (pct / 100) * 100) / 100
-    : totalUplinePL;
+    downlineViewer?.mySharePercent ?? Math.max(0, pct);
 
   const myShare = pct
     ? Math.round(totalUplinePL * (mySharePercent / 100) * 100) / 100
+    : totalUplinePL;
+
+  const uplineShare = pct
+    ? Math.round(totalUplinePL * ((100 - mySharePercent) / 100) * 100) / 100
     : 0;
 
   return (
@@ -628,8 +628,8 @@ export default function AgentLIst() {
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       {user.myPercent ??
                         (user.role === 'user'
-                          ? `${user.downlineSharePercent ?? user.commition ?? 0}%`
-                          : `${user.downlineSharePercent ?? user.partnership ?? 0}% / ${user.viewerShareOnRow ?? user.mySharePercent ?? 100 - (user.partnership || 0)}%`)}
+                          ? `${user.parentSharePercent ?? downlineViewer?.mySharePercent ?? 0}%`
+                          : `${user.parentSharePercent ?? user.partnership ?? 0}% / ${user.downlineKeepPercent ?? 100 - (user.partnership || 0)}%`)}
                     </td>
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       <div className='flex items-center gap-x-2'>

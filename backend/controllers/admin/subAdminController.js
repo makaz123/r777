@@ -1426,8 +1426,10 @@ export const getDownlineList = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
+    // partnership % = this account's share (what you keep / what parent takes from downline row)
     const viewerPartnership = Number(admin.partnership) || 0;
-    const viewerMySharePercent = roundMoney(
+    const viewerMySharePercent = roundMoney(Math.max(0, viewerPartnership));
+    const viewerUplineSharePercent = roundMoney(
       Math.max(0, 100 - viewerPartnership)
     );
 
@@ -1483,31 +1485,32 @@ export const getDownlineList = async (req, res) => {
         const downlinePartnership = Number(row.partnership) || 0;
         const commissionPct = parseCommissionPercent(row.commition);
 
-        // partnership on agent/admin = % assigned to that downline (their share)
-        // viewer (logged-in parent) keeps the remainder
-        const downlineSharePercent = isEndUser
-          ? commissionPct || downlinePartnership || viewerMySharePercent
-          : downlinePartnership;
-        const viewerShareOnRow = isEndUser
+        // On agent/admin rows: partnership = parent's (viewer's) share from that downline
+        const parentSharePercent = isEndUser
           ? viewerMySharePercent
+          : downlinePartnership;
+        const downlineKeepPercent = isEndUser
+          ? commissionPct || viewerUplineSharePercent
           : roundMoney(Math.max(0, 100 - downlinePartnership));
 
         const myPercent = isEndUser
-          ? `${downlineSharePercent}%`
-          : `${downlineSharePercent}% / ${viewerShareOnRow}%`;
+          ? `${parentSharePercent}%`
+          : `${parentSharePercent}% / ${downlineKeepPercent}%`;
 
         return {
           ...row,
           exposure,
           downlinePartnership,
-          downlineSharePercent,
-          viewerShareOnRow,
+          parentSharePercent,
+          downlineKeepPercent,
+          downlineSharePercent: downlineKeepPercent,
+          viewerShareOnRow: parentSharePercent,
           myPartnershipPercent: viewerMySharePercent,
-          mySharePercent: viewerShareOnRow,
+          mySharePercent: parentSharePercent,
           myPercent,
           uplinePartnershipPercent: isEndUser
-            ? viewerPartnership
-            : downlinePartnership,
+            ? viewerUplineSharePercent
+            : downlineKeepPercent,
           commition: row.commition || '0',
           commissionEarned: row.commissionEarned || 0,
         };
@@ -1523,9 +1526,9 @@ export const getDownlineList = async (req, res) => {
       viewer: {
         partnership: viewerPartnership,
         mySharePercent: viewerMySharePercent,
-        uplineSharePercent: viewerPartnership,
+        uplineSharePercent: viewerUplineSharePercent,
         myPercentLabel: `${viewerMySharePercent}%`,
-        uplinePercentLabel: `${viewerPartnership}%`,
+        uplinePercentLabel: `${viewerUplineSharePercent}%`,
         role: admin.role,
         userName: admin.userName,
       },

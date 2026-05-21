@@ -25,8 +25,7 @@ import {
   addAdmin,
   getAdmin,
   deleteSubAdmin,
-  getAllUserAndDownline,
-  getAllUsersWithCompleteInfo,
+  getDownlineList,
   setCurrentPage,
   fetchSubAdminByLevel,
   updateCreditReference,
@@ -54,15 +53,13 @@ export default function AgentLIst() {
     totalPages,
     loading,
     users,
-    users1,
     crediteHistory,
+    downlineViewer,
   } = useSelector((state) => state.auth);
   const { gamelock } = useSelector((state) => state.downline);
 
   // console.log("crediteHistory", crediteHistory);
   // console.log("totalCrediteData", totalCrediteData);
-  console.log('userData getAllUserAndDownline', users);
-  console.log('userData getAllUsersWithCompleteInfo', users1);
 
   const [entries, setEntries] = useState(10);
   const [creditEntries, setCreditEntries] = useState(10);
@@ -79,7 +76,6 @@ export default function AgentLIst() {
   const [sportsPopup, setSportsPopup] = useState(false);
   const [currentUser, setcurrentUser] = useState(null);
   const [isFetchingAllUsers, setIsFetchingAllUsers] = useState(null);
-  const [isFetchCompleteInfo, setIsFetchCompleteInfo] = useState(null);
   const [type, setType] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [gameLockData, setGameLockData] = useState([]);
@@ -147,10 +143,11 @@ export default function AgentLIst() {
           console.log('res.payload111', res.payload);
           setGameLockData(res.payload?.gamelock);
           dispatch(
-            getAllUserAndDownline({
+            getDownlineList({
               page: currentPage,
               limit: entries,
               searchQuery,
+              listType: 'agents',
             })
           );
           toast.success(res.payload.message);
@@ -178,10 +175,11 @@ export default function AgentLIst() {
         const result = await dispatch(addAdmin(formData)).unwrap();
         toast.success(result.message);
         dispatch(
-          getAllUserAndDownline({
+          getDownlineList({
             page: currentPage,
             limit: entries,
             searchQuery,
+            listType: 'agents',
           })
         );
         dispatch(getAdmin());
@@ -207,10 +205,11 @@ export default function AgentLIst() {
 
       toast.success(deleteUser.message);
       dispatch(
-        getAllUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'agents',
         })
       );
     } catch (error) {
@@ -234,10 +233,11 @@ export default function AgentLIst() {
       toast.success(data.message);
       setCreditPopup(false);
       dispatch(
-        getAllUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'agents',
         })
       );
     } catch (error) {
@@ -253,10 +253,11 @@ export default function AgentLIst() {
       ).unwrap();
       toast.success(data.message);
       dispatch(
-        getAllUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'agents',
         })
       );
       dispatch(getAdmin());
@@ -280,10 +281,11 @@ export default function AgentLIst() {
       toast.success(result.message);
       setSettingPopup(false);
       dispatch(
-        getAllUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'agents',
         })
       );
     } catch (error) {
@@ -303,10 +305,11 @@ export default function AgentLIst() {
       toast.success(result.message);
       setPatnerPopup(false);
       dispatch(
-        getAllUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'agents',
         })
       );
       dispatch(getAdmin());
@@ -369,21 +372,11 @@ export default function AgentLIst() {
   useEffect(() => {
     setIsFetchingAllUsers(true);
     dispatch(
-      getAllUserAndDownline({
+      getDownlineList({
         page: currentPage,
         limit: entries,
         searchQuery,
-      })
-    );
-  }, [dispatch, currentPage, entries, searchQuery]);
-
-  useEffect(() => {
-    setIsFetchCompleteInfo(true);
-    dispatch(
-      getAllUsersWithCompleteInfo({
-        page: currentPage,
-        limit: entries,
-        searchQuery,
+        listType: 'agents',
       })
     );
   }, [dispatch, currentPage, entries, searchQuery]);
@@ -402,22 +395,37 @@ export default function AgentLIst() {
   const downlineBettingPL = userInfo?.uplineBettingProfitLoss || 0;
   const creditRefPL = userInfo?.creditReferenceProfitLoss || 0;
   const totalUplinePL = downlineBettingPL + creditRefPL;
-  const pct = userInfo?.partnership || 0;
+  const pct =
+    downlineViewer?.partnership ??
+    (Number(userInfo?.partnership) || 0);
+  const mySharePercent =
+    downlineViewer?.mySharePercent ?? Math.max(0, 100 - pct);
 
   const uplineShare = pct
     ? Math.round(totalUplinePL * (pct / 100) * 100) / 100
     : totalUplinePL;
 
   const myShare = pct
-    ? Math.round(totalUplinePL * ((100 - pct) / 100) * 100) / 100
+    ? Math.round(totalUplinePL * (mySharePercent / 100) * 100) / 100
     : 0;
 
   return (
     <>
       <Navbar />
       <div className='p-1 px-[15px] md:px-7.5'>
-        <div className='my-[13px] flex items-center justify-between'>
+        <div className='my-[13px] flex flex-wrap items-center justify-between gap-2'>
           <div className='text-[20px]'>Assign Agent List</div>
+          {downlineViewer && (
+            <div className='rounded border border-[#2789ce] bg-[#f0f8ff] px-3 py-1 text-[13px]'>
+              <span className='font-semibold text-[#2789ce]'>
+                My Partnership: {downlineViewer.myPercentLabel}
+              </span>
+              <span className='mx-2 text-gray-400'>|</span>
+              <span className='text-gray-600'>
+                Upline Share: {downlineViewer.uplinePercentLabel}
+              </span>
+            </div>
+          )}
           {/* <button
             className='flex items-center gap-1 rounded border border-gray-300 bg-[#0088cc] px-[15px] text-[12px] leading-[30px] font-bold text-white'
             onClick={() => navigate('/agent-download-list/insertagent')}
@@ -537,7 +545,8 @@ export default function AgentLIst() {
               <tr className='border-b-2 border-black/10 whitespace-nowrap text-black'>
                 <th className='px-[10px] py-[9px] text-left'>Username</th>
                 <th className='px-[10px] py-[9px] text-left'>Credit Ref.</th>
-                <th className='px-[10px] py-[9px] text-left'>Partnership</th>
+                <th className='px-[10px] py-[9px] text-left'>Downline P'ship</th>
+                <th className='px-[10px] py-[9px] text-left'>My %</th>
                 <th className='px-[10px] py-[9px] text-left'>Balance</th>
                 <th className='px-[10px] py-[9px] text-left'>Exposure</th>
                 <th className='px-[10px] py-[9px] text-left'>Avail. Bal.</th>
@@ -552,7 +561,7 @@ export default function AgentLIst() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan='9'
+                    colSpan='10'
                     className='border border-gray-300 p-2 text-center'
                   >
                     Loading...
@@ -596,7 +605,9 @@ export default function AgentLIst() {
                     </td>
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       <div className='flex items-center gap-1'>
-                        {formatNumber(user.partnership || 0)}
+                        {user.role === 'user'
+                          ? '—'
+                          : `${formatNumber(user.downlinePartnership ?? user.partnership ?? 0)}%`}
                         {/* {isFetchingAllUsers == true ? (
                           <span
                             className='text-blue2'
@@ -613,6 +624,12 @@ export default function AgentLIst() {
                           </span>
                         ) : null} */}
                       </div>
+                    </td>
+                    <td className='border border-gray-100 px-[10px] py-[9px]'>
+                      {user.myPercent ??
+                        (user.role === 'user'
+                          ? `${user.downlineSharePercent ?? user.commition ?? 0}%`
+                          : `${user.downlineSharePercent ?? user.partnership ?? 0}% / ${user.viewerShareOnRow ?? user.mySharePercent ?? 100 - (user.partnership || 0)}%`)}
                     </td>
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       <div className='flex items-center gap-x-2'>
@@ -829,7 +846,7 @@ export default function AgentLIst() {
               ) : (
                 <tr>
                   <td
-                    colSpan='9'
+                    colSpan='10'
                     className='border border-gray-300 p-2 text-center'
                   >
                     No users found.

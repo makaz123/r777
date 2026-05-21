@@ -202,6 +202,26 @@ export const getAllOnlyUserAndDownline = createAsyncThunk(
   }
 );
 
+/** Unified API: listType `agents` | `clients` | `all` (all direct downline roles) + viewer partnership % */
+export const getDownlineList = createAsyncThunk(
+  'user/get-downline-list',
+  async ({ page, limit, searchQuery, listType }, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/get/downline-list', {
+        params: { page, limit, searchQuery, listType },
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          'Failed to load downline list'
+      );
+    }
+  }
+);
+
 // ✅ Update sub-admin details
 export const updateCreditReference = createAsyncThunk(
   'subAdmin/updateCreditReference',
@@ -703,6 +723,8 @@ const initialState = {
   totalCrediteData: 0,
   deleteUsers: [],
   onlyusers: [],
+  downlineList: [],
+  downlineViewer: null,
   betPerantsData: [],
   myReportseventData: [],
   isPasswordChanged: null,
@@ -852,6 +874,27 @@ const userSlice = createSlice({
         state.currentPage = action.payload.currentPage;
       })
       .addCase(getAllOnlyUserAndDownline.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(getDownlineList.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getDownlineList.fulfilled, (state, action) => {
+        state.loading = false;
+        state.downlineList = action.payload.data || [];
+        state.downlineViewer = action.payload.viewer || null;
+        state.totalUsers = action.payload.totalUsers;
+        state.totalPages = action.payload.totalPages;
+        state.currentPage = action.payload.currentPage;
+        if (action.payload.listType === 'agents') {
+          state.users = action.payload.data;
+        } else {
+          state.onlyusers = action.payload.data;
+        }
+      })
+      .addCase(getDownlineList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

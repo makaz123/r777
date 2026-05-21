@@ -39,7 +39,16 @@ import TransactionHistory from '../models/transtionHistoryModel.js';
 import CasinoBetHistory from '../models/casinoBetHistory.model.js';
 import { getDateRangeUTC } from '../utils/dateUtils.js';
 import { isCasinoGame } from './casinoController.js';
-const { updateAllUplines } = await import('./admin/subAdminController.js');
+const {
+  updateAllUplines,
+  applyMatchOddsWinCommissionOnSettlement,
+  creditAgentCommissionEarned,
+} = await import('./admin/subAdminController.js');
+import {
+  calculateWinCommission,
+  isMatchOddsGameType,
+  parseCommissionPercent,
+} from '../utils/partnershipCommissionUtils.js';
 import {
   sendBalanceUpdates,
   sendExposureUpdates,
@@ -52,6 +61,7 @@ const fancyBetSettlementService =
   await import('../services/fancyBetSettlementService.js');
 import {
   calculateAllExposure,
+  exceedsExposureLimit,
   calculateFancyExposure,
   FANCY_GAME_TYPES,
   validateFancyBetBalance,
@@ -428,7 +438,7 @@ const placeCasinoBet = async (req, res) => {
       simulatedNewBet,
     ]);
     console.log('project exposure is: ', projectedExposure);
-    if (projectedExposure > user.exposureLimit) {
+    if (exceedsExposureLimit(projectedExposure, user.exposureLimit)) {
       return res.status(400).json({ message: 'Exposure limit exceeded' });
     }
 
@@ -1039,7 +1049,7 @@ const placeBet = async (req, res) => {
       simulatedNewBet,
     ]);
 
-    if (projectedExposure > user.exposureLimit) {
+    if (exceedsExposureLimit(projectedExposure, user.exposureLimit)) {
       return res.status(400).json({ message: 'Exposure limit exceeded' });
     }
 
@@ -1479,7 +1489,7 @@ export const placeFancyBet = async (req, res) => {
       simulatedNewBet,
     ]);
 
-    if (projectedExposure > user.exposureLimit) {
+    if (exceedsExposureLimit(projectedExposure, user.exposureLimit)) {
       return res.status(400).json({ message: 'Exposure limit exceeded' });
     }
 
@@ -1984,24 +1994,14 @@ export const updateResultOfBets = async (req, res) => {
           }
           Object.assign(bet, settlementResult.betUpdates);
 
-          if (!isVoid && settlementResult.userUpdates) {
-            console.log(
-              `[SPORTS $inc] betId=${bet._id} userId=${bet.userId} balanceChange=${settlementResult.userUpdates.balanceChange} bplChange=${settlementResult.userUpdates.profitLossChange}`
-            );
-            await SubAdmin.findByIdAndUpdate(bet.userId, {
-              $inc: {
-                balance: settlementResult.userUpdates.balanceChange,
-                bettingProfitLoss:
-                  settlementResult.userUpdates.profitLossChange,
-              },
-            });
-          }
-
           // UPDATE BETHISTORY: Settle/void each individual bet history record
           const betHistoryRecords = await betHistoryModel.find({
             betId: bet._id.toString(),
             status: 0,
           });
+
+          let betHistoryTotalPL = 0;
+          let totalMatchOddsCommission = 0;
 
           for (const historyRecord of betHistoryRecords) {
             // Handle void for history records
@@ -2054,6 +2054,21 @@ export const updateResultOfBets = async (req, res) => {
                 }
               }
 
+              if (
+                isMatchOddsGameType(bet.gameType) &&
+                historyProfitLossChange > 0
+              ) {
+                const rate = parseCommissionPercent(user?.commition);
+                const { netProfit, commission } = calculateWinCommission(
+                  historyProfitLossChange,
+                  rate
+                );
+                historyProfitLossChange = netProfit;
+                totalMatchOddsCommission += commission;
+              }
+
+              betHistoryTotalPL += historyProfitLossChange;
+
               await betHistoryModel.updateOne(
                 { _id: historyRecord._id },
                 {
@@ -2072,6 +2087,49 @@ export const updateResultOfBets = async (req, res) => {
                 ` [SPORTS BETHISTORY] Settled: ${historyRecord._id} Team:${historyTeam} Winner:${winnerTeam} Won:${historyWin} Status:${historyStatus} Amount:${historyResultAmount}`
               );
             }
+          }
+
+          if (!isVoid && settlementResult.userUpdates) {
+            let finalUpdates = settlementResult.userUpdates;
+            let bplChange = settlementResult.userUpdates.profitLossChange;
+
+            if (betHistoryRecords.length > 0) {
+              bplChange = betHistoryTotalPL;
+              if (totalMatchOddsCommission > 0) {
+                finalUpdates = {
+                  balanceChange:
+                    settlementResult.userUpdates.balanceChange -
+                    totalMatchOddsCommission,
+                  avBalanceChange:
+                    settlementResult.userUpdates.avBalanceChange -
+                    totalMatchOddsCommission,
+                  profitLossChange: betHistoryTotalPL,
+                };
+                await creditAgentCommissionEarned(
+                  user,
+                  totalMatchOddsCommission
+                );
+              }
+            } else {
+              const commissionResult =
+                await applyMatchOddsWinCommissionOnSettlement(
+                  bet,
+                  user,
+                  settlementResult
+                );
+              finalUpdates = commissionResult.settlementResult.userUpdates;
+              bplChange = finalUpdates.profitLossChange;
+            }
+
+            console.log(
+              `[SPORTS $inc] betId=${bet._id} userId=${bet.userId} balanceChange=${finalUpdates.balanceChange} bplChange=${bplChange} matchOddsCommission=${totalMatchOddsCommission}`
+            );
+            await SubAdmin.findByIdAndUpdate(bet.userId, {
+              $inc: {
+                balance: finalUpdates.balanceChange,
+                bettingProfitLoss: bplChange,
+              },
+            });
           }
 
           totalBetsProcessed++;

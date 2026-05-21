@@ -154,7 +154,7 @@ export const getDashboardStats = async (req, res) => {
     );
 
     const totalCommission = downlineUsers.reduce(
-      (sum, u) => sum + (u.rollingCommission || 0),
+      (sum, u) => sum + (u.commissionEarned || 0),
       0
     );
 

@@ -74,6 +74,18 @@ export function calculateNonFancyMarketExposure(nonFancyBets) {
   return totalExposure;
 }
 
+/** Skip limit check when exposureLimit is null, undefined, or not a positive number. */
+export function exceedsExposureLimit(projectedExposure, exposureLimit) {
+  if (exposureLimit === null || exposureLimit === undefined) {
+    return false;
+  }
+  const limit = Number(exposureLimit);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return false;
+  }
+  return projectedExposure > limit;
+}
+
 export function calculateAllExposure(pendingBets) {
   if (!Array.isArray(pendingBets) || pendingBets.length === 0) return 0;
 
@@ -167,5 +179,6 @@ export default {
   calculateFancyExposure,
   calculateNonFancyMarketExposure,
   calculateAllExposure,
+  exceedsExposureLimit,
   validateFancyBetBalance,
 };

@@ -13,6 +13,7 @@ import {
   getAllOnlyUser,
   getAllUser,
   getAllUsersWithCompleteInfo,
+  getDownlineList,
   getCreditRefHistoryByUserId,
   getDeleteUser,
   getLoginHistory,
@@ -74,6 +75,7 @@ router.delete(
 );
 router.post('/sub-admin/getSubAdmin', adminAuthMiddleware, getSubAdminuser);
 router.get('/get/all-only-user', adminAuthMiddleware, getAllOnlyUser);
+router.get('/get/downline-list', adminAuthMiddleware, getDownlineList);
 router.get('/credit-ref-history/:userId', getCreditRefHistoryByUserId);
 router.post('/change/password-self', adminAuthMiddleware, changePasswordBySelf);
 router.post(

@@ -2,8 +2,12 @@ import { describe, expect, test } from 'vitest';
 
 import {
   calculateWinCommission,
+  clampDownlineSharingPercent,
   getDownlineUplineBettingContribution,
+  getParentShareStoredOnDownline,
   getPartnershipUplineShare,
+  getRemainingMySharePercent,
+  getViewerMySharePercent,
   isMatchOddsGameType,
   parseCommissionPercent,
   splitProfitLossByMyShare,
@@ -58,6 +62,13 @@ describe('partnershipCommissionUtils', () => {
         isEndUser: true,
       })
     ).toBe(20);
+  });
+
+  test('downline sharing clamps and reduces my share live', () => {
+    expect(getViewerMySharePercent('65%')).toBe(65);
+    expect(clampDownlineSharingPercent('80', 65)).toBe(65);
+    expect(getRemainingMySharePercent(65, 20)).toBe(45);
+    expect(getParentShareStoredOnDownline(65, 20)).toBe(45);
   });
 
   test('commission on winning is match-odds profit only', () => {

@@ -56,7 +56,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-const Spinner = ({ path = '' }) => {
+const Spinner = ({ path = 'login' }) => {
   const [count, setCount] = useState(3);
   const navigate = useNavigate();
   const location = useLocation();

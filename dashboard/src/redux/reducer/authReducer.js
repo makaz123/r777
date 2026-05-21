@@ -759,7 +759,10 @@ const userSlice = createSlice({
       state.error = null;
     },
     user_reset: (state) => {
-      state.userInfo = '';
+      state.user = null;
+      state.userInfo = null;
+      state.isPasswordChanged = null;
+      state.singleadmin = null;
     },
     setCurrentPage: (state, action) => {
       state.currentPage = action.payload;
@@ -908,8 +911,12 @@ const userSlice = createSlice({
         state.loader = false;
       })
       .addCase(userLogout.fulfilled, (state, { payload }) => {
-        state.successMessage = payload.message;
+        state.successMessage = payload?.message || 'Logged out successfully';
         state.loader = false;
+        state.user = null;
+        state.userInfo = null;
+        state.isPasswordChanged = null;
+        state.singleadmin = null;
       })
       // ✅ Update Sub-Admin
       .addCase(updateCreditReference.pending, (state) => {

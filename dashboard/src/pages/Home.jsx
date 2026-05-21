@@ -68,20 +68,13 @@ const Home = () => {
     };
   }, [checkWeekRollover]);
 
-  const sportbookPL = stats?.sportsGameplay
-    ? Object.values(stats.sportsGameplay).reduce(
-        (sum, sport) => sum + (sport.totalPL || 0),
-        0
-      )
-    : 0;
-
   const summaryCards = [
     { title: 'P&L', value: stats?.header?.pl ?? 0 },
     { title: 'COMMISSION', value: stats?.header?.commission ?? 0 },
     { title: 'DEPOSIT', value: stats?.header?.deposit ?? 0 },
     { title: 'WITHDRAWAL', value: stats?.header?.withdrawal ?? 0 },
     { title: 'TOTAL BETS', value: stats?.header?.totalBets ?? 0 },
-    { title: 'SPORTBOOK P&L', value: sportbookPL },
+    { title: 'SPORTBOOK P&L', value: stats?.header?.sportbookPL ?? 0 },
   ];
 
   const casinoData = [

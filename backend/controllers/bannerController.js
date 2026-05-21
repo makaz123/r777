@@ -1,6 +1,9 @@
 import { v2 as cloudinary } from 'cloudinary';
 import Banner from '../models/bannerModel.js';
 
+const isSuperAdminRole = (role) =>
+  role === 'supperadmin' || role === 'superadmin';
+
 // Configure cloudinary using environment variables
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
@@ -10,6 +13,12 @@ cloudinary.config({
 
 export const uploadBanner = async (req, res) => {
   try {
+    if (!isSuperAdminRole(req.role)) {
+      return res.status(403).json({
+        message: 'Only super admin can manage banner settings',
+      });
+    }
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: 'No images provided' });
     }
@@ -75,6 +84,12 @@ export const getBanner = async (req, res) => {
 
 export const deleteBanners = async (req, res) => {
   try {
+    if (!isSuperAdminRole(req.role)) {
+      return res.status(403).json({
+        message: 'Only super admin can manage banner settings',
+      });
+    }
+
     const { bannerIds } = req.body;
     if (!bannerIds || !Array.isArray(bannerIds) || bannerIds.length === 0) {
       return res.status(400).json({ message: 'No banner IDs provided' });

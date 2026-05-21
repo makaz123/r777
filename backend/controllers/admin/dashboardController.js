@@ -76,6 +76,7 @@ export const getDashboardStats = async (req, res) => {
             deposit: 0,
             withdrawal: 0,
             totalBets: 0,
+            sportbookPL: 0,
           },
           topWinningPlayers: [],
           topLosingPlayers: [],
@@ -228,7 +229,7 @@ export const getDashboardStats = async (req, res) => {
 
     sportsBets.forEach((bet) => {
       const sport = bet.gameName || 'Sports';
-      const market = bet.eventName || bet.marketName || 'Unknown';
+      const market = bet.marketName || bet.eventName || 'Unknown';
       const key = `${sport}||${market}`;
       marketPLMap[key] = (marketPLMap[key] || 0) + (bet.profitLossChange || 0);
     });
@@ -428,6 +429,7 @@ export const getDashboardStats = async (req, res) => {
           deposit: round2(totalDeposit),
           withdrawal: round2(totalWithdrawal),
           totalBets: totalBetsCount,
+          sportbookPL: 0, // No sportbook API — reserved for future integration
         },
         topWinningPlayers,
         topLosingPlayers,

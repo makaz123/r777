@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import './index.css';
 import './App.css';
 import Home from './pages/Home';
@@ -47,6 +52,7 @@ import LiveCasino from './pages/LiveCasino';
 import TransactionPasswordSuccess from './pages/TransactionPasswordSuccess';
 import ChangePassword from './pages/ChangePassword';
 import BannerSettings from './pages/BannerSettings';
+import Notifications from './pages/Notifications';
 import CasinoAnalysis from './pages/CasinoAnalysis';
 import UserSettlement from './pages/UserSettlement';
 
@@ -58,9 +64,11 @@ function App() {
           <div className='relative'>
             <div className='w-full'>
               <Routes>
-                <Route path='/' element={<Login />} />
-                <Route path='/' element={<PrivateRoute />}>
+                <Route path='/login' element={<Login />} />
+                <Route path='/' element={<Navigate to='/login' replace />} />
+                <Route element={<PrivateRoute />}>
                   <Route path='/home' element={<Home />} />
+                  <Route path='/notifications' element={<Notifications />} />
                   <Route path='/user-download-list' element={<Userlist />} />
                   <Route
                     path='/user-download-list/insertuser'

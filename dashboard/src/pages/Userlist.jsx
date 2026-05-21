@@ -227,7 +227,8 @@ export default function Userlist() {
     const hasDeposit = !Number.isNaN(depositAmount) && depositAmount > 0;
 
     const newCredStr =
-      formData.creditReference === null || formData.creditReference === undefined
+      formData.creditReference === null ||
+      formData.creditReference === undefined
         ? ''
         : String(formData.creditReference).trim();
     const newCredNum = parseFloat(newCredStr);
@@ -610,8 +611,8 @@ export default function Userlist() {
                 />
                 <input
                   type='text'
-                    className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
-                  placeholder='Search account'
+                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  placeholder='Search by client'
                 />
                 <img
                   src={pdfIcon}
@@ -833,19 +834,17 @@ export default function Userlist() {
                 cell: (row) =>
                   isFetchingAllUsers ? (
                     <div className='flex gap-1'>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] leading-none text-white text-[11px] font-bold'
-                      >
+                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'>
                         U
                       </span>
                       <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] leading-none text-white text-[11px] font-bold'
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] text-[11px] leading-none font-bold text-white'
                         onClick={() => openCreditDepositModal(row)}
                       >
                         D/C
                       </span>
                       <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] leading-none text-white text-[11px] font-bold'
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] text-[11px] leading-none font-bold text-white'
                         onClick={() => {
                           setWithdrawPopup(true);
                           setcurrentUser(row);
@@ -864,7 +863,7 @@ export default function Userlist() {
                       </span> */}
                       {/* C merged into D/C (Credit / Deposit modal) */}
                       <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] leading-none text-black text-[11px] font-bold'
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] text-[11px] leading-none font-bold text-black'
                         onClick={() => {
                           setPasswordPopup(true);
                           setcurrentUser(row);
@@ -872,14 +871,10 @@ export default function Userlist() {
                       >
                         P
                       </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] leading-none text-black text-[11px] font-bold'
-                      >
+                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'>
                         GC
                       </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] leading-none text-black text-[11px] font-bold'
-                      >
+                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'>
                         CC
                       </span>
                       {/* <span
@@ -906,7 +901,7 @@ export default function Userlist() {
             <div className='flex flex-wrap'>
               {/* First Button */}
               <button
-                className='pgBtn px-[13px] py-[6.5px] rounded-l-sm'
+                className='pgBtn rounded-l-sm px-[13px] py-[6.5px]'
                 onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
               >
@@ -926,7 +921,9 @@ export default function Userlist() {
                 <button
                   key={i}
                   className={`px-[13px] py-[6.5px] leading-none ${
-                    currentPage === i + 1 ? 'bg-gradient-to-b from-[#11859c] to-[#181818] text-white' : 'pgBtn'
+                    currentPage === i + 1
+                      ? 'bg-gradient-to-b from-[#11859c] to-[#181818] text-white'
+                      : 'pgBtn'
                   }`}
                   onClick={() => handlePageChange(i + 1)}
                 >
@@ -945,7 +942,7 @@ export default function Userlist() {
 
               {/* Last Button */}
               <button
-                className='pgBtn px-[13px] py-[6.5px] rounded-r-sm'
+                className='pgBtn rounded-r-sm px-[13px] py-[6.5px]'
                 onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages}
               >
@@ -1054,14 +1051,16 @@ export default function Userlist() {
                 className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
               >
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
-                  <span className='text-[16px] font-semibold'>Credit / Deposit</span>
+                  <span className='text-[16px] font-semibold'>
+                    Credit / Deposit
+                  </span>
                   <button
                     type='button'
                     onClick={closeCreditDepositModal}
                     aria-label='Close'
-                    className='text-xl leading-none text-gray-200 font-bold'
-                    >
-                      ×
+                    className='text-xl leading-none font-bold text-gray-200'
+                  >
+                    ×
                   </button>
                 </div>
 
@@ -1071,20 +1070,18 @@ export default function Userlist() {
                 >
                   {/* My Available */}
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       My Available
                     </label>
                     <div className='flex min-w-0 flex-1 flex-wrap items-end gap-8'>
                       <input
                         type='text'
                         readOnly
-                        className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={userInfo?.avbalance ?? ''}
                       />
                       <div className='flex min-w-[80px] flex-1 flex-col gap-0.5'>
-                        <span className='text-[14px]'>
-                          After
-                        </span>
+                        <span className='text-[14px]'>After</span>
                         <input
                           type='text'
                           readOnly
@@ -1102,7 +1099,7 @@ export default function Userlist() {
                   <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
                     <div className='grid grid-cols-1 gap-8 sm:grid-cols-2'>
                       <div>
-                        <label className='mb-1 block text-gray-950 text-[14px]'>
+                        <label className='mb-1 block text-[14px] text-gray-950'>
                           Old Cred Ref.
                         </label>
                         <input
@@ -1113,7 +1110,7 @@ export default function Userlist() {
                         />
                       </div>
                       <div>
-                        <label className='mb-1 block text-gray-950 text-[14px]'>
+                        <label className='mb-1 block text-[14px] text-gray-950'>
                           New Cred Ref.
                         </label>
                         <input
@@ -1134,22 +1131,21 @@ export default function Userlist() {
 
                   {/* Deposit block */}
                   <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
-                    
                     <div className='mb-3 flex flex-wrap items-end gap-2'>
-                      <span className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
+                      <span className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
                         {currentUser.userName}
                       </span>
                       <div className='flex min-w-0 flex-1 flex-wrap gap-8'>
                         <input
                           type='text'
                           readOnly
-                          className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={currentUser.avbalance ?? ''}
                         />
                         <input
                           type='text'
                           readOnly
-                          className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={
                             Number(currentUser.avbalance || 0) +
                             Number(formData.balance || 0)
@@ -1158,7 +1154,7 @@ export default function Userlist() {
                       </div>
                     </div>
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
                         Add Deposit
                       </label>
                       <input
@@ -1176,7 +1172,7 @@ export default function Userlist() {
                       />
                     </div>
                     <div className='flex flex-wrap items-start gap-2'>
-                      <label className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
                         Remarks
                       </label>
                       <textarea
@@ -1194,7 +1190,7 @@ export default function Userlist() {
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[175px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
                       Master Password
                     </label>
                     <input
@@ -1247,29 +1243,27 @@ export default function Userlist() {
                   {/* <span>Banking - Master Balance : {userInfo.avbalance}</span> */}
                   <button
                     onClick={() => setWithdrawPopup(false)}
-                    className='text-xl leading-none text-gray-200 font-bold'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
                     ×
                   </button>
                 </div>
-                <div className=' bg-sky-50 px-4 py-1 space-y-3'>
+                <div className='space-y-3 bg-sky-50 px-4 py-1'>
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       {userInfo.userName}
                     </label>
-                    <div className='flex flex-1 gap-8 items-end'>
+                    <div className='flex flex-1 items-end gap-8'>
                       <div className='w-1/2'>
                         <input
                           type='text'
                           value={userInfo.avbalance}
                           readOnly
-                          className='w-full flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          className='w-full flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         />
                       </div>
-                      <div className='w-1/2 flex flex-col gap-0.5'>
-                        <span className='text-[14px]'>
-                          After
-                        </span>
+                      <div className='flex w-1/2 flex-col gap-0.5'>
+                        <span className='text-[14px]'>After</span>
                         <input
                           type='text'
                           className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
@@ -1282,33 +1276,31 @@ export default function Userlist() {
                     </div>
                   </div>
 
-
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       {currentUser.userName}
                     </label>
-                    <div className='flex flex-1 gap-8 items-end'>
+                    <div className='flex flex-1 items-end gap-8'>
                       <input
                         type='text'
-                        className='w-1/2 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={currentUser.avbalance}
                         readOnly
                       />
                       <input
                         type='text'
-                        className='w-1/2 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={
                           currentUser.avbalance - Number(formData.balance || 0)
                         }
                         readOnly
                       />
-
                     </div>
                   </div>
-                  
+
                   <form onSubmit={handleWithdwalDeposite}>
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                         Amount
                       </label>
                       <input
@@ -1325,8 +1317,8 @@ export default function Userlist() {
                     </div>
 
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
-                      Remark
+                      <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                        Remark
                       </label>
                       <textarea
                         rows={3}
@@ -1342,7 +1334,7 @@ export default function Userlist() {
                     </div>
 
                     <div className='flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                         Master Password
                       </label>
                       <input
@@ -1358,7 +1350,7 @@ export default function Userlist() {
                       />
                     </div>
 
-                    <div className='flex justify-end gap-2 border-t border-gray-200 py-2 mt-3'>
+                    <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-2'>
                       <button
                         type='submit'
                         className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
@@ -1375,7 +1367,6 @@ export default function Userlist() {
                       </button>
                     </div>
                   </form>
-
                 </div>
               </motion.div>
             </div>
@@ -1497,7 +1488,6 @@ export default function Userlist() {
                 initial={{ opacity: 0, y: 0 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 0 }}
-
                 className='fixed top-8 w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
               >
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
@@ -1507,20 +1497,23 @@ export default function Userlist() {
                   <button
                     type='button'
                     onClick={closeLockPopup}
-                    className='text-xl leading-none text-gray-200 font-bold'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
                     ×
                   </button>
                 </div>
 
-                <form onSubmit={handleLockSubmit} className='px-4 pt-4 pb-2 bg-sky-50'>
+                <form
+                  onSubmit={handleLockSubmit}
+                  className='bg-sky-50 px-4 pt-4 pb-2'
+                >
                   <div className='mb-3 flex items-center gap-3'>
-                    <label className='w-[150px] shrink-0 text-gray-900 text-[14px]'>
+                    <label className='w-[150px] shrink-0 text-[14px] text-gray-900'>
                       Remark
                     </label>
                     <input
                       type='text'
-                      className='w-full border border-gray-800 px-2 py-1 outline-none bg-white'
+                      className='w-full border border-gray-800 bg-white px-2 py-1 outline-none'
                       value={lockForm.remark}
                       onChange={(e) =>
                         setLockForm({ ...lockForm, remark: e.target.value })
@@ -1529,12 +1522,12 @@ export default function Userlist() {
                   </div>
 
                   <div className='mb-2 flex items-center gap-3'>
-                    <label className='w-[150px] shrink-0  text-gray-900 text-[14px]'>
+                    <label className='w-[150px] shrink-0 text-[14px] text-gray-900'>
                       Master Password
                     </label>
                     <input
                       type='password'
-                      className='w-full border border-gray-800 px-2 py-1 outline-none bg-white'
+                      className='w-full border border-gray-800 bg-white px-2 py-1 outline-none'
                       value={lockForm.masterPassword}
                       onChange={(e) =>
                         setLockForm({
@@ -1548,14 +1541,14 @@ export default function Userlist() {
                   <div className='flex justify-end gap-2 border-t border-gray-300 pt-1'>
                     <button
                       type='submit'
-                      className='text-[14px] rounded border bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-white'
+                      className='rounded border bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-[14px] text-white hover:bg-gradient-to-t'
                     >
                       Submit
                     </button>
                     <button
                       type='button'
                       onClick={closeLockPopup}
-                      className='text-[14px] rounded border bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-white'
+                      className='rounded border bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-[14px] text-white hover:bg-gradient-to-t'
                     >
                       Cancel
                     </button>
@@ -1577,46 +1570,48 @@ export default function Userlist() {
               >
                 {/* Header */}
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
-                  <span className='text-[16px] font-semibold'>Change Password</span>
+                  <span className='text-[16px] font-semibold'>
+                    Change Password
+                  </span>
                   <button
                     onClick={() => setPasswordPopup(false)}
-                    className='text-xl leading-none text-gray-200 font-bold'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
                     ×
                   </button>
                 </div>
-                <div className='bg-sky-50 px-5 pt-4 pb-1 space-y-3'>
+                <div className='space-y-3 bg-sky-50 px-5 pt-4 pb-1'>
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       New Password
                     </label>
                     <input
                       type='text'
-                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       Confirm Password
                     </label>
                     <input
                       type='text'
-                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       Master Password
                     </label>
                     <input
                       type='password'
-                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -1627,7 +1622,7 @@ export default function Userlist() {
                     />
                   </div>
 
-                  <div className='flex justify-end gap-2 border-t border-gray-200 py-1 mt-3'>
+                  <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-1'>
                     <button
                       type='submit'
                       className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
@@ -1643,7 +1638,6 @@ export default function Userlist() {
                       Cancel
                     </button>
                   </div>
-
                 </div>
               </motion.div>
             </div>

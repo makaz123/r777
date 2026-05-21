@@ -3376,7 +3376,7 @@ export const getSettlementUsers = async (req, res) => {
   try {
     const { id, role } = req;
     const { roleType } = req.query; // 'user' or 'master'
-    
+
     // Find the admin making the request
     const admin = await SubAdmin.findById(id);
     if (!admin) {
@@ -3385,7 +3385,7 @@ export const getSettlementUsers = async (req, res) => {
 
     // Only fetch direct downlines (since settlement is direct)
     let filter = { status: { $ne: 'delete' }, invite: admin.code };
-    
+
     if (roleType === 'user') {
       filter.role = 'user';
     } else if (roleType === 'master') {
@@ -3404,7 +3404,7 @@ export const getSettlementUsers = async (req, res) => {
       // If clientPL > 0, admin owes user (Creditor / dena hai)
       // If clientPL < 0, user owes admin (Debtor / lena hai)
       const pl = user.creditReferenceProfitLoss || 0;
-      
+
       const userData = {
         _id: user._id,
         userName: user.userName,
@@ -3412,7 +3412,7 @@ export const getSettlementUsers = async (req, res) => {
         balance: user.balance,
         baseBalance: user.baseBalance,
         creditReference: user.creditReference,
-        clientPL: pl
+        clientPL: pl,
       };
 
       if (pl > 0) {
@@ -3425,7 +3425,7 @@ export const getSettlementUsers = async (req, res) => {
     return res.status(200).json({
       success: true,
       creditors,
-      debtors
+      debtors,
     });
   } catch (error) {
     console.error('Error in getSettlementUsers:', error);
@@ -3444,7 +3444,9 @@ export const settleUser = async (req, res) => {
 
     const parsedAmount = Number(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      return res.status(400).json({ message: 'Valid positive amount is required' });
+      return res
+        .status(400)
+        .json({ message: 'Valid positive amount is required' });
     }
 
     const admin = await SubAdmin.findById(id);
@@ -3465,7 +3467,9 @@ export const settleUser = async (req, res) => {
 
     const pl = editUser.creditReferenceProfitLoss || 0;
     if (pl === 0) {
-      return res.status(400).json({ message: 'User has no outstanding balance to settle' });
+      return res
+        .status(400)
+        .json({ message: 'User has no outstanding balance to settle' });
     }
 
     const settleRemark = `Settlement: ${remarks || ''}`.trim();
@@ -3474,19 +3478,22 @@ export const settleUser = async (req, res) => {
     if (pl > 0) {
       // User is Creditor (admin owes user). Admin pays user cash, so we withdraw from user.
       if (parsedAmount > pl) {
-         return res.status(400).json({ message: 'Cannot settle more than the outstanding P/L' });
+        return res
+          .status(400)
+          .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
-      
+
       editUser.balance -= parsedAmount;
       editUser.avbalance = Math.max(0, editUser.avbalance - parsedAmount);
       editUser.baseBalance -= parsedAmount;
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss = editUser.baseBalance - editUser.creditReference;
+      editUser.creditReferenceProfitLoss =
+        editUser.baseBalance - editUser.creditReference;
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-         admin.balance += parsedAmount;
-         admin.baseBalance += parsedAmount;
-         admin.avbalance += parsedAmount;
+        admin.balance += parsedAmount;
+        admin.baseBalance += parsedAmount;
+        admin.avbalance += parsedAmount;
       }
 
       await admin.save();
@@ -3510,17 +3517,20 @@ export const settleUser = async (req, res) => {
         remark: settleRemark,
         invite: admin.code,
       });
-
     } else if (pl < 0) {
       // User is Debtor (user owes admin). User pays admin cash, so we deposit to user.
       const absPl = Math.abs(pl);
       if (parsedAmount > absPl) {
-         return res.status(400).json({ message: 'Cannot settle more than the outstanding P/L' });
+        return res
+          .status(400)
+          .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
         if (parsedAmount > admin.avbalance) {
-          return res.status(400).json({ message: 'Insufficient balance to settle' });
+          return res
+            .status(400)
+            .json({ message: 'Insufficient balance to settle' });
         }
       }
 
@@ -3528,7 +3538,8 @@ export const settleUser = async (req, res) => {
       editUser.avbalance += parsedAmount;
       editUser.baseBalance += parsedAmount;
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss = editUser.baseBalance - editUser.creditReference;
+      editUser.creditReferenceProfitLoss =
+        editUser.baseBalance - editUser.creditReference;
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
         admin.balance -= parsedAmount;
@@ -3564,7 +3575,7 @@ export const settleUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Settlement completed successfully'
+      message: 'Settlement completed successfully',
     });
   } catch (error) {
     console.error('Error in settleUser:', error);

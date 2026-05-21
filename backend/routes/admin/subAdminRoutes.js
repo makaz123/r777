@@ -49,7 +49,11 @@ router.post('/sub-admin/login', loginSubAdmin);
 router.get('/sub-admin/getuserbyid', adminAuthMiddleware, getSubAdmin);
 
 // Settlement routes
-router.get('/sub-admin/settlement-users', adminAuthMiddleware, getSettlementUsers);
+router.get(
+  '/sub-admin/settlement-users',
+  adminAuthMiddleware,
+  getSettlementUsers
+);
 router.post('/sub-admin/settle', adminAuthMiddleware, settleUser);
 
 router.get('/get/all-user', adminAuthMiddleware, getAllUser);

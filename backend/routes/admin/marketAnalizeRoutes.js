@@ -37,10 +37,6 @@ router.get(
   adminAuthMiddleware,
   getCasinoMasterBookDownline
 );
-router.get(
-  '/get/casino-ggr-list',
-  adminAuthMiddleware,
-  getCasinoAnalysisList
-);
+router.get('/get/casino-ggr-list', adminAuthMiddleware, getCasinoAnalysisList);
 
 export default router;

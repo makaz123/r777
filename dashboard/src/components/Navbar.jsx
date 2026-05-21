@@ -21,6 +21,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SportsSidebar from './SportsSidebar';
+import AccountSummaryBar from './AccountSummaryBar';
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -507,6 +508,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </li>
           </ul>
         </nav>
+
+        <AccountSummaryBar />
 
         {/* Popup */}
         {showPopup && (

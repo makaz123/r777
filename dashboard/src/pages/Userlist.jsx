@@ -1,12 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import {
   FaBan,
   FaCheckCircle,
   FaLock,
-  FaRegArrowAltCircleUp,
   FaRegFilePdf,
 } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
@@ -127,8 +126,6 @@ export default function Userlist() {
   const [settingPopup, setSettingPopup] = useState(false);
   const [currentUser, setcurrentUser] = useState(null);
   const [isFetchingAllUsers, setIsFetchingAllUsers] = useState(null);
-  const [showMetrics, setShowMetrics] = useState(false);
-  const [showMetricsOpen, setShowMetricsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [passwordPopup, setPasswordPopup] = useState(false);
   const [lockPopup, setLockPopup] = useState(false);
@@ -349,6 +346,136 @@ export default function Userlist() {
       : num.toFixed(v.toString().split('.')[1]?.length === 1 ? 1 : 2);
   };
 
+  const filteredUsers = useMemo(
+    () =>
+      (onlyusers || []).filter((user) =>
+        activeTab === 'active'
+          ? user.status === 'active'
+          : user.status !== 'active'
+      ),
+    [onlyusers, activeTab]
+  );
+
+  const getRowBalance = (row) =>
+    row.role === 'user'
+      ? Number(row.balance || 0)
+      : Number(row.baseBalance || 0) +
+        Number(row.uplineBettingProfitLoss || 0);
+
+  const getRowTotalExposure = (row) =>
+    Number(row.totalExposure ?? row.exposure ?? 0);
+
+  const getRowAvbalance = (row) => Number(row.avbalance || 0);
+
+  /** Pending balance = negative of balance */
+  const getRowPendingBal = (row) => {
+    const pending = -getRowBalance(row);
+    return Math.round(pending * 100) / 100;
+  };
+
+  /** Current P&L = available − balance (= −pending balance) */
+  const getRowCurrentPL = (row) => {
+    const current = getRowAvbalance(row) - getRowBalance(row);
+    return Math.round(current * 100) / 100;
+  };
+
+  const formatTableMoney = (v) => {
+    const n = Number(v);
+    if (Number.isNaN(n)) return '0.00';
+    return n.toFixed(2);
+  };
+
+  const BalanceCell = ({ value }) => {
+    const n = Number(value) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    return (
+      <span className='font-medium text-green-600'>
+        {formatTableMoney(n)}
+      </span>
+    );
+  };
+
+  const PendingCell = ({ value }) => {
+    const n = Number(value) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    return (
+      <span className='font-medium text-red-600'>{formatTableMoney(n)}</span>
+    );
+  };
+
+  const CurrentPLCell = ({ value }) => {
+    const n = Number(value) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    if (n < 0) {
+      return (
+        <span className='inline-block rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+          {formatTableMoney(n)}
+        </span>
+      );
+    }
+    return (
+      <span className='inline-block rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+        {formatTableMoney(n)}
+      </span>
+    );
+  };
+
+  const ExposureCell = ({ row }) => {
+    const exp = getRowTotalExposure(row);
+    const display = exp > 0 ? -exp : exp;
+    return <CurrentPLCell value={display} />;
+  };
+
+  const roleTypeLabel = (role) => {
+    if (role === 'user') return 'Client';
+    if (role === 'white') return 'White Label';
+    if (!role) return '—';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+  };
+
+  const tableSummaryRow = useMemo(() => {
+    const totals = filteredUsers.reduce(
+      (acc, row) => {
+        acc.creditReference += Number(row.creditReference) || 0;
+        acc.balance += getRowBalance(row);
+        acc.pendingBal += getRowPendingBal(row);
+        acc.avbalance += Number(row.avbalance) || 0;
+        acc.currentPL += getRowCurrentPL(row);
+        const exp = getRowTotalExposure(row);
+        acc.exposure += exp > 0 ? -exp : exp;
+        return acc;
+      },
+      {
+        creditReference: 0,
+        balance: 0,
+        pendingBal: 0,
+        avbalance: 0,
+        currentPL: 0,
+        exposure: 0,
+      }
+    );
+    return [
+      '',
+      formatTableMoney(totals.creditReference),
+      formatTableMoney(totals.balance),
+      formatTableMoney(totals.pendingBal),
+      formatTableMoney(totals.avbalance),
+      formatTableMoney(totals.currentPL),
+      formatTableMoney(totals.exposure),
+      '',
+      '',
+      '',
+      '',
+      '',
+    ];
+  }, [filteredUsers]);
+
   const reloadPage = () => {
     window.location.reload();
   };
@@ -451,156 +578,13 @@ export default function Userlist() {
 
   return (
     <>
-      <Navbar
-        onLogoClick={() => setShowMetrics(true)}
-        onNavClick={() => setShowMetrics(false)}
-      />
-
-      {showMetrics && (
-        <div className='bg-[#2c3e50] p-5 text-white'>
-          <div className='flex w-full items-center justify-center'>
-            <FaRegArrowAltCircleUp
-              size={20}
-              onClick={() => setShowMetricsOpen((prev) => !prev)}
-              className={showMetricsOpen ? 'rotate-180' : ''}
-            />
-          </div>
-
-          {showMetricsOpen && (
-            <div className='mt-3 grid grid-cols-3 gap-2'>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Balance</div>
-                <div className='flex-1/2'>
-                  INR {formatNumber(userInfo?.totalBalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Exposure</div>
-                <div className='flex-1/2'>
-                  ({formatNumber(userInfo?.exposure)})
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Available Balance</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.agentAvbalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Balance</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.avbalance || 0)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Avail. bal.</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.totalAvbalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Downline P/L</div>
-                <div className='flex-1/2'>
-                  {formatNumber(
-                    downlineViewer?.totalPL ?? userInfo?.uplineBettingProfitLoss
-                  )}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>My P/L (share)</div>
-                <div
-                  className={`flex-1/2 font-semibold ${
-                    (downlineViewer?.myPL ?? 0) >= 0
-                      ? 'text-green-300'
-                      : 'text-red-300'
-                  }`}
-                >
-                  {formatNumber(downlineViewer?.myPL ?? 0)} (
-                  {downlineViewer?.myPercentLabel ??
-                    `${userInfo?.partnership ?? 0}%`}
-                  )
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Upline P/L (share)</div>
-                <div className='flex-1/2'>
-                  {formatNumber(downlineViewer?.uplinePL ?? 0)} (
-                  {downlineViewer?.uplinePercentLabel ??
-                    `${100 - (userInfo?.partnership || 0)}%`}
-                  )
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.totalBalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Exposure
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR{' '}
-                <span className='text-red-600'>
-                  ({formatNumber(userInfo?.exposure)})
-                </span>
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Available Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.agentAvbalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.avbalance || 0)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Avail. bal.
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.totalAvbalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Upline P/L
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR{' '}
-                <span
-                  className={`${
-                    userInfo.uplineBettingProfitLoss <= 0
-                      ? 'text-red-500'
-                      : 'text-green-500'
-                  }`}
-                >
-                  ({formatNumber(userInfo?.uplineBettingProfitLoss)})
-                </span>
-              </div>
-            </div> */}
-        </div>
-      )}
+      <Navbar />
 
       <div className='h-fit bg-gray-200 p-4'>
         <div className='rounded-md bg-white px-4 py-1'>
           <div className='mb-2 flex items-center justify-between'>
             <div className='grid'>
-              <div className='text-[14px] font-bold'>Downline List</div>
+              <div className='text-[14px] font-bold'>Client List</div>
               <div className='flex items-center gap-1'>
                 <input
                   type='text'
@@ -650,7 +634,7 @@ export default function Userlist() {
                 className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
                 onClick={() => navigate('/agent-download-list/insertagent')}
               >
-                Add Account
+                Add Client Account
               </button>
 
               <button
@@ -667,98 +651,78 @@ export default function Userlist() {
           </div>
 
           <VirtualTable
-            data={onlyusers.filter((user) =>
-              activeTab === 'active'
-                ? user.status === 'active'
-                : user.status !== 'active'
-            )}
+            variant='clientList'
+            data={filteredUsers}
+            summaryRow={tableSummaryRow}
             columns={[
               {
-                header: 'Username',
+                header: 'User Name',
                 accessor: 'userName',
-                cell: (row) => (
-                  <span className='block w-fit rounded-[3px] px-2 py-[1px] text-[14px] text-black'>
-                    {row.userName}
-                  </span>
-                ),
+                cell: (row) => {
+                  const isClient = row.role === 'user';
+                  return (
+                    <span className='flex items-center gap-2'>
+                      <span className='inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#016a82] text-[10px] font-bold text-white'>
+                        {isClient ? 'C' : 'A'}
+                      </span>
+                      <span
+                        className={`font-medium text-black ${
+                          !isClient
+                            ? 'underline decoration-[#016a82] underline-offset-2'
+                            : ''
+                        }`}
+                      >
+                        {row.userName}
+                      </span>
+                    </span>
+                  );
+                },
               },
               {
                 header: 'Credit Reference',
                 accessor: 'creditReference',
                 align: 'right',
-                cell: (row) => row.creditReference,
-              },
-              {
-                header: 'Role',
-                accessor: 'role',
-                cell: (row) => (
-                  <span className='rounded bg-[#444] px-2 py-0.5 text-xs text-white uppercase'>
-                    {row.role}
-                  </span>
-                ),
+                cell: (row) => formatTableMoney(row.creditReference ?? 0),
               },
               {
                 header: 'Balance',
-                accessor: 'balance',
+                sortKey: 'balance',
+                sortValue: (row) => getRowBalance(row),
                 align: 'right',
-                cell: (row) =>
-                  row.role === 'user'
-                    ? row.balance || 0
-                    : (row.baseBalance || 0) +
-                      (row.uplineBettingProfitLoss || 0),
+                cell: (row) => <BalanceCell value={getRowBalance(row)} />,
               },
               {
                 header: 'Pending Bal.',
-                accessor: 'pendingBal',
+                sortKey: 'pendingBal',
+                sortValue: (row) => getRowPendingBal(row),
                 align: 'right',
-                cell: (row) => row.pendingBal || 0,
+                cell: (row) => (
+                  <PendingCell value={getRowPendingBal(row)} />
+                ),
               },
               {
                 header: 'Available Bal.',
                 accessor: 'avbalance',
                 align: 'right',
-                cell: (row) => row.avbalance || 0,
-              },
-              {
-                header: 'Total P/L',
-                align: 'right',
-                cell: (row) => formatNumber(row.rawBettingPL ?? row.bettingProfitLoss ?? 0),
-              },
-              {
-                header: 'My P/L',
-                align: 'right',
                 cell: (row) => (
-                  <span
-                    className={
-                      (row.myPLShare ?? 0) >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }
-                  >
-                    {formatNumber(row.myPLShare ?? 0)}
-                  </span>
+                  <BalanceCell value={getRowAvbalance(row)} />
                 ),
               },
               {
-                header: 'Upline P/L',
+                header: 'Current P&L',
+                sortKey: 'currentPL',
+                sortValue: (row) => getRowCurrentPL(row),
                 align: 'right',
                 cell: (row) => (
-                  <span
-                    className={
-                      (row.uplinePLShare ?? 0) >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }
-                  >
-                    {formatNumber(row.uplinePLShare ?? 0)}
-                  </span>
+                  <CurrentPLCell value={getRowCurrentPL(row)} />
                 ),
               },
               {
                 header: 'Exposure',
-                accessor: 'exposure',
+                sortKey: 'exposure',
+                sortValue: (row) => getRowTotalExposure(row),
                 align: 'right',
-                cell: (row) => row.exposure,
+                cell: (row) => <ExposureCell row={row} />,
               },
               {
                 header: 'U Lock',
@@ -788,7 +752,9 @@ export default function Userlist() {
                 header: 'My %',
                 align: 'right',
                 cell: (row) => {
-                  if (row.myPercent) return row.myPercent;
+                  if (row.myPercent && !String(row.myPercent).includes('/')) {
+                    return row.myPercent;
+                  }
                   if (row.role === 'user') {
                     const pct =
                       row.parentSharePercent ??
@@ -801,18 +767,17 @@ export default function Userlist() {
                     row.viewerShareOnRow ??
                     row.partnership ??
                     0;
-                  const theirs =
-                    row.downlineKeepPercent ??
-                    row.downlineSharePercent ??
-                    100 - mine;
-                  return `${mine}% / ${theirs}%`;
+                  return `${mine}%`;
                 },
               },
               {
-                header: 'Commission',
-                align: 'right',
-                cell: (row) =>
-                  row.role === 'user' ? row.commition || '0' : '—',
+                header: 'Type',
+                accessor: 'role',
+                cell: (row) => (
+                  <span className='capitalize text-gray-800'>
+                    {roleTypeLabel(row.role)}
+                  </span>
+                ),
               },
               // {
               //   header: 'Exposure Limit',

@@ -14,6 +14,13 @@ import SubAdmin from '../../models/subAdminModel.js';
 import TransactionHistory from '../../models/transtionHistoryModel.js';
 import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import { calculateAllExposure } from '../../utils/exposureUtils.js';
+import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import {
+  aggregateWeekProfitLoss,
+  buildAccountSummary,
+  getCurrentWeekRange,
+  getDownlineUserIds,
+} from '../../utils/accountSummaryUtils.js';
 import {
   adjustUserUpdatesForCommission,
   calculateWinCommission,
@@ -1111,12 +1118,20 @@ export const getSubAdmin = async (req, res) => {
     }
     await updateAdmin(id);
 
-    //  Fetch the updated admin data after updateAdmin
-    const updatedAdmin = await SubAdmin.findById(id);
+    const updatedAdmin = await SubAdmin.findById(id).lean();
+    const weekRange = getCurrentWeekRange();
+    const downlineUserIds = await getDownlineUserIds(SubAdmin, updatedAdmin.code);
+    const weekPLTotal = await aggregateWeekProfitLoss(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      weekRange
+    );
+    const accountSummary = buildAccountSummary(updatedAdmin, weekPLTotal);
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: updatedAdmin,
+      data: { ...updatedAdmin, accountSummary },
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);
@@ -1506,9 +1521,24 @@ export const getDownlineList = async (req, res) => {
           isEndUser ? viewerMySharePercent : parentSharePercent
         );
 
+        const balance =
+          isEndUser
+            ? roundMoney(row.balance || 0)
+            : roundMoney(
+                (row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0)
+              );
+        const avbalance = roundMoney(row.avbalance || 0);
+        const pendingBal = roundMoney(-balance);
+        const currentPL = roundMoney(avbalance - balance);
+        const totalExposure = roundMoney(exposure);
+
         return {
           ...row,
-          exposure,
+          exposure: totalExposure,
+          totalExposure,
+          pendingBal,
+          currentPL,
+          balance,
           downlinePartnership,
           parentSharePercent,
           downlineKeepPercent,

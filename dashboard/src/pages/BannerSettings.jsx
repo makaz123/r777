@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import api from '../redux/api';
 import Navbar from '../components/Navbar';
+import { isSuperAdmin } from '../utils/roleUtils';
 
 const BannerSettings = () => {
+  const { userInfo } = useSelector((state) => state.auth);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,6 +31,10 @@ const BannerSettings = () => {
   useEffect(() => {
     fetchBanners();
   }, []);
+
+  if (!isSuperAdmin(userInfo?.role)) {
+    return <Navigate to='/home' replace />;
+  }
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);

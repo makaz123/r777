@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   IoMdArrowDropdown,
   IoMdClose,
@@ -22,6 +22,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SportsSidebar from './SportsSidebar';
 import AccountSummaryBar from './AccountSummaryBar';
+import NotificationBell from './NotificationBell';
+import { isSuperAdmin } from '../utils/roleUtils';
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -122,7 +124,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
       ],
     },
-    { name: 'Banner Settings', path: '/banner-settings' },
+    { name: 'Banner Settings', path: '/banner-settings', superAdminOnly: true },
     // {
     //   name: 'Live Market',
     //   submenu: [
@@ -156,15 +158,16 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   ];
 
   const logout = async () => {
+    setShowLogoutPopup(false);
     try {
       const data = await dispatch(userLogout()).unwrap();
-      localStorage.removeItem('auth');
-      toast.success(data.message);
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 500);
+      toast.success(data?.message || 'Logged out successfully');
     } catch (error) {
       toast.error(error);
+    } finally {
+      localStorage.removeItem('auth');
+      dispatch(user_reset());
+      navigate('/login', { replace: true });
     }
   };
 
@@ -198,6 +201,14 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
       setMobileSubmenuOpen(itemName);
     }
   };
+
+  const visibleNavItems = useMemo(
+    () =>
+      navItems.filter(
+        (item) => !item.superAdminOnly || isSuperAdmin(userInfo?.role)
+      ),
+    [userInfo?.role]
+  );
 
   const isSubmenuActive = (item) => {
     if (!item.submenu) return false;
@@ -297,8 +308,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </NavLink>
 
             <nav className='h-full text-black'>
-              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center'>
-                {navItems.map((item, i) => (
+              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center z-999'>
+                {visibleNavItems.map((item, i) => (
                   <li
                     key={i}
                     className='relative h-full'
@@ -372,6 +383,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
 
           <div className='mr-4 flex items-center gap-4'>
+            <NotificationBell role={userInfo?.role} />
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -422,7 +434,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         {/* Mobile Navigation (Horizontal Scrollable) */}
         <nav className='bg-color2 relative mb-[15px] hidden overflow-x-auto leading-[30px] whitespace-nowrap text-white'>
           <ul className='flex'>
-            {navItems.map((item, i) => (
+            {visibleNavItems.map((item, i) => (
               <li
                 key={i}
                 className='relative inline-block'

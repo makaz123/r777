@@ -2,7 +2,10 @@
  * Account summary bar: week P/L (Mon–Sun, resets Sunday 11:59 PM), exposure share, dena fields.
  */
 
-import { splitProfitLossByMyShare, roundMoney } from './partnershipCommissionUtils.js';
+import {
+  splitProfitLossByMyShare,
+  roundMoney,
+} from './partnershipCommissionUtils.js';
 
 /** Current betting week: Monday 00:00 through Sunday 23:59:59.999 */
 export function getCurrentWeekRange(now = new Date()) {
@@ -87,9 +90,7 @@ export function buildAccountSummary(admin, weekPLTotal) {
   const totalExposure = roundMoney(
     Number(admin.totalExposure ?? admin.exposure) || 0
   );
-  const myShareExposureRaw = roundMoney(
-    totalExposure * (mySharePct / 100)
-  );
+  const myShareExposureRaw = roundMoney(totalExposure * (mySharePct / 100));
   const myShareExposure =
     myShareExposureRaw > 0 ? -myShareExposureRaw : myShareExposureRaw;
 

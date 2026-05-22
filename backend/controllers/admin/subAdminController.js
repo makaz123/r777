@@ -1131,7 +1131,10 @@ export const getSubAdmin = async (req, res) => {
 
     const updatedAdmin = await SubAdmin.findById(id).lean();
     const weekRange = getCurrentWeekRange();
-    const downlineUserIds = await getDownlineUserIds(SubAdmin, updatedAdmin.code);
+    const downlineUserIds = await getDownlineUserIds(
+      SubAdmin,
+      updatedAdmin.code
+    );
     const weekPLTotal = await aggregateWeekProfitLoss(
       betHistoryModel,
       CasinoBetHistory,
@@ -1532,12 +1535,11 @@ export const getDownlineList = async (req, res) => {
           isEndUser ? viewerMySharePercent : parentSharePercent
         );
 
-        const balance =
-          isEndUser
-            ? roundMoney(row.balance || 0)
-            : roundMoney(
-                (row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0)
-              );
+        const balance = isEndUser
+          ? roundMoney(row.balance || 0)
+          : roundMoney(
+              (row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0)
+            );
         const avbalance = roundMoney(row.avbalance || 0);
         const pendingBal = roundMoney(-balance);
         const currentPL = roundMoney(avbalance - balance);

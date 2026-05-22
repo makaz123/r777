@@ -105,8 +105,13 @@ export const getDashboardStats = async (req, res) => {
     }
 
     // 4. Fetch all relevant downline data
-    const [sportsBets, casinoBets, deposits, openingBalanceDeposits, withdrawals] =
-      await Promise.all([
+    const [
+      sportsBets,
+      casinoBets,
+      deposits,
+      openingBalanceDeposits,
+      withdrawals,
+    ] = await Promise.all([
       // Sports Bets
       betHistoryModel
         .find({

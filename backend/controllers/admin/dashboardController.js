@@ -10,11 +10,36 @@ import {
   getCasinoNetPL,
   hasCasinoRoundActivity,
 } from '../../utils/casinoPlUtils.js';
+import {
+  getViewerMySharePercent,
+  roundMoney,
+  splitProfitLossByMyShare,
+} from '../../utils/partnershipCommissionUtils.js';
 
 // Helper to round float values to exactly two decimal places
 const round2 = (val) => {
   if (typeof val !== 'number') return 0;
   return parseFloat(val.toFixed(2));
+};
+
+/** Same as Userlist Current P&L: avbalance − balance */
+const getUserCurrentPL = (user) =>
+  roundMoney((user.avbalance || 0) - (user.balance || 0));
+
+/**
+ * Header P&L (parent/upline view): end-users only.
+ * User Current P&L is client-side (loss = negative); parent profit is the opposite sign × share.
+ */
+const computeViewerHeaderPL = (downlineUsers, viewerPartnership) => {
+  const myShare = getViewerMySharePercent(viewerPartnership);
+  let total = 0;
+  for (const user of downlineUsers) {
+    if (user.role !== 'user') continue;
+    const clientPL = getUserCurrentPL(user);
+    const parentPL = splitProfitLossByMyShare(-clientPL, myShare).myPL;
+    total += parentPL;
+  }
+  return roundMoney(total);
 };
 
 /**
@@ -172,7 +197,7 @@ export const getDashboardStats = async (req, res) => {
       totalCasinoBetAmount += bet.bet_amount || 0;
     });
 
-    const netPL = totalSportsPL + totalCasinoPL;
+    const headerPL = computeViewerHeaderPL(downlineUsers, admin.partnership);
     const totalBetsCount = totalSportsBets + totalCasinoBets;
 
     const totalDeposit =
@@ -434,7 +459,7 @@ export const getDashboardStats = async (req, res) => {
       success: true,
       data: {
         header: {
-          pl: round2(netPL),
+          pl: round2(headerPL),
           commission: round2(totalCommission),
           deposit: round2(totalDeposit),
           withdrawal: round2(totalWithdrawal),

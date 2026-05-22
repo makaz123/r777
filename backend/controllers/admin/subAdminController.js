@@ -3771,7 +3771,7 @@ export const getUserFullDetails = async (req, res) => {
         creditRef: user.creditReference || 0,
         balance: user.baseBalance || 0,
         availableBalance: user.avbalance || 0,
-        profitLoss: user.bettingProfitLoss || 0,
+        profitLoss: overallSportsPL + overallCasinoPL,
         uplineBalance: (user.avbalance || 0) - (user.baseBalance || 0),
         downlineBalance: 0, // Calculate if needed
         exposure: exposure,

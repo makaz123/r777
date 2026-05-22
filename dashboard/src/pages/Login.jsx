@@ -5,8 +5,9 @@ import brandLogo from '../assets/brand_logo.svg';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAdmin, loginAdmin } from '../redux/reducer/authReducer';
+import { hasValidSessionUser } from '../components/PrivateRoute';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login = () => {
   const { userInfo } = useSelector((state) => state.auth);
@@ -23,18 +24,20 @@ const Login = () => {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const getPostAuthPath = () => {
+    const fromPath = location.state?.from?.pathname;
+    return fromPath && fromPath !== '/login' && fromPath !== '/'
+      ? fromPath
+      : '/home';
+  };
 
   useEffect(() => {
-    if (localStorage.getItem('auth')) {
-      dispatch(getAdmin());
+    if (hasValidSessionUser(userInfo)) {
+      navigate(getPostAuthPath(), { replace: true });
     }
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (userInfo) {
-      navigate('/home', { replace: true });
-    }
-  }, [userInfo, navigate]);
+  }, [userInfo, navigate, location.state]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,8 +45,8 @@ const Login = () => {
     try {
       const data = await dispatch(loginAdmin(formData)).unwrap();
       toast.success(data.message);
-      dispatch(getAdmin());
-      navigate('/home', { replace: true });
+      await dispatch(getAdmin()).unwrap();
+      navigate(getPostAuthPath(), { replace: true });
     } catch (error) {
       toast.error(error);
     } finally {

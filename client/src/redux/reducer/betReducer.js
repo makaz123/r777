@@ -217,7 +217,10 @@ export const getBetHistory = createAsyncThunk(
 );
 export const getTransactionHistory = createAsyncThunk(
   'bet/getTransHistory',
-  async ({ startDate, endDate, page, limit, accountType }, { rejectWithValue }) => {
+  async (
+    { startDate, endDate, page, limit, accountType },
+    { rejectWithValue }
+  ) => {
     try {
       let query = `?page=${page}&limit=${limit}`;
 

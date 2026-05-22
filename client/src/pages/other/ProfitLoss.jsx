@@ -87,14 +87,14 @@ function ProfitLoss() {
   return (
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
-        <div className='bg-[#18b0c8] text-white p-2'>
+        <div className='bg-[#18b0c8] p-2 text-white'>
           <h4 className='text-[16px] font-bold'>
             {t('bet_history', 'Bet Histroy')}
           </h4>
         </div>
         <div className='mb-2 w-full p-2'>
           {/* Top Filters Row */}
-          <div className='flex flex-wrap items-center gap-2 mb-3'>
+          <div className='mb-3 flex flex-wrap items-center gap-2'>
             <select
               name='type'
               id='type'
@@ -136,7 +136,7 @@ function ProfitLoss() {
             </button>
           </div>
 
-          <div className='mt-2 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-b border-[#eee] pb-2'>
+          <div className='mt-2 flex flex-col gap-3 border-b border-[#eee] pb-2 lg:flex-row lg:items-center lg:justify-between'>
             {/* Search and Icons */}
             <div className='flex items-center gap-2'>
               <input
@@ -146,8 +146,12 @@ function ProfitLoss() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button className='h-[30px] border border-[#dbdbdb] px-2 text-[11px] font-bold text-[#1e7e34] bg-[#f8f9fa] hover:bg-[#e2e6ea]'>CSV</button>
-              <button className='h-[30px] border border-[#dbdbdb] px-2 text-[11px] font-bold text-[#bd2130] bg-[#f8f9fa] hover:bg-[#e2e6ea]'>PDF</button>
+              <button className='h-[30px] border border-[#dbdbdb] bg-[#f8f9fa] px-2 text-[11px] font-bold text-[#1e7e34] hover:bg-[#e2e6ea]'>
+                CSV
+              </button>
+              <button className='h-[30px] border border-[#dbdbdb] bg-[#f8f9fa] px-2 text-[11px] font-bold text-[#bd2130] hover:bg-[#e2e6ea]'>
+                PDF
+              </button>
             </div>
             {/* Show Entries */}
             <div className='flex items-center gap-2'>
@@ -231,7 +235,9 @@ function ProfitLoss() {
                       className={`${getRowColor(bet.otype)} text-black`}
                     >
                       <td className='h-[35px] border-r border-b border-[#ffffff40] px-2 text-[12px]'>
-                        {bet.createdAt ? new Date(bet.createdAt).toLocaleString('en-GB') : '-'}
+                        {bet.createdAt
+                          ? new Date(bet.createdAt).toLocaleString('en-GB')
+                          : '-'}
                       </td>
                       <td className='h-[35px] border-r border-b border-[#ffffff40] px-2 text-[12px]'>
                         {bet.gameName || '-'}
@@ -255,10 +261,16 @@ function ProfitLoss() {
                         {bet.xValue || '-'}
                       </td>
                       <td className='h-[35px] border-r border-b border-[#ffffff40] px-2 text-[12px]'>
-                        {bet.price ? parseFloat(bet.price).toFixed(2) : parseFloat(bet.betAmount).toFixed(2)}
+                        {bet.price
+                          ? parseFloat(bet.price).toFixed(2)
+                          : parseFloat(bet.betAmount).toFixed(2)}
                       </td>
-                      <td className={`h-[35px] border-r border-b border-[#ffffff40] px-2 text-[12px] font-semibold ${Number(bet.profitLossChange || bet.resultAmount || 0) >= 0 ? 'text-[#0e9d57]' : 'text-[#e54b60]'}`}>
-                        {Number(bet.profitLossChange || bet.resultAmount || 0).toFixed(2)}
+                      <td
+                        className={`h-[35px] border-r border-b border-[#ffffff40] px-2 text-[12px] font-semibold ${Number(bet.profitLossChange || bet.resultAmount || 0) >= 0 ? 'text-[#0e9d57]' : 'text-[#e54b60]'}`}
+                      >
+                        {Number(
+                          bet.profitLossChange || bet.resultAmount || 0
+                        ).toFixed(2)}
                       </td>
                       <td className='h-[35px] border-b border-[#ffffff40] px-2 text-[12px]'>
                         {bet.betResult || 'SETTLED'}
@@ -281,28 +293,30 @@ function ProfitLoss() {
 
           {/* Pagination Controls */}
           {!loading && filteredBets.length > 0 && pagination?.pages > 0 && (
-            <div className='mt-4 flex flex-col lg:flex-row items-center justify-between gap-3 text-sm'>
+            <div className='mt-4 flex flex-col items-center justify-between gap-3 text-sm lg:flex-row'>
               <div>
-                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} entries
+                Showing {(page - 1) * limit + 1} to{' '}
+                {Math.min(page * limit, pagination.total)} of {pagination.total}{' '}
+                entries
               </div>
               <div className='flex items-center gap-0'>
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className='bg-[#75b4bc] text-white px-3 py-1 text-[13px] hover:bg-[#629ea5] disabled:opacity-70 disabled:cursor-not-allowed rounded-l-sm'
+                  className='rounded-l-sm bg-[#75b4bc] px-3 py-1 text-[13px] text-white hover:bg-[#629ea5] disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {t('previous', 'Prev')}
                 </button>
                 <button
                   disabled={true}
-                  className='bg-[#75b4bc] text-white px-3 py-1 text-[13px] border-x border-[#5da1a9]'
+                  className='border-x border-[#5da1a9] bg-[#75b4bc] px-3 py-1 text-[13px] text-white'
                 >
                   {page}
                 </button>
                 <button
                   disabled={page >= (pagination?.pages || 1)}
                   onClick={() => setPage((p) => p + 1)}
-                  className='bg-[#75b4bc] text-white px-3 py-1 text-[13px] hover:bg-[#629ea5] disabled:opacity-70 disabled:cursor-not-allowed rounded-r-sm'
+                  className='rounded-r-sm bg-[#75b4bc] px-3 py-1 text-[13px] text-white hover:bg-[#629ea5] disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {t('next', 'Next')}
                 </button>

@@ -32,7 +32,8 @@ export default function Userlist() {
     const doc = new jsPDF();
     doc.text('User List', 14, 15);
 
-    const exportUsers = (isFetchingAllUsers === false ? users : onlyusers) || [];
+    const exportUsers =
+      (isFetchingAllUsers === false ? users : onlyusers) || [];
     const filteredUsers = exportUsers.filter((user) =>
       activeTab === 'active'
         ? user.status === 'active'
@@ -72,7 +73,8 @@ export default function Userlist() {
     doc.save(`${activeTab}-users.pdf`);
   };
   const downloadExcel = () => {
-    const exportUsers = (isFetchingAllUsers === false ? users : onlyusers) || [];
+    const exportUsers =
+      (isFetchingAllUsers === false ? users : onlyusers) || [];
     const filteredUsers = exportUsers.filter((user) =>
       activeTab === 'active'
         ? user.status === 'active'
@@ -113,8 +115,14 @@ export default function Userlist() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, currentPage, totalPages, onlyusers, users, downlineViewer } =
-    useSelector((state) => state.auth);
+  const {
+    userInfo,
+    currentPage,
+    totalPages,
+    onlyusers,
+    users,
+    downlineViewer,
+  } = useSelector((state) => state.auth);
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -579,7 +587,6 @@ export default function Userlist() {
       dispatch(fetchSubAdminByLevel({ code: code }));
     }
   };
-
 
   return (
     <>

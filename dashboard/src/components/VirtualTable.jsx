@@ -14,9 +14,7 @@ const VirtualTable = ({
     if (!sortConfig) return data;
 
     const { key, direction } = sortConfig;
-    const col = columns.find(
-      (c) => (c.sortKey || c.accessor) === key
-    );
+    const col = columns.find((c) => (c.sortKey || c.accessor) === key);
 
     return [...data].sort((a, b) => {
       const valA = col?.sortValue ? col.sortValue(a) : a[key];

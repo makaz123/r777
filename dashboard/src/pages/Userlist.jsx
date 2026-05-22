@@ -2,12 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import {
-  FaBan,
-  FaCheckCircle,
-  FaLock,
-  FaRegFilePdf,
-} from 'react-icons/fa';
+import { FaBan, FaCheckCircle, FaLock, FaRegFilePdf } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -359,8 +354,7 @@ export default function Userlist() {
   const getRowBalance = (row) =>
     row.role === 'user'
       ? Number(row.balance || 0)
-      : Number(row.baseBalance || 0) +
-        Number(row.uplineBettingProfitLoss || 0);
+      : Number(row.baseBalance || 0) + Number(row.uplineBettingProfitLoss || 0);
 
   const getRowTotalExposure = (row) =>
     Number(row.totalExposure ?? row.exposure ?? 0);
@@ -391,9 +385,7 @@ export default function Userlist() {
       return <span className='text-black'>{formatTableMoney(0)}</span>;
     }
     return (
-      <span className='font-medium text-green-600'>
-        {formatTableMoney(n)}
-      </span>
+      <span className='font-medium text-green-600'>{formatTableMoney(n)}</span>
     );
   };
 
@@ -696,26 +688,20 @@ export default function Userlist() {
                 sortKey: 'pendingBal',
                 sortValue: (row) => getRowPendingBal(row),
                 align: 'right',
-                cell: (row) => (
-                  <PendingCell value={getRowPendingBal(row)} />
-                ),
+                cell: (row) => <PendingCell value={getRowPendingBal(row)} />,
               },
               {
                 header: 'Available Bal.',
                 accessor: 'avbalance',
                 align: 'right',
-                cell: (row) => (
-                  <BalanceCell value={getRowAvbalance(row)} />
-                ),
+                cell: (row) => <BalanceCell value={getRowAvbalance(row)} />,
               },
               {
                 header: 'Current P&L',
                 sortKey: 'currentPL',
                 sortValue: (row) => getRowCurrentPL(row),
                 align: 'right',
-                cell: (row) => (
-                  <CurrentPLCell value={getRowCurrentPL(row)} />
-                ),
+                cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} />,
               },
               {
                 header: 'Exposure',
@@ -774,7 +760,7 @@ export default function Userlist() {
                 header: 'Type',
                 accessor: 'role',
                 cell: (row) => (
-                  <span className='capitalize text-gray-800'>
+                  <span className='text-gray-800 capitalize'>
                     {roleTypeLabel(row.role)}
                   </span>
                 ),

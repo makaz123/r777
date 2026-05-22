@@ -396,10 +396,8 @@ export default function AgentLIst() {
   const creditRefPL = userInfo?.creditReferenceProfitLoss || 0;
   const totalUplinePL = downlineBettingPL + creditRefPL;
   const pct =
-    downlineViewer?.partnership ??
-    (Number(userInfo?.partnership) || 0);
-  const mySharePercent =
-    downlineViewer?.mySharePercent ?? Math.max(0, pct);
+    downlineViewer?.partnership ?? (Number(userInfo?.partnership) || 0);
+  const mySharePercent = downlineViewer?.mySharePercent ?? Math.max(0, pct);
 
   const myShare = pct
     ? Math.round(totalUplinePL * (mySharePercent / 100) * 100) / 100
@@ -545,7 +543,9 @@ export default function AgentLIst() {
               <tr className='border-b-2 border-black/10 whitespace-nowrap text-black'>
                 <th className='px-[10px] py-[9px] text-left'>Username</th>
                 <th className='px-[10px] py-[9px] text-left'>Credit Ref.</th>
-                <th className='px-[10px] py-[9px] text-left'>Downline P'ship</th>
+                <th className='px-[10px] py-[9px] text-left'>
+                  Downline P'ship
+                </th>
                 <th className='px-[10px] py-[9px] text-left'>My %</th>
                 <th className='px-[10px] py-[9px] text-left'>Balance</th>
                 <th className='px-[10px] py-[9px] text-left'>Exposure</th>

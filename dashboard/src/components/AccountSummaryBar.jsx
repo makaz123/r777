@@ -13,7 +13,7 @@ const MetricTooltipRow = ({
     <span className='relative inline-block cursor-help'>
       <span className='text-white/90'>{label}</span>
       <span
-        className={`pointer-events-none absolute top-full z-[100] mt-2 hidden w-max min-w-[220px] max-w-[300px] group-hover:block ${
+        className={`pointer-events-none absolute top-full z-[100] mt-2 hidden w-max max-w-[300px] min-w-[220px] group-hover:block ${
           alignTooltip === 'right'
             ? 'right-0 translate-x-0'
             : alignTooltip === 'left'
@@ -65,7 +65,9 @@ const AccountSummaryBar = () => {
         <button
           type='button'
           aria-expanded={open}
-          aria-label={open ? 'Collapse account summary' : 'Expand account summary'}
+          aria-label={
+            open ? 'Collapse account summary' : 'Expand account summary'
+          }
           onClick={() => setOpen((prev) => !prev)}
           className='flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#016a82] transition hover:bg-gray-100'
         >
@@ -76,7 +78,7 @@ const AccountSummaryBar = () => {
       </div>
 
       {open && (
-        <div className='px-4 pb-4 pt-0'>
+        <div className='px-4 pt-0 pb-4'>
           <div className='grid grid-cols-2 gap-x-8 gap-y-2 md:grid-cols-5'>
             <div className='space-y-1'>
               <MetricTooltipRow label='User ID : ' tooltip='Your username.'>
@@ -180,15 +182,11 @@ const AccountSummaryBar = () => {
               >
                 <span
                   className={plColorClass(
-                    summary?.exposureDisplay ??
-                      summary?.myShareExposure ??
-                      0
+                    summary?.exposureDisplay ?? summary?.myShareExposure ?? 0
                   )}
                 >
                   {formatMoney(
-                    summary?.exposureDisplay ??
-                      summary?.myShareExposure ??
-                      0
+                    summary?.exposureDisplay ?? summary?.myShareExposure ?? 0
                   )}
                 </span>
               </MetricTooltipRow>

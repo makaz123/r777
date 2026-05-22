@@ -413,7 +413,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4 }}
-                  className='absolute top-8 right-0 w-[180px] rounded-md border border-gray-400 bg-white py-1.5 z-999'
+                  className='absolute top-8 right-0 z-999 w-[180px] rounded-md border border-gray-400 bg-white py-1.5'
                 >
                   <div className='flex cursor-pointer items-center px-2 py-0.5 text-[14px] text-gray-700 hover:bg-[#18b0c8] hover:text-white'>
                     <MdArrowRightAlt size={22} />{' '}

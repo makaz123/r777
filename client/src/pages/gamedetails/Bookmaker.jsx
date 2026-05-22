@@ -171,7 +171,9 @@ function Bookmaker({
     if (!teamData) return;
 
     // Find the best LAY odds (highest lay odds available > 0)
-    const layOdds = teamData.odds.filter((o) => o.otype === 'lay' && o.odds > 0);
+    const layOdds = teamData.odds.filter(
+      (o) => o.otype === 'lay' && o.odds > 0
+    );
     if (layOdds.length === 0) {
       toast.error('No lay odds available for cashout');
       return;
@@ -184,7 +186,7 @@ function Bookmaker({
     if (isNaN(X) || X <= 0) return;
 
     // Cashout Formula: S = (pHigh - pLow) / (1 + X/100)
-    let calculatedStake = (pHigh - pLow) / (1 + (X / 100));
+    let calculatedStake = (pHigh - pLow) / (1 + X / 100);
     calculatedStake = Math.round(calculatedStake * 100) / 100;
 
     if (calculatedStake <= 0) {

@@ -3619,7 +3619,8 @@ export const settleUser = async (req, res) => {
       editUser.balance -= parsedAmount; 
       // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss = editUser.baseBalance - (editUser.creditReference || 0);
+      editUser.creditReferenceProfitLoss =
+        editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
         admin.avbalance += parsedAmount;
@@ -3656,7 +3657,8 @@ export const settleUser = async (req, res) => {
       editUser.balance += parsedAmount;
       // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss = editUser.baseBalance - (editUser.creditReference || 0);
+      editUser.creditReferenceProfitLoss =
+        editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
         admin.avbalance -= parsedAmount;
@@ -3706,7 +3708,9 @@ export const getUserFullDetails = async (req, res) => {
     const user = await SubAdmin.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
     }
 
     const isSuperAdmin = role === 'supperadmin' || role === 'superadmin';
@@ -3730,25 +3734,37 @@ export const getUserFullDetails = async (req, res) => {
     // Aggregate Sports Bets
     const sportsBetsAgg = await betHistoryModel.aggregate([
       { $match: { userId: user._id.toString(), status: { $in: [1, 2] } } },
-      { $group: {
-          _id: { sport: '$gameName', market: '$marketName', gameType: '$gameType' },
+      {
+        $group: {
+          _id: {
+            sport: '$gameName',
+            market: '$marketName',
+            gameType: '$gameType',
+          },
           totalBet: { $sum: 1 },
           betAmount: { $sum: '$betAmount' },
           profitLoss: { $sum: '$profitLossChange' },
           matchOddsNetWinPL: {
             $sum: {
               $cond: [
-                { $and: [
-                    { $regexMatch: { input: { $ifNull: ['$gameType', ''] }, regex: /match\s*odds/i } },
-                    { $gt: ['$profitLossChange', 0] }
-                  ]
+                {
+                  $and: [
+                    {
+                      $regexMatch: {
+                        input: { $ifNull: ['$gameType', ''] },
+                        regex: /match\s*odds/i,
+                      },
+                    },
+                    { $gt: ['$profitLossChange', 0] },
+                  ],
                 },
                 '$profitLossChange',
-                0
-              ]
-            }
-          }
-      }}
+                0,
+              ],
+            },
+          },
+        },
+      },
     ]);
 
     // Aggregate Casino Bets (net = win - stake; only real rounds)
@@ -3783,13 +3799,15 @@ export const getUserFullDetails = async (req, res) => {
     let overallSportsPL = 0;
     let overallSportsBets = 0;
     let totalCommissionDebited = 0;
-    
+
     // We parse the commission percent from the user model
     // This is the rate debited on match odds winning bets
-    const commissionRate = user.commition ? Number(user.commition.toString().replace('%', '')) : 0;
+    const commissionRate = user.commition
+      ? Number(user.commition.toString().replace('%', ''))
+      : 0;
     const rateFraction = commissionRate / 100;
-    
-    sportsBetsAgg.forEach(item => {
+
+    sportsBetsAgg.forEach((item) => {
       const sport = item._id.sport || 'Unknown';
       const market = item._id.market || 'Unknown';
 
@@ -3799,7 +3817,7 @@ export const getUserFullDetails = async (req, res) => {
 
       // Extract match-odds win PL for commission reverse-calculation
       const matchOddsNetWinPL = Number(item.matchOddsNetWinPL) || 0;
-      
+
       // Calculate commission debited dynamically
       // Since profitLossChange in DB is netProfit (after commission), we reverse calculate:
       // netProfit = profit - profit * rateFraction => profit = netProfit / (1 - rateFraction)
@@ -3809,10 +3827,15 @@ export const getUserFullDetails = async (req, res) => {
         const commission = originalProfit - matchOddsNetWinPL;
         totalCommissionDebited += commission;
       }
-      
+
       // Accumulate for sport
       if (!sportSummary[sport]) {
-        sportSummary[sport] = { sport, betCount: 0, betAmount: 0, profitLoss: 0 };
+        sportSummary[sport] = {
+          sport,
+          betCount: 0,
+          betAmount: 0,
+          profitLoss: 0,
+        };
       }
       sportSummary[sport].betCount += betCount;
       sportSummary[sport].betAmount += betAmount;
@@ -3847,7 +3870,10 @@ export const getUserFullDetails = async (req, res) => {
     // Calculate Exposure
     let exposure = user.exposure || 0;
     if (user.role === 'user') {
-      const pendingBets = await betModel.find({ userId: user._id.toString(), status: 0 });
+      const pendingBets = await betModel.find({
+        userId: user._id.toString(),
+        status: 0,
+      });
       exposure = calculateAllExposure(pendingBets);
     } else {
       exposure = user.totalExposure || user.exposure || 0;
@@ -3861,12 +3887,12 @@ export const getUserFullDetails = async (req, res) => {
         referenceName: parent ? parent.userName : '-',
         email: user.email || '',
         mobile: user.phone || '',
-        parents: parent ? parent.userName : '-'
+        parents: parent ? parent.userName : '-',
       },
       settings: {
         userLock: user.uLock || false,
         betLock: user.betlock || false,
-        checkLimit: false // Placeholder if not in DB
+        checkLimit: false, // Placeholder if not in DB
       },
       accountDetails: {
         creditRef: user.creditReference || 0,
@@ -3882,7 +3908,7 @@ export const getUserFullDetails = async (req, res) => {
         maxBet: user.maxBet || 0,
         betLock: user.betlock ? 'Yes' : 'No',
         active: user.status === 'active' ? 'Yes' : 'No',
-        createdOn: user.createdAt
+        createdOn: user.createdAt,
       },
       gamePlay: {
         overallPL: totalPL,
@@ -3897,13 +3923,15 @@ export const getUserFullDetails = async (req, res) => {
         totalBet: overallSportsBets,
         sports: Object.values(sportSummary),
         casinos: casinoSummary,
-        markets: marketSummary
-      }
+        markets: marketSummary,
+      },
     };
 
     return res.status(200).json({ success: true, data: payload });
   } catch (error) {
     console.error('Error fetching user full details:', error);
-    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: 'Server error', error: error.message });
   }
 };

@@ -20,6 +20,7 @@ import {
   buildAccountSummary,
   getCurrentWeekRange,
   getDownlineUserIds,
+  isAccountInAdminDownline,
 } from '../../utils/accountSummaryUtils.js';
 import {
   adjustUserUpdatesForCommission,
@@ -1402,16 +1403,24 @@ export const getAllOnlyUser = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    //  Base filter
-    let filter =
-      role === 'supperadmin'
-        ? {
-            _id: { $ne: id },
-            role: 'user',
-            status: { $ne: 'delete' },
-            invite: admin.code,
-          }
-        : { invite: admin.code, role: 'user', status: { $ne: 'delete' } };
+    const isSuperAdmin = role === 'supperadmin' || role === 'superadmin';
+
+    let filter;
+    if (isSuperAdmin) {
+      filter = { role: 'user', status: { $ne: 'delete' } };
+    } else {
+      const downlineIds = await getDownlineUserIds(SubAdmin, admin.code);
+      if (!downlineIds.length) {
+        return res.status(200).json({
+          message: 'All sub-admin details retrieved successfully',
+          data: [],
+          totalUsers: 0,
+          totalPages: 0,
+          currentPage: pageNum,
+        });
+      }
+      filter = { _id: { $in: downlineIds }, status: { $ne: 'delete' } };
+    }
 
     // 🔍 Add search by userName if searchQuery exists
     if (searchQuery && searchQuery !== undefined) {
@@ -3671,10 +3680,32 @@ export const settleUser = async (req, res) => {
 export const getUserFullDetails = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { id, role } = req;
+
+    const viewer = await SubAdmin.findById(id, { code: 1, role: 1 }).lean();
+    if (!viewer) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+
     const user = await SubAdmin.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isSuperAdmin = role === 'supperadmin' || role === 'superadmin';
+    if (!isSuperAdmin) {
+      const inDownline = await isAccountInAdminDownline(
+        SubAdmin,
+        viewer.code,
+        user
+      );
+      if (!inDownline) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only view users in your downline',
+        });
+      }
     }
 
     // Get parent
@@ -3728,10 +3759,10 @@ export const getUserFullDetails = async (req, res) => {
     sportsBetsAgg.forEach(item => {
       const sport = item._id.sport || 'Unknown';
       const market = item._id.market || 'Unknown';
-      
-      const pl = -(Number(item.profitLoss) || 0); // Flipped to Admin P&L
-      const betCount = Number(item.totalBets) || 0;
-      const betAmount = Number(item.totalBetAmount) || 0;
+
+      const pl = roundMoney(Number(item.profitLoss) || 0);
+      const betCount = Number(item.totalBet) || 0;
+      const betAmount = roundMoney(Number(item.betAmount) || 0);
 
       // Extract match-odds win PL for commission reverse-calculation
       const matchOddsNetWinPL = Number(item.matchOddsNetWinPL) || 0;
@@ -3769,10 +3800,14 @@ export const getUserFullDetails = async (req, res) => {
     let overallCasinoPL = 0;
     casinoBetsAgg.forEach(item => {
       const casino = item._id || 'Unknown';
-      const pl = -(Number(item.profitLoss) || 0); // Flipped to Admin P&L
+      const pl = roundMoney(Number(item.profitLoss) || 0);
       casinoSummary.push({ casino, profitLoss: pl });
       overallCasinoPL += pl;
     });
+
+    overallSportsPL = roundMoney(overallSportsPL);
+    overallCasinoPL = roundMoney(overallCasinoPL);
+    const totalPL = roundMoney(overallSportsPL + overallCasinoPL);
 
     // Calculate Exposure
     let exposure = user.exposure || 0;
@@ -3802,8 +3837,10 @@ export const getUserFullDetails = async (req, res) => {
         creditRef: user.creditReference || 0,
         balance: user.baseBalance || 0,
         availableBalance: user.avbalance || 0,
-        profitLoss: overallSportsPL + overallCasinoPL,
-        uplineBalance: (user.avbalance || 0) - (user.baseBalance || 0),
+        profitLoss: totalPL,
+        sportsPL: overallSportsPL,
+        casinoPL: overallCasinoPL,
+        uplineBalance: roundMoney((user.avbalance || 0) - (user.baseBalance || 0)),
         downlineBalance: 0, // Calculate if needed
         exposure: exposure,
         maxProfit: user.maxProfit || 0,
@@ -3813,9 +3850,15 @@ export const getUserFullDetails = async (req, res) => {
         createdOn: user.createdAt
       },
       gamePlay: {
-        overallPL: overallSportsPL + overallCasinoPL,
+        overallPL: totalPL,
+        sportsPL: overallSportsPL,
+        casinoPL: overallCasinoPL,
         // Show calculated commission debited for user, or commissionEarned for agents
-        commission: user.role === 'user' ? totalCommissionDebited : (user.commissionEarned || 0),
+        commission: roundMoney(
+          user.role === 'user'
+            ? totalCommissionDebited
+            : user.commissionEarned || 0
+        ),
         totalBet: overallSportsBets,
         sports: Object.values(sportSummary),
         casinos: casinoSummary,

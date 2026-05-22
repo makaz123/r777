@@ -100,14 +100,17 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     {
       name: 'Reports',
       submenu: [
+        { name: 'User Detail', path: '/RegisterDetail' },
         { name: 'Account Statement', path: '/AccountStatement' },
+        { name: 'Settlement/Balance Report', path: '/SettlementBalanceReport' },
+        { name: 'Transaction Report', path: '/TransactionReport' },
         { name: 'Current Bets', path: '/betlist' },
-        { name: 'General Report', path: '/GeneralReport' },
-        { name: 'Profit Loss', path: '/ProfitLoss' },
-        { name: 'Casino Result Report', path: '/casinoResultReport' },
-        { name: 'User Register Detail', path: '/RegisterDetail' },
-        { name: 'Total Profit Loss', path: '/TotalProfitLoss' },
-        { name: 'User Win Loss', path: '/UserWinLoss' },
+        { name: 'Profit & Loss Report', path: '/ProfitLoss' },
+        { name: 'Event Profit & Loss Report', path: '/eventpl' },
+        { name: 'Bet History', path: '/bet-history' },
+        { name: 'Live Bets', path: '/live-bets' },
+        { name: 'Sports Revenue', path: '/sports-revenue' },
+        { name: 'IP lookup', path: '/ip-lookup' },
       ],
     },
     // {

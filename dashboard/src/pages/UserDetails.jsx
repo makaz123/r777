@@ -8,6 +8,28 @@ import { useDispatch } from 'react-redux';
 import { withdrawalAndDeposite, changePasswordByDownline } from '../redux/reducer/authReducer';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const getOneWeekAgoDefault = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  d.setHours(0, 0, 0, 0);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const getNowDefault = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const UserDetails = () => {
   const { userInfo } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,8 +60,8 @@ const UserDetails = () => {
 
   const [loginHistoryData, setLoginHistoryData] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [loginStartDate, setLoginStartDate] = useState('');
-  const [loginEndDate, setLoginEndDate] = useState('');
+  const [loginStartDate, setLoginStartDate] = useState(getOneWeekAgoDefault());
+  const [loginEndDate, setLoginEndDate] = useState(getNowDefault());
   
   const dropdownRef = useRef(null);
 
@@ -195,13 +217,16 @@ const UserDetails = () => {
   };
 
   const handleResetLoginHistory = () => {
-    setLoginStartDate('');
-    setLoginEndDate('');
+    const defaultStart = getOneWeekAgoDefault();
+    const defaultEnd = getNowDefault();
+    setLoginStartDate(defaultStart);
+    setLoginEndDate(defaultEnd);
     // Need to use setTimeout to allow state to clear before fetching
     setTimeout(() => {
       if (selectedUserId) {
         setLoadingHistory(true);
-        api.get(`/get/login-history/${selectedUserId}`, { withCredentials: true })
+        let query = `?startDate=${new Date(defaultStart).toISOString()}&endDate=${new Date(defaultEnd).toISOString()}`;
+        api.get(`/get/login-history/${selectedUserId}${query}`, { withCredentials: true })
           .then(res => setLoginHistoryData(res.data?.data || []))
           .catch(err => toast.error(getApiErrorMessage(err)))
           .finally(() => setLoadingHistory(false));

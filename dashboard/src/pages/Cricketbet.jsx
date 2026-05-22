@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-
+import { BsGraphUpArrow } from 'react-icons/bs';
+import { TfiMenuAlt } from 'react-icons/tfi';
 import {
   getPendingBetAmo,
   fetchCricketBatingData,
@@ -22,6 +23,7 @@ import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { getAdmin } from '../redux/reducer/authReducer';
 import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
+import { FaFilter } from 'react-icons/fa';
 
 const oddsDataraw = [
   {
@@ -93,6 +95,7 @@ export default function Cricketbet() {
   const [masterDownline, setMasterDownline] = useState([]);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showlivetv, setshowlivetv] = useState(false);
   const subTabs = [
     { id: 'Normal', name: 'ALL' },
     { id: 'Normal', name: 'Fancy' },
@@ -446,66 +449,99 @@ export default function Cricketbet() {
   return (
     <div className='relative'>
       <Navbar />
-      <div className='w-full'>
-        {loader ? (
-          <div className='fixed top-52 left-[40%] py-4 text-center'>
-            <Spinner2 />
-          </div>
-        ) : (
-          <div className='flex w-full flex-col gap-4 bg-[#fbfbfc] p-1 md:flex-row md:p-5'>
-            <div className='sm:w-full md:w-[60%]'>
-              <div className='z-0'>
-                <div className='flex items-center justify-between bg-[#2c3e50] p-2.5 px-5 font-bold text-white uppercase'>
-                  <span className='flex items-center'>
-                    {gameTitle} <MdOutlineKeyboardArrowRight /> {gameName}
-                  </span>
-                  <span>
-                    {lastUpdateddate
-                      ? new Date(lastUpdateddate).toLocaleString('en-IN')
-                      : '—'}
-                  </span>
-                </div>
-                {/* odds match data */}
-                <MatchOdd
-                  matchOddsList={matchOddsList}
-                  gameid={gameid}
-                  match={match}
-                />
-                <TiedMatch
-                  tiedMatchList={tiedMatchList}
-                  gameid={gameid}
-                  match={match}
-                />
-                <BookMaker
-                  BookmakerList={BookmakerList}
-                  gameid={gameid}
-                  match={match}
-                />
+      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
+        <div className='h-full rounded-lg bg-white px-[15px] py-[10px]'>
+          {loader ? (
+            <div className='fixed top-52 left-[40%] py-4 text-center'>
+              <Spinner2 />
+            </div>
+          ) : (
+            <div className='flex w-full flex-col gap-8 md:flex-row'>
+              <div className='sm:w-full md:w-[60%]'>
+                <div className='z-0'>
+                  <div className='flex items-center justify-between bg-[#18b0c8] px-[5px] py-[3px] text-[14px] font-bold text-white'>
+                    <span className='flex items-center'>
+                      {gameTitle} - {gameName}
+                    </span>
+                    <span>
+                      {lastUpdateddate
+                        ? new Date(lastUpdateddate).toLocaleString('en-IN')
+                        : '—'}
+                    </span>
+                  </div>
+                  {/* odds match data */}
+                  <MatchOdd
+                    matchOddsList={matchOddsList}
+                    gameid={gameid}
+                    match={match}
+                  />
+                  <TiedMatch
+                    tiedMatchList={tiedMatchList}
+                    gameid={gameid}
+                    match={match}
+                  />
+                  <BookMaker
+                    BookmakerList={BookmakerList}
+                    gameid={gameid}
+                    match={match}
+                  />
 
-                <div className='mt-2'>
-                  {fancy1Data.length > 0 &&
-                    fancy1Data[0]?.team?.split('(')[0]?.includes('Toss') && (
-                      <div>
-                        <div className='mx-auto bg-gray-200 text-[13px]'>
-                          <div className='flex items-center justify-between bg-[#2c3e50b3] p-2 px-4 font-bold text-white uppercase'>
-                            <span>Which Team Will Win The Toss </span>
-                            <div className='font-bold'>
-                              {fancy1Data[0].min} -{' '}
-                              {formatToK(fancy1Data[0]?.max)}
-                            </div>
-                          </div>
-
-                          {fancy1Data[0]?.status === 'SUSPENDED' ? (
-                            <div className='relative mx-auto border-2 border-red-500'>
-                              <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
-                                <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
-                                  SUSPENDED
-                                </p>
+                  <div className='mt-2'>
+                    {fancy1Data.length > 0 &&
+                      fancy1Data[0]?.team?.split('(')[0]?.includes('Toss') && (
+                        <div>
+                          <div className='mx-auto bg-gray-200 text-[13px]'>
+                            <div className='flex items-center justify-between bg-[#2c3e50b3] p-2 px-4 font-bold text-white uppercase'>
+                              <span>Which Team Will Win The Toss </span>
+                              <div className='font-bold'>
+                                {fancy1Data[0].min} -{' '}
+                                {formatToK(fancy1Data[0]?.max)}
                               </div>
+                            </div>
+
+                            {fancy1Data[0]?.status === 'SUSPENDED' ? (
+                              <div className='relative mx-auto border-2 border-red-500'>
+                                <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
+                                  <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
+                                    SUSPENDED
+                                  </p>
+                                </div>
+                                <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
+                                  <div className='flex justify-around p-3'>
+                                    <div className='text-center'>
+                                      <p className='font-semibold'>
+                                        {' '}
+                                        {fancy1Data[0]?.team?.split('(')[0]}
+                                      </p>
+                                      <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
+                                        <span className='text-[13px] font-semibold'>
+                                          {fancy1Data[0]?.odds[0].odds}
+                                        </span>
+                                        <span className='text-[10px]'>
+                                          {' '}
+                                          {fancy1Data[0]?.odds[0].size}
+                                        </span>
+                                      </span>
+                                    </div>
+                                    <div className='text-center'>
+                                      <p className='font-semibold'>
+                                        {fancy1Data[1]?.team?.split('(')[0]}
+                                      </p>
+                                      <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
+                                        <span className='text-[13px] font-semibold'>
+                                          1.5
+                                        </span>
+                                        <span className='text-[10px]'>3m</span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
                               <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
                                 <div className='flex justify-around p-3'>
-                                  <div className='text-center'>
-                                    <p className='font-semibold'>
+                                  <div className='grid justify-items-center text-center'>
+                                    <p className='text-xs font-semibold'>
                                       {' '}
                                       {fancy1Data[0]?.team?.split('(')[0]}
                                     </p>
@@ -518,133 +554,137 @@ export default function Cricketbet() {
                                         {fancy1Data[0]?.odds[0].size}
                                       </span>
                                     </span>
+                                    <span>
+                                      {tossTeamamo(
+                                        'Toss',
+                                        fancy1Data[0]?.team?.split('(')[0]
+                                      )}
+                                    </span>
+                                    {(() => {
+                                      const { netOutcome, hasExistingBet } =
+                                        getTossBetDetails(
+                                          pendingBet,
+                                          'Toss',
+                                          fancy1Data[0]?.team?.split('(')[0]
+                                        );
+                                      if (
+                                        hasExistingBet &&
+                                        netOutcome !== null
+                                      ) {
+                                        return (
+                                          <span
+                                            className={`text-xs font-bold ${
+                                              netOutcome >= 0
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
+                                            }`}
+                                          >
+                                            {netOutcome}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
-                                  <div className='text-center'>
-                                    <p className='font-semibold'>
+
+                                  <div className='grid justify-items-center text-center'>
+                                    <p className='text-xs font-bold md:text-[11px]'>
+                                      {' '}
                                       {fancy1Data[1]?.team?.split('(')[0]}
                                     </p>
                                     <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
                                       <span className='text-[13px] font-semibold'>
-                                        1.5
+                                        {fancy1Data[1]?.odds[0].odds}
                                       </span>
-                                      <span className='text-[10px]'>3m</span>
+                                      <span className='text-[10px]'>
+                                        {' '}
+                                        {fancy1Data[1]?.odds[0].size}
+                                      </span>
                                     </span>
+                                    {(() => {
+                                      const { netOutcome, hasExistingBet } =
+                                        getTossBetDetails(
+                                          pendingBet,
+                                          'Toss',
+                                          fancy1Data[1]?.team?.split('(')[0]
+                                        );
+                                      if (
+                                        hasExistingBet &&
+                                        netOutcome !== null
+                                      ) {
+                                        return (
+                                          <span
+                                            className={`text-xs font-bold ${
+                                              netOutcome >= 0
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
+                                            }`}
+                                          >
+                                            {netOutcome}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
-                              <div className='flex justify-around p-3'>
-                                <div className='grid justify-items-center text-center'>
-                                  <p className='text-xs font-semibold'>
-                                    {' '}
-                                    {fancy1Data[0]?.team?.split('(')[0]}
-                                  </p>
-                                  <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
-                                    <span className='text-[13px] font-semibold'>
-                                      {fancy1Data[0]?.odds[0].odds}
-                                    </span>
-                                    <span className='text-[10px]'>
-                                      {' '}
-                                      {fancy1Data[0]?.odds[0].size}
-                                    </span>
-                                  </span>
-                                  <span>
-                                    {tossTeamamo(
-                                      'Toss',
-                                      fancy1Data[0]?.team?.split('(')[0]
-                                    )}
-                                  </span>
-                                  {(() => {
-                                    const { netOutcome, hasExistingBet } =
-                                      getTossBetDetails(
-                                        pendingBet,
-                                        'Toss',
-                                        fancy1Data[0]?.team?.split('(')[0]
-                                      );
-                                    if (hasExistingBet && netOutcome !== null) {
-                                      return (
-                                        <span
-                                          className={`text-xs font-bold ${
-                                            netOutcome >= 0
-                                              ? 'text-green-600'
-                                              : 'text-red-600'
-                                          }`}
-                                        >
-                                          {netOutcome}
-                                        </span>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </div>
-
-                                <div className='grid justify-items-center text-center'>
-                                  <p className='text-xs font-bold md:text-[11px]'>
-                                    {' '}
-                                    {fancy1Data[1]?.team?.split('(')[0]}
-                                  </p>
-                                  <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
-                                    <span className='text-[13px] font-semibold'>
-                                      {fancy1Data[1]?.odds[0].odds}
-                                    </span>
-                                    <span className='text-[10px]'>
-                                      {' '}
-                                      {fancy1Data[1]?.odds[0].size}
-                                    </span>
-                                  </span>
-                                  {(() => {
-                                    const { netOutcome, hasExistingBet } =
-                                      getTossBetDetails(
-                                        pendingBet,
-                                        'Toss',
-                                        fancy1Data[1]?.team?.split('(')[0]
-                                      );
-                                    if (hasExistingBet && netOutcome !== null) {
-                                      return (
-                                        <span
-                                          className={`text-xs font-bold ${
-                                            netOutcome >= 0
-                                              ? 'text-green-600'
-                                              : 'text-red-600'
-                                          }`}
-                                        >
-                                          {netOutcome}
-                                        </span>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                </div>
-                {/* 1st 6 over matches */}
-                <div className='mt-2'>
-                  {over6Data.length > 0 &&
-                    over6Data[0]?.team?.split('(')[0]?.includes('6 over') && (
-                      <div>
-                        <div className='mx-auto bg-gray-200 text-[13px]'>
-                          <div className='flex items-center justify-between bg-[#2c3e50b3] p-2 px-4 font-bold text-white uppercase'>
-                            <span>Highest Score In 1st 6 Over </span>
-                            <div className='font-bold'>
-                              {over6Data[0].min} -{' '}
-                              {formatToK(over6Data[0]?.max)}
-                            </div>
+                            )}
                           </div>
-
-                          {over6Data[0]?.status === 'SUSPENDED' ? (
-                            <div className='relative mx-auto border-2 border-red-500'>
-                              <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
-                                <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
-                                  SUSPENDED
-                                </p>
+                        </div>
+                      )}
+                  </div>
+                  {/* 1st 6 over matches */}
+                  <div className='mt-2'>
+                    {over6Data.length > 0 &&
+                      over6Data[0]?.team?.split('(')[0]?.includes('6 over') && (
+                        <div>
+                          <div className='mx-auto bg-gray-200 text-[13px]'>
+                            <div className='flex items-center justify-between bg-[#2c3e50b3] p-2 px-4 font-bold text-white uppercase'>
+                              <span>Highest Score In 1st 6 Over </span>
+                              <div className='font-bold'>
+                                {over6Data[0].min} -{' '}
+                                {formatToK(over6Data[0]?.max)}
                               </div>
+                            </div>
+
+                            {over6Data[0]?.status === 'SUSPENDED' ? (
+                              <div className='relative mx-auto border-2 border-red-500'>
+                                <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
+                                  <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
+                                    SUSPENDED
+                                  </p>
+                                </div>
+                                <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
+                                  <div className='flex justify-around p-3'>
+                                    <div className='text-center'>
+                                      <p className='font-semibold'>
+                                        {' '}
+                                        {over6Data[0]?.team?.split('(')[0]}
+                                      </p>
+                                      <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
+                                        <span className='text-[13px] font-semibold'>
+                                          {over6Data[0]?.odds[0].odds}
+                                        </span>
+                                        <span className='text-[10px]'>
+                                          {' '}
+                                          {over6Data[0]?.odds[0].size}
+                                        </span>
+                                      </span>
+                                    </div>
+                                    <div className='text-center'>
+                                      <p className='font-semibold'>Kolkata</p>
+                                      <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
+                                        <span className='text-[13px] font-semibold'>
+                                          1.5
+                                        </span>
+                                        <span className='text-[10px]'>3m</span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
                               <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
                                 <div className='flex justify-around p-3'>
                                   <div className='text-center'>
@@ -661,417 +701,478 @@ export default function Cricketbet() {
                                         {over6Data[0]?.odds[0].size}
                                       </span>
                                     </span>
+                                    {(() => {
+                                      const { netOutcome, hasExistingBet } =
+                                        getTossBetDetails(
+                                          pendingBet,
+                                          '1st 6 over',
+                                          over6Data[0]?.team
+                                        );
+                                      if (
+                                        hasExistingBet &&
+                                        netOutcome !== null
+                                      ) {
+                                        return (
+                                          <span
+                                            className={`text-xs font-bold ${
+                                              netOutcome >= 0
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
+                                            }`}
+                                          >
+                                            {netOutcome}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                   <div className='text-center'>
-                                    <p className='font-semibold'>Kolkata</p>
+                                    <p className='font-semibold'>
+                                      {' '}
+                                      {over6Data[1]?.team?.split('(')[0]}
+                                    </p>
                                     <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
                                       <span className='text-[13px] font-semibold'>
-                                        1.5
+                                        {over6Data[1]?.odds[0].odds}
                                       </span>
-                                      <span className='text-[10px]'>3m</span>
+                                      <span className='text-[10px]'>
+                                        {' '}
+                                        {over6Data[1]?.odds[0].size}
+                                      </span>
                                     </span>
+                                    {/* Show bet amount for THIS team */}
+                                    {(() => {
+                                      const { netOutcome, hasExistingBet } =
+                                        getTossBetDetails(
+                                          pendingBet,
+                                          '1st 6 over',
+                                          over6Data[1]?.team
+                                        );
+                                      if (
+                                        hasExistingBet &&
+                                        netOutcome !== null
+                                      ) {
+                                        return (
+                                          <span
+                                            className={`text-xs font-bold ${
+                                              netOutcome >= 0
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
+                                            }`}
+                                          >
+                                            {netOutcome}
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
-                              <div className='flex justify-around p-3'>
-                                <div className='text-center'>
-                                  <p className='font-semibold'>
-                                    {' '}
-                                    {over6Data[0]?.team?.split('(')[0]}
-                                  </p>
-                                  <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
-                                    <span className='text-[13px] font-semibold'>
-                                      {over6Data[0]?.odds[0].odds}
-                                    </span>
-                                    <span className='text-[10px]'>
-                                      {' '}
-                                      {over6Data[0]?.odds[0].size}
-                                    </span>
-                                  </span>
-                                  {(() => {
-                                    const { netOutcome, hasExistingBet } =
-                                      getTossBetDetails(
-                                        pendingBet,
-                                        '1st 6 over',
-                                        over6Data[0]?.team
-                                      );
-                                    if (hasExistingBet && netOutcome !== null) {
-                                      return (
-                                        <span
-                                          className={`text-xs font-bold ${
-                                            netOutcome >= 0
-                                              ? 'text-green-600'
-                                              : 'text-red-600'
-                                          }`}
-                                        >
-                                          {netOutcome}
-                                        </span>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </div>
-                                <div className='text-center'>
-                                  <p className='font-semibold'>
-                                    {' '}
-                                    {over6Data[1]?.team?.split('(')[0]}
-                                  </p>
-                                  <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
-                                    <span className='text-[13px] font-semibold'>
-                                      {over6Data[1]?.odds[0].odds}
-                                    </span>
-                                    <span className='text-[10px]'>
-                                      {' '}
-                                      {over6Data[1]?.odds[0].size}
-                                    </span>
-                                  </span>
-                                  {/* Show bet amount for THIS team */}
-                                  {(() => {
-                                    const { netOutcome, hasExistingBet } =
-                                      getTossBetDetails(
-                                        pendingBet,
-                                        '1st 6 over',
-                                        over6Data[1]?.team
-                                      );
-                                    if (hasExistingBet && netOutcome !== null) {
-                                      return (
-                                        <span
-                                          className={`text-xs font-bold ${
-                                            netOutcome >= 0
-                                              ? 'text-green-600'
-                                              : 'text-red-600'
-                                          }`}
-                                        >
-                                          {netOutcome}
-                                        </span>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
+                      )}
+                  </div>
+                  {/*fancy  */}
+
+                  <main className='mt-2 h-full bg-gray-100'>
+                    <div className='mx-auto w-full overflow-hidden rounded-md bg-white'>
+                      <div className='flex gap-1 bg-[#2c3e50b3] text-xs md:text-sm'>
+                        <button
+                          className={`flex items-center px-4 py-2 ${
+                            activeTab === 'fancy'
+                              ? 'bg-color text-white'
+                              : 'text-white'
+                          }`}
+                          onClick={() => setActiveTab('fancy')}
+                        >
+                          <span className='font-bold'>Fancy Bet</span>
+                        </button>
+                        <button
+                          className={`flex items-center px-4 py-2 ${
+                            activeTab === 'sportsbook'
+                              ? 'bg-orange-600 text-white'
+                              : 'text-white'
+                          }`}
+                          onClick={() => setActiveTab('sportsbook')}
+                        >
+                          <span className='font-bold'>Sportsbook</span>
+                        </button>
                       </div>
-                    )}
-                </div>
-                {/*fancy  */}
 
-                <main className='mt-2 h-full bg-gray-100'>
-                  <div className='mx-auto w-full overflow-hidden rounded-md bg-white'>
-                    <div className='flex gap-1 bg-[#2c3e50b3] text-xs md:text-sm'>
-                      <button
-                        className={`flex items-center px-4 py-2 ${
-                          activeTab === 'fancy'
-                            ? 'bg-color text-white'
-                            : 'text-white'
-                        }`}
-                        onClick={() => setActiveTab('fancy')}
-                      >
-                        <span className='font-bold'>Fancy Bet</span>
-                      </button>
-                      <button
-                        className={`flex items-center px-4 py-2 ${
-                          activeTab === 'sportsbook'
-                            ? 'bg-orange-600 text-white'
-                            : 'text-white'
-                        }`}
-                        onClick={() => setActiveTab('sportsbook')}
-                      >
-                        <span className='font-bold'>Sportsbook</span>
-                      </button>
-                    </div>
+                      {activeTab === 'fancy' && (
+                        <>
+                          <div className='bg-color flex justify-start gap-1 overflow-x-auto scroll-smooth px-2 py-1 whitespace-nowrap text-white'>
+                            {subTabs.map((tab) => (
+                              <button
+                                key={tab.id}
+                                className={`px-2 py-1 text-xs ${
+                                  activeSubTab === tab.id
+                                    ? 'rounded-t-md bg-white text-xs font-medium text-black'
+                                    : ''
+                                }`}
+                                onClick={() => setActiveSubTab(tab.id)}
+                              >
+                                {tab.name}
+                              </button>
+                            ))}
+                          </div>
 
-                    {activeTab === 'fancy' && (
-                      <>
-                        <div className='bg-color flex justify-start gap-1 overflow-x-auto scroll-smooth px-2 py-1 whitespace-nowrap text-white'>
-                          {subTabs.map((tab) => (
-                            <button
-                              key={tab.id}
-                              className={`px-2 py-1 text-xs ${
-                                activeSubTab === tab.id
-                                  ? 'rounded-t-md bg-white text-xs font-medium text-black'
-                                  : ''
-                              }`}
-                              onClick={() => setActiveSubTab(tab.id)}
-                            >
-                              {tab.name}
-                            </button>
-                          ))}
-                        </div>
+                          <div className='overflow-x-auto'>
+                            <div className='w-full text-xs'>
+                              <div className=''>
+                                <div className='grid grid-cols-6 border-b border-gray-400 text-xs'>
+                                  <span className='col-span-4 px-4 py-2 text-left md:col-span-3'></span>
+                                  <span className='col-span-1 bg-[#72bbef] px-4 py-2 text-center'>
+                                    Yes
+                                  </span>
+                                  <span className='col-span-1 w-full bg-[#faa9ba] px-4 py-2 text-center'>
+                                    No
+                                  </span>
 
-                        <div className='overflow-x-auto'>
-                          <div className='w-full text-xs'>
-                            <div className=''>
-                              <div className='grid grid-cols-6 border-b border-gray-400 text-xs'>
-                                <span className='col-span-4 px-4 py-2 text-left md:col-span-3'></span>
-                                <span className='col-span-1 bg-[#72bbef] px-4 py-2 text-center'>
-                                  Yes
-                                </span>
-                                <span className='col-span-1 w-full bg-[#faa9ba] px-4 py-2 text-center'>
-                                  No
-                                </span>
-
-                                <span className='col-span-1 hidden px-4 py-2 text-center md:block'>
-                                  Min/Max
-                                </span>
+                                  <span className='col-span-1 hidden px-4 py-2 text-center md:block'>
+                                    Min/Max
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                            <div>
-                              {fancy2Data.length > 0 ? (
-                                fancy2Data.map(
-                                  (
-                                    { team, odds, sid, min, max, status },
-                                    index
-                                  ) => (
-                                    <div key={index} className='w-full'>
-                                      <div className='grid grid-cols-6'>
-                                        <span className='col-span-4 border-b border-gray-400 px-2 py-1 text-sm font-bold md:col-span-2 md:text-[11px]'>
-                                          {team}
-                                          <div className='flex items-center'>
-                                            <p className='text-green-500'>
-                                              {
-                                                pendingBet
-                                                  ?.filter(
-                                                    (item) =>
-                                                      item.gameType ===
-                                                        activeSubTab &&
-                                                      item.teamName?.toLowerCase() ===
-                                                        team?.toLowerCase()
-                                                  )
-                                                  .reduce(
-                                                    (sum, item) =>
-                                                      sum +
-                                                      (item.totalPrice ||
-                                                        '0.00'),
-                                                    ''
-                                                  ) // Changed initial value to 0
-                                              }
-                                            </p>
-                                          </div>
-                                        </span>
-                                        <span className='hidden border-b border-gray-400 px-2 py-1 text-center md:block'>
-                                          <button className='rounded bg-gray-700 px-4 py-1 text-xs text-white hover:bg-[#243a48]'>
-                                            Book
-                                          </button>
-                                        </span>
-                                        {status === 'SUSPENDED' ? (
-                                          <div className='item-center relative col-span-2 flex'>
-                                            <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#48484869]'>
-                                              <p className='absolute left-1/2 -translate-x-1/2 transform text-white'>
-                                                SUSPENDED
+                              <div>
+                                {fancy2Data.length > 0 ? (
+                                  fancy2Data.map(
+                                    (
+                                      { team, odds, sid, min, max, status },
+                                      index
+                                    ) => (
+                                      <div key={index} className='w-full'>
+                                        <div className='grid grid-cols-6'>
+                                          <span className='col-span-4 border-b border-gray-400 px-2 py-1 text-sm font-bold md:col-span-2 md:text-[11px]'>
+                                            {team}
+                                            <div className='flex items-center'>
+                                              <p className='text-green-500'>
+                                                {
+                                                  pendingBet
+                                                    ?.filter(
+                                                      (item) =>
+                                                        item.gameType ===
+                                                          activeSubTab &&
+                                                        item.teamName?.toLowerCase() ===
+                                                          team?.toLowerCase()
+                                                    )
+                                                    .reduce(
+                                                      (sum, item) =>
+                                                        sum +
+                                                        (item.totalPrice ||
+                                                          '0.00'),
+                                                      ''
+                                                    ) // Changed initial value to 0
+                                                }
                                               </p>
                                             </div>
+                                          </span>
+                                          <span className='hidden border-b border-gray-400 px-2 py-1 text-center md:block'>
+                                            <button className='rounded bg-gray-700 px-4 py-1 text-xs text-white hover:bg-[#243a48]'>
+                                              Book
+                                            </button>
+                                          </span>
+                                          {status === 'SUSPENDED' ? (
+                                            <div className='item-center relative col-span-2 flex'>
+                                              <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#48484869]'>
+                                                <p className='absolute left-1/2 -translate-x-1/2 transform text-white'>
+                                                  SUSPENDED
+                                                </p>
+                                              </div>
 
-                                            {odds.slice(0, 2).map((odd, i) => (
-                                              <span
-                                                key={i}
-                                                className={`w-full cursor-pointer border-b p-1 text-center ${
-                                                  i === 0
-                                                    ? 'bg-[#72bbef]'
-                                                    : i === 1
-                                                      ? 'bg-[#faa9ba]'
-                                                      : i === 2
-                                                        ? 'bg-[#72bbef]'
-                                                        : i === 3
-                                                          ? 'bg-[#faa9ba]'
-                                                          : i === 4
-                                                            ? 'bg-pink-200'
-                                                            : 'bg-pink-100'
-                                                }`}
-                                                // onClick={() => {
-                                                //   setSelectedRun(index);
-                                                //   setCurrentOdd(odd);
-                                                // }}
-                                              >
-                                                <div className='font-bold'>
-                                                  {odd?.odds}
-                                                </div>
-                                                <div className='text-gray-800'>
-                                                  {odd?.size}
-                                                </div>
-                                              </span>
-                                            ))}
-                                          </div>
-                                        ) : (
-                                          <div className='item-center col-span-2 flex'>
-                                            {' '}
-                                            {/* This was likely col-span-4 (2 back + 2 lay for the actual odds) */}
-                                            {odds.map(
-                                              (odd, i) =>
-                                                // ONLY RENDER IF odd.tno IS 0
-                                                odd?.tno === 0 && ( // <-- Added this conditional rendering
+                                              {odds
+                                                .slice(0, 2)
+                                                .map((odd, i) => (
                                                   <span
                                                     key={i}
                                                     className={`w-full cursor-pointer border-b p-1 text-center ${
-                                                      odd?.otype === 'back'
+                                                      i === 0
                                                         ? 'bg-[#72bbef]'
-                                                        : 'bg-[#faa9ba]'
+                                                        : i === 1
+                                                          ? 'bg-[#faa9ba]'
+                                                          : i === 2
+                                                            ? 'bg-[#72bbef]'
+                                                            : i === 3
+                                                              ? 'bg-[#faa9ba]'
+                                                              : i === 4
+                                                                ? 'bg-pink-200'
+                                                                : 'bg-pink-100'
                                                     }`}
+                                                    // onClick={() => {
+                                                    //   setSelectedRun(index);
+                                                    //   setCurrentOdd(odd);
+                                                    // }}
                                                   >
-                                                    <div className='cursor-pointer'>
-                                                      <div className='font-bold'>
-                                                        <span>{odd?.odds}</span>{' '}
-                                                        {/* No need for tno === 0 check here, already filtered */}
-                                                      </div>
-                                                      <div className='text-gray-800'>
-                                                        {odd?.size}
-                                                      </div>
+                                                    <div className='font-bold'>
+                                                      {odd?.odds}
+                                                    </div>
+                                                    <div className='text-gray-800'>
+                                                      {odd?.size}
                                                     </div>
                                                   </span>
-                                                )
-                                            )}
-                                          </div>
-                                        )}
-                                        <span className='col-span-1 hidden border-b border-gray-400 px-2 py-1 text-center font-semibold md:block'>
-                                          {min} - {formatToK(max)}
-                                        </span>
+                                                ))}
+                                            </div>
+                                          ) : (
+                                            <div className='item-center col-span-2 flex'>
+                                              {' '}
+                                              {/* This was likely col-span-4 (2 back + 2 lay for the actual odds) */}
+                                              {odds.map(
+                                                (odd, i) =>
+                                                  // ONLY RENDER IF odd.tno IS 0
+                                                  odd?.tno === 0 && ( // <-- Added this conditional rendering
+                                                    <span
+                                                      key={i}
+                                                      className={`w-full cursor-pointer border-b p-1 text-center ${
+                                                        odd?.otype === 'back'
+                                                          ? 'bg-[#72bbef]'
+                                                          : 'bg-[#faa9ba]'
+                                                      }`}
+                                                    >
+                                                      <div className='cursor-pointer'>
+                                                        <div className='font-bold'>
+                                                          <span>
+                                                            {odd?.odds}
+                                                          </span>{' '}
+                                                          {/* No need for tno === 0 check here, already filtered */}
+                                                        </div>
+                                                        <div className='text-gray-800'>
+                                                          {odd?.size}
+                                                        </div>
+                                                      </div>
+                                                    </span>
+                                                  )
+                                              )}
+                                            </div>
+                                          )}
+                                          <span className='col-span-1 hidden border-b border-gray-400 px-2 py-1 text-center font-semibold md:block'>
+                                            {min} - {formatToK(max)}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
+                                    )
                                   )
-                                )
-                              ) : (
-                                <tr>
-                                  <td
-                                    colSpan={5}
-                                    className='py-4 text-center text-gray-500'
+                                ) : (
+                                  <tr>
+                                    <td
+                                      colSpan={5}
+                                      className='py-4 text-center text-gray-500'
+                                    >
+                                      No betting options available for this
+                                      category
+                                    </td>
+                                  </tr>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {activeTab === 'sportsbook' && (
+                        <div className='mt-2 text-xs'>
+                          <div className='space-y-3'>
+                            {/* Odds/Evens Sections */}
+                            {oddsDataraw.map((item, idx) => (
+                              <div
+                                key={idx}
+                                className='overflow-hidden rounded'
+                              >
+                                <div className='bg-[#2c3e50b3] px-4 py-2 font-semibold text-white'>
+                                  {item.title}
+                                </div>
+                                <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
+                                  <div className='flex justify-around p-3'>
+                                    <div className='text-center'>
+                                      <p className='font-semibold'>Kolkata</p>
+                                      <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
+                                        <span className='text-[13px] font-semibold'>
+                                          1.5
+                                        </span>
+                                        <span className='text-[10px]'>3m</span>
+                                      </span>
+                                    </div>
+                                    <div className='text-center'>
+                                      <p className='font-semibold'>Kolkata</p>
+                                      <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
+                                        <span className='text-[13px] font-semibold'>
+                                          1.5
+                                        </span>
+                                        <span className='text-[10px]'>3m</span>
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* 5th Wicket Dismissal Method */}
+                            <div className='overflow-hidden rounded'>
+                              <div className='bg-[#2c3e50b3] px-4 py-2 text-xs font-semibold text-white'>
+                                KKR 5th Wicket Dismissal Method
+                              </div>
+                              <div className='divide-y divide-gray-200'>
+                                {dismissalData.map((item, idx) => (
+                                  <div
+                                    key={idx}
+                                    className='flex items-center justify-between border-b border-gray-500 px-4 py-1 transition'
                                   >
-                                    No betting options available for this
-                                    category
-                                  </td>
-                                </tr>
-                              )}
+                                    <span className='font-medium'>
+                                      {item.method}
+                                    </span>
+                                    <span className='flex w-[100px] flex-col items-center justify-center bg-green-300 p-1 font-semibold'>
+                                      {item.odds}
+                                      <span className='text-xs'>100K</span>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </>
-                    )}
-
-                    {activeTab === 'sportsbook' && (
-                      <div className='mt-2 text-xs'>
-                        <div className='space-y-3'>
-                          {/* Odds/Evens Sections */}
-                          {oddsDataraw.map((item, idx) => (
-                            <div key={idx} className='overflow-hidden rounded'>
-                              <div className='bg-[#2c3e50b3] px-4 py-2 font-semibold text-white'>
-                                {item.title}
-                              </div>
-                              <div className='bg-gradient-to-l from-[#a2e5bd] to-[#9fe5bb]'>
-                                <div className='flex justify-around p-3'>
-                                  <div className='text-center'>
-                                    <p className='font-semibold'>Kolkata</p>
-                                    <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
-                                      <span className='text-[13px] font-semibold'>
-                                        1.5
-                                      </span>
-                                      <span className='text-[10px]'>3m</span>
-                                    </span>
-                                  </div>
-                                  <div className='text-center'>
-                                    <p className='font-semibold'>Kolkata</p>
-                                    <span className='flex w-[100px] flex-col items-center justify-center border-[1px] border-white bg-[#72e3a0] py-0.5'>
-                                      <span className='text-[13px] font-semibold'>
-                                        1.5
-                                      </span>
-                                      <span className='text-[10px]'>3m</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* 5th Wicket Dismissal Method */}
-                          <div className='overflow-hidden rounded'>
-                            <div className='bg-[#2c3e50b3] px-4 py-2 text-xs font-semibold text-white'>
-                              KKR 5th Wicket Dismissal Method
-                            </div>
-                            <div className='divide-y divide-gray-200'>
-                              {dismissalData.map((item, idx) => (
-                                <div
-                                  key={idx}
-                                  className='flex items-center justify-between border-b border-gray-500 px-4 py-1 transition'
-                                >
-                                  <span className='font-medium'>
-                                    {item.method}
-                                  </span>
-                                  <span className='flex w-[100px] flex-col items-center justify-center bg-green-300 p-1 font-semibold'>
-                                    {item.odds}
-                                    <span className='text-xs'>100K</span>
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </main>
+                      )}
+                    </div>
+                  </main>
+                </div>
               </div>
-            </div>
-
-            <div className='md-mt-0 sm:w-full md:w-[40%]'>
-              <div>
-                <div>
-                  <div
-                    className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'
-                    onClick={() => setUrl(!url)}
-                  >
-                    Live Streaming
+              <div className='md-mt-0 sm:w-full md:w-[40%]'>
+                <div className='mb-3'>
+                  <div className='flex cursor-pointer items-center justify-between bg-[#016a82] px-1 py-0.5 text-[13px] text-white'>
+                    <span className='font-bold'>Live TV</span>
+                    <div
+                      className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
+                      onClick={() => setshowlivetv((prev) => !prev)}
+                    >
+                      <span
+                        className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}
+                      ></span>
+                    </div>
                   </div>
-                  {url ? (
-                    <iframe
-                      src={`https://test.bulkapi.co.in/api/v1/live-stream?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
-                      title='Watch Live'
-                      className='w-full rounded-lg'
-                      style={{ height: '50vh' }}
-                      allowFullScreen
-                      loading='lazy'
-                      allow='
-                      autoplay;
-                      encrypted-media;
-                      fullscreen;
-                      picture-in-picture;
-                      accelerometer;
-                      gyroscope
-                    '
-                    />
-                  ) : null}
+                  {showlivetv && (
+                    <div className='block aspect-video w-full'>
+                      <iframe
+                        src={`https://81habibi.com/api/v1/live-stream?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
+                        title='Watch Live'
+                        className='h-full w-full'
+                        allowFullScreen
+                        loading='lazy'
+                        allow='
+                          autoplay;
+                          encrypted-media;
+                          fullscreen;
+                          picture-in-picture;
+                          accelerometer;
+                          gyroscope
+                        '
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className='mt-4'>
-                  <div
-                    className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'
-                    onClick={() => setScoreUrl(!scoreUrl)}
-                  >
-                    Score Card
+                <div className='bg-[#27a6c3] px-2.5 py-[3px]'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex gap-2'>
+                      <div className='flex items-center gap-1 text-[12px] text-white'>
+                        Odds{' '}
+                        <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
+                          0
+                        </span>
+                      </div>
+                      <div className='flex items-center gap-1 text-[12px] text-white'>
+                        BM{' '}
+                        <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
+                          0
+                        </span>
+                      </div>
+                      <div className='flex items-center gap-1 text-[12px] text-white'>
+                        Fancy{' '}
+                        <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
+                          0
+                        </span>
+                      </div>
+                      <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white'>
+                        Reset <FaFilter className='text-white' size={10} />
+                      </div>
+                    </div>
+                    <div className='flex gap-2'>
+                      <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[5px] text-[12px] text-white'>
+                        P&L <BsGraphUpArrow className='text-white' size={12} />
+                      </div>
+                      <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[5px] text-[12px] text-white'>
+                        All Bets <TfiMenuAlt className='text-white' size={12} />
+                      </div>
+                    </div>
                   </div>
-                  {scoreUrl ? (
-                    <iframe
-                      src={`https://test.bulkapi.co.in/api/v1/live-score?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
-                      allowFullScreen
-                      className='w-full rounded-lg'
-                      title='Live Score'
-                      allow='
-                      autoplay;
-                      encrypted-media;
-                      fullscreen;
-                      picture-in-picture;
-                      accelerometer;
-                      gyroscope
-                    '
+                  <div className='mt-1.5 grid grid-cols-2 gap-1'>
+                    <input
+                      type='text'
+                      className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
+                      placeholder='Filter by Amount from'
                     />
-                  ) : null}
+                    <input
+                      type='text'
+                      className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
+                      placeholder='Filter by Market Name'
+                    />
+                  </div>
                 </div>
 
-                {!isFromMarket && (
+                <table className='mt-[1px] w-full'>
+                  <thead>
+                    <tr className='bg-[#016a82] text-[12px] text-white'>
+                      <th className='px-[3px] py-[2px] text-left font-medium'>
+                        UserName
+                      </th>
+                      <th className='px-[3px] py-[2px] text-left font-medium'>
+                        Market
+                      </th>
+                      <th className='px-[3px] py-[2px] text-left font-medium'>
+                        Runner
+                      </th>
+                      <th className='px-[3px] py-[2px] text-left font-medium'>
+                        Rate
+                      </th>
+                      <th className='px-[3px] py-[2px] text-left font-medium'>
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {betsData.map((item, index) => (
+                      <tr
+                        key={index}
+                        className={`border-y border-white text-[12px] ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
+                      >
+                        <td className='px-[3px] py-[2px]'>{item.userName}</td>
+                        <td className='px-[3px] py-[2px]'>{item.gameType}</td>
+                        <td className='px-[3px] py-[2px]'>{item.teamName}</td>
+                        <td className='px-[3px] py-[2px] font-semibold'>
+                          {item.gameType === 'Normal'
+                            ? `${item.fancyScore}/`
+                            : ''}
+                          {item.xValue}
+                        </td>
+                        <td className='px-[3px] py-[2px] font-semibold'>
+                          {item.otype === 'lay' ? item.betAmount : item.price}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* {!isFromMarket && (
                   <>
-                    <div className='mt-4 flex min-h-[42px] cursor-pointer items-center justify-between rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
+                    <div className='bg-[#27a6c3] px-2.5 py-[3px]'>
+                      <div className='flex gap-2'>
+                        <div>Odds <span>0</span></div>
+                        <div>BM <span>0</span></div>
+                        <div>Fancy <span>0</span></div>
+                      </div>
+                    </div>
+
+                    <div className='flex min-h-[42px] cursor-pointer items-center justify-between rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                       <span>My Bets</span>
                       <div
                         className='h-full rounded-sm bg-[#2c3e50] px-2.5 py-1.5'
@@ -1133,9 +1234,9 @@ export default function Cricketbet() {
                       )}
                     </div>
                   </>
-                )}
+                )} */}
 
-                {isFromMarket && (
+                {/* {isFromMarket && (
                   <div className='mt-4 bg-white'>
                     <div className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                       Book
@@ -1155,9 +1256,9 @@ export default function Cricketbet() {
                       </button>
                     </div>
                   </div>
-                )}
+                )} */}
 
-                {isFromMarket && (
+                {/* {isFromMarket && (
                   <div className='mt-4 bg-white'>
                     <div className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                       <div className='flex w-2/3 justify-between p-0 md:w-[60%] md:p-4'>
@@ -1171,9 +1272,9 @@ export default function Cricketbet() {
                                 id='uncheck'
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setLiveBets(betsData); // ✅ If checked
+                                    setLiveBets(betsData); 
                                   } else {
-                                    setLiveBets([]); // ❌ If unchecked
+                                    setLiveBets([]);
                                   }
                                 }}
                               />
@@ -1273,7 +1374,6 @@ export default function Cricketbet() {
                               </div>
                               <div className='col-span-2 text-[11px]'>
                                 <div>
-                                  {/* {item.xValue} */}
                                   {item.gameType === 'Normal'
                                     ? `${item.fancyScore}/`
                                     : ''}
@@ -1307,7 +1407,7 @@ export default function Cricketbet() {
                       </div>
                     )}
                   </div>
-                )}
+                )} */}
 
                 {/* view more popup */}
 
@@ -1920,10 +2020,6 @@ export default function Cricketbet() {
                   </div>
                 )}
               </div>
-
-              {/* user bet presents popup */}
-            </div>
-            <div>
               {popup && (
                 <div className='bg-opacity-50 fixed inset-0 z-9999 flex items-start justify-center bg-[#0000005d]'>
                   <motion.div
@@ -1962,8 +2058,8 @@ export default function Cricketbet() {
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import {
-  FaBan,
-  FaCheckCircle,
-  FaLock,
-  FaRegArrowAltCircleUp,
-  FaRegFilePdf,
-} from 'react-icons/fa';
+import { FaBan, FaCheckCircle, FaLock, FaRegFilePdf } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +10,7 @@ import {
   getAdmin,
   setCurrentPage,
   updateCreditReference,
-  getAllOnlyUserAndDownline,
+  getDownlineList,
   withdrawalAndDeposite,
   userSetting,
   getCreditRefHistory,
@@ -32,7 +26,7 @@ import { AiOutlineFileExcel } from 'react-icons/ai';
 import pdfIcon from '../assets/icons/pdf-icon.svg';
 import excelIcon from '../assets/icons/csv-icon.svg';
 import VirtualTable from '../components/VirtualTable';
-export default function AgentLIst() {
+export default function Userlist() {
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.text('User List', 14, 15);
@@ -116,9 +110,8 @@ export default function AgentLIst() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, currentPage, totalPages, onlyusers } = useSelector(
-    (state) => state.auth
-  );
+  const { userInfo, currentPage, totalPages, onlyusers, downlineViewer } =
+    useSelector((state) => state.auth);
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,8 +121,6 @@ export default function AgentLIst() {
   const [settingPopup, setSettingPopup] = useState(false);
   const [currentUser, setcurrentUser] = useState(null);
   const [isFetchingAllUsers, setIsFetchingAllUsers] = useState(null);
-  const [showMetrics, setShowMetrics] = useState(false);
-  const [showMetricsOpen, setShowMetricsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [passwordPopup, setPasswordPopup] = useState(false);
   const [lockPopup, setLockPopup] = useState(false);
@@ -175,10 +166,11 @@ export default function AgentLIst() {
       ).unwrap();
       toast.success(data.message);
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
       dispatch(getAdmin());
@@ -227,7 +219,8 @@ export default function AgentLIst() {
     const hasDeposit = !Number.isNaN(depositAmount) && depositAmount > 0;
 
     const newCredStr =
-      formData.creditReference === null || formData.creditReference === undefined
+      formData.creditReference === null ||
+      formData.creditReference === undefined
         ? ''
         : String(formData.creditReference).trim();
     const newCredNum = parseFloat(newCredStr);
@@ -268,10 +261,11 @@ export default function AgentLIst() {
       }
       toast.success(successParts.join(' ') || 'Saved successfully.');
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
       dispatch(getAdmin());
@@ -294,10 +288,11 @@ export default function AgentLIst() {
       toast.success(result.message);
       setSettingPopup(false);
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
     } catch (error) {
@@ -314,10 +309,11 @@ export default function AgentLIst() {
       toast.success(data.message);
       setPatnerPopup(false);
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
     } catch (error) {
@@ -328,10 +324,11 @@ export default function AgentLIst() {
   useEffect(() => {
     setIsFetchingAllUsers(true);
     dispatch(
-      getAllOnlyUserAndDownline({
+      getDownlineList({
         page: currentPage,
         limit: entries,
         searchQuery,
+        listType: 'all',
       })
     );
   }, [dispatch, currentPage, entries, searchQuery]);
@@ -343,6 +340,133 @@ export default function AgentLIst() {
       ? num
       : num.toFixed(v.toString().split('.')[1]?.length === 1 ? 1 : 2);
   };
+
+  const filteredUsers = useMemo(
+    () =>
+      (onlyusers || []).filter((user) =>
+        activeTab === 'active'
+          ? user.status === 'active'
+          : user.status !== 'active'
+      ),
+    [onlyusers, activeTab]
+  );
+
+  const getRowBalance = (row) =>
+    row.role === 'user'
+      ? Number(row.balance || 0)
+      : Number(row.baseBalance || 0) + Number(row.uplineBettingProfitLoss || 0);
+
+  const getRowTotalExposure = (row) =>
+    Number(row.totalExposure ?? row.exposure ?? 0);
+
+  const getRowAvbalance = (row) => Number(row.avbalance || 0);
+
+  /** Pending balance = negative of balance */
+  const getRowPendingBal = (row) => {
+    const pending = -getRowBalance(row);
+    return Math.round(pending * 100) / 100;
+  };
+
+  /** Current P&L = available − balance (= −pending balance) */
+  const getRowCurrentPL = (row) => {
+    const current = getRowAvbalance(row) - getRowBalance(row);
+    return Math.round(current * 100) / 100;
+  };
+
+  const formatTableMoney = (v) => {
+    const n = Number(v);
+    if (Number.isNaN(n)) return '0.00';
+    return n.toFixed(2);
+  };
+
+  const BalanceCell = ({ value }) => {
+    const n = Number(value) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    return (
+      <span className='font-medium text-green-600'>{formatTableMoney(n)}</span>
+    );
+  };
+
+  const PendingCell = ({ value }) => {
+    const n = Number(value) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    return (
+      <span className='font-medium text-red-600'>{formatTableMoney(n)}</span>
+    );
+  };
+
+  const CurrentPLCell = ({ value }) => {
+    const n = Number(value) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    if (n < 0) {
+      return (
+        <span className='inline-block rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+          {formatTableMoney(n)}
+        </span>
+      );
+    }
+    return (
+      <span className='inline-block rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+        {formatTableMoney(n)}
+      </span>
+    );
+  };
+
+  const ExposureCell = ({ row }) => {
+    const exp = getRowTotalExposure(row);
+    const display = exp > 0 ? -exp : exp;
+    return <CurrentPLCell value={display} />;
+  };
+
+  const roleTypeLabel = (role) => {
+    if (role === 'user') return 'Client';
+    if (role === 'white') return 'White Label';
+    if (!role) return '—';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+  };
+
+  const tableSummaryRow = useMemo(() => {
+    const totals = filteredUsers.reduce(
+      (acc, row) => {
+        acc.creditReference += Number(row.creditReference) || 0;
+        acc.balance += getRowBalance(row);
+        acc.pendingBal += getRowPendingBal(row);
+        acc.avbalance += Number(row.avbalance) || 0;
+        acc.currentPL += getRowCurrentPL(row);
+        const exp = getRowTotalExposure(row);
+        acc.exposure += exp > 0 ? -exp : exp;
+        return acc;
+      },
+      {
+        creditReference: 0,
+        balance: 0,
+        pendingBal: 0,
+        avbalance: 0,
+        currentPL: 0,
+        exposure: 0,
+      }
+    );
+    return [
+      '',
+      formatTableMoney(totals.creditReference),
+      formatTableMoney(totals.balance),
+      formatTableMoney(totals.pendingBal),
+      formatTableMoney(totals.avbalance),
+      formatTableMoney(totals.currentPL),
+      formatTableMoney(totals.exposure),
+      '',
+      '',
+      '',
+      '',
+      '',
+    ];
+  }, [filteredUsers]);
 
   const reloadPage = () => {
     window.location.reload();
@@ -397,10 +521,11 @@ export default function AgentLIst() {
       toast.success(result.message);
       closeLockPopup();
       dispatch(
-        getAllOnlyUserAndDownline({
+        getDownlineList({
           page: currentPage,
           limit: entries,
           searchQuery,
+          listType: 'all',
         })
       );
     } catch (error) {
@@ -445,124 +570,7 @@ export default function AgentLIst() {
 
   return (
     <>
-      <Navbar
-        onLogoClick={() => setShowMetrics(true)}
-        onNavClick={() => setShowMetrics(false)}
-      />
-
-      {showMetrics && (
-        <div className='bg-[#2c3e50] p-5 text-white'>
-          <div className='flex w-full items-center justify-center'>
-            <FaRegArrowAltCircleUp
-              size={20}
-              onClick={() => setShowMetricsOpen((prev) => !prev)}
-              className={showMetricsOpen ? 'rotate-180' : ''}
-            />
-          </div>
-
-          {showMetricsOpen && (
-            <div className='mt-3 grid grid-cols-3 gap-2'>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Balance</div>
-                <div className='flex-1/2'>
-                  INR {formatNumber(userInfo?.totalBalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Exposure</div>
-                <div className='flex-1/2'>
-                  ({formatNumber(userInfo?.exposure)})
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Available Balance</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.agentAvbalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Balance</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.avbalance || 0)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Total Avail. bal.</div>
-                <div className='flex-1/2'>
-                  {formatNumber(userInfo?.totalAvbalance)}
-                </div>
-              </div>
-              <div className='col-span-1 flex justify-between px-5'>
-                <div className='flex-1/2'>Upline P/L</div>
-                <div className='flex-1/2'>
-                  ({formatNumber(userInfo?.uplineBettingProfitLoss)})
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.totalBalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Exposure
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR{' '}
-                <span className='text-red-600'>
-                  ({formatNumber(userInfo?.exposure)})
-                </span>
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Available Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.agentAvbalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Balance
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.avbalance || 0)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Total Avail. bal.
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR {formatNumber(userInfo?.totalAvbalance)}
-              </div>
-            </div>
-            <div className='w-full border-b border-gray-300 px-[20px] py-[7px] md:w-[14.96815%] md:border-r md:border-b-0 md:px-[10px] md:py-0'>
-              <div className='mb-[5px] text-[12px] font-semibold text-[#9b9b9b]'>
-                Upline P/L
-              </div>
-              <div className='text-[15px] font-semibold'>
-                INR{' '}
-                <span
-                  className={`${
-                    userInfo.uplineBettingProfitLoss <= 0
-                      ? 'text-red-500'
-                      : 'text-green-500'
-                  }`}
-                >
-                  ({formatNumber(userInfo?.uplineBettingProfitLoss)})
-                </span>
-              </div>
-            </div> */}
-        </div>
-      )}
+      <Navbar />
 
       <div className='h-fit bg-gray-200 p-4'>
         <div className='rounded-md bg-white px-4 py-1'>
@@ -579,7 +587,7 @@ export default function AgentLIst() {
                 />
                 <input
                   type='text'
-                    className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
                   placeholder='Search by client'
                 />
                 <img
@@ -635,56 +643,72 @@ export default function AgentLIst() {
           </div>
 
           <VirtualTable
-            data={onlyusers.filter((user) =>
-              activeTab === 'active'
-                ? user.status === 'active'
-                : user.status !== 'active'
-            )}
+            variant='clientList'
+            data={filteredUsers}
+            summaryRow={tableSummaryRow}
             columns={[
               {
-                header: 'Username',
+                header: 'User Name',
                 accessor: 'userName',
-                cell: (row) => (
-                  <span className='block w-fit rounded-[3px] px-2 py-[1px] text-[14px] text-black'>
-                    {row.userName}
-                  </span>
-                ),
+                cell: (row) => {
+                  const isClient = row.role === 'user';
+                  return (
+                    <span className='flex items-center gap-2'>
+                      <span className='inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#016a82] text-[10px] font-bold text-white'>
+                        {isClient ? 'C' : 'A'}
+                      </span>
+                      <span
+                        className={`font-medium text-black ${
+                          !isClient
+                            ? 'underline decoration-[#016a82] underline-offset-2'
+                            : ''
+                        }`}
+                      >
+                        {row.userName}
+                      </span>
+                    </span>
+                  );
+                },
               },
               {
                 header: 'Credit Reference',
                 accessor: 'creditReference',
                 align: 'right',
-                cell: (row) => row.creditReference,
+                cell: (row) => formatTableMoney(row.creditReference ?? 0),
               },
               {
                 header: 'Balance',
-                accessor: 'balance',
+                sortKey: 'balance',
+                sortValue: (row) => getRowBalance(row),
                 align: 'right',
-                cell: (row) => row.balance || 0,
+                cell: (row) => <BalanceCell value={getRowBalance(row)} />,
               },
               {
                 header: 'Pending Bal.',
-                accessor: 'pendingBal',
+                sortKey: 'pendingBal',
+                sortValue: (row) => getRowPendingBal(row),
                 align: 'right',
-                cell: (row) => row.pendingBal || 0,
+                cell: (row) => <PendingCell value={getRowPendingBal(row)} />,
               },
               {
                 header: 'Available Bal.',
                 accessor: 'avbalance',
                 align: 'right',
-                cell: (row) => row.avbalance || 0,
+                cell: (row) => <BalanceCell value={getRowAvbalance(row)} />,
               },
               {
                 header: 'Current P&L',
-                accessor: 'currentPL',
+                sortKey: 'currentPL',
+                sortValue: (row) => getRowCurrentPL(row),
                 align: 'right',
-                cell: (row) => row.currentPL || 0,
+                cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} />,
               },
               {
                 header: 'Exposure',
-                accessor: 'exposure',
+                sortKey: 'exposure',
+                sortValue: (row) => getRowTotalExposure(row),
                 align: 'right',
-                cell: (row) => row.exposure,
+                cell: (row) => <ExposureCell row={row} />,
               },
               {
                 header: 'U Lock',
@@ -713,7 +737,33 @@ export default function AgentLIst() {
               {
                 header: 'My %',
                 align: 'right',
-                cell: (row) => row.myPercent,
+                cell: (row) => {
+                  if (row.myPercent && !String(row.myPercent).includes('/')) {
+                    return row.myPercent;
+                  }
+                  if (row.role === 'user') {
+                    const pct =
+                      row.parentSharePercent ??
+                      downlineViewer?.mySharePercent ??
+                      0;
+                    return `${pct}%`;
+                  }
+                  const mine =
+                    row.parentSharePercent ??
+                    row.viewerShareOnRow ??
+                    row.partnership ??
+                    0;
+                  return `${mine}%`;
+                },
+              },
+              {
+                header: 'Type',
+                accessor: 'role',
+                cell: (row) => (
+                  <span className='text-gray-800 capitalize'>
+                    {roleTypeLabel(row.role)}
+                  </span>
+                ),
               },
               // {
               //   header: 'Exposure Limit',
@@ -731,28 +781,21 @@ export default function AgentLIst() {
               //     Number(row.creditReferenceProfitLoss),
               // },
               {
-                header: 'Type',
-                accessor: 'role',
-                cell: (row) => row.role,
-              },
-              {
                 header: 'Actions',
                 cell: (row) =>
                   isFetchingAllUsers ? (
                     <div className='flex gap-1'>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] leading-none text-white text-[11px] font-bold'
-                      >
+                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'>
                         U
                       </span>
                       <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] leading-none text-white text-[11px] font-bold'
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] text-[11px] leading-none font-bold text-white'
                         onClick={() => openCreditDepositModal(row)}
                       >
                         D/C
                       </span>
                       <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] leading-none text-white text-[11px] font-bold'
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] text-[11px] leading-none font-bold text-white'
                         onClick={() => {
                           setWithdrawPopup(true);
                           setcurrentUser(row);
@@ -771,7 +814,7 @@ export default function AgentLIst() {
                       </span> */}
                       {/* C merged into D/C (Credit / Deposit modal) */}
                       <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] leading-none text-black text-[11px] font-bold'
+                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] text-[11px] leading-none font-bold text-black'
                         onClick={() => {
                           setPasswordPopup(true);
                           setcurrentUser(row);
@@ -779,14 +822,10 @@ export default function AgentLIst() {
                       >
                         P
                       </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] leading-none text-black text-[11px] font-bold'
-                      >
+                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'>
                         GC
                       </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] leading-none text-black text-[11px] font-bold'
-                      >
+                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'>
                         CC
                       </span>
                       {/* <span
@@ -813,7 +852,7 @@ export default function AgentLIst() {
             <div className='flex flex-wrap'>
               {/* First Button */}
               <button
-                className='pgBtn px-[13px] py-[6.5px] rounded-l-sm'
+                className='pgBtn rounded-l-sm px-[13px] py-[6.5px]'
                 onClick={() => handlePageChange(1)}
                 disabled={currentPage === 1}
               >
@@ -833,7 +872,9 @@ export default function AgentLIst() {
                 <button
                   key={i}
                   className={`px-[13px] py-[6.5px] leading-none ${
-                    currentPage === i + 1 ? 'bg-gradient-to-b from-[#11859c] to-[#181818] text-white' : 'pgBtn'
+                    currentPage === i + 1
+                      ? 'bg-gradient-to-b from-[#11859c] to-[#181818] text-white'
+                      : 'pgBtn'
                   }`}
                   onClick={() => handlePageChange(i + 1)}
                 >
@@ -852,7 +893,7 @@ export default function AgentLIst() {
 
               {/* Last Button */}
               <button
-                className='pgBtn px-[13px] py-[6.5px] rounded-r-sm'
+                className='pgBtn rounded-r-sm px-[13px] py-[6.5px]'
                 onClick={() => handlePageChange(totalPages)}
                 disabled={currentPage === totalPages}
               >
@@ -961,14 +1002,16 @@ export default function AgentLIst() {
                 className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
               >
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
-                  <span className='text-[16px] font-semibold'>Credit / Deposit</span>
+                  <span className='text-[16px] font-semibold'>
+                    Credit / Deposit
+                  </span>
                   <button
                     type='button'
                     onClick={closeCreditDepositModal}
                     aria-label='Close'
-                    className='text-xl leading-none text-gray-200 font-bold'
-                    >
-                      ×
+                    className='text-xl leading-none font-bold text-gray-200'
+                  >
+                    ×
                   </button>
                 </div>
 
@@ -978,20 +1021,18 @@ export default function AgentLIst() {
                 >
                   {/* My Available */}
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       My Available
                     </label>
                     <div className='flex min-w-0 flex-1 flex-wrap items-end gap-8'>
                       <input
                         type='text'
                         readOnly
-                        className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={userInfo?.avbalance ?? ''}
                       />
                       <div className='flex min-w-[80px] flex-1 flex-col gap-0.5'>
-                        <span className='text-[14px]'>
-                          After
-                        </span>
+                        <span className='text-[14px]'>After</span>
                         <input
                           type='text'
                           readOnly
@@ -1009,7 +1050,7 @@ export default function AgentLIst() {
                   <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
                     <div className='grid grid-cols-1 gap-8 sm:grid-cols-2'>
                       <div>
-                        <label className='mb-1 block text-gray-950 text-[14px]'>
+                        <label className='mb-1 block text-[14px] text-gray-950'>
                           Old Cred Ref.
                         </label>
                         <input
@@ -1020,7 +1061,7 @@ export default function AgentLIst() {
                         />
                       </div>
                       <div>
-                        <label className='mb-1 block text-gray-950 text-[14px]'>
+                        <label className='mb-1 block text-[14px] text-gray-950'>
                           New Cred Ref.
                         </label>
                         <input
@@ -1041,22 +1082,21 @@ export default function AgentLIst() {
 
                   {/* Deposit block */}
                   <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
-                    
                     <div className='mb-3 flex flex-wrap items-end gap-2'>
-                      <span className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
+                      <span className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
                         {currentUser.userName}
                       </span>
                       <div className='flex min-w-0 flex-1 flex-wrap gap-8'>
                         <input
                           type='text'
                           readOnly
-                          className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={currentUser.avbalance ?? ''}
                         />
                         <input
                           type='text'
                           readOnly
-                          className='min-w-[80px] flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                           value={
                             Number(currentUser.avbalance || 0) +
                             Number(formData.balance || 0)
@@ -1065,7 +1105,7 @@ export default function AgentLIst() {
                       </div>
                     </div>
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
                         Add Deposit
                       </label>
                       <input
@@ -1083,7 +1123,7 @@ export default function AgentLIst() {
                       />
                     </div>
                     <div className='flex flex-wrap items-start gap-2'>
-                      <label className='min-w-[170px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
                         Remarks
                       </label>
                       <textarea
@@ -1101,7 +1141,7 @@ export default function AgentLIst() {
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[175px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
                       Master Password
                     </label>
                     <input
@@ -1154,29 +1194,27 @@ export default function AgentLIst() {
                   {/* <span>Banking - Master Balance : {userInfo.avbalance}</span> */}
                   <button
                     onClick={() => setWithdrawPopup(false)}
-                    className='text-xl leading-none text-gray-200 font-bold'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
                     ×
                   </button>
                 </div>
-                <div className=' bg-sky-50 px-4 py-1 space-y-3'>
+                <div className='space-y-3 bg-sky-50 px-4 py-1'>
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       {userInfo.userName}
                     </label>
-                    <div className='flex flex-1 gap-8 items-end'>
+                    <div className='flex flex-1 items-end gap-8'>
                       <div className='w-1/2'>
                         <input
                           type='text'
                           value={userInfo.avbalance}
                           readOnly
-                          className='w-full flex-1 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                          className='w-full flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         />
                       </div>
-                      <div className='w-1/2 flex flex-col gap-0.5'>
-                        <span className='text-[14px]'>
-                          After
-                        </span>
+                      <div className='flex w-1/2 flex-col gap-0.5'>
+                        <span className='text-[14px]'>After</span>
                         <input
                           type='text'
                           className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
@@ -1189,33 +1227,31 @@ export default function AgentLIst() {
                     </div>
                   </div>
 
-
                   <div className='flex flex-wrap items-end gap-2'>
-                    <label className='min-w-[180px] shrink-0  text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       {currentUser.userName}
                     </label>
-                    <div className='flex flex-1 gap-8 items-end'>
+                    <div className='flex flex-1 items-end gap-8'>
                       <input
                         type='text'
-                        className='w-1/2 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={currentUser.avbalance}
                         readOnly
                       />
                       <input
                         type='text'
-                        className='w-1/2 border border-gray-500 rounded-[2px] bg-[#4ecdde] px-2 py-1.5 outline-none'
+                        className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
                         value={
                           currentUser.avbalance - Number(formData.balance || 0)
                         }
                         readOnly
                       />
-
                     </div>
                   </div>
-                  
+
                   <form onSubmit={handleWithdwalDeposite}>
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                         Amount
                       </label>
                       <input
@@ -1232,8 +1268,8 @@ export default function AgentLIst() {
                     </div>
 
                     <div className='mb-3 flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
-                      Remark
+                      <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                        Remark
                       </label>
                       <textarea
                         rows={3}
@@ -1249,7 +1285,7 @@ export default function AgentLIst() {
                     </div>
 
                     <div className='flex flex-wrap items-center gap-2'>
-                      <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                      <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                         Master Password
                       </label>
                       <input
@@ -1265,7 +1301,7 @@ export default function AgentLIst() {
                       />
                     </div>
 
-                    <div className='flex justify-end gap-2 border-t border-gray-200 py-2 mt-3'>
+                    <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-2'>
                       <button
                         type='submit'
                         className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
@@ -1282,7 +1318,6 @@ export default function AgentLIst() {
                       </button>
                     </div>
                   </form>
-
                 </div>
               </motion.div>
             </div>
@@ -1404,7 +1439,6 @@ export default function AgentLIst() {
                 initial={{ opacity: 0, y: 0 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 0 }}
-
                 className='fixed top-8 w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
               >
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
@@ -1414,20 +1448,23 @@ export default function AgentLIst() {
                   <button
                     type='button'
                     onClick={closeLockPopup}
-                    className='text-xl leading-none text-gray-200 font-bold'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
                     ×
                   </button>
                 </div>
 
-                <form onSubmit={handleLockSubmit} className='px-4 pt-4 pb-2 bg-sky-50'>
+                <form
+                  onSubmit={handleLockSubmit}
+                  className='bg-sky-50 px-4 pt-4 pb-2'
+                >
                   <div className='mb-3 flex items-center gap-3'>
-                    <label className='w-[150px] shrink-0 text-gray-900 text-[14px]'>
+                    <label className='w-[150px] shrink-0 text-[14px] text-gray-900'>
                       Remark
                     </label>
                     <input
                       type='text'
-                      className='w-full border border-gray-800 px-2 py-1 outline-none bg-white'
+                      className='w-full border border-gray-800 bg-white px-2 py-1 outline-none'
                       value={lockForm.remark}
                       onChange={(e) =>
                         setLockForm({ ...lockForm, remark: e.target.value })
@@ -1436,12 +1473,12 @@ export default function AgentLIst() {
                   </div>
 
                   <div className='mb-2 flex items-center gap-3'>
-                    <label className='w-[150px] shrink-0  text-gray-900 text-[14px]'>
+                    <label className='w-[150px] shrink-0 text-[14px] text-gray-900'>
                       Master Password
                     </label>
                     <input
                       type='password'
-                      className='w-full border border-gray-800 px-2 py-1 outline-none bg-white'
+                      className='w-full border border-gray-800 bg-white px-2 py-1 outline-none'
                       value={lockForm.masterPassword}
                       onChange={(e) =>
                         setLockForm({
@@ -1455,14 +1492,14 @@ export default function AgentLIst() {
                   <div className='flex justify-end gap-2 border-t border-gray-300 pt-1'>
                     <button
                       type='submit'
-                      className='text-[14px] rounded border bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-white'
+                      className='rounded border bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-[14px] text-white hover:bg-gradient-to-t'
                     >
                       Submit
                     </button>
                     <button
                       type='button'
                       onClick={closeLockPopup}
-                      className='text-[14px] rounded border bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-white'
+                      className='rounded border bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1.5 text-[14px] text-white hover:bg-gradient-to-t'
                     >
                       Cancel
                     </button>
@@ -1484,46 +1521,48 @@ export default function AgentLIst() {
               >
                 {/* Header */}
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
-                  <span className='text-[16px] font-semibold'>Change Password</span>
+                  <span className='text-[16px] font-semibold'>
+                    Change Password
+                  </span>
                   <button
                     onClick={() => setPasswordPopup(false)}
-                    className='text-xl leading-none text-gray-200 font-bold'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
                     ×
                   </button>
                 </div>
-                <div className='bg-sky-50 px-5 pt-4 pb-1 space-y-3'>
+                <div className='space-y-3 bg-sky-50 px-5 pt-4 pb-1'>
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       New Password
                     </label>
                     <input
                       type='text'
-                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       Confirm Password
                     </label>
                     <input
                       type='text'
-                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </div>
 
                   <div className='flex flex-wrap items-center gap-2'>
-                    <label className='min-w-[180px] shrink-0 text-gray-950 text-[14px]'>
+                    <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
                       Master Password
                     </label>
                     <input
                       type='password'
-                      className='flex-1 border border-gray-500 rounded-[2px] bg-white px-2 py-1.5 outline-none'
+                      className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -1534,7 +1573,7 @@ export default function AgentLIst() {
                     />
                   </div>
 
-                  <div className='flex justify-end gap-2 border-t border-gray-200 py-1 mt-3'>
+                  <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-1'>
                     <button
                       type='submit'
                       className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
@@ -1550,7 +1589,6 @@ export default function AgentLIst() {
                       Cancel
                     </button>
                   </div>
-
                 </div>
               </motion.div>
             </div>

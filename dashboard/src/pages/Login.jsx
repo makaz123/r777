@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { FaUser, FaEye, FaEyeSlash, FaArrowRight } from 'react-icons/fa';
 import brandLogo from '../assets/brand_logo.svg';
 
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAdmin, loginAdmin } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { user } = useSelector((state) => state.auth);
+  const { userInfo } = useSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,6 +24,18 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (localStorage.getItem('auth')) {
+      dispatch(getAdmin());
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (userInfo) {
+      navigate('/home', { replace: true });
+    }
+  }, [userInfo, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -30,7 +43,7 @@ const Login = () => {
       const data = await dispatch(loginAdmin(formData)).unwrap();
       toast.success(data.message);
       dispatch(getAdmin());
-      navigate('/user-download-list');
+      navigate('/home', { replace: true });
     } catch (error) {
       toast.error(error);
     } finally {

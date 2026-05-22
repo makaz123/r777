@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import SubAdmin from '../models/subAdminModel.js';
+import { updateAllUplines } from './admin/subAdminController.js';
 import { sendToUser, sendUserRefresh } from '../socket/bettingSocket.js';
 import { decrypt, encrypt } from '../utils/casinoCrypto.js';
 // 🔧 Casino API Configuration
@@ -460,6 +461,16 @@ export const casinoCallback = async (req, res) => {
 
       sendUserRefresh(updatedUser._id.toString());
 
+      // Partnership cascade for all markets; no match-odds commission on casino
+      try {
+        await updateAllUplines(updatedUser._id.toString());
+      } catch (uplineErr) {
+        console.error(
+          '[CASINO] updateAllUplines after bet:',
+          uplineErr.message
+        );
+      }
+
       console.log(`✅ BET stored | ${mobile} | Bet: ${bet} | Win: ${win}`);
     } else if (win > 0 && betRecord && betRecord.win_amount === 0) {
       /* -------------------------------------------------
@@ -516,6 +527,16 @@ export const casinoCallback = async (req, res) => {
       await betRecord.save();
 
       sendUserRefresh(updatedUser._id.toString());
+
+      // Partnership cascade only — commission on winning is match odds only, not casino
+      try {
+        await updateAllUplines(updatedUser._id.toString());
+      } catch (uplineErr) {
+        console.error(
+          '[CASINO] updateAllUplines after win:',
+          uplineErr.message
+        );
+      }
 
       console.log(`🏆 WIN stored | ${mobile} | Win: ${win}`);
     } else {

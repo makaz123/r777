@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   IoMdArrowDropdown,
   IoMdClose,
@@ -21,7 +21,9 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SportsSidebar from './SportsSidebar';
-
+import AccountSummaryBar from './AccountSummaryBar';
+import NotificationBell from './NotificationBell';
+import { isSuperAdmin } from '../utils/roleUtils';
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -98,14 +100,17 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     {
       name: 'Reports',
       submenu: [
+        { name: 'User Detail', path: '/RegisterDetail' },
         { name: 'Account Statement', path: '/AccountStatement' },
+        { name: 'Settlement/Balance Report', path: '/SettlementBalanceReport' },
+        { name: 'Transaction Report', path: '/TransactionReport' },
         { name: 'Current Bets', path: '/betlist' },
-        { name: 'General Report', path: '/GeneralReport' },
-        { name: 'Profit Loss', path: '/ProfitLoss' },
-        { name: 'Casino Result Report', path: '/casinoResultReport' },
-        { name: 'User Register Detail', path: '/RegisterDetail' },
-        { name: 'Total Profit Loss', path: '/TotalProfitLoss' },
-        { name: 'User Win Loss', path: '/UserWinLoss' },
+        { name: 'Profit & Loss Report', path: '/ProfitLoss' },
+        { name: 'Event Profit & Loss Report', path: '/eventpl' },
+        { name: 'Bet History', path: '/bet-history' },
+        { name: 'Live Bets', path: '/live-bets' },
+        { name: 'Sports Revenue', path: '/sports-revenue' },
+        { name: 'IP lookup', path: '/ip-lookup' },
       ],
     },
     // {
@@ -122,7 +127,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
       ],
     },
-    { name: 'Banner Settings', path: '/banner-settings' },
+    { name: 'Banner Settings', path: '/banner-settings', superAdminOnly: true },
     // {
     //   name: 'Live Market',
     //   submenu: [
@@ -156,15 +161,16 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   ];
 
   const logout = async () => {
+    setShowLogoutPopup(false);
     try {
       const data = await dispatch(userLogout()).unwrap();
-      localStorage.removeItem('auth');
-      toast.success(data.message);
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 500);
+      toast.success(data?.message || 'Logged out successfully');
     } catch (error) {
       toast.error(error);
+    } finally {
+      localStorage.removeItem('auth');
+      dispatch(user_reset());
+      navigate('/login', { replace: true });
     }
   };
 
@@ -199,6 +205,14 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     }
   };
 
+  const visibleNavItems = useMemo(
+    () =>
+      navItems.filter(
+        (item) => !item.superAdminOnly || isSuperAdmin(userInfo?.role)
+      ),
+    [userInfo?.role]
+  );
+
   const isSubmenuActive = (item) => {
     if (!item.submenu) return false;
 
@@ -216,8 +230,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
   return (
     <>
       <div
-        className={`sticky top-0 z-10 w-full ${location.pathname == '/login' ? 'hidden' : 'block'
-          }`}
+        className={`sticky top-0 z-10 w-full ${
+          location.pathname == '/login' ? 'hidden' : 'block'
+        }`}
       >
         {/* Mobile Header - Split into two rows */}
         <div className='hidden'>
@@ -296,8 +311,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </NavLink>
 
             <nav className='h-full text-black'>
-              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center'>
-                {navItems.map((item, i) => (
+              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center z-999'>
+                {visibleNavItems.map((item, i) => (
                   <li
                     key={i}
                     className='relative h-full'
@@ -371,7 +386,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
 
           <div className='mr-4 flex items-center gap-4'>
-
+            <NotificationBell role={userInfo?.role} />
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -401,7 +416,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4 }}
-                  className='absolute top-8 right-0 w-[180px] rounded-md border border-gray-400 bg-white py-1.5'
+                  className='absolute top-8 right-0 z-999 w-[180px] rounded-md border border-gray-400 bg-white py-1.5'
                 >
                   <div className='flex cursor-pointer items-center px-2 py-0.5 text-[14px] text-gray-700 hover:bg-[#18b0c8] hover:text-white'>
                     <MdArrowRightAlt size={22} />{' '}
@@ -422,7 +437,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         {/* Mobile Navigation (Horizontal Scrollable) */}
         <nav className='bg-color2 relative mb-[15px] hidden overflow-x-auto leading-[30px] whitespace-nowrap text-white'>
           <ul className='flex'>
-            {navItems.map((item, i) => (
+            {visibleNavItems.map((item, i) => (
               <li
                 key={i}
                 className='relative inline-block'
@@ -433,7 +448,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                   <NavLink
                     to={item.path}
                     className={({ isActive }) =>
-                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${isActive ? 'bg-color text-white' : 'text-black'
+                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${
+                        isActive ? 'bg-color text-white' : 'text-black'
                       }`
                     }
                     onClick={() => setActiveItem(item.name)}
@@ -507,6 +523,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </li>
           </ul>
         </nav>
+
+        <AccountSummaryBar />
 
         {/* Popup */}
         {showPopup && (

@@ -1,510 +1,277 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  getTransactionHistory,
-  getBetHistory,
-} from '../../redux/reducer/betReducer';
-import ResultInfoPopup from './ResultInfoPopup';
+import { getTransactionHistory } from '../../redux/reducer/betReducer';
 import { useTranslation } from '../../context/LanguageContext';
 
-// Format date as DD/MM/YYYY HH:MM:SS
 const formatStatementDate = (dateStr) => {
   if (!dateStr) return '-';
   const d = new Date(dateStr);
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  const h = String(d.getHours()).padStart(2, '0');
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12;
+  h = h ? h : 12; // the hour '0' should be '12'
   const min = String(d.getMinutes()).padStart(2, '0');
   const sec = String(d.getSeconds()).padStart(2, '0');
-  return `${day}/${month}/${year} ${h}:${min}:${sec}`;
-};
-
-// Build remark for sports report: "GameName / EventName / GameType/MarketName/Result"
-const buildSportsRemark = (row) => {
-  const result = row.betResult ?? row.fancyScore ?? '';
-  const str = [
-    row.gameName || '',
-    row.eventName || '',
-    [row.gameType, row.marketName, result].filter(Boolean).join('/'),
-  ]
-    .filter(Boolean)
-    .join(' / ');
-  return str || '-';
+  return `${day}/${month}/${year}, ${h}:${min}:${sec} ${ampm}`;
 };
 
 const formatMoney = (value) => {
-  if (value == null || value === '') return '-';
+  if (value == null || value === '' || value === 0) return '-';
   const n = Number(value);
   if (Number.isNaN(n)) return '-';
   return n.toFixed(2);
 };
 
-const getSettlementGroupKey = (row, index) => {
-  if (row.betId && row.settledAt) return `bet:${row.betId}|at:${row.settledAt}`;
-  if (row.walletEntryRef) {
-    const parts = String(row.walletEntryRef).split(':');
-    if (parts.length >= 5) {
-      // fancy:settle:<betId>:<historyId>:<timestamp> => remove historyId
-      return `${parts[0]}:${parts[1]}:${parts[2]}:${parts[4]}`;
-    }
-    return row.walletEntryRef;
-  }
-  if (row.settledAt) return `settledAt:${row.settledAt}`;
-  return `row:${row._id || index}`;
+const formatBalance = (value) => {
+  const n = Number(value || 0);
+  return n.toFixed(2);
 };
 
 function AccountStatement() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { transHistory, betHistory, loading, pagination } = useSelector(
+  const { transHistory, accountStatementSummary, loading, pagination } = useSelector(
     (state) => state.bet
   );
 
-  // Date setup - default to last 4 months
   const currentDate = new Date();
   const fourMonthsAgo = new Date();
   fourMonthsAgo.setMonth(currentDate.getMonth() - 4);
   const formatDate = (date) => date.toISOString().split('T')[0];
 
-  const [reportType, setReportType] = useState('deposits');
+  const [reportType, setReportType] = useState('all');
   const [startDate, setStartDate] = useState(formatDate(fourMonthsAgo));
   const [endDate, setEndDate] = useState(formatDate(currentDate));
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
-  const [goToPage, setGoToPage] = useState(1);
-  const [paginationInfo, setPaginationInfo] = useState({ pages: 1, total: 0 });
-  const [resultPopupRow, setResultPopupRow] = useState(null);
-  const showSettlementBalanceColumns = reportType === 'sports';
 
-  // Fetch transaction history (deposits)
-  const fetchTransactions = useCallback(() => {
+  const fetchStatement = useCallback(() => {
     if (!startDate || !endDate) return;
-    if (reportType === 'deposits') {
-      dispatch(
-        getTransactionHistory({
-          startDate,
-          endDate,
-          page,
-          limit,
-        })
-      ).then((result) => {
-        if (result.payload?.success) {
-          const total = result.payload?.data?.length || 0;
-          const pages = Math.ceil(total / limit) || 1;
-          setPaginationInfo({ pages, total });
-        }
-      });
-    }
+    dispatch(
+      getTransactionHistory({
+        startDate,
+        endDate,
+        page,
+        limit,
+        accountType: reportType !== 'all' ? reportType : undefined,
+      })
+    );
   }, [dispatch, startDate, endDate, page, limit, reportType]);
 
-  // Fetch bet history (sports report)
-  const fetchSportsReport = useCallback(() => {
-    if (!startDate || !endDate) return;
-    if (reportType === 'sports') {
-      dispatch(
-        getBetHistory({
-          startDate,
-          endDate,
-          page,
-          limit,
-          selectedVoid: 'settel',
-          selectedGame: 'Sport',
-        })
-      ).then((result) => {
-        const payload = result.payload;
-        if (payload?.pagination) {
-          setPaginationInfo({
-            pages: payload.pagination.pages || 1,
-            total: payload.pagination.total || 0,
-          });
-        } else if (Array.isArray(payload?.data)) {
-          setPaginationInfo({
-            pages: Math.ceil((payload.data.length || 0) / limit) || 1,
-            total: payload.data.length || 0,
-          });
-        }
-      });
-    }
-  }, [dispatch, startDate, endDate, page, limit, reportType]);
-
-  // Fetch bet history (casino report) – same API as sports with selectedGame: 'Casino'
-  const fetchCasinoReport = useCallback(() => {
-    if (!startDate || !endDate) return;
-    if (reportType === 'casino') {
-      dispatch(
-        getBetHistory({
-          startDate,
-          endDate,
-          page,
-          limit,
-          selectedVoid: 'settel',
-          selectedGame: 'Casino',
-        })
-      ).then((result) => {
-        const payload = result.payload;
-        if (payload?.pagination) {
-          setPaginationInfo({
-            pages: payload.pagination.pages || 1,
-            total: payload.pagination.total || 0,
-          });
-        } else if (Array.isArray(payload?.data)) {
-          setPaginationInfo({
-            pages: Math.ceil((payload.data.length || 0) / limit) || 1,
-            total: payload.data.length || 0,
-          });
-        }
-      });
-    }
-  }, [dispatch, startDate, endDate, page, limit, reportType]);
-
-  // Fetch on mount and when dependencies change
   useEffect(() => {
-    if (reportType === 'deposits') {
-      fetchTransactions();
-    } else if (reportType === 'sports') {
-      fetchSportsReport();
-    } else if (reportType === 'casino') {
-      fetchCasinoReport();
-    }
-  }, [fetchTransactions, fetchSportsReport, fetchCasinoReport, reportType]);
-
-  // Update goToPage when page changes
-  useEffect(() => {
-    setGoToPage(page);
-  }, [page]);
-
-  // Filter transactions by search term (deposits)
-  const filteredTransactions =
-    transHistory?.filter((transaction) => {
-      if (!searchTerm) return true;
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        transaction.remark?.toLowerCase().includes(searchLower) ||
-        transaction.userName?.toLowerCase().includes(searchLower) ||
-        transaction.amount?.toString().includes(searchLower) ||
-        (transaction.date &&
-          new Date(transaction.date)
-            .toLocaleString()
-            .toLowerCase()
-            .includes(searchLower))
-      );
-    }) || [];
-
-  // Filter sports bet history by search term
-  const filteredSports =
-    betHistory?.filter((row) => {
-      if (!searchTerm) return true;
-      const searchLower = searchTerm.toLowerCase();
-      const remark = buildSportsRemark(row);
-      return (
-        remark.toLowerCase().includes(searchLower) ||
-        row.eventName?.toLowerCase().includes(searchLower) ||
-        row.marketName?.toLowerCase().includes(searchLower) ||
-        String(row.profitLossChange ?? '').includes(searchTerm) ||
-        (row.date &&
-          formatStatementDate(row.date).toLowerCase().includes(searchLower))
-      );
-    }) || [];
-
-  // Total pages and data to show
-  const totalPages =
-    reportType === 'deposits'
-      ? Math.ceil(filteredTransactions.length / limit) || 1
-      : reportType === 'sports' || reportType === 'casino'
-        ? paginationInfo.pages || 1
-        : 1;
-
-  const paginatedData =
-    reportType === 'deposits'
-      ? filteredTransactions.slice((page - 1) * limit, page * limit)
-      : reportType === 'sports' || reportType === 'casino'
-        ? filteredSports
-        : [];
-
-  const groupedSportsData = useMemo(() => {
-    if (reportType !== 'sports' && reportType !== 'casino') return [];
-    const groups = new Map();
-
-    paginatedData.forEach((row, index) => {
-      const groupKey = getSettlementGroupKey(row, index);
-      const pl = Number(row.profitLossChange) || 0;
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, {
-          baseRow: row,
-          credit: pl > 0 ? pl : 0,
-          debit: pl < 0 ? pl : 0,
-          pts: pl,
-        });
-        return;
-      }
-
-      const current = groups.get(groupKey);
-      current.credit += pl > 0 ? pl : 0;
-      current.debit += pl < 0 ? pl : 0;
-      current.pts += pl;
-    });
-
-    return Array.from(groups.values());
-  }, [paginatedData, reportType]);
-
-  // Update pagination info
-  useEffect(() => {
-    if (reportType === 'deposits') {
-      setPaginationInfo({
-        pages: totalPages,
-        total: filteredTransactions.length,
-      });
-    }
-  }, [reportType, totalPages, filteredTransactions.length]);
+    fetchStatement();
+  }, [fetchStatement]);
 
   const handleSubmit = () => {
     setPage(1);
-    setGoToPage(1);
-    if (reportType === 'deposits') {
-      fetchTransactions();
-    } else if (reportType === 'sports') {
-      fetchSportsReport();
-    } else if (reportType === 'casino') {
-      fetchCasinoReport();
-    }
+    fetchStatement();
   };
 
+  const handleReset = () => {
+    setStartDate(formatDate(fourMonthsAgo));
+    setEndDate(formatDate(currentDate));
+    setReportType('all');
+    setPage(1);
+    setSearchTerm('');
+  };
+
+  const filteredData = transHistory?.filter((row) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      row.description?.toLowerCase().includes(searchLower) ||
+      String(row.credit ?? '').includes(searchTerm) ||
+      String(row.debit ?? '').includes(searchTerm)
+    );
+  }) || [];
+
   return (
-    <div className='w-full overflow-x-auto p-0.5'>
-      <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
-        <div className='bg-secondary text-secondary p-2'>
-          <h4 className='text-[16px] font-[400]'>
+    <div className='w-full p-2 text-sm text-[#333]'>
+      <div className='w-full border border-[#00000020] bg-white shadow-[0_0_5px_#a4a4a4]'>
+        
+        {/* Header */}
+        <div className='bg-[#18b0c8] text-white p-2'>
+          <h4 className='text-[16px] font-bold'>
             {t('account_statement', 'Account Statement')}
           </h4>
         </div>
-        <div className='mb-2 w-full p-2'>
-          <div className='flex flex-wrap gap-2'>
-            <div className='flex gap-2'>
+
+        <div className='w-full p-3'>
+          {/* Top Controls Row */}
+          <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4'>
+            {/* Filters */}
+            <div className='flex flex-wrap items-center gap-2'>
+              <select
+                className='h-[32px] w-[180px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+              >
+                <option value='all'>{t('all', 'ALL')}</option>
+                <option value='deposit'>{t('deposit', 'DEPOSIT')}</option>
+                <option value='withdraw'>{t('withdraw', 'WITHDRAW')}</option>
+                <option value='bet'>{t('bet', 'BET')}</option>
+                <option value='commission'>{t('commission', 'COMMISSION')}</option>
+              </select>
+
               <input
-                type='date'
-                placeholder={t('start_date', 'Start Date')}
-                className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
+                type='datetime-local'
+                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                value={`${startDate}T00:00`}
+                onChange={(e) => setStartDate(e.target.value.split('T')[0])}
               />
               <input
-                type='date'
-                placeholder={t('end_date', 'End Date')}
-                className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
+                type='datetime-local'
+                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                value={`${endDate}T00:00`}
+                onChange={(e) => setEndDate(e.target.value.split('T')[0])}
               />
+
+              <button
+                onClick={handleSubmit}
+                className='bg-[#18b0c8] text-white h-[32px] w-[60px] px-2 text-[14px] font-bold'
+              >
+                {t('go', 'Go')}
+              </button>
+              <button
+                onClick={handleReset}
+                className='bg-[#18b0c8] text-white h-[32px] w-[60px] px-2 text-[14px] font-bold'
+              >
+                {t('reset', 'Reset')}
+              </button>
             </div>
-            <select
-              name='type'
-              id='type'
-              className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
-              value={reportType}
-              onChange={(e) => {
-                setReportType(e.target.value);
-                setPage(1);
-                setGoToPage(1);
-              }}
-            >
-              <option value='deposits'>
-                {t('deposit_withdraw_reports', 'Deposite/Withdraw Reports')}
-              </option>
-              <option value='sports'>
-                {t('sport_reports', 'Sport Reports')}
-              </option>
-              <option value='casino'>
-                {t('casino_reports', 'Casino Reports')}
-              </option>
-            </select>
-            <button
-              onClick={handleSubmit}
-              className='bg-primary text-primary h-[38px] w-full rounded-xs px-4 py-1 text-[16px] font-[400] lg:w-auto'
-            >
-              {t('submit', 'Submit')}
-            </button>
+
+            {/* Balances */}
+            <div className='border border-[#ccc] bg-white text-[13px]'>
+              <div className='flex border-b border-[#ccc]'>
+                <div className='w-[130px] p-1.5 border-r border-[#ccc]'>{t('closing_balance', 'Closing Balance')}</div>
+                <div className='w-[100px] p-1.5 font-bold'>{formatBalance(accountStatementSummary?.closingBalance)}</div>
+              </div>
+              <div className='flex'>
+                <div className='w-[130px] p-1.5 border-r border-[#ccc]'>{t('opening_balance', 'Opening Balance')}</div>
+                <div className='w-[100px] p-1.5 font-bold'>{formatBalance(accountStatementSummary?.openingBalance)}</div>
+              </div>
+            </div>
           </div>
-          <div className='mt-4 flex items-center justify-between gap-2'>
+
+          {/* Search and Entries Row */}
+          <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-2'>
             <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>
+              <input
+                type='text'
+                placeholder={t('search_placeholder', 'Search')}
+                className='h-[30px] w-[150px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button className='h-[30px] border border-[#dbdbdb] px-2 text-[11px] font-bold text-[#1e7e34] bg-[#f8f9fa] hover:bg-[#e2e6ea]'>CSV</button>
+              <button className='h-[30px] border border-[#dbdbdb] px-2 text-[11px] font-bold text-[#bd2130] bg-[#f8f9fa] hover:bg-[#e2e6ea]'>PDF</button>
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <span className='text-[13px]'>
                 {t('show', 'Show')}
               </span>
               <select
-                name='entries'
-                id='entries'
-                className='h-[38px] border border-[#dbdbdb] p-1 outline-none'
+                className='h-[30px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
                 value={limit}
                 onChange={(e) => {
                   setLimit(Number(e.target.value));
                   setPage(1);
-                  setGoToPage(1);
                 }}
               >
                 <option value='10'>10</option>
-                <option value='20'>20</option>
-                <option value='30'>30</option>
-                <option value='40'>40</option>
+                <option value='25'>25</option>
                 <option value='50'>50</option>
+                <option value='100'>100</option>
               </select>
-              <span className='text-[16px] font-[400]'>
-                {t('entries', 'Entries')}
+              <span className='text-[13px]'>
+                {t('entries', 'entries')}
               </span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <span className='text-[16px] font-[400]'>
-                {t('search_label', 'Search:')}
-              </span>
-              <input
-                type='text'
-                placeholder={t('search_placeholder', 'Search')}
-                className='h-[38px] w-[90px] border border-[#dbdbdb] p-1 outline-none lg:w-auto'
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
             </div>
           </div>
-          <div className='scrollbar-hide mt-4 overflow-x-auto'>
-            <table className='w-full min-w-[700px] border border-gray-300'>
+
+          {/* Table */}
+          <div className='scrollbar-hide overflow-x-auto'>
+            <table className='w-full min-w-[900px] border-collapse'>
               <thead>
-                <tr className='bg-[#e0e6e6]'>
-                  <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
+                <tr className='bg-[#18b0c8] text-white'>
+                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-left whitespace-nowrap w-[180px]'>
                     {t('date', 'Date')}
                   </th>
-                  <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    {t('sr_no', 'Sr no')}
-                  </th>
-                  <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
+                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-right whitespace-nowrap w-[100px]'>
                     {t('credit', 'Credit')}
                   </th>
-                  <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
+                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-right whitespace-nowrap w-[100px]'>
                     {t('debit', 'Debit')}
                   </th>
-                  <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    {t('pts', 'Pts')}
+                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-right whitespace-nowrap w-[100px]'>
+                    {t('balance', 'Balance')}
                   </th>
-                  <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                    {t('remark', 'Remark')}
+                  <th className='h-[35px] p-2 text-[13px] font-bold text-left whitespace-nowrap'>
+                    {t('description', 'Description')}
                   </th>
-                  {showSettlementBalanceColumns && (
-                    <>
-                      <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                        {t('balance_before', 'Balance Before')}
-                      </th>
-                      <th className='h-8 border border-gray-300 p-2 text-left text-sm font-semibold whitespace-nowrap'>
-                        {t('balance_after', 'Balance After')}
-                      </th>
-                    </>
-                  )}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={showSettlementBalanceColumns ? 8 : 6}
-                      className='h-8 border border-gray-300 p-2 text-center'
-                    >
+                    <td colSpan='5' className='h-8 border-b border-[#eee] p-2 text-center'>
                       {t('loading', 'Loading...')}
                     </td>
                   </tr>
-                ) : reportType === 'deposits' && paginatedData.length > 0 ? (
-                  paginatedData.map((transaction, index) => (
-                    <tr
-                      key={transaction._id || index}
-                      className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
-                    >
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                        {transaction.date
-                          ? new Date(transaction.date).toLocaleString()
-                          : '-'}
-                      </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                        {(page - 1) * limit + index + 1}
-                      </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                        {transaction.deposite > 0
-                          ? transaction.deposite.toFixed(2)
-                          : '-'}
-                      </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                        {transaction.withdrawl > 0
-                          ? transaction.withdrawl.toFixed(2)
-                          : '-'}
-                      </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                        {transaction.amount || '-'}
-                      </td>
-                      <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                        {transaction.remark || '-'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (reportType === 'sports' || reportType === 'casino') &&
-                  groupedSportsData.length > 0 ? (
-                  groupedSportsData.map((group, index) => {
-                    const row = group.baseRow;
-                    const pl = group.pts;
-                    const isPositive = pl > 0;
-                    const isNegative = pl < 0;
-                    const redClass = 'text-red-600';
-                    const greenClass = 'text-[#086f3f]';
-                    return (
-                      <tr
-                        key={row._id || index}
-                        className={`cursor-pointer ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100`}
-                        onClick={() => setResultPopupRow(row)}
-                      >
-                        <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                          {formatStatementDate(row.settledAt || row.date)}
+                ) : filteredData.length > 0 ? (
+                  <>
+                    {page === 1 && !searchTerm && (
+                      <tr className='bg-[#f9f9f9]'>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px] font-bold text-right text-[#0e9d57]'>
+                          {formatBalance(accountStatementSummary?.closingBalance)}
                         </td>
-                        <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                          {(page - 1) * limit + index + 1}
+                        <td className='h-[35px] border-b border-[#eee] px-2 text-[13px] font-bold'>
+                          Closing Balance
                         </td>
-                        <td
-                          className={`h-8 border border-gray-300 p-2 text-left text-sm ${group.credit > 0 ? greenClass : ''}`}
-                        >
-                          {group.credit > 0 ? group.credit : '-'}
-                        </td>
-                        <td
-                          className={`h-8 border border-gray-300 p-2 text-left text-sm ${group.debit < 0 ? redClass : ''}`}
-                        >
-                          {group.debit < 0 ? group.debit : '-'}
-                        </td>
-                        <td
-                          className={`h-8 border border-gray-300 p-2 text-left text-sm ${isPositive ? greenClass : ''} ${isNegative ? redClass : ''}`}
-                        >
-                          {pl}
-                        </td>
-                        <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                          {buildSportsRemark(row)}
-                        </td>
-                        {showSettlementBalanceColumns && (
-                          <>
-                            <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                              {formatMoney(row.balanceBeforeSettlement)}
-                            </td>
-                            <td className='h-8 border border-gray-300 p-2 text-left text-sm'>
-                              {formatMoney(row.balanceAfterSettlement)}
-                            </td>
-                          </>
-                        )}
                       </tr>
-                    );
-                  })
+                    )}
+                    {filteredData.map((row, index) => (
+                      <tr key={index} className='hover:bg-[#f1f1f1]'>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-left'>
+                          {formatStatementDate(row.date)}
+                        </td>
+                        <td className={`h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-right ${row.credit > 0 ? 'text-[#0e9d57]' : ''}`}>
+                          {formatMoney(row.credit)}
+                        </td>
+                        <td className={`h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-right ${row.debit > 0 ? 'text-[#e54b60]' : ''}`}>
+                          {formatMoney(row.debit)}
+                        </td>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-right font-bold text-[#0e9d57]'>
+                          {formatBalance(row.balance)}
+                        </td>
+                        <td className='h-[35px] border-b border-[#eee] px-2 text-[13px] text-left text-[#333]'>
+                          {row.type === 'bet' ? (
+                            <span className='text-[#18b0c8] cursor-pointer hover:underline'>
+                              {row.description}
+                            </span>
+                          ) : row.type === 'commission' ? (
+                            <span className='text-[#18b0c8] cursor-pointer hover:underline'>
+                              {row.description}
+                            </span>
+                          ) : (
+                            <span>{row.description}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ) : (
                   <tr>
-                    <td
-                      colSpan={showSettlementBalanceColumns ? 8 : 6}
-                      className='h-8 border border-gray-300 p-2 text-center'
-                    >
-                      {reportType === 'deposits' ||
-                      reportType === 'sports' ||
-                      reportType === 'casino'
-                        ? t('no_data_found', 'No data found')
-                        : t('coming_soon', 'Coming soon')}
+                    <td colSpan='5' className='h-8 border-b border-[#eee] p-2 text-center'>
+                      {t('no_data_found', 'No data found')}
                     </td>
                   </tr>
                 )}
@@ -512,113 +279,38 @@ function AccountStatement() {
             </table>
           </div>
 
-          {/* Pagination Controls */}
-          {!loading &&
-            (reportType === 'deposits' ||
-              reportType === 'sports' ||
-              reportType === 'casino') &&
-            (reportType === 'deposits'
-              ? paginatedData.length > 0
-              : groupedSportsData.length > 0) &&
-            paginationInfo.pages > 1 && (
-              <div className='mt-4 flex flex-col items-center gap-3'>
-                <div className='flex items-center gap-2'>
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => {
-                      setPage(1);
-                      setGoToPage(1);
-                    }}
-                    className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
-                  >
-                    {t('first', 'First')}
-                  </button>
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => {
-                      setPage((p) => p - 1);
-                      setGoToPage((p) => p - 1);
-                    }}
-                    className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
-                  >
-                    {t('previous', 'Previous')}
-                  </button>
-                  <button
-                    disabled={page >= paginationInfo.pages}
-                    onClick={() => {
-                      setPage((p) => p + 1);
-                      setGoToPage((p) => p + 1);
-                    }}
-                    className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
-                  >
-                    {t('next', 'Next')}
-                  </button>
-                  <button
-                    disabled={page >= paginationInfo.pages}
-                    onClick={() => {
-                      const lastPage = paginationInfo.pages;
-                      setPage(lastPage);
-                      setGoToPage(lastPage);
-                    }}
-                    className='border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white'
-                  >
-                    {t('last', 'Last')}
-                  </button>
-                </div>
-                <div className='flex items-center gap-2'>
-                  <span className='text-sm'>{t('page', 'Page')}</span>
-                  <span className='text-sm font-semibold'>{page}</span>
-                  <span className='text-sm'>{t('of', 'of')}</span>
-                  <span className='text-sm font-semibold'>
-                    {paginationInfo.pages || 0}
-                  </span>
-                </div>
-                <div className='flex items-center gap-2'>
-                  <span className='text-sm'>
-                    {t('go_to_page', 'Go to Page')}
-                  </span>
-                  <input
-                    type='number'
-                    min='1'
-                    max={paginationInfo.pages || 1}
-                    value={goToPage}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (value >= 1 && value <= (paginationInfo.pages || 1)) {
-                        setGoToPage(value);
-                      }
-                    }}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        const value = parseInt(goToPage);
-                        if (
-                          value >= 1 &&
-                          value <= (paginationInfo.pages || 1)
-                        ) {
-                          setPage(value);
-                        }
-                      }
-                    }}
-                    className='w-16 border border-gray-300 px-2 py-1 text-center text-sm'
-                  />
-                </div>
+          {/* Pagination */}
+          {!loading && filteredData.length > 0 && pagination?.pages > 0 && (
+            <div className='mt-4 flex flex-col lg:flex-row items-center justify-between gap-3 text-sm text-[#555]'>
+              <div>
+                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} entries
               </div>
-            )}
+              <div className='flex items-center gap-0'>
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className='bg-[#18b0c8] text-white px-3 py-1 text-[13px] disabled:opacity-70 disabled:cursor-not-allowed border border-[#18b0c8] rounded-l-[3px]'
+                >
+                  {t('previous', 'Prev')}
+                </button>
+                <button
+                  disabled={true}
+                  className='bg-[#18b0c8] text-white px-3 py-1 text-[13px] border-y border-[#18b0c8]'
+                >
+                  {page}
+                </button>
+                <button
+                  disabled={page >= (pagination?.pages || 1)}
+                  onClick={() => setPage((p) => p + 1)}
+                  className='bg-[#18b0c8] text-white px-3 py-1 text-[13px] disabled:opacity-70 disabled:cursor-not-allowed border border-[#18b0c8] rounded-r-[3px]'
+                >
+                  {t('next', 'Next')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {resultPopupRow && (
-        <ResultInfoPopup
-          onClose={() => setResultPopupRow(null)}
-          gameName={resultPopupRow.gameName}
-          eventName={resultPopupRow.eventName}
-          marketName={resultPopupRow.marketName}
-          marketId={resultPopupRow.market_id}
-          gameType={resultPopupRow.gameType}
-          startDate={startDate}
-          endDate={endDate}
-        />
-      )}
     </div>
   );
 }

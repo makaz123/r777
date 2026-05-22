@@ -14,6 +14,23 @@ import SubAdmin from '../../models/subAdminModel.js';
 import TransactionHistory from '../../models/transtionHistoryModel.js';
 import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import { calculateAllExposure } from '../../utils/exposureUtils.js';
+import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import {
+  aggregateWeekProfitLoss,
+  buildAccountSummary,
+  getCurrentWeekRange,
+  getDownlineUserIds,
+} from '../../utils/accountSummaryUtils.js';
+import {
+  adjustUserUpdatesForCommission,
+  calculateWinCommission,
+  getDownlineUplineBettingContribution,
+  isMatchOddsGameType,
+  parseCommissionPercent,
+  getViewerMySharePercent,
+  roundMoney,
+  splitProfitLossByMyShare,
+} from '../../utils/partnershipCommissionUtils.js';
 
 const countUplines = async (user) => {
   let count = 0;
@@ -95,9 +112,15 @@ const updateAdmin = async (id) => {
         // Only calculate from bets for actual end-users who place bets.
         if (user.role !== 'user') {
           DownlineTotalExposure += user.totalExposure || user.exposure || 0;
-          DownlineTotalBettingProfitLoss += user.bettingProfitLoss || 0;
+          const agentDownlinePL = Number(user.bettingProfitLoss) || 0;
+          const uplinePLShare = getDownlineUplineBettingContribution({
+            totalPL: agentDownlinePL,
+            partnershipPercent: user.partnership,
+            isEndUser: false,
+          });
+          DownlineTotalBettingProfitLoss += uplinePLShare;
           console.log(
-            `[UPDATE ADMIN] Agent/Admin ${user.userName}: using stored totalExposure=${user.totalExposure || user.exposure || 0}`
+            `[UPDATE ADMIN] Agent/Admin ${user.userName}: exposure=${user.totalExposure || user.exposure || 0} downlinePL=${agentDownlinePL} uplineShare=${uplinePLShare} (partnership=${user.partnership || 0}%)`
           );
           continue;
         }
@@ -118,17 +141,28 @@ const updateAdmin = async (id) => {
             },
           },
         ]);
-        const userBettingPL = plResult.length > 0 ? plResult[0].totalPL : 0;
+        const sportsBettingPL =
+          plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+        const storedPL = roundMoney(user.bettingProfitLoss || 0);
+        // Stored P/L includes casino callbacks; sports history is sports-only
+        const userBettingPL =
+          storedPL > sportsBettingPL + 0.01 ? storedPL : sportsBettingPL;
 
-        // Update user's stored bettingProfitLoss if it drifted from betHistoryModel
-        if (user.bettingProfitLoss !== userBettingPL) {
+        if (
+          storedPL <= sportsBettingPL + 0.01 &&
+          user.bettingProfitLoss !== sportsBettingPL
+        ) {
           console.log(
-            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${userBettingPL}`
+            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${sportsBettingPL}`
           );
-          user.bettingProfitLoss = userBettingPL;
+          user.bettingProfitLoss = sportsBettingPL;
           await user.save();
         }
-        DownlineTotalBettingProfitLoss += userBettingPL;
+        DownlineTotalBettingProfitLoss += getDownlineUplineBettingContribution({
+          totalPL: userBettingPL,
+          partnershipPercent: admin.partnership,
+          isEndUser: true,
+        });
 
         // For actual users, get all pending bets
         const updatedPendingBets = await betModel.find({
@@ -176,6 +210,64 @@ const updateAdmin = async (id) => {
     console.error('updateAdmin error:', error);
     return { success: false, message: error.message };
   }
+};
+
+/** Credit agent when user wins on match odds (uses Commission % only, not Rolling Commission). */
+export const creditAgentCommissionEarned = async (user, commission) => {
+  if (!user?.invite || !commission || commission <= 0) return null;
+  const agent = await SubAdmin.findOne({ code: user.invite });
+  if (!agent) return null;
+  await SubAdmin.findByIdAndUpdate(agent._id, {
+    $inc: { commissionEarned: commission },
+  });
+  return agent;
+};
+
+/**
+ * Match odds only: deduct commission from user win, credit agent commissionEarned.
+ * Partnership is not applied here (handled in updateAdmin for all markets).
+ */
+export const applyMatchOddsWinCommissionOnSettlement = async (
+  bet,
+  user,
+  settlementResult
+) => {
+  if (!settlementResult?.userUpdates || !user || !bet) {
+    return { settlementResult, commission: 0 };
+  }
+  if (!isMatchOddsGameType(bet.gameType)) {
+    return { settlementResult, commission: 0 };
+  }
+
+  const profit = Number(settlementResult.userUpdates.profitLossChange) || 0;
+  if (profit <= 0) {
+    return { settlementResult, commission: 0 };
+  }
+
+  const rate = parseCommissionPercent(user.commition);
+  const { netProfit, commission } = calculateWinCommission(profit, rate);
+  if (commission <= 0) {
+    return { settlementResult, commission: 0 };
+  }
+
+  const agent = await creditAgentCommissionEarned(user, commission);
+  if (agent) {
+    console.log(
+      `[COMMISSION] Match Odds | user=${user.userName} agent=${agent.userName} earned=${commission} rate=${rate}%`
+    );
+  }
+
+  return {
+    settlementResult: {
+      ...settlementResult,
+      userUpdates: adjustUserUpdatesForCommission(
+        settlementResult.userUpdates,
+        commission
+      ),
+    },
+    commission,
+    netProfit,
+  };
 };
 
 export const updateAllUplines = async (userIdOrArray) => {
@@ -578,6 +670,16 @@ export const createSubAdmin = async (req, res) => {
       return res
         .status(400)
         .json({ message: 'Partnership should be between 0 and 100' });
+    }
+
+    if (accountType !== 'user') {
+      const parentMyShareCap = getViewerMySharePercent(admin.partnership);
+      const parsedPartnership = Number(partnership) || 0;
+      if (parsedPartnership > parentMyShareCap) {
+        return res.status(400).json({
+          message: `Partnership cannot exceed your my share (${parentMyShareCap}%)`,
+        });
+      }
     }
     // Skip balance check for superadmin
     if (role !== 'superadmin' && role !== 'supperadmin') {
@@ -1027,12 +1129,23 @@ export const getSubAdmin = async (req, res) => {
     }
     await updateAdmin(id);
 
-    //  Fetch the updated admin data after updateAdmin
-    const updatedAdmin = await SubAdmin.findById(id);
+    const updatedAdmin = await SubAdmin.findById(id).lean();
+    const weekRange = getCurrentWeekRange();
+    const downlineUserIds = await getDownlineUserIds(
+      SubAdmin,
+      updatedAdmin.code
+    );
+    const weekPLTotal = await aggregateWeekProfitLoss(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      weekRange
+    );
+    const accountSummary = buildAccountSummary(updatedAdmin, weekPLTotal);
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: updatedAdmin,
+      data: { ...updatedAdmin, accountSummary },
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);
@@ -1309,6 +1422,187 @@ export const getAllOnlyUser = async (req, res) => {
     return res
       .status(500)
       .json({ error: 'Internal server error', details: error.message });
+  }
+};
+
+/**
+ * Unified downline list for Agent List (agents) and Client List (users).
+ * Includes viewer partnership % and per-row share labels.
+ */
+export const getDownlineList = async (req, res) => {
+  try {
+    const { id, role } = req;
+    const {
+      page = 1,
+      limit = 10,
+      searchQuery,
+      listType = 'clients',
+    } = req.query;
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const typeRaw = String(listType).toLowerCase();
+    const type =
+      typeRaw === 'agents'
+        ? 'agents'
+        : typeRaw === 'all'
+          ? 'all'
+          : typeRaw === 'admin' || typeRaw === 'admins'
+            ? 'admin'
+            : 'clients';
+
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // partnership % = this account's share (what you keep / what parent takes from downline row)
+    const viewerPartnership = Number(admin.partnership) || 0;
+    const viewerMySharePercent = roundMoney(Math.max(0, viewerPartnership));
+    const viewerUplineSharePercent = roundMoney(
+      Math.max(0, 100 - viewerPartnership)
+    );
+
+    const baseInviteFilter =
+      role === 'supperadmin'
+        ? { _id: { $ne: id }, invite: admin.code, status: { $ne: 'delete' } }
+        : { invite: admin.code, status: { $ne: 'delete' } };
+
+    let filter;
+    if (type === 'clients') {
+      filter = { ...baseInviteFilter, role: 'user' };
+    } else if (type === 'admin') {
+      filter = { ...baseInviteFilter, role: 'admin' };
+    } else if (type === 'all') {
+      filter = { ...baseInviteFilter };
+    } else {
+      filter = { ...baseInviteFilter, role: { $ne: 'user' } };
+    }
+
+    if (searchQuery) {
+      filter = {
+        ...filter,
+        userName: { $regex: searchQuery, $options: 'i' },
+      };
+    }
+
+    const allUsers = await SubAdmin.find(filter)
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum);
+
+    const data = await Promise.all(
+      allUsers.map(async (user) => {
+        let exposure = user.exposure || 0;
+        if (user.role === 'user') {
+          try {
+            const pendingBets = await betModel.find({
+              userId: user._id,
+              status: 0,
+            });
+            exposure = calculateAllExposure(pendingBets);
+          } catch (err) {
+            console.error(
+              `[DOWNLINE LIST] exposure for ${user.userName}:`,
+              err.message
+            );
+          }
+        } else {
+          exposure = user.totalExposure || user.exposure || 0;
+        }
+
+        const row = user.toObject();
+        const isEndUser = row.role === 'user';
+        const downlinePartnership = Number(row.partnership) || 0;
+        const commissionPct = parseCommissionPercent(row.commition);
+
+        // On agent/admin rows: partnership = parent's (viewer's) share from that downline
+        const parentSharePercent = isEndUser
+          ? viewerMySharePercent
+          : downlinePartnership;
+        const downlineKeepPercent = isEndUser
+          ? commissionPct || viewerUplineSharePercent
+          : roundMoney(Math.max(0, 100 - downlinePartnership));
+
+        const myPercent = isEndUser
+          ? `${parentSharePercent}%`
+          : `${parentSharePercent}% / ${downlineKeepPercent}%`;
+
+        const rawBettingPL = isEndUser
+          ? roundMoney(row.bettingProfitLoss || 0)
+          : roundMoney(row.bettingProfitLoss || 0);
+        const plSplit = splitProfitLossByMyShare(
+          rawBettingPL,
+          isEndUser ? viewerMySharePercent : parentSharePercent
+        );
+
+        const balance = isEndUser
+          ? roundMoney(row.balance || 0)
+          : roundMoney(
+              (row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0)
+            );
+        const avbalance = roundMoney(row.avbalance || 0);
+        const pendingBal = roundMoney(-balance);
+        const currentPL = roundMoney(avbalance - balance);
+        const totalExposure = roundMoney(exposure);
+
+        return {
+          ...row,
+          exposure: totalExposure,
+          totalExposure,
+          pendingBal,
+          currentPL,
+          balance,
+          downlinePartnership,
+          parentSharePercent,
+          downlineKeepPercent,
+          downlineSharePercent: downlineKeepPercent,
+          viewerShareOnRow: parentSharePercent,
+          myPartnershipPercent: viewerMySharePercent,
+          mySharePercent: parentSharePercent,
+          myPercent,
+          rawBettingPL: plSplit.totalPL,
+          myPLShare: plSplit.myPL,
+          uplinePLShare: plSplit.uplinePL,
+          uplinePartnershipPercent: isEndUser
+            ? viewerUplineSharePercent
+            : downlineKeepPercent,
+          commition: row.commition || '0',
+          commissionEarned: row.commissionEarned || 0,
+        };
+      })
+    );
+
+    const totalUsers = await SubAdmin.countDocuments(filter);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Downline list retrieved successfully',
+      listType: type,
+      viewer: {
+        partnership: viewerPartnership,
+        mySharePercent: viewerMySharePercent,
+        uplineSharePercent: viewerUplineSharePercent,
+        myPercentLabel: `${viewerMySharePercent}%`,
+        uplinePercentLabel: `${viewerUplineSharePercent}%`,
+        role: admin.role,
+        userName: admin.userName,
+        ...splitProfitLossByMyShare(
+          admin.uplineBettingProfitLoss || 0,
+          viewerMySharePercent
+        ),
+      },
+      data,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limitNum) || 1,
+      currentPage: pageNum,
+    });
+  } catch (error) {
+    console.error('Error in getDownlineList:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
 
@@ -3125,7 +3419,7 @@ export const getSettlementUsers = async (req, res) => {
   try {
     const { id, role } = req;
     const { roleType } = req.query; // 'user' or 'master'
-    
+
     // Find the admin making the request
     const admin = await SubAdmin.findById(id);
     if (!admin) {
@@ -3134,7 +3428,7 @@ export const getSettlementUsers = async (req, res) => {
 
     // Only fetch direct downlines (since settlement is direct)
     let filter = { status: { $ne: 'delete' }, invite: admin.code };
-    
+
     if (roleType === 'user') {
       filter.role = 'user';
     } else if (roleType === 'master') {
@@ -3153,7 +3447,7 @@ export const getSettlementUsers = async (req, res) => {
       // If clientPL > 0, admin owes user (Creditor / dena hai)
       // If clientPL < 0, user owes admin (Debtor / lena hai)
       const pl = user.creditReferenceProfitLoss || 0;
-      
+
       const userData = {
         _id: user._id,
         userName: user.userName,
@@ -3161,7 +3455,7 @@ export const getSettlementUsers = async (req, res) => {
         balance: user.balance,
         baseBalance: user.baseBalance,
         creditReference: user.creditReference,
-        clientPL: pl
+        clientPL: pl,
       };
 
       if (pl > 0) {
@@ -3174,7 +3468,7 @@ export const getSettlementUsers = async (req, res) => {
     return res.status(200).json({
       success: true,
       creditors,
-      debtors
+      debtors,
     });
   } catch (error) {
     console.error('Error in getSettlementUsers:', error);
@@ -3193,7 +3487,9 @@ export const settleUser = async (req, res) => {
 
     const parsedAmount = Number(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      return res.status(400).json({ message: 'Valid positive amount is required' });
+      return res
+        .status(400)
+        .json({ message: 'Valid positive amount is required' });
     }
 
     const admin = await SubAdmin.findById(id);
@@ -3214,7 +3510,9 @@ export const settleUser = async (req, res) => {
 
     const pl = editUser.creditReferenceProfitLoss || 0;
     if (pl === 0) {
-      return res.status(400).json({ message: 'User has no outstanding balance to settle' });
+      return res
+        .status(400)
+        .json({ message: 'User has no outstanding balance to settle' });
     }
 
     const settleRemark = `Settlement: ${remarks || ''}`.trim();
@@ -3223,19 +3521,22 @@ export const settleUser = async (req, res) => {
     if (pl > 0) {
       // User is Creditor (admin owes user). Admin pays user cash, so we withdraw from user.
       if (parsedAmount > pl) {
-         return res.status(400).json({ message: 'Cannot settle more than the outstanding P/L' });
+        return res
+          .status(400)
+          .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
-      
+
       editUser.balance -= parsedAmount;
       editUser.avbalance = Math.max(0, editUser.avbalance - parsedAmount);
       editUser.baseBalance -= parsedAmount;
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss = editUser.baseBalance - editUser.creditReference;
+      editUser.creditReferenceProfitLoss =
+        editUser.baseBalance - editUser.creditReference;
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-         admin.balance += parsedAmount;
-         admin.baseBalance += parsedAmount;
-         admin.avbalance += parsedAmount;
+        admin.balance += parsedAmount;
+        admin.baseBalance += parsedAmount;
+        admin.avbalance += parsedAmount;
       }
 
       await admin.save();
@@ -3259,17 +3560,20 @@ export const settleUser = async (req, res) => {
         remark: settleRemark,
         invite: admin.code,
       });
-
     } else if (pl < 0) {
       // User is Debtor (user owes admin). User pays admin cash, so we deposit to user.
       const absPl = Math.abs(pl);
       if (parsedAmount > absPl) {
-         return res.status(400).json({ message: 'Cannot settle more than the outstanding P/L' });
+        return res
+          .status(400)
+          .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
         if (parsedAmount > admin.avbalance) {
-          return res.status(400).json({ message: 'Insufficient balance to settle' });
+          return res
+            .status(400)
+            .json({ message: 'Insufficient balance to settle' });
         }
       }
 
@@ -3277,7 +3581,8 @@ export const settleUser = async (req, res) => {
       editUser.avbalance += parsedAmount;
       editUser.baseBalance += parsedAmount;
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss = editUser.baseBalance - editUser.creditReference;
+      editUser.creditReferenceProfitLoss =
+        editUser.baseBalance - editUser.creditReference;
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
         admin.balance -= parsedAmount;
@@ -3313,7 +3618,7 @@ export const settleUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Settlement completed successfully'
+      message: 'Settlement completed successfully',
     });
   } catch (error) {
     console.error('Error in settleUser:', error);

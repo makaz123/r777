@@ -475,7 +475,8 @@ const marketSlice = createSlice({
       })
       .addCase(getCasinoAnalysis.rejected, (state, action) => {
         state.casinoAnalysisLoading = false;
-        state.errorMessage = action.payload?.message || 'Failed to fetch casino GGR data';
+        state.errorMessage =
+          action.payload?.message || 'Failed to fetch casino GGR data';
       });
   },
 });

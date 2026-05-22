@@ -1,20 +1,25 @@
 import { useState, useMemo } from 'react';
-// import { FaSortUp, FaSortDown } from 'react-icons/fa';
-import { BiSortAlt2 } from "react-icons/bi";
-const VirtualTable = ({ data = [], columns = [] }) => {
-  const [sortConfig, setSortConfig] = useState(null);
+import { BiSortAlt2 } from 'react-icons/bi';
 
-  // ✅ Sorting (Frontend only)
+const VirtualTable = ({
+  data = [],
+  columns = [],
+  summaryRow = null,
+  variant = 'default',
+}) => {
+  const [sortConfig, setSortConfig] = useState(null);
+  const isClientList = variant === 'clientList';
+
   const sortedData = useMemo(() => {
     if (!sortConfig) return data;
 
     const { key, direction } = sortConfig;
+    const col = columns.find((c) => (c.sortKey || c.accessor) === key);
 
     return [...data].sort((a, b) => {
-      const valA = a[key];
-      const valB = b[key];
+      const valA = col?.sortValue ? col.sortValue(a) : a[key];
+      const valB = col?.sortValue ? col.sortValue(b) : b[key];
 
-      // handle null / undefined safely
       if (valA == null) return 1;
       if (valB == null) return -1;
 
@@ -22,67 +27,88 @@ const VirtualTable = ({ data = [], columns = [] }) => {
       if (valA > valB) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [data, sortConfig]);
+  }, [data, sortConfig, columns]);
 
-  // ✅ Sorting Click
   const handleSort = (col) => {
-    if (!col.accessor) return;
+    const sortKey = col.sortKey || col.accessor;
+    if (!sortKey) return;
 
     setSortConfig((prev) => {
-      if (!prev || prev.key !== col.accessor) {
-        return { key: col.accessor, direction: 'asc' };
+      if (!prev || prev.key !== sortKey) {
+        return { key: sortKey, direction: 'asc' };
       }
       if (prev.direction === 'asc') {
-        return { key: col.accessor, direction: 'desc' };
+        return { key: sortKey, direction: 'desc' };
       }
       return null;
     });
   };
 
+  const headerClass = 'border-b bg-[#016a82] text-white';
+
+  const rowClass = isClientList
+    ? 'odd:bg-white even:bg-[#f5f5f5]'
+    : 'odd:bg-[#0000000d]';
+
   return (
-    <div className='rounded-md'>
-      <table className='w-full border-collapse'>
-        {/* ✅ Header */}
-        <thead className='border-b bg-[#016a82] text-white'>
+    <div className='overflow-x-auto rounded-md'>
+      <table className='w-full border-collapse text-[13px]'>
+        <thead className={headerClass}>
           <tr>
             {columns.map((col, i) => (
               <th
                 key={i}
                 onClick={() => handleSort(col)}
-                className='cursor-pointer border-r border-white px-2 py-2 text-sm'
+                className={`border-r border-white/30 px-2 py-2.5 text-left text-sm font-semibold ${
+                  col.sortKey || col.accessor ? 'cursor-pointer' : ''
+                } ${col.align === 'right' ? 'text-right' : ''}`}
               >
-                <span className='flex items-center'>
+                <span
+                  className={`flex items-center ${col.align === 'right' ? 'justify-end' : ''}`}
+                >
                   {col.header}
-                  {/* Sort Icon */}
-                  {col.accessor && (
-                    <span className='ml-1 flex'>
-                        <BiSortAlt2 size={18}/>
+                  {(col.sortKey || col.accessor) && (
+                    <span className='ml-1 flex text-white'>
+                      <BiSortAlt2 size={18} />
                     </span>
                   )}
                 </span>
               </th>
             ))}
           </tr>
+          {summaryRow && (
+            <tr className='border-b border-[#dee2e6] bg-white font-bold text-black'>
+              {summaryRow.map((cell, i) => (
+                <td
+                  key={i}
+                  className={`border border-[#dee2e6] px-2 py-2 ${
+                    columns[i]?.align === 'right' ? 'text-right' : 'text-left'
+                  }`}
+                >
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          )}
         </thead>
 
-        {/* ✅ Body */}
         <tbody>
           {sortedData.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className='py-4 text-center'>
+              <td
+                colSpan={columns.length}
+                className='border border-[#dee2e6] py-6 text-center text-gray-600'
+              >
                 No Client found under your account.
               </td>
             </tr>
           ) : (
             sortedData.map((row, rowIndex) => (
-              <tr
-                key={row._id || rowIndex}
-                className='cursor-pointer odd:bg-[#0000000d]'
-              >
+              <tr key={row._id || rowIndex} className={rowClass}>
                 {columns.map((col, i) => (
                   <td
                     key={i}
-                    className={`p-2 text-sm border border-[#dee2e6] ${
+                    className={`border border-[#dee2e6] px-2 py-2 ${
                       col.align === 'right' ? 'text-right' : 'text-left'
                     }`}
                   >

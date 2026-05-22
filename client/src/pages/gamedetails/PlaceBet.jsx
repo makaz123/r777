@@ -519,7 +519,7 @@ function PlaceBet({
             : ''
         );
         setBetType(selectedBet.type || '');
-        setStake(''); // Reset stake when bet selection changes
+        setStake(selectedBet.stake || ''); // Reset or pre-fill stake when bet selection changes
         prevBetKeyRef.current = currentBetKey;
       }
       // Don't update stake from selectedBet when user is typing - let local state handle it

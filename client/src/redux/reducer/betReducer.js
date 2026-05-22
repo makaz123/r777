@@ -217,12 +217,15 @@ export const getBetHistory = createAsyncThunk(
 );
 export const getTransactionHistory = createAsyncThunk(
   'bet/getTransHistory',
-  async ({ startDate, endDate, page, limit }, { rejectWithValue }) => {
+  async ({ startDate, endDate, page, limit, accountType }, { rejectWithValue }) => {
     try {
-      // let query = `?&selectedVoid=${selectedVoid}`;
+      let query = `?page=${page}&limit=${limit}`;
 
       if (startDate && endDate) {
-        var query = `?startDate=${startDate}&endDate=${endDate}&page=${page}&limit=${limit}`;
+        query += `&startDate=${startDate}&endDate=${endDate}`;
+      }
+      if (accountType) {
+        query += `&accountType=${accountType}`;
       }
 
       const response = await api.get(`/user/transactions-hisrtory${query}`, {
@@ -247,6 +250,10 @@ const initialState = {
   pendingBet: [],
   betHistory: [],
   transHistory: [],
+  accountStatementSummary: {
+    openingBalance: 0,
+    closingBalance: 0,
+  },
   proLossHistory: [],
   pendingBetAmounts: [],
   cashoutPL: {},
@@ -353,6 +360,11 @@ const betSlice = createSlice({
       .addCase(getTransactionHistory.fulfilled, (state, { payload }) => {
         state.loading = false;
         state.transHistory = payload?.data;
+        state.pagination = payload?.pagination || {};
+        state.accountStatementSummary = {
+          openingBalance: payload?.openingBalance || 0,
+          closingBalance: payload?.closingBalance || 0,
+        };
         state.successMessage = payload?.message;
       })
       .addCase(getTransactionHistory.rejected, (state, { payload }) => {

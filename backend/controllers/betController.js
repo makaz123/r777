@@ -39,7 +39,16 @@ import TransactionHistory from '../models/transtionHistoryModel.js';
 import CasinoBetHistory from '../models/casinoBetHistory.model.js';
 import { getDateRangeUTC } from '../utils/dateUtils.js';
 import { isCasinoGame } from './casinoController.js';
-const { updateAllUplines } = await import('./admin/subAdminController.js');
+const {
+  updateAllUplines,
+  applyMatchOddsWinCommissionOnSettlement,
+  creditAgentCommissionEarned,
+} = await import('./admin/subAdminController.js');
+import {
+  calculateWinCommission,
+  isMatchOddsGameType,
+  parseCommissionPercent,
+} from '../utils/partnershipCommissionUtils.js';
 import {
   sendBalanceUpdates,
   sendExposureUpdates,
@@ -52,6 +61,7 @@ const fancyBetSettlementService =
   await import('../services/fancyBetSettlementService.js');
 import {
   calculateAllExposure,
+  exceedsExposureLimit,
   calculateFancyExposure,
   FANCY_GAME_TYPES,
   validateFancyBetBalance,
@@ -428,7 +438,7 @@ const placeCasinoBet = async (req, res) => {
       simulatedNewBet,
     ]);
     console.log('project exposure is: ', projectedExposure);
-    if (projectedExposure > user.exposureLimit) {
+    if (exceedsExposureLimit(projectedExposure, user.exposureLimit)) {
       return res.status(400).json({ message: 'Exposure limit exceeded' });
     }
 
@@ -1039,7 +1049,7 @@ const placeBet = async (req, res) => {
       simulatedNewBet,
     ]);
 
-    if (projectedExposure > user.exposureLimit) {
+    if (exceedsExposureLimit(projectedExposure, user.exposureLimit)) {
       return res.status(400).json({ message: 'Exposure limit exceeded' });
     }
 
@@ -1479,7 +1489,7 @@ export const placeFancyBet = async (req, res) => {
       simulatedNewBet,
     ]);
 
-    if (projectedExposure > user.exposureLimit) {
+    if (exceedsExposureLimit(projectedExposure, user.exposureLimit)) {
       return res.status(400).json({ message: 'Exposure limit exceeded' });
     }
 
@@ -1984,24 +1994,14 @@ export const updateResultOfBets = async (req, res) => {
           }
           Object.assign(bet, settlementResult.betUpdates);
 
-          if (!isVoid && settlementResult.userUpdates) {
-            console.log(
-              `[SPORTS $inc] betId=${bet._id} userId=${bet.userId} balanceChange=${settlementResult.userUpdates.balanceChange} bplChange=${settlementResult.userUpdates.profitLossChange}`
-            );
-            await SubAdmin.findByIdAndUpdate(bet.userId, {
-              $inc: {
-                balance: settlementResult.userUpdates.balanceChange,
-                bettingProfitLoss:
-                  settlementResult.userUpdates.profitLossChange,
-              },
-            });
-          }
-
           // UPDATE BETHISTORY: Settle/void each individual bet history record
           const betHistoryRecords = await betHistoryModel.find({
             betId: bet._id.toString(),
             status: 0,
           });
+
+          let betHistoryTotalPL = 0;
+          let totalMatchOddsCommission = 0;
 
           for (const historyRecord of betHistoryRecords) {
             // Handle void for history records
@@ -2054,6 +2054,21 @@ export const updateResultOfBets = async (req, res) => {
                 }
               }
 
+              if (
+                isMatchOddsGameType(bet.gameType) &&
+                historyProfitLossChange > 0
+              ) {
+                const rate = parseCommissionPercent(user?.commition);
+                const { netProfit, commission } = calculateWinCommission(
+                  historyProfitLossChange,
+                  rate
+                );
+                historyProfitLossChange = netProfit;
+                totalMatchOddsCommission += commission;
+              }
+
+              betHistoryTotalPL += historyProfitLossChange;
+
               await betHistoryModel.updateOne(
                 { _id: historyRecord._id },
                 {
@@ -2072,6 +2087,49 @@ export const updateResultOfBets = async (req, res) => {
                 ` [SPORTS BETHISTORY] Settled: ${historyRecord._id} Team:${historyTeam} Winner:${winnerTeam} Won:${historyWin} Status:${historyStatus} Amount:${historyResultAmount}`
               );
             }
+          }
+
+          if (!isVoid && settlementResult.userUpdates) {
+            let finalUpdates = settlementResult.userUpdates;
+            let bplChange = settlementResult.userUpdates.profitLossChange;
+
+            if (betHistoryRecords.length > 0) {
+              bplChange = betHistoryTotalPL;
+              if (totalMatchOddsCommission > 0) {
+                finalUpdates = {
+                  balanceChange:
+                    settlementResult.userUpdates.balanceChange -
+                    totalMatchOddsCommission,
+                  avBalanceChange:
+                    settlementResult.userUpdates.avBalanceChange -
+                    totalMatchOddsCommission,
+                  profitLossChange: betHistoryTotalPL,
+                };
+                await creditAgentCommissionEarned(
+                  user,
+                  totalMatchOddsCommission
+                );
+              }
+            } else {
+              const commissionResult =
+                await applyMatchOddsWinCommissionOnSettlement(
+                  bet,
+                  user,
+                  settlementResult
+                );
+              finalUpdates = commissionResult.settlementResult.userUpdates;
+              bplChange = finalUpdates.profitLossChange;
+            }
+
+            console.log(
+              `[SPORTS $inc] betId=${bet._id} userId=${bet.userId} balanceChange=${finalUpdates.balanceChange} bplChange=${bplChange} matchOddsCommission=${totalMatchOddsCommission}`
+            );
+            await SubAdmin.findByIdAndUpdate(bet.userId, {
+              $inc: {
+                balance: finalUpdates.balanceChange,
+                bettingProfitLoss: bplChange,
+              },
+            });
           }
 
           totalBetsProcessed++;
@@ -4225,8 +4283,8 @@ export const getProfitlossHistory = async (req, res) => {
         casinoQuery.createdAt = getDateRangeUTC(startDate, endDate);
       }
       const rawCasinoBets = await CasinoBetHistory.find(casinoQuery).lean();
-      
-      casinoBets = rawCasinoBets.map(cb => ({
+
+      casinoBets = rawCasinoBets.map((cb) => ({
         _id: cb._id,
         userId: cb.userId,
         userName: cb.userName,
@@ -4241,7 +4299,9 @@ export const getProfitlossHistory = async (req, res) => {
         profitLossChange: cb.change,
         resultAmount: Math.abs(cb.change),
         status: cb.change >= 0 ? 1 : 2,
-        toObject: function() { return this; }
+        toObject: function () {
+          return this;
+        },
       }));
     }
 
@@ -4395,57 +4455,166 @@ export const getProfitlossHistory = async (req, res) => {
 export const getTransactionHistoryByUserAndDate = async (req, res) => {
   try {
     const { id } = req;
-    const { startDate, endDate, page, limit } = req.query;
+    const { startDate, endDate, accountType = 'all', page = 1, limit = 25 } = req.query;
 
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required',
-      });
+      return res.status(400).json({ success: false, message: 'User ID is required' });
     }
 
-    const filter = {
-      userId: id,
-    };
+    const user = await SubAdmin.findById(id).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const currentUserName = user.userName;
 
+    const dateFilter = {};
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-
       end.setDate(end.getDate() + 1);
-
-      filter.createdAt = {
-        $gte: start,
-        $lte: end,
-      };
+      dateFilter.$gte = start;
+      dateFilter.$lte = end;
     }
 
-    const user = await SubAdmin.findById(id, { userName: 1 }).lean();
-    const currentUserName = user?.userName;
+    const statementRows = [];
+    
+    // 1. Fetch Transactions (Deposits / Withdrawals)
+    if (accountType === 'all' || accountType === 'deposit' || accountType === 'withdraw') {
+      const txnQuery = { userId: id };
+      if (startDate && endDate) txnQuery.createdAt = dateFilter;
+      
+      const transactions = await TransactionHistory.find(txnQuery).lean();
+      
+      for (const txn of transactions) {
+        let remark = txn.remark || 'Transaction';
+        if (txn.to === currentUserName && txn.from !== currentUserName) {
+          remark += ` (from Upline)`;
+        }
+        
+        const isDeposit = Number(txn.deposite || 0) > 0;
+        const isWithdraw = Number(txn.withdrawl || 0) > 0;
+        
+        if (accountType === 'deposit' && !isDeposit) continue;
+        if (accountType === 'withdraw' && !isWithdraw) continue;
 
-    const transactions = await TransactionHistory.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .lean();
-
-    // Privacy: hide master/upline name from client users
-    const maskedTransactions = transactions.map((txn) => {
-      const masked = { ...txn };
-      if (masked.to === currentUserName && masked.from !== currentUserName) {
-        masked.from = 'Upline';
+        statementRows.push({
+          date: txn.createdAt || txn.date,
+          credit: Number(txn.deposite || 0),
+          debit: Number(txn.withdrawl || 0),
+          description: `Settlement on ${new Date(txn.createdAt || txn.date).toLocaleString('en-US')} by ${txn.from || 'Upline'} : (${txn.amount}) ${remark}`,
+          type: isDeposit ? 'deposit' : 'withdraw',
+        });
       }
-      return masked;
-    });
+    }
 
-    console.log('Found transactions:', maskedTransactions.length);
+    // 2. Fetch Bets & Commissions
+    if (accountType === 'all' || accountType === 'bet' || accountType === 'commission') {
+      const betQuery = { userId: id, status: { $in: [1, 2] } };
+      if (startDate && endDate) betQuery.settledAt = dateFilter; // Use settledAt for bets
+      
+      const bets = await betHistoryModel.find(betQuery).lean();
+      
+      const commRateStr = user.commition || '0';
+      const commRate = parseFloat(commRateStr.replace('%', '')) || 0;
+
+      for (const bet of bets) {
+        let netProfit = Number(bet.profitLossChange || 0);
+        let commission = 0;
+        let grossProfit = netProfit;
+        
+        // Calculate dynamic commission for Match Odds wins
+        const isMatchOdds = /match\s*odds/i.test(String(bet.gameType || ''));
+        if (isMatchOdds && netProfit > 0 && commRate > 0) {
+           // Gross Profit = Net Profit / (1 - rate/100)
+           grossProfit = netProfit / (1 - (commRate / 100));
+           commission = grossProfit - netProfit;
+        }
+
+        const desc = `${bet.gameName || '-'} / ${bet.eventName || '-'} / ${bet.marketName || '-'} / ${bet.teamName || '-'}`;
+
+        if (accountType === 'all' || accountType === 'bet') {
+           statementRows.push({
+             date: bet.settledAt || bet.createdAt,
+             credit: grossProfit > 0 ? grossProfit : 0,
+             debit: grossProfit < 0 ? Math.abs(grossProfit) : 0,
+             description: desc,
+             type: 'bet'
+           });
+        }
+        
+        if ((accountType === 'all' || accountType === 'commission') && commission > 0) {
+           statementRows.push({
+             date: new Date(new Date(bet.settledAt || bet.createdAt).getTime() + 1000), // Add 1 second so it appears after the bet
+             credit: 0,
+             debit: commission,
+             description: `Commission: ${desc}`,
+             type: 'commission'
+           });
+        }
+      }
+    }
+
+    // Sort ascending to calculate running balance
+    statementRows.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Calculate the sum of all transactions that happened AFTER the endDate filter
+    // This allows us to anchor the running balance to the user's current actual balance.
+    let sumAfterEndDate = 0;
+    if (startDate && endDate) {
+       const end = new Date(endDate);
+       end.setDate(end.getDate() + 1); // Because dateFilter.$lte was set to end + 1 day
+       
+       const txnsAfter = await TransactionHistory.find({ userId: id, createdAt: { $gt: end } }).lean();
+       const betsAfter = await betHistoryModel.find({ userId: id, status: { $in: [1, 2] }, settledAt: { $gt: end } }).lean();
+       
+       for (const t of txnsAfter) sumAfterEndDate += Number(t.deposite || 0) - Number(t.withdrawl || 0);
+       for (const b of betsAfter) sumAfterEndDate += Number(b.profitLossChange || 0); // net profit
+    }
+    
+    let runningBalance = 0; 
+    
+    for (const row of statementRows) {
+      runningBalance += (row.credit || 0) - (row.debit || 0);
+      row.balance = runningBalance;
+    }
+    
+    // closingBalanceAtEndDate is the current balance minus any money that moved after the end date
+    const userBalance = Number(user.balance || 0);
+    const closingBalanceAtEndDate = userBalance - sumAfterEndDate;
+    
+    // offset aligns the relative running balance to the absolute account balance
+    const offset = closingBalanceAtEndDate - runningBalance;
+    
+    for (const row of statementRows) {
+      row.balance += offset;
+    }
+
+    const openingBalance = statementRows.length > 0 ? statementRows[0].balance - (statementRows[0].credit || 0) + (statementRows[0].debit || 0) : closingBalanceAtEndDate;
+    const closingBalance = statementRows.length > 0 ? statementRows[statementRows.length - 1].balance : closingBalanceAtEndDate;
+
+    // Sort descending for UI
+    statementRows.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
+    const paginatedRows = statementRows.slice(skip, skip + limitNum);
 
     return res.status(200).json({
       success: true,
-      data: maskedTransactions,
+      data: paginatedRows,
+      openingBalance,
+      closingBalance,
+      pagination: {
+        total: statementRows.length,
+        page: pageNum,
+        pages: Math.ceil(statementRows.length / limitNum)
+      }
     });
+
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    console.error('Error fetching unified account statement:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error',

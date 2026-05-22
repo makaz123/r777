@@ -1,8 +1,10 @@
 import SubAdmin from '../../models/subAdminModel.js';
 import betHistoryModel from '../../models/betHistoryModel.js';
 import DepositHistory from '../../models/depositeHistoryModel.js';
+import TransactionHistory from '../../models/transtionHistoryModel.js';
 import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import { getCurrentDashboardWeekRange } from '../../utils/dashboardWeekRange.js';
 import { getDateRangeUTC } from '../../utils/dateUtils.js';
 
 // Helper to round float values to exactly two decimal places
@@ -16,7 +18,13 @@ const round2 = (val) => {
  */
 export const getDashboardStats = async (req, res) => {
   const { id } = req; // Logged-in admin user ID
-  const { startDate, endDate } = req.query;
+  let { startDate, endDate } = req.query;
+
+  if (!startDate || !endDate) {
+    const week = getCurrentDashboardWeekRange();
+    startDate = week.startDate;
+    endDate = week.endDate;
+  }
 
   try {
     // 1. Retrieve the admin
@@ -68,6 +76,7 @@ export const getDashboardStats = async (req, res) => {
             deposit: 0,
             withdrawal: 0,
             totalBets: 0,
+            sportbookPL: 0,
           },
           topWinningPlayers: [],
           topLosingPlayers: [],
@@ -96,7 +105,13 @@ export const getDashboardStats = async (req, res) => {
     }
 
     // 4. Fetch all relevant downline data
-    const [sportsBets, casinoBets, deposits, withdrawals] = await Promise.all([
+    const [
+      sportsBets,
+      casinoBets,
+      deposits,
+      openingBalanceDeposits,
+      withdrawals,
+    ] = await Promise.all([
       // Sports Bets
       betHistoryModel
         .find({
@@ -112,9 +127,17 @@ export const getDashboardStats = async (req, res) => {
         ...dateFilterTx,
       }).lean(),
 
-      // Deposits
+      // Deposits (manual deposit / settlement flows)
       DepositHistory.find({
         userName: { $in: downlineUserNames },
+        ...dateFilterTx,
+      }).lean(),
+
+      // Opening balance on new account — stored in TransactionHistory only
+      TransactionHistory.find({
+        userName: { $in: downlineUserNames },
+        deposite: { $gt: 0 },
+        remark: 'Opening Balance',
         ...dateFilterTx,
       }).lean(),
 
@@ -147,14 +170,16 @@ export const getDashboardStats = async (req, res) => {
     const netPL = totalSportsPL + totalCasinoPL;
     const totalBetsCount = totalSportsBets + totalCasinoBets;
 
-    const totalDeposit = deposits.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const totalDeposit =
+      deposits.reduce((sum, d) => sum + (d.amount || 0), 0) +
+      openingBalanceDeposits.reduce((sum, t) => sum + (t.deposite || 0), 0);
     const totalWithdrawal = withdrawals.reduce(
       (sum, w) => sum + (w.amount || 0),
       0
     );
 
     const totalCommission = downlineUsers.reduce(
-      (sum, u) => sum + (u.rollingCommission || 0),
+      (sum, u) => sum + (u.commissionEarned || 0),
       0
     );
 
@@ -209,7 +234,7 @@ export const getDashboardStats = async (req, res) => {
 
     sportsBets.forEach((bet) => {
       const sport = bet.gameName || 'Sports';
-      const market = bet.eventName || bet.marketName || 'Unknown';
+      const market = bet.marketName || bet.eventName || 'Unknown';
       const key = `${sport}||${market}`;
       marketPLMap[key] = (marketPLMap[key] || 0) + (bet.profitLossChange || 0);
     });
@@ -409,6 +434,7 @@ export const getDashboardStats = async (req, res) => {
           deposit: round2(totalDeposit),
           withdrawal: round2(totalWithdrawal),
           totalBets: totalBetsCount,
+          sportbookPL: 0, // No sportbook API — reserved for future integration
         },
         topWinningPlayers,
         topLosingPlayers,

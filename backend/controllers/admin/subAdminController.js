@@ -3443,10 +3443,10 @@ export const getSettlementUsers = async (req, res) => {
     const debtors = [];
 
     downlines.forEach((user) => {
-      // clientPL = baseBalance - creditReference
+      // clientPL = avbalance - baseBalance
       // If clientPL > 0, admin owes user (Creditor / dena hai)
       // If clientPL < 0, user owes admin (Debtor / lena hai)
-      const pl = user.creditReferenceProfitLoss || 0;
+      const pl = (user.avbalance || 0) - (user.baseBalance || 0);
 
       const userData = {
         _id: user._id,
@@ -3508,7 +3508,9 @@ export const settleUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const pl = editUser.creditReferenceProfitLoss || 0;
+    // pl = avbalance - baseBalance
+    const pl = (editUser.avbalance || 0) - (editUser.baseBalance || 0);
+    
     if (pl === 0) {
       return res
         .status(400)
@@ -3519,41 +3521,36 @@ export const settleUser = async (req, res) => {
 
     // Determine if user is Creditor or Debtor
     if (pl > 0) {
-      // User is Creditor (admin owes user). Admin pays user cash, so we withdraw from user.
+      // User is Creditor (admin owes user).
       if (parsedAmount > pl) {
         return res
           .status(400)
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      editUser.balance -= parsedAmount;
-      editUser.avbalance = Math.max(0, editUser.avbalance - parsedAmount);
-      editUser.baseBalance -= parsedAmount;
+      // To clear positive PL (avbalance > baseBalance), we INCREASE baseBalance
+      editUser.baseBalance += parsedAmount;
+      editUser.balance += parsedAmount; 
+      // avbalance remains UNCHANGED!
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss =
-        editUser.baseBalance - editUser.creditReference;
+      editUser.creditReferenceProfitLoss = editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        admin.balance += parsedAmount;
-        admin.baseBalance += parsedAmount;
-        admin.avbalance += parsedAmount;
+        // Admin lost this money, so admin's avbalance < baseBalance (negative PL)
+        // To clear admin's negative PL, we DECREASE admin's baseBalance
+        admin.baseBalance -= parsedAmount;
+        admin.balance -= parsedAmount;
       }
 
       await admin.save();
       await editUser.save();
 
-      await WithdrawalHistory.create({
-        userName: editUser.userName,
-        amount: parsedAmount,
-        remark: settleRemark,
-        invite: admin.code,
-      });
-
+      // Log it as a settlement transaction (we can use WithdrawalHistory to represent admin paying out, or just TransactionHistory)
       await TransactionHistory.create({
         userId: editUser._id,
         userName: editUser.userName,
-        withdrawl: parsedAmount,
-        deposite: 0,
+        withdrawl: 0,
+        deposite: 0, // No actual funds moved in avbalance
         amount: editUser.avbalance,
         from: admin.userName,
         to: editUser.userName,
@@ -3561,7 +3558,7 @@ export const settleUser = async (req, res) => {
         invite: admin.code,
       });
     } else if (pl < 0) {
-      // User is Debtor (user owes admin). User pays admin cash, so we deposit to user.
+      // User is Debtor (user owes admin).
       const absPl = Math.abs(pl);
       if (parsedAmount > absPl) {
         return res
@@ -3569,52 +3566,35 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        if (parsedAmount > admin.avbalance) {
-          return res
-            .status(400)
-            .json({ message: 'Insufficient balance to settle' });
-        }
-      }
-
-      editUser.balance += parsedAmount;
-      editUser.avbalance += parsedAmount;
-      editUser.baseBalance += parsedAmount;
+      // To clear negative PL (avbalance < baseBalance), we DECREASE baseBalance
+      editUser.baseBalance -= parsedAmount;
+      editUser.balance -= parsedAmount;
+      // avbalance remains UNCHANGED!
       editUser.remark = settleRemark;
-      editUser.creditReferenceProfitLoss =
-        editUser.baseBalance - editUser.creditReference;
+      editUser.creditReferenceProfitLoss = editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        admin.balance -= parsedAmount;
-        admin.baseBalance -= parsedAmount;
-        admin.avbalance = Math.max(0, admin.avbalance - parsedAmount);
+        // Admin won this money, so admin's avbalance > baseBalance (positive PL)
+        // To clear admin's positive PL, we INCREASE admin's baseBalance
+        admin.baseBalance += parsedAmount;
+        admin.balance += parsedAmount;
       }
 
       await admin.save();
       await editUser.save();
 
-      await DepositHistory.create({
-        userName: editUser.userName,
-        amount: parsedAmount,
-        remark: settleRemark,
-        invite: admin.code,
-      });
-
       await TransactionHistory.create({
         userId: editUser._id,
         userName: editUser.userName,
         withdrawl: 0,
-        deposite: parsedAmount,
+        deposite: 0, // No actual funds moved in avbalance
         amount: editUser.avbalance,
-        from: admin.userName,
-        to: editUser.userName,
+        from: editUser.userName,
+        to: admin.userName,
         remark: settleRemark,
         invite: admin.code,
       });
     }
-
-    await updateAdmin(id);
-    await updateAllUplines(userId);
 
     return res.status(200).json({
       success: true,
@@ -3627,5 +3607,158 @@ export const settleUser = async (req, res) => {
       message: 'Server error',
       error: error.message,
     });
+  }
+};
+
+export const getUserFullDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await SubAdmin.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Get parent
+    const parent = await SubAdmin.findOne({ code: user.invite });
+
+    // Aggregate Sports Bets
+    const sportsBetsAgg = await betHistoryModel.aggregate([
+      { $match: { userId: user._id.toString(), status: { $in: [1, 2] } } },
+      { $group: {
+          _id: { sport: '$gameName', market: '$marketName', gameType: '$gameType' },
+          totalBet: { $sum: 1 },
+          betAmount: { $sum: '$betAmount' },
+          profitLoss: { $sum: '$profitLossChange' },
+          matchOddsNetWinPL: {
+            $sum: {
+              $cond: [
+                { $and: [
+                    { $regexMatch: { input: { $ifNull: ['$gameType', ''] }, regex: /match\s*odds/i } },
+                    { $gt: ['$profitLossChange', 0] }
+                  ]
+                },
+                '$profitLossChange',
+                0
+              ]
+            }
+          }
+      }}
+    ]);
+
+    // Aggregate Casino Bets
+    const casinoBetsAgg = await CasinoBetHistory.aggregate([
+      { $match: { userId: user._id.toString() } },
+      { $group: {
+          _id: '$game_name',
+          profitLoss: { $sum: '$change' }
+      }}
+    ]);
+
+    // Process Game Play Data
+    const sportSummary = {};
+    const marketSummary = [];
+    let overallSportsPL = 0;
+    let overallSportsBets = 0;
+    let totalCommissionDebited = 0;
+    
+    // We parse the commission percent from the user model
+    // This is the rate debited on match odds winning bets
+    const commissionRate = user.commition ? Number(user.commition.toString().replace('%', '')) : 0;
+    const rateFraction = commissionRate / 100;
+    
+    sportsBetsAgg.forEach(item => {
+      const sport = item._id.sport || 'Unknown';
+      const market = item._id.market || 'Unknown';
+      const pl = Number(item.profitLoss) || 0;
+      const matchOddsNetWinPL = Number(item.matchOddsNetWinPL) || 0;
+      
+      // Calculate commission debited dynamically
+      // Since profitLossChange in DB is netProfit (after commission), we reverse calculate:
+      // netProfit = profit - profit * rateFraction => profit = netProfit / (1 - rateFraction)
+      // commission = profit - netProfit
+      if (matchOddsNetWinPL > 0 && rateFraction > 0 && rateFraction < 1) {
+        const originalProfit = matchOddsNetWinPL / (1 - rateFraction);
+        const commission = originalProfit - matchOddsNetWinPL;
+        totalCommissionDebited += commission;
+      }
+      
+      // Accumulate for sport
+      if (!sportSummary[sport]) {
+        sportSummary[sport] = { sport, betCount: 0, betAmount: 0, profitLoss: 0 };
+      }
+      sportSummary[sport].betCount += item.totalBet;
+      sportSummary[sport].betAmount += item.betAmount || 0;
+      sportSummary[sport].profitLoss += pl;
+      
+      // Push to market summary
+      marketSummary.push({ sport, market, profitLoss: pl });
+      
+      overallSportsPL += pl;
+      overallSportsBets += item.totalBet;
+    });
+
+    const casinoSummary = [];
+    let overallCasinoPL = 0;
+    casinoBetsAgg.forEach(item => {
+      const casino = item._id || 'Unknown';
+      const pl = Number(item.profitLoss) || 0;
+      casinoSummary.push({ casino, profitLoss: pl });
+      overallCasinoPL += pl;
+    });
+
+    // Calculate Exposure
+    let exposure = user.exposure || 0;
+    if (user.role === 'user') {
+      const pendingBets = await betModel.find({ userId: user._id.toString(), status: 0 });
+      exposure = calculateAllExposure(pendingBets);
+    } else {
+      exposure = user.totalExposure || user.exposure || 0;
+    }
+
+    const payload = {
+      userInfo: {
+        userName: user.userName,
+        role: user.role,
+        clientName: user.name || user.userName,
+        referenceName: parent ? parent.userName : '-',
+        email: user.email || '',
+        mobile: user.phone || '',
+        parents: parent ? parent.userName : '-'
+      },
+      settings: {
+        userLock: user.uLock || false,
+        betLock: user.betlock || false,
+        checkLimit: false // Placeholder if not in DB
+      },
+      accountDetails: {
+        creditRef: user.creditReference || 0,
+        balance: user.baseBalance || 0,
+        availableBalance: user.avbalance || 0,
+        profitLoss: user.bettingProfitLoss || 0,
+        uplineBalance: (user.avbalance || 0) - (user.baseBalance || 0),
+        downlineBalance: 0, // Calculate if needed
+        exposure: exposure,
+        maxProfit: user.maxProfit || 0,
+        maxBet: user.maxBet || 0,
+        betLock: user.betlock ? 'Yes' : 'No',
+        active: user.status === 'active' ? 'Yes' : 'No',
+        createdOn: user.createdAt
+      },
+      gamePlay: {
+        overallPL: overallSportsPL + overallCasinoPL,
+        // Show calculated commission debited for user, or commissionEarned for agents
+        commission: user.role === 'user' ? totalCommissionDebited : (user.commissionEarned || 0),
+        totalBet: overallSportsBets,
+        sports: Object.values(sportSummary),
+        casinos: casinoSummary,
+        markets: marketSummary
+      }
+    };
+
+    return res.status(200).json({ success: true, data: payload });
+  } catch (error) {
+    console.error('Error fetching user full details:', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };

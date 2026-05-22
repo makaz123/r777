@@ -633,18 +633,7 @@ export default function AgentLIst() {
                     </td>
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       <div className='flex items-center gap-x-2'>
-                        {/* <span>{user.balance || 0}</span> */}
-                        {/* {user.balance+user.profitLoss} */}
-                        {user.role === 'user' ? (
-                          <span>{formatNumber(user.balance || 0)}</span>
-                        ) : (
-                          <span>
-                            {formatNumber(
-                              user.baseBalance +
-                                (user.uplineBettingProfitLoss || 0)
-                            )}
-                          </span>
-                        )}
+                        <span>{formatNumber(user.baseBalance || 0)}</span>
                       </div>
                     </td>
                     <td className={`border border-gray-100 px-[10px] py-[9px]`}>

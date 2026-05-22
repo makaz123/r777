@@ -351,10 +351,7 @@ export default function Userlist() {
     [onlyusers, activeTab]
   );
 
-  const getRowBalance = (row) =>
-    row.role === 'user'
-      ? Number(row.balance || 0)
-      : Number(row.baseBalance || 0) + Number(row.uplineBettingProfitLoss || 0);
+  const getRowBalance = (row) => Number(row.baseBalance || 0);
 
   const getRowTotalExposure = (row) =>
     Number(row.totalExposure ?? row.exposure ?? 0);

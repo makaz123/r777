@@ -5,7 +5,12 @@ import api from '../redux/api';
 import { toast } from 'react-toastify';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
 import { useDispatch } from 'react-redux';
-import { withdrawalAndDeposite, changePasswordByDownline } from '../redux/reducer/authReducer';
+import {
+  withdrawalAndDeposite,
+  changePasswordByDownline,
+  updateCreditReference,
+  getAdmin,
+} from '../redux/reducer/authReducer';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const getOneWeekAgoDefault = () => {
@@ -53,6 +58,7 @@ const UserDetails = () => {
     remark: '',
     balance: '',
     masterPassword: '',
+    creditReference: '',
   });
 
   const [newPassword, setNewPassword] = useState('');
@@ -113,27 +119,99 @@ const UserDetails = () => {
     }
   };
 
+  const resetBankingForm = () => {
+    setFormData({
+      remark: '',
+      balance: '',
+      masterPassword: '',
+      creditReference: '',
+    });
+  };
+
+  const openDepositModal = () => {
+    resetBankingForm();
+    setDepositPopup(true);
+  };
+
+  const closeCreditDepositModal = () => {
+    setDepositPopup(false);
+    resetBankingForm();
+  };
+
+  const openWithdrawModal = () => {
+    resetBankingForm();
+    setWithdrawPopup(true);
+  };
+
+  const openPasswordModal = () => {
+    setNewPassword('');
+    setConfirmPassword('');
+    setFormData((prev) => ({ ...prev, masterPassword: '' }));
+    setPasswordPopup(true);
+  };
+
+  const clientAvBalance =
+    userDetails?.accountDetails?.availableBalance ?? 0;
+  const clientCreditRef = userDetails?.accountDetails?.creditRef ?? 0;
+
   const handleCreditDepositSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.balance || isNaN(formData.balance) || Number(formData.balance) <= 0) {
-      toast.error('Please enter a valid deposit amount.');
+    if (!selectedUserId) {
+      toast.error('No user selected.');
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Please enter your transaction password.');
+      toast.error('Please enter master password.');
       return;
     }
+
+    const depositAmount = parseFloat(formData.balance);
+    const hasDeposit = !Number.isNaN(depositAmount) && depositAmount > 0;
+
+    const newCredStr =
+      formData.creditReference === null ||
+      formData.creditReference === undefined
+        ? ''
+        : String(formData.creditReference).trim();
+    const newCredNum = parseFloat(newCredStr);
+    const oldCredNum = parseFloat(clientCreditRef);
+    const hasCreditChange =
+      newCredStr !== '' &&
+      !Number.isNaN(newCredNum) &&
+      newCredNum !== oldCredNum;
+
+    if (!hasDeposit && !hasCreditChange) {
+      toast.error('Enter a deposit amount and/or a new credit reference.');
+      return;
+    }
+
     try {
-      const result = await dispatch(
-        withdrawalAndDeposite({
-          formData,
-          userId: selectedUserId,
-          type: 'deposite',
-        })
-      ).unwrap();
-      toast.success(result?.message || 'Deposit successful');
-      setDepositPopup(false);
-      setFormData({ remark: '', balance: '', masterPassword: '' });
+      const successParts = [];
+      if (hasCreditChange) {
+        const data = await dispatch(
+          updateCreditReference({
+            formData: {
+              creditReference: newCredNum,
+              masterPassword: formData.masterPassword,
+            },
+            userId: selectedUserId,
+          })
+        ).unwrap();
+        if (data?.message) successParts.push(data.message);
+      }
+      if (hasDeposit) {
+        const data = await dispatch(
+          withdrawalAndDeposite({
+            formData,
+            userId: selectedUserId,
+            type: 'deposite',
+          })
+        ).unwrap();
+        if (data?.message) successParts.push(data.message);
+      }
+      toast.success(successParts.join(' ') || 'Saved successfully.');
+      dispatch(getAdmin());
+      closeCreditDepositModal();
       fetchUserDetails(selectedUserId);
     } catch (error) {
       toast.error(error || 'Deposit failed');
@@ -142,12 +220,12 @@ const UserDetails = () => {
 
   const handleWithdrawSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.balance || isNaN(formData.balance) || Number(formData.balance) <= 0) {
-      toast.error('Please enter a valid withdraw amount.');
+    if (!selectedUserId) {
+      toast.error('No user selected.');
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Please enter your transaction password.');
+      toast.error('Please enter master password.');
       return;
     }
     try {
@@ -160,23 +238,30 @@ const UserDetails = () => {
       ).unwrap();
       toast.success(result?.message || 'Withdrawal successful');
       setWithdrawPopup(false);
-      setFormData({ remark: '', balance: '', masterPassword: '' });
+      resetBankingForm();
+      dispatch(getAdmin());
       fetchUserDetails(selectedUserId);
     } catch (error) {
       toast.error(error || 'Withdrawal failed');
     }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (!newPassword || newPassword !== confirmPassword) {
-      toast.error('Passwords do not match or are empty.');
+  const handleChangePassword = async () => {
+    if (!selectedUserId) {
+      toast.error('Please select a user first.');
       return;
     }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Password not match.');
+      return;
+    }
+
     if (!formData.masterPassword) {
       toast.error('Please enter master password.');
       return;
     }
+
     try {
       const result = await dispatch(
         changePasswordByDownline({
@@ -185,11 +270,12 @@ const UserDetails = () => {
           newPassword,
         })
       ).unwrap();
+
       toast.success(result?.message || 'Password changed');
       setPasswordPopup(false);
       setNewPassword('');
       setConfirmPassword('');
-      setFormData({ ...formData, masterPassword: '' });
+      setFormData((prev) => ({ ...prev, masterPassword: '' }));
     } catch (error) {
       toast.error(error || 'Change password failed');
     }
@@ -319,12 +405,12 @@ const UserDetails = () => {
                 <h2 className="font-bold text-[15px] mb-3 text-black">Setting:</h2>
                 <div className="grid grid-cols-4 gap-2 mb-4">
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">User Update</button>
-                  <button onClick={() => setDepositPopup(true)} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Deposit / Credit</button>
+                  <button onClick={openDepositModal} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Deposit / Credit</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Settlement</button>
                   <button onClick={fetchLoginHistoryData} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Last Login</button>
                   
-                  <button onClick={() => setPasswordPopup(true)} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Change Password</button>
-                  <button onClick={() => setWithdrawPopup(true)} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Withdrawal</button>
+                  <button onClick={openPasswordModal} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Change Password</button>
+                  <button onClick={openWithdrawModal} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Withdrawal</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Game Control</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Casino Control</button>
                 </div>
@@ -484,123 +570,406 @@ const UserDetails = () => {
         )}
       </div>
 
-      {/* Deposit Modal */}
-      <AnimatePresence>
-        {depositPopup && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-[500px] bg-white rounded-lg shadow-xl overflow-hidden"
-            >
-              <div className="flex justify-between items-center bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white">
-                <h3 className="font-semibold text-[16px]">Credit / Deposit</h3>
-                <button onClick={() => setDepositPopup(false)} className="text-xl leading-none font-bold">&times;</button>
-              </div>
-              <form onSubmit={handleCreditDepositSubmit} className="p-4 space-y-3 bg-sky-50 text-[13px]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">{userDetails.userInfo.userName} Available</label>
-                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none" value={userDetails.accountDetails.availableBalance ?? ''} />
-                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none" value={Number(userDetails.accountDetails.availableBalance || 0) + Number(formData.balance || 0)} />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Add Deposit</label>
-                  <input type="number" min="0" step="any" className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" required value={formData.balance} onChange={(e) => setFormData({ ...formData, balance: e.target.value })} />
-                </div>
-                <div className="flex flex-wrap items-start gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Remarks</label>
-                  <textarea rows={2} className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Master Password</label>
-                  <input type="password" required className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.masterPassword} onChange={(e) => setFormData({ ...formData, masterPassword: e.target.value })} />
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="submit" className="bg-[#146578] text-white px-4 py-1.5 rounded font-semibold">Submit</button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Credit / Deposit popup */}
+      {depositPopup && userDetails && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-black/45 text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+              <span className='text-[16px] font-semibold'>Credit / Deposit</span>
+              <button
+                type='button'
+                onClick={closeCreditDepositModal}
+                aria-label='Close'
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
 
-      {/* Withdraw Modal */}
-      <AnimatePresence>
-        {withdrawPopup && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-[500px] bg-white rounded-lg shadow-xl overflow-hidden"
+            <form
+              onSubmit={handleCreditDepositSubmit}
+              className='space-y-3 bg-sky-50 px-4 py-2'
             >
-              <div className="flex justify-between items-center bg-gradient-to-b from-[#f26522] to-[#b84814] px-4 py-2 text-white">
-                <h3 className="font-semibold text-[16px]">Withdrawal</h3>
-                <button onClick={() => setWithdrawPopup(false)} className="text-xl leading-none font-bold">&times;</button>
+              <div className='flex flex-wrap items-end gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  My Available
+                </label>
+                <div className='flex min-w-0 flex-1 flex-wrap items-end gap-8'>
+                  <input
+                    type='text'
+                    readOnly
+                    className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    value={userInfo?.avbalance ?? ''}
+                  />
+                  <div className='flex min-w-[80px] flex-1 flex-col gap-0.5'>
+                    <span className='text-[14px]'>After</span>
+                    <input
+                      type='text'
+                      readOnly
+                      className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={
+                        Number(userInfo?.avbalance || 0) -
+                        Number(formData.balance || 0)
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-              <form onSubmit={handleWithdrawSubmit} className="p-4 space-y-3 bg-orange-50 text-[13px]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">{userDetails.userInfo.userName} Available</label>
-                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#f4a17d] px-2 py-1.5 outline-none" value={userDetails.accountDetails.availableBalance ?? ''} />
-                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#f4a17d] px-2 py-1.5 outline-none" value={Number(userDetails.accountDetails.availableBalance || 0) - Number(formData.balance || 0)} />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Withdrawal Amount</label>
-                  <input type="number" min="0" step="any" className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" required value={formData.balance} onChange={(e) => setFormData({ ...formData, balance: e.target.value })} />
-                </div>
-                <div className="flex flex-wrap items-start gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Remarks</label>
-                  <textarea rows={2} className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Master Password</label>
-                  <input type="password" required className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.masterPassword} onChange={(e) => setFormData({ ...formData, masterPassword: e.target.value })} />
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="submit" className="bg-[#b84814] text-white px-4 py-1.5 rounded font-semibold">Submit</button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      {/* Change Password Modal */}
-      <AnimatePresence>
-        {passwordPopup && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-[400px] bg-white rounded-lg shadow-xl overflow-hidden"
-            >
-              <div className="flex justify-between items-center bg-[#f0ad4e] px-4 py-2 text-white">
-                <h3 className="font-semibold text-[16px]">Change Password</h3>
-                <button onClick={() => setPasswordPopup(false)} className="text-xl leading-none font-bold">&times;</button>
+              <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
+                <div className='grid grid-cols-1 gap-8 sm:grid-cols-2'>
+                  <div>
+                    <label className='mb-1 block text-[14px] text-gray-950'>
+                      Old Cred Ref.
+                    </label>
+                    <input
+                      type='text'
+                      readOnly
+                      className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 text-end outline-none'
+                      value={clientCreditRef}
+                    />
+                  </div>
+                  <div>
+                    <label className='mb-1 block text-[14px] text-gray-950'>
+                      New Cred Ref.
+                    </label>
+                    <input
+                      type='text'
+                      className='w-full rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          creditReference: e.target.value,
+                        })
+                      }
+                      value={formData.creditReference ?? ''}
+                    />
+                  </div>
+                </div>
               </div>
-              <form onSubmit={handleChangePassword} className="p-4 space-y-3 bg-yellow-50 text-[13px]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="w-full text-gray-950 font-semibold">New Password</label>
-                  <input type="password" required className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+
+              <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
+                <div className='mb-3 flex flex-wrap items-end gap-2'>
+                  <span className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
+                    {userDetails.userInfo.userName}
+                  </span>
+                  <div className='flex min-w-0 flex-1 flex-wrap gap-8'>
+                    <input
+                      type='text'
+                      readOnly
+                      className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={clientAvBalance}
+                    />
+                    <input
+                      type='text'
+                      readOnly
+                      className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={
+                        Number(clientAvBalance) + Number(formData.balance || 0)
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="w-full text-gray-950 font-semibold">Confirm Password</label>
-                  <input type="password" required className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
+                    Add Deposit
+                  </label>
+                  <input
+                    type='number'
+                    min={0}
+                    step='any'
+                    className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, balance: e.target.value })
+                    }
+                    value={formData.balance ?? ''}
+                  />
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="w-full text-gray-950 font-semibold">Master Password</label>
-                  <input type="password" required className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.masterPassword} onChange={(e) => setFormData({ ...formData, masterPassword: e.target.value })} />
+                <div className='flex flex-wrap items-start gap-2'>
+                  <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
+                    Remarks
+                  </label>
+                  <textarea
+                    rows={3}
+                    className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, remark: e.target.value })
+                    }
+                    value={formData.remark ?? ''}
+                  />
                 </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="submit" className="bg-[#f0ad4e] text-white px-4 py-1.5 rounded font-semibold">Change</button>
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
+                  Master Password
+                </label>
+                <input
+                  type='password'
+                  autoComplete='off'
+                  className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      masterPassword: e.target.value,
+                    })
+                  }
+                  value={formData.masterPassword}
+                />
+              </div>
+
+              <div className='flex justify-end gap-2 pt-1'>
+                <button
+                  type='submit'
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                >
+                  Submit
+                </button>
+                <button
+                  type='button'
+                  onClick={closeCreditDepositModal}
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* withdraw popup */}
+      {withdrawPopup && userDetails && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+              <span className='text-[16px] font-semibold'>Withdraw</span>
+              <button
+                type='button'
+                onClick={() => {
+                  setWithdrawPopup(false);
+                  resetBankingForm();
+                }}
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
+            <div className='space-y-3 bg-sky-50 px-4 py-1'>
+              <div className='flex flex-wrap items-end gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  {userInfo?.userName}
+                </label>
+                <div className='flex flex-1 items-end gap-8'>
+                  <div className='w-1/2'>
+                    <input
+                      type='text'
+                      value={userInfo?.avbalance ?? ''}
+                      readOnly
+                      className='w-full flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    />
+                  </div>
+                  <div className='flex w-1/2 flex-col gap-0.5'>
+                    <span className='text-[14px]'>After</span>
+                    <input
+                      type='text'
+                      className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={
+                        Number(userInfo?.avbalance || 0) +
+                        Number(formData.balance || 0)
+                      }
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex flex-wrap items-end gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  {userDetails.userInfo.userName}
+                </label>
+                <div className='flex flex-1 items-end gap-8'>
+                  <input
+                    type='text'
+                    className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    value={clientAvBalance}
+                    readOnly
+                  />
+                  <input
+                    type='text'
+                    className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    value={
+                      Number(clientAvBalance) - Number(formData.balance || 0)
+                    }
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <form onSubmit={handleWithdrawSubmit}>
+                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                    Amount
+                  </label>
+                  <input
+                    type='text'
+                    className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, balance: e.target.value })
+                    }
+                    value={formData.balance}
+                  />
+                </div>
+
+                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                    Remark
+                  </label>
+                  <textarea
+                    rows={3}
+                    className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, remark: e.target.value })
+                    }
+                    value={formData.remark}
+                  />
+                </div>
+
+                <div className='flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                    Master Password
+                  </label>
+                  <input
+                    type='password'
+                    className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        masterPassword: e.target.value,
+                      })
+                    }
+                    value={formData.masterPassword}
+                  />
+                </div>
+
+                <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-2'>
+                  <button
+                    type='submit'
+                    className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                  >
+                    Submit
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setWithdrawPopup(false);
+                      resetBankingForm();
+                    }}
+                    className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* change Password popup */}
+      {passwordPopup && userDetails && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+              <span className='text-[16px] font-semibold'>Change Password</span>
+              <button
+                type='button'
+                onClick={() => setPasswordPopup(false)}
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
+            <div className='space-y-3 bg-sky-50 px-5 pt-4 pb-1'>
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  New Password
+                </label>
+                <input
+                  type='text'
+                  className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  Confirm Password
+                </label>
+                <input
+                  type='text'
+                  className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  Master Password
+                </label>
+                <input
+                  type='password'
+                  className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      masterPassword: e.target.value,
+                    })
+                  }
+                  value={formData.masterPassword}
+                />
+              </div>
+
+              <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-1'>
+                <button
+                  type='button'
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                  onClick={handleChangePassword}
+                >
+                  Submit
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setPasswordPopup(false)}
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Last Login Modal */}
       <AnimatePresence>

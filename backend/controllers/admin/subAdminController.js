@@ -141,21 +141,37 @@ const updateAdmin = async (id) => {
             },
           },
         ]);
-        const sportsBettingPL =
-          plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+        const sportsBettingPL = plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+
+        // Also aggregate Casino PL
+        const casinoPlResult = await mongoose.model('CasinoBetHistory').aggregate([
+          {
+            $match: {
+              userId: user._id.toString(),
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalPL: { $sum: '$change' },
+            },
+          },
+        ]);
+        const casinoBettingPL = casinoPlResult.length > 0 ? roundMoney(casinoPlResult[0].totalPL) : 0;
+
+        const trueTotalPL = roundMoney(sportsBettingPL + casinoBettingPL);
         const storedPL = roundMoney(user.bettingProfitLoss || 0);
-        // Stored P/L includes casino callbacks; sports history is sports-only
-        const userBettingPL =
-          storedPL > sportsBettingPL + 0.01 ? storedPL : sportsBettingPL;
+        
+        const userBettingPL = storedPL > trueTotalPL + 0.01 ? storedPL : trueTotalPL;
 
         if (
-          storedPL <= sportsBettingPL + 0.01 &&
-          user.bettingProfitLoss !== sportsBettingPL
+          storedPL <= trueTotalPL + 0.01 &&
+          user.bettingProfitLoss !== trueTotalPL
         ) {
           console.log(
-            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${sportsBettingPL}`
+            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${trueTotalPL}`
           );
-          user.bettingProfitLoss = sportsBettingPL;
+          user.bettingProfitLoss = trueTotalPL;
           await user.save();
         }
         DownlineTotalBettingProfitLoss += getDownlineUplineBettingContribution({
@@ -3443,10 +3459,17 @@ export const getSettlementUsers = async (req, res) => {
     const debtors = [];
 
     downlines.forEach((user) => {
-      // clientPL = avbalance - baseBalance
-      // If clientPL > 0, admin owes user (Creditor / dena hai)
-      // If clientPL < 0, user owes admin (Debtor / lena hai)
-      const pl = (user.avbalance || 0) - (user.baseBalance || 0);
+      // For end-users, PL is their personal avbalance vs baseBalance
+      // For agents/masters, PL is their aggregated uplineBettingProfitLoss
+      let pl = 0;
+      if (user.role === 'user') {
+        pl = (user.avbalance || 0) - (user.baseBalance || 0);
+      } else {
+        pl = user.uplineBettingProfitLoss || 0;
+      }
+
+      // If pl > 0, admin owes user (Creditor / dena hai)
+      // If pl < 0, user owes admin (Debtor / lena hai)
 
       const userData = {
         _id: user._id,
@@ -3508,8 +3531,14 @@ export const settleUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // pl = avbalance - baseBalance
-    const pl = (editUser.avbalance || 0) - (editUser.baseBalance || 0);
+    // For end-users, PL is personal avbalance vs baseBalance
+    // For agents/masters, PL is uplineBettingProfitLoss
+    let pl = 0;
+    if (editUser.role === 'user') {
+      pl = (editUser.avbalance || 0) - (editUser.baseBalance || 0);
+    } else {
+      pl = editUser.uplineBettingProfitLoss || 0;
+    }
     
     if (pl === 0) {
       return res
@@ -3528,29 +3557,28 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      // To clear positive PL (avbalance > baseBalance), we INCREASE baseBalance
-      editUser.baseBalance += parsedAmount;
-      editUser.balance += parsedAmount; 
-      // avbalance remains UNCHANGED!
+      // To clear positive PL (avbalance > baseBalance), we DECREASE avbalance
+      // (User is withdrawing their winnings)
+      editUser.avbalance -= parsedAmount;
+      editUser.balance -= parsedAmount; 
+      // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss = editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        // Admin lost this money, so admin's avbalance < baseBalance (negative PL)
-        // To clear admin's negative PL, we DECREASE admin's baseBalance
-        admin.baseBalance -= parsedAmount;
-        admin.balance -= parsedAmount;
+        admin.avbalance += parsedAmount;
+        admin.balance += parsedAmount;
       }
 
       await admin.save();
       await editUser.save();
 
-      // Log it as a settlement transaction (we can use WithdrawalHistory to represent admin paying out, or just TransactionHistory)
+      // Log it as a settlement transaction 
       await TransactionHistory.create({
         userId: editUser._id,
         userName: editUser.userName,
-        withdrawl: 0,
-        deposite: 0, // No actual funds moved in avbalance
+        withdrawl: parsedAmount, // It's a withdrawal of winnings
+        deposite: 0,
         amount: editUser.avbalance,
         from: admin.userName,
         to: editUser.userName,
@@ -3566,18 +3594,17 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      // To clear negative PL (avbalance < baseBalance), we DECREASE baseBalance
-      editUser.baseBalance -= parsedAmount;
-      editUser.balance -= parsedAmount;
-      // avbalance remains UNCHANGED!
+      // To clear negative PL (avbalance < baseBalance), we INCREASE avbalance
+      // (User is depositing their losses to pay off the debt)
+      editUser.avbalance += parsedAmount;
+      editUser.balance += parsedAmount;
+      // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss = editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        // Admin won this money, so admin's avbalance > baseBalance (positive PL)
-        // To clear admin's positive PL, we INCREASE admin's baseBalance
-        admin.baseBalance += parsedAmount;
-        admin.balance += parsedAmount;
+        admin.avbalance -= parsedAmount;
+        admin.balance -= parsedAmount;
       }
 
       await admin.save();
@@ -3587,7 +3614,7 @@ export const settleUser = async (req, res) => {
         userId: editUser._id,
         userName: editUser.userName,
         withdrawl: 0,
-        deposite: 0, // No actual funds moved in avbalance
+        deposite: parsedAmount, // Depositing to pay off losses
         amount: editUser.avbalance,
         from: editUser.userName,
         to: admin.userName,

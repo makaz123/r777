@@ -422,8 +422,6 @@ export const casinoCallback = async (req, res) => {
           $inc: {
             balance: balanceChange, // Update balance
             avbalance: balanceChange, // Update avbalance by same amount
-            baseBalance: balanceChange, // Keep baseBalance in sync for settlement calculation
-            creditReferenceProfitLoss: balanceChange, // Keep P/L in sync for Settlement page
             bettingProfitLoss: balanceChange, // Keep P/L in sync for reporting
           },
         },
@@ -499,8 +497,6 @@ export const casinoCallback = async (req, res) => {
           $inc: {
             balance: balanceChange, // Update balance
             avbalance: balanceChange, // Update avbalance by same amount
-            baseBalance: balanceChange, // Keep baseBalance in sync for settlement calculation
-            creditReferenceProfitLoss: balanceChange, // Keep P/L in sync for Settlement page
             bettingProfitLoss: balanceChange, // Keep P/L in sync for reporting
           },
         },

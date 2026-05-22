@@ -82,7 +82,7 @@ export default function Userlist() {
     const tableData = filteredUsers.map((user) => ({
       Username: user.userName,
       'Credit Ref.': user.creditReference || '-',
-      Balance: user.balance || 0,
+      Balance: user.baseBalance || 0,
       Exposure: user.exposure || 0,
       'Exposure Limit': user.exposureLimit || 0,
       'Avail. Bal.': user.avbalance || 0,

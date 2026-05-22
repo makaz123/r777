@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { jwtDecode } from 'jwt-decode';
 
 import api from '../api';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 
 export const loginAdmin = createAsyncThunk(
   'user/login',
@@ -43,15 +44,7 @@ export const addAdmin = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        return rejectWithValue(error.response.data.message);
-      } else {
-        return rejectWithValue(error.message);
-      }
+      return rejectWithValue(getApiErrorMessage(error));
     }
   }
 );
@@ -733,8 +726,7 @@ const initialState = {
   totalPages: 1,
   currentPage: 1,
   totalRecords: 0,
-  // userInfo: null,
-  userInfo: decodeToken(localStorage.getItem('auth')) || null,
+  userInfo: null,
   loading: false,
   error: null,
   singleadmin: null,

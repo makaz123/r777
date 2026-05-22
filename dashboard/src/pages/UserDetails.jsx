@@ -1,9 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import Navbar from '../components/Navbar';
 import api from '../redux/api';
 import { toast } from 'react-toastify';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
+import { useDispatch } from 'react-redux';
+import {
+  withdrawalAndDeposite,
+  changePasswordByDownline,
+  updateCreditReference,
+  getAdmin,
+} from '../redux/reducer/authReducer';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const getOneWeekAgoDefault = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  d.setHours(0, 0, 0, 0);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const getNowDefault = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 
 const UserDetails = () => {
+  const { userInfo } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -12,7 +45,30 @@ const UserDetails = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  
+  const dispatch = useDispatch();
 
+  // Modals state
+  const [depositPopup, setDepositPopup] = useState(false);
+  const [withdrawPopup, setWithdrawPopup] = useState(false);
+  const [passwordPopup, setPasswordPopup] = useState(false);
+  const [lastLoginPopup, setLastLoginPopup] = useState(false);
+
+  const [formData, setFormData] = useState({
+    remark: '',
+    balance: '',
+    masterPassword: '',
+    creditReference: '',
+  });
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [loginHistoryData, setLoginHistoryData] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loginStartDate, setLoginStartDate] = useState(getOneWeekAgoDefault());
+  const [loginEndDate, setLoginEndDate] = useState(getNowDefault());
+  
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -35,12 +91,14 @@ const UserDetails = () => {
 
     try {
       setLoadingSearch(true);
-      const res = await api.get(`/get/all-only-user?searchQuery=${query}`, {
+      const res = await api.get('/get/all-only-user', {
+        params: { searchQuery: query, page: 1, limit: 50 },
         withCredentials: true,
       });
       setSearchResults(res.data?.data || []);
       setShowDropdown(true);
     } catch (error) {
+      toast.error(getApiErrorMessage(error));
       console.error('Search error:', error);
     } finally {
       setLoadingSearch(false);
@@ -55,12 +113,211 @@ const UserDetails = () => {
       });
       setUserDetails(res.data?.data);
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message || 'Failed to load user details'
-      );
+      toast.error(getApiErrorMessage(error));
     } finally {
       setLoadingDetails(false);
     }
+  };
+
+  const resetBankingForm = () => {
+    setFormData({
+      remark: '',
+      balance: '',
+      masterPassword: '',
+      creditReference: '',
+    });
+  };
+
+  const openDepositModal = () => {
+    resetBankingForm();
+    setDepositPopup(true);
+  };
+
+  const closeCreditDepositModal = () => {
+    setDepositPopup(false);
+    resetBankingForm();
+  };
+
+  const openWithdrawModal = () => {
+    resetBankingForm();
+    setWithdrawPopup(true);
+  };
+
+  const openPasswordModal = () => {
+    setNewPassword('');
+    setConfirmPassword('');
+    setFormData((prev) => ({ ...prev, masterPassword: '' }));
+    setPasswordPopup(true);
+  };
+
+  const clientAvBalance =
+    userDetails?.accountDetails?.availableBalance ?? 0;
+  const clientCreditRef = userDetails?.accountDetails?.creditRef ?? 0;
+
+  const handleCreditDepositSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedUserId) {
+      toast.error('No user selected.');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Please enter master password.');
+      return;
+    }
+
+    const depositAmount = parseFloat(formData.balance);
+    const hasDeposit = !Number.isNaN(depositAmount) && depositAmount > 0;
+
+    const newCredStr =
+      formData.creditReference === null ||
+      formData.creditReference === undefined
+        ? ''
+        : String(formData.creditReference).trim();
+    const newCredNum = parseFloat(newCredStr);
+    const oldCredNum = parseFloat(clientCreditRef);
+    const hasCreditChange =
+      newCredStr !== '' &&
+      !Number.isNaN(newCredNum) &&
+      newCredNum !== oldCredNum;
+
+    if (!hasDeposit && !hasCreditChange) {
+      toast.error('Enter a deposit amount and/or a new credit reference.');
+      return;
+    }
+
+    try {
+      const successParts = [];
+      if (hasCreditChange) {
+        const data = await dispatch(
+          updateCreditReference({
+            formData: {
+              creditReference: newCredNum,
+              masterPassword: formData.masterPassword,
+            },
+            userId: selectedUserId,
+          })
+        ).unwrap();
+        if (data?.message) successParts.push(data.message);
+      }
+      if (hasDeposit) {
+        const data = await dispatch(
+          withdrawalAndDeposite({
+            formData,
+            userId: selectedUserId,
+            type: 'deposite',
+          })
+        ).unwrap();
+        if (data?.message) successParts.push(data.message);
+      }
+      toast.success(successParts.join(' ') || 'Saved successfully.');
+      dispatch(getAdmin());
+      closeCreditDepositModal();
+      fetchUserDetails(selectedUserId);
+    } catch (error) {
+      toast.error(error || 'Deposit failed');
+    }
+  };
+
+  const handleWithdrawSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedUserId) {
+      toast.error('No user selected.');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Please enter master password.');
+      return;
+    }
+    try {
+      const result = await dispatch(
+        withdrawalAndDeposite({
+          formData,
+          userId: selectedUserId,
+          type: 'withdrawal',
+        })
+      ).unwrap();
+      toast.success(result?.message || 'Withdrawal successful');
+      setWithdrawPopup(false);
+      resetBankingForm();
+      dispatch(getAdmin());
+      fetchUserDetails(selectedUserId);
+    } catch (error) {
+      toast.error(error || 'Withdrawal failed');
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!selectedUserId) {
+      toast.error('Please select a user first.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Password not match.');
+      return;
+    }
+
+    if (!formData.masterPassword) {
+      toast.error('Please enter master password.');
+      return;
+    }
+
+    try {
+      const result = await dispatch(
+        changePasswordByDownline({
+          id: selectedUserId,
+          masterPassword: formData.masterPassword,
+          newPassword,
+        })
+      ).unwrap();
+
+      toast.success(result?.message || 'Password changed');
+      setPasswordPopup(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setFormData((prev) => ({ ...prev, masterPassword: '' }));
+    } catch (error) {
+      toast.error(error || 'Change password failed');
+    }
+  };
+
+  const fetchLoginHistoryData = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedUserId) return;
+    setLastLoginPopup(true);
+    try {
+      setLoadingHistory(true);
+      let query = '';
+      if (loginStartDate) query += `?startDate=${new Date(loginStartDate).toISOString()}`;
+      if (loginEndDate) query += `${query ? '&' : '?'}endDate=${new Date(loginEndDate).toISOString()}`;
+      
+      const res = await api.get(`/get/login-history/${selectedUserId}${query}`, {
+        withCredentials: true,
+      });
+      setLoginHistoryData(res.data?.data || []);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleResetLoginHistory = () => {
+    const defaultStart = getOneWeekAgoDefault();
+    const defaultEnd = getNowDefault();
+    setLoginStartDate(defaultStart);
+    setLoginEndDate(defaultEnd);
+    // Need to use setTimeout to allow state to clear before fetching
+    setTimeout(() => {
+      if (selectedUserId) {
+        setLoadingHistory(true);
+        let query = `?startDate=${new Date(defaultStart).toISOString()}&endDate=${new Date(defaultEnd).toISOString()}`;
+        api.get(`/get/login-history/${selectedUserId}${query}`, { withCredentials: true })
+          .then(res => setLoginHistoryData(res.data?.data || []))
+          .catch(err => toast.error(getApiErrorMessage(err)))
+          .finally(() => setLoadingHistory(false));
+      }
+    }, 0);
   };
 
   const handleSelectUser = (user) => {
@@ -80,16 +337,30 @@ const UserDetails = () => {
     });
   };
 
+  const formatPL = (value) => Number(value || 0).toFixed(2);
+
+  const plColorClass = (value) =>
+    Number(value) >= 0 ? 'text-green-600' : 'text-red-600';
+
+  const activeCasinoRows = (userDetails?.gamePlay?.casinos || []).filter(
+    (c) =>
+      Math.abs(Number(c.profitLoss) || 0) > 0.001 ||
+      (c.betCount && c.betCount > 0)
+  );
+
   return (
     <div className='min-h-screen bg-[#f5f7f9]'>
       <Navbar />
       <div className='mx-auto max-w-[1400px] p-4 text-[13px] text-[#333] md:p-6'>
         {/* Search Section */}
-        <div className='mb-4 w-full rounded border border-gray-200 bg-white p-4 shadow-sm md:w-1/3'>
-          <h2 className='mb-2 text-[16px] font-bold text-black'>
-            User Details
-          </h2>
-          <div className='relative' ref={dropdownRef}>
+        <div className="bg-white rounded border border-gray-200 p-4 mb-4 shadow-sm w-full md:w-1/3">
+          <h2 className="font-bold text-[16px] mb-2 text-black">User Details</h2>
+          <p className="text-[11px] text-gray-500 mb-2">
+            {userInfo?.role === 'supperadmin' || userInfo?.role === 'superadmin'
+              ? 'Search all clients on the platform'
+              : 'Search clients in your downline (all levels)'}
+          </p>
+          <div className="relative" ref={dropdownRef}>
             <input
               type='text'
               placeholder='Search by client'
@@ -182,36 +453,18 @@ const UserDetails = () => {
               </div>
 
               {/* Setting */}
-              <div className='rounded border border-gray-200 bg-white p-4 shadow-sm lg:w-[500px]'>
-                <h2 className='mb-3 text-[15px] font-bold text-black'>
-                  Setting:
-                </h2>
-                <div className='mb-4 grid grid-cols-4 gap-2'>
-                  <button className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    User Update
-                  </button>
-                  <button className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Deposit / Credit
-                  </button>
-                  <button className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Settlement
-                  </button>
-                  <button className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Last Login
-                  </button>
-
-                  <button className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Change Password
-                  </button>
-                  <button className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Withdrawal
-                  </button>
-                  <button className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Game Control
-                  </button>
-                  <button className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Casino Control
-                  </button>
+              <div className="bg-white rounded border border-gray-200 p-4 shadow-sm lg:w-[500px]">
+                <h2 className="font-bold text-[15px] mb-3 text-black">Setting:</h2>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">User Update</button>
+                  <button onClick={openDepositModal} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Deposit / Credit</button>
+                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Settlement</button>
+                  <button onClick={fetchLoginHistoryData} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Last Login</button>
+                  
+                  <button onClick={openPasswordModal} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Change Password</button>
+                  <button onClick={openWithdrawModal} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Withdrawal</button>
+                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Game Control</button>
+                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Casino Control</button>
                 </div>
                 <div className='mt-2 flex justify-center gap-6'>
                   <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
@@ -243,42 +496,26 @@ const UserDetails = () => {
             </div>
 
             {/* Account Details */}
-            <div className='rounded border border-gray-200 bg-white p-4 shadow-sm'>
-              <h2 className='mb-3 text-[15px] font-bold text-black'>
-                Account Details:
-              </h2>
-              <div className='grid grid-cols-1 gap-x-2 gap-y-4 text-[12px] md:grid-cols-4'>
+            <div className="bg-white rounded border border-gray-200 p-4 shadow-sm">
+              <h2 className="font-bold text-[15px] mb-3 text-black">Account Details:</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-y-4 gap-x-2 text-[12px]">
+                <div><span className="text-gray-500 font-semibold mr-1">Credit Ref:</span> {userDetails.accountDetails.creditRef}</div>
+                <div><span className="text-gray-500 font-semibold mr-1">Balance:</span> <span className="font-bold">{userDetails.accountDetails.balance}</span></div>
+                <div><span className="text-gray-500 font-semibold mr-1">Available Balance:</span> <span className="font-bold">{Number(userDetails.accountDetails.availableBalance).toFixed(2)}</span></div>
                 <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Credit Ref:
-                  </span>{' '}
-                  {userDetails.accountDetails.creditRef}
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Balance:
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {userDetails.accountDetails.balance}
+                  <span className="text-gray-500 font-semibold mr-1">Ref. P/L :</span>
+                  <span className={`font-bold ${plColorClass(userDetails.accountDetails.profitLoss)}`}>
+                    {formatPL(userDetails.accountDetails.profitLoss)}
                   </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Available Balance:
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {Number(
-                      userDetails.accountDetails.availableBalance
-                    ).toFixed(2)}
-                  </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    P/L :
-                  </span>{' '}
-                  <span className='font-bold text-black'>
-                    {userDetails.accountDetails.profitLoss}
-                  </span>
+                  {userDetails.accountDetails.sportsPL != null && (
+                    <span className="ml-1 text-[10px] text-gray-400">
+                      (Sports {formatPL(userDetails.accountDetails.sportsPL)}
+                      {activeCasinoRows.length > 0
+                        ? ` + Casino ${formatPL(userDetails.accountDetails.casinoPL)}`
+                        : ''}
+                      )
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -351,15 +588,12 @@ const UserDetails = () => {
 
               <div className='mb-4 grid grid-cols-3 rounded border border-gray-300 bg-[#f0f4f8] py-2 text-center text-[13px] font-semibold shadow-sm'>
                 <div>
-                  <div className='mb-1 text-gray-500'>P&L</div>
-                  <div
-                    className={
-                      userDetails.gamePlay.overallPL >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }
-                  >
-                    {Number(userDetails.gamePlay.overallPL).toFixed(4)}
+                  <div className="text-gray-500 mb-1">P&L</div>
+                  <div className={plColorClass(userDetails.gamePlay.overallPL)}>
+                    {formatPL(
+                      userDetails.gamePlay.overallPL ??
+                        userDetails.accountDetails.profitLoss
+                    )}
                   </div>
                 </div>
                 <div className='border-r border-l border-gray-300'>
@@ -394,50 +628,18 @@ const UserDetails = () => {
                     </thead>
                     <tbody>
                       {userDetails.gamePlay.sports.map((sport, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-100 last:border-b-0'
-                        >
-                          <td className='p-2 text-gray-500'>{sport.sport}</td>
-                          <td className='p-2 text-center text-black'>
-                            {sport.betCount}
-                          </td>
-                          <td className='p-2 text-right text-black'>
-                            {Number(sport.betAmount).toFixed(2)}
-                          </td>
-                          <td
-                            className={`p-2 text-right ${sport.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                          >
-                            {Number(sport.profitLoss).toFixed(2)}
-                          </td>
+                        <tr key={i} className="border-b border-gray-100 last:border-b-0">
+                          <td className="p-2 text-gray-500">{sport.sport}</td>
+                          <td className="p-2 text-center text-black">{sport.betCount}</td>
+                          <td className="p-2 text-right text-black">{Number(sport.betAmount).toFixed(2)}</td>
+                          <td className={`p-2 text-right ${plColorClass(sport.profitLoss)}`}>{formatPL(sport.profitLoss)}</td>
                         </tr>
                       ))}
-                      <tr className='border-t-2 border-gray-300 bg-[#f2f2f2]'>
-                        <td className='p-2 font-semibold text-black'>Total</td>
-                        <td className='p-2 text-center text-black'>
-                          {userDetails.gamePlay.sports.reduce(
-                            (sum, s) => sum + s.betCount,
-                            0
-                          )}
-                        </td>
-                        <td className='p-2 text-right text-black'>
-                          {Number(
-                            userDetails.gamePlay.sports.reduce(
-                              (sum, s) => sum + s.betAmount,
-                              0
-                            )
-                          ).toFixed(2)}
-                        </td>
-                        <td
-                          className={`p-2 text-right font-semibold ${userDetails.gamePlay.sports.reduce((sum, s) => sum + s.profitLoss, 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {Number(
-                            userDetails.gamePlay.sports.reduce(
-                              (sum, s) => sum + s.profitLoss,
-                              0
-                            )
-                          ).toFixed(2)}
-                        </td>
+                      <tr className="bg-[#f2f2f2] border-t-2 border-gray-300">
+                        <td className="p-2 text-black font-semibold">Total</td>
+                        <td className="p-2 text-center text-black">{userDetails.gamePlay.sports.reduce((sum, s) => sum + s.betCount, 0)}</td>
+                        <td className="p-2 text-right text-black">{Number(userDetails.gamePlay.sports.reduce((sum, s) => sum + s.betAmount, 0)).toFixed(2)}</td>
+                        <td className={`p-2 text-right font-semibold ${plColorClass(userDetails.gamePlay.sports.reduce((sum, s) => sum + s.profitLoss, 0))}`}>{formatPL(userDetails.gamePlay.sports.reduce((sum, s) => sum + s.profitLoss, 0))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -455,41 +657,18 @@ const UserDetails = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {userDetails.gamePlay.casinos.map((casino, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-100 last:border-b-0'
-                        >
-                          <td className='p-2 text-gray-500'>{casino.casino}</td>
-                          <td
-                            className={`p-2 text-right ${casino.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                          >
-                            {Number(casino.profitLoss).toFixed(2)}
-                          </td>
+                      {activeCasinoRows.map((casino, i) => (
+                        <tr key={i} className="border-b border-gray-100 last:border-b-0">
+                          <td className="p-2 text-gray-500">{casino.casino}</td>
+                          <td className={`p-2 text-right ${plColorClass(casino.profitLoss)}`}>{formatPL(casino.profitLoss)}</td>
                         </tr>
                       ))}
-                      {userDetails.gamePlay.casinos.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan='2'
-                            className='p-2 text-center text-gray-400'
-                          >
-                            No Casino bets
-                          </td>
-                        </tr>
+                      {activeCasinoRows.length === 0 && (
+                        <tr><td colSpan="2" className="p-2 text-center text-gray-400">No Casino bets</td></tr>
                       )}
-                      <tr className='border-t-2 border-gray-300 bg-[#f2f2f2]'>
-                        <td className='p-2 font-semibold text-black'>Total</td>
-                        <td
-                          className={`p-2 text-right font-semibold ${userDetails.gamePlay.casinos.reduce((sum, c) => sum + c.profitLoss, 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {Number(
-                            userDetails.gamePlay.casinos.reduce(
-                              (sum, c) => sum + c.profitLoss,
-                              0
-                            )
-                          ).toFixed(2)}
-                        </td>
+                      <tr className="bg-[#f2f2f2] border-t-2 border-gray-300">
+                        <td className="p-2 text-black font-semibold">Total</td>
+                        <td className={`p-2 text-right font-semibold ${plColorClass(activeCasinoRows.reduce((sum, c) => sum + c.profitLoss, 0))}`}>{formatPL(activeCasinoRows.reduce((sum, c) => sum + c.profitLoss, 0))}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -511,19 +690,10 @@ const UserDetails = () => {
                     </thead>
                     <tbody>
                       {userDetails.gamePlay.markets.map((market, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-100 last:border-b-0'
-                        >
-                          <td className='p-2 text-gray-500'>{market.sport}</td>
-                          <td className='p-2 text-center text-gray-500'>
-                            {market.market}
-                          </td>
-                          <td
-                            className={`p-2 text-right ${market.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                          >
-                            {Number(market.profitLoss).toFixed(2)}
-                          </td>
+                        <tr key={i} className="border-b border-gray-100 last:border-b-0">
+                          <td className="p-2 text-gray-500">{market.sport}</td>
+                          <td className="p-2 text-gray-500 text-center">{market.market}</td>
+                          <td className={`p-2 text-right ${plColorClass(market.profitLoss)}`}>{formatPL(market.profitLoss)}</td>
                         </tr>
                       ))}
                       {userDetails.gamePlay.markets.length === 0 && (
@@ -544,6 +714,469 @@ const UserDetails = () => {
           </div>
         )}
       </div>
+
+      {/* Credit / Deposit popup */}
+      {depositPopup && userDetails && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-black/45 text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+              <span className='text-[16px] font-semibold'>Credit / Deposit</span>
+              <button
+                type='button'
+                onClick={closeCreditDepositModal}
+                aria-label='Close'
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreditDepositSubmit}
+              className='space-y-3 bg-sky-50 px-4 py-2'
+            >
+              <div className='flex flex-wrap items-end gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  My Available
+                </label>
+                <div className='flex min-w-0 flex-1 flex-wrap items-end gap-8'>
+                  <input
+                    type='text'
+                    readOnly
+                    className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    value={userInfo?.avbalance ?? ''}
+                  />
+                  <div className='flex min-w-[80px] flex-1 flex-col gap-0.5'>
+                    <span className='text-[14px]'>After</span>
+                    <input
+                      type='text'
+                      readOnly
+                      className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={
+                        Number(userInfo?.avbalance || 0) -
+                        Number(formData.balance || 0)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
+                <div className='grid grid-cols-1 gap-8 sm:grid-cols-2'>
+                  <div>
+                    <label className='mb-1 block text-[14px] text-gray-950'>
+                      Old Cred Ref.
+                    </label>
+                    <input
+                      type='text'
+                      readOnly
+                      className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 text-end outline-none'
+                      value={clientCreditRef}
+                    />
+                  </div>
+                  <div>
+                    <label className='mb-1 block text-[14px] text-gray-950'>
+                      New Cred Ref.
+                    </label>
+                    <input
+                      type='text'
+                      className='w-full rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          creditReference: e.target.value,
+                        })
+                      }
+                      value={formData.creditReference ?? ''}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className='border-2 border-dashed border-gray-800 px-1.5 py-3'>
+                <div className='mb-3 flex flex-wrap items-end gap-2'>
+                  <span className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
+                    {userDetails.userInfo.userName}
+                  </span>
+                  <div className='flex min-w-0 flex-1 flex-wrap gap-8'>
+                    <input
+                      type='text'
+                      readOnly
+                      className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={clientAvBalance}
+                    />
+                    <input
+                      type='text'
+                      readOnly
+                      className='min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={
+                        Number(clientAvBalance) + Number(formData.balance || 0)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
+                    Add Deposit
+                  </label>
+                  <input
+                    type='number'
+                    min={0}
+                    step='any'
+                    className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, balance: e.target.value })
+                    }
+                    value={formData.balance ?? ''}
+                  />
+                </div>
+                <div className='flex flex-wrap items-start gap-2'>
+                  <label className='min-w-[170px] shrink-0 text-[14px] text-gray-950'>
+                    Remarks
+                  </label>
+                  <textarea
+                    rows={3}
+                    className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, remark: e.target.value })
+                    }
+                    value={formData.remark ?? ''}
+                  />
+                </div>
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
+                  Master Password
+                </label>
+                <input
+                  type='password'
+                  autoComplete='off'
+                  className='min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none'
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      masterPassword: e.target.value,
+                    })
+                  }
+                  value={formData.masterPassword}
+                />
+              </div>
+
+              <div className='flex justify-end gap-2 pt-1'>
+                <button
+                  type='submit'
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                >
+                  Submit
+                </button>
+                <button
+                  type='button'
+                  onClick={closeCreditDepositModal}
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* withdraw popup */}
+      {withdrawPopup && userDetails && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+              <span className='text-[16px] font-semibold'>Withdraw</span>
+              <button
+                type='button'
+                onClick={() => {
+                  setWithdrawPopup(false);
+                  resetBankingForm();
+                }}
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
+            <div className='space-y-3 bg-sky-50 px-4 py-1'>
+              <div className='flex flex-wrap items-end gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  {userInfo?.userName}
+                </label>
+                <div className='flex flex-1 items-end gap-8'>
+                  <div className='w-1/2'>
+                    <input
+                      type='text'
+                      value={userInfo?.avbalance ?? ''}
+                      readOnly
+                      className='w-full flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    />
+                  </div>
+                  <div className='flex w-1/2 flex-col gap-0.5'>
+                    <span className='text-[14px]'>After</span>
+                    <input
+                      type='text'
+                      className='w-full rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                      value={
+                        Number(userInfo?.avbalance || 0) +
+                        Number(formData.balance || 0)
+                      }
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex flex-wrap items-end gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  {userDetails.userInfo.userName}
+                </label>
+                <div className='flex flex-1 items-end gap-8'>
+                  <input
+                    type='text'
+                    className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    value={clientAvBalance}
+                    readOnly
+                  />
+                  <input
+                    type='text'
+                    className='w-1/2 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none'
+                    value={
+                      Number(clientAvBalance) - Number(formData.balance || 0)
+                    }
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <form onSubmit={handleWithdrawSubmit}>
+                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                    Amount
+                  </label>
+                  <input
+                    type='text'
+                    className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, balance: e.target.value })
+                    }
+                    value={formData.balance}
+                  />
+                </div>
+
+                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                    Remark
+                  </label>
+                  <textarea
+                    rows={3}
+                    className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({ ...formData, remark: e.target.value })
+                    }
+                    value={formData.remark}
+                  />
+                </div>
+
+                <div className='flex flex-wrap items-center gap-2'>
+                  <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                    Master Password
+                  </label>
+                  <input
+                    type='password'
+                    className='min-w-0 flex-1 border border-gray-700 bg-white px-2 py-1.5 outline-none'
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        masterPassword: e.target.value,
+                      })
+                    }
+                    value={formData.masterPassword}
+                  />
+                </div>
+
+                <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-2'>
+                  <button
+                    type='submit'
+                    className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                  >
+                    Submit
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setWithdrawPopup(false);
+                      resetBankingForm();
+                    }}
+                    className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* change Password popup */}
+      {passwordPopup && userDetails && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-white'>
+              <span className='text-[16px] font-semibold'>Change Password</span>
+              <button
+                type='button'
+                onClick={() => setPasswordPopup(false)}
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
+            <div className='space-y-3 bg-sky-50 px-5 pt-4 pb-1'>
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  New Password
+                </label>
+                <input
+                  type='text'
+                  className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  Confirm Password
+                </label>
+                <input
+                  type='text'
+                  className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
+                  Master Password
+                </label>
+                <input
+                  type='password'
+                  className='flex-1 rounded-[2px] border border-gray-500 bg-white px-2 py-1.5 outline-none'
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      masterPassword: e.target.value,
+                    })
+                  }
+                  value={formData.masterPassword}
+                />
+              </div>
+
+              <div className='mt-3 flex justify-end gap-2 border-t border-gray-200 py-1'>
+                <button
+                  type='button'
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                  onClick={handleChangePassword}
+                >
+                  Submit
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setPasswordPopup(false)}
+                  className='cursor-pointer rounded bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-5 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Last Login Modal */}
+      <AnimatePresence>
+        {lastLoginPopup && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-3xl bg-[#f0f4f8] shadow-xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="flex justify-between items-center bg-gradient-to-b from-[#359db1] to-[#247c8f] px-4 py-2 text-white">
+                <h3 className="font-bold text-[15px]">Last Logins of {userDetails.userInfo.userName}</h3>
+                <button onClick={() => setLastLoginPopup(false)} className="text-xl leading-none font-bold text-gray-200">&times;</button>
+              </div>
+              <div className="bg-[#f0f4f8] p-4 flex gap-4 items-center">
+                <input 
+                  type="datetime-local" 
+                  className="border border-gray-400 rounded px-2 py-1 text-[13px] outline-none"
+                  value={loginStartDate}
+                  onChange={(e) => setLoginStartDate(e.target.value)}
+                />
+                <input 
+                  type="datetime-local" 
+                  className="border border-gray-400 rounded px-2 py-1 text-[13px] outline-none"
+                  value={loginEndDate}
+                  onChange={(e) => setLoginEndDate(e.target.value)}
+                />
+                <button onClick={fetchLoginHistoryData} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white px-4 py-1 rounded text-[13px] font-semibold border border-[#247c8f]">Go</button>
+                <button onClick={handleResetLoginHistory} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white px-4 py-1 rounded text-[13px] font-semibold border border-[#247c8f]">Reset</button>
+              </div>
+              <div className="p-2 pt-0 flex-1 overflow-auto bg-[#f0f4f8]">
+                <table className="w-full text-left border-collapse border border-gray-300 bg-[#f0f4f8] text-[13px]">
+                  <thead>
+                    <tr className="bg-[#146578] text-white">
+                      <th className="p-2 font-semibold">Date & Time</th>
+                      <th className="p-2 font-semibold border-l border-white/20">IP</th>
+                      <th className="p-2 font-semibold border-l border-white/20">Device</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingHistory ? (
+                      <tr><td colSpan="3" className="p-2 text-center text-gray-500 bg-gray-200">Loading...</td></tr>
+                    ) : loginHistoryData.length === 0 ? (
+                      <tr><td colSpan="3" className="p-2 text-center text-gray-500 bg-gray-200">No Data Found.</td></tr>
+                    ) : (
+                      loginHistoryData.map((log, i) => (
+                        <tr key={i} className="bg-gray-100 border-b border-gray-300">
+                          <td className="p-2">{log.dateTime || new Date(log.createdAt).toLocaleString('en-GB')}</td>
+                          <td className="p-2 border-l border-gray-300">{log.ip || '-'}</td>
+                          <td className="p-2 border-l border-gray-300">{log.isp || log.device || '-'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

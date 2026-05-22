@@ -33,6 +33,12 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AgentLIst from './pages/AgentLIst';
 import PrivateRoute from './components/PrivateRoute';
+import PublicRoute from './components/PublicRoute';
+
+function RootRedirect() {
+  const hasToken = Boolean(localStorage.getItem('auth'));
+  return <Navigate to={hasToken ? '/home' : '/login'} replace />;
+}
 import MasterBanking from './pages/MasterBanking';
 import UserProfile from './pages/UserProfile';
 import EventPLteams from './pages/EventPLteams';
@@ -67,8 +73,10 @@ function App() {
           <div className='relative'>
             <div className='w-full'>
               <Routes>
-                <Route path='/login' element={<Login />} />
-                <Route path='/' element={<Navigate to='/login' replace />} />
+                <Route element={<PublicRoute />}>
+                  <Route path='/login' element={<Login />} />
+                </Route>
+                <Route path='/' element={<RootRedirect />} />
                 <Route element={<PrivateRoute />}>
                   <Route path='/home' element={<Home />} />
                   <Route path='/notifications' element={<Notifications />} />
@@ -176,7 +184,9 @@ function App() {
                     path='/horse-racing-bet/:gameid'
                     element={<HorseRacingbet />}
                   />
+                  <Route path='*' element={<Navigate to='/home' replace />} />
                 </Route>
+                <Route path='*' element={<Navigate to='/login' replace />} />
               </Routes>
             </div>
           </div>

@@ -1,42 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { getAdmin, user_reset } from '../redux/reducer/authReducer';
 import RouteLoader from './RouteLoader';
-import api from '../redux/api';
+import { hasValidSessionUser } from './PrivateRoute';
 
-/** Full profile from API; JWT decode only has id/role/sessionToken. */
-export const hasValidSessionUser = (user) =>
-  Boolean(user && (user.userName || user._id || user.id));
-
-const PrivateRoute = () => {
+/** For /login — redirect to app when session is still valid. */
+const PublicRoute = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const location = useLocation();
   const { userInfo } = useSelector((state) => state.auth);
   const [sessionReady, setSessionReady] = useState(false);
-
   const hasToken = Boolean(localStorage.getItem('auth'));
   const hasProfile = hasValidSessionUser(userInfo);
-
-  useEffect(() => {
-    const interceptor = api.interceptors.response.use(
-      (response) => response,
-      (err) => {
-        if (
-          err.response?.status === 401 &&
-          err.response?.data?.code === 'SESSION_EXPIRED'
-        ) {
-          localStorage.removeItem('auth');
-          dispatch(user_reset());
-          navigate('/login', { replace: true });
-        }
-        return Promise.reject(err);
-      }
-    );
-
-    return () => api.interceptors.response.eject(interceptor);
-  }, [dispatch, navigate]);
 
   useEffect(() => {
     if (!hasToken) {
@@ -46,7 +22,6 @@ const PrivateRoute = () => {
 
     if (hasProfile) {
       setSessionReady(true);
-      dispatch(getAdmin());
       return;
     }
 
@@ -69,18 +44,23 @@ const PrivateRoute = () => {
   }, [dispatch, hasToken, hasProfile]);
 
   if (!hasToken) {
-    return <Navigate to='/login' replace state={{ from: location }} />;
+    return <Outlet />;
   }
 
   if (!sessionReady) {
     return <RouteLoader />;
   }
 
-  if (!hasValidSessionUser(userInfo)) {
-    return <Navigate to='/login' replace state={{ from: location }} />;
+  if (hasValidSessionUser(userInfo)) {
+    const fromPath = location.state?.from?.pathname;
+    const redirectTo =
+      fromPath && fromPath !== '/login' && fromPath !== '/'
+        ? fromPath
+        : '/home';
+    return <Navigate to={redirectTo} replace />;
   }
 
   return <Outlet />;
 };
 
-export default PrivateRoute;
+export default PublicRoute;

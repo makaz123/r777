@@ -43,6 +43,28 @@ export async function getDownlineUserIds(SubAdmin, adminCode) {
   return (result[0]?.ids || []).map((id) => id.toString());
 }
 
+/** True if target account is anywhere under adminCode in the invite tree. */
+export async function isAccountInAdminDownline(SubAdmin, adminCode, targetUser) {
+  if (!adminCode || !targetUser?.invite) return false;
+
+  let currentInvite = targetUser.invite;
+  const maxDepth = 20;
+  let depth = 0;
+
+  while (currentInvite && depth < maxDepth) {
+    if (currentInvite === adminCode) return true;
+    const parent = await SubAdmin.findOne(
+      { code: currentInvite },
+      { invite: 1 }
+    ).lean();
+    if (!parent) break;
+    currentInvite = parent.invite;
+    depth++;
+  }
+
+  return false;
+}
+
 export async function aggregateWeekProfitLoss(
   betHistoryModel,
   CasinoBetHistory,

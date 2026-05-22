@@ -90,6 +90,59 @@ export const startCasinoGame = async (req, res) => {
 };
 
 import CasinoBetHistory from '../models/casinoBetHistory.model.js';
+import { getDateRangeUTC } from '../utils/dateUtils.js';
+import { hasCasinoRoundActivity } from '../utils/casinoPlUtils.js';
+
+/** Map live-casino round to client bet-history table row shape. */
+export const mapCasinoBetToClientHistoryRow = (cb) => ({
+  _id: cb._id,
+  userId: cb.userId,
+  userName: cb.userName,
+  gameName: 'Casino',
+  eventName: cb.game_name || cb.game_uid || 'Casino Game',
+  marketName: `Round ${cb.game_round}`,
+  teamName: cb.game_name || '-',
+  xValue: '-',
+  otype: 'back',
+  price: cb.bet_amount ?? 0,
+  betAmount: cb.bet_amount ?? 0,
+  createdAt: cb.createdAt,
+  betType: 'live_casino',
+});
+
+/**
+ * Live casino rounds for user bet-history page (separate from sports betHistory).
+ */
+export const fetchUserLiveCasinoBetsForHistory = async ({
+  userId,
+  startDate,
+  endDate,
+  selectedVoid = 'unsettel',
+}) => {
+  const query = {
+    userId: String(userId),
+    $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+  };
+
+  if (startDate && endDate) {
+    query.createdAt = getDateRangeUTC(startDate, endDate);
+  }
+
+  if (selectedVoid === 'unsettel') {
+    query.bet_amount = { $gt: 0 };
+    query.win_amount = 0;
+  } else if (selectedVoid === 'settel') {
+    query.win_amount = { $gt: 0 };
+  } else if (selectedVoid === 'void') {
+    return [];
+  }
+
+  const rows = await CasinoBetHistory.find(query)
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return rows.filter(hasCasinoRoundActivity).map(mapCasinoBetToClientHistoryRow);
+};
 
 // export const casinoCallback = async (req, res) => {
 //   try {
@@ -422,8 +475,6 @@ export const casinoCallback = async (req, res) => {
           $inc: {
             balance: balanceChange, // Update balance
             avbalance: balanceChange, // Update avbalance by same amount
-            baseBalance: balanceChange, // Keep baseBalance in sync for settlement calculation
-            creditReferenceProfitLoss: balanceChange, // Keep P/L in sync for Settlement page
             bettingProfitLoss: balanceChange, // Keep P/L in sync for reporting
           },
         },
@@ -499,8 +550,6 @@ export const casinoCallback = async (req, res) => {
           $inc: {
             balance: balanceChange, // Update balance
             avbalance: balanceChange, // Update avbalance by same amount
-            baseBalance: balanceChange, // Keep baseBalance in sync for settlement calculation
-            creditReferenceProfitLoss: balanceChange, // Keep P/L in sync for Settlement page
             bettingProfitLoss: balanceChange, // Keep P/L in sync for reporting
           },
         },
@@ -519,7 +568,13 @@ export const casinoCallback = async (req, res) => {
       );
 
       betRecord.win_amount = win;
-      betRecord.change = Number(change || win);
+      const stake = Number(betRecord.bet_amount || bet) || 0;
+      const netRoundPL = win - stake;
+      betRecord.change = Number(
+        change !== undefined && change !== null && change !== ''
+          ? change
+          : netRoundPL
+      );
       betRecord.wallet_after = Number(updatedUser.avbalance);
       betRecord.providerRaw = req.body;
       betRecord.processedAt = new Date();
@@ -642,8 +697,11 @@ export const getCasinoBetHistory = async (req, res) => {
       });
     }
 
-    // Build query
-    const query = { userId: userId };
+    // Build query — only real casino rounds
+    const query = {
+      userId: userId,
+      $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+    };
 
     // Add date filtering if provided
     if (startDate && endDate) {
@@ -872,11 +930,17 @@ export const getAllDownlineCasinoBetHistory = async (req, res) => {
       CasinoBetHistory.countDocuments(filter),
     ]);
 
+    // Flip change to show Admin P&L (bet - win) instead of User P&L (win - bet)
+    const adminPerspectiveData = betData.map(bet => ({
+      ...bet,
+      change: -(bet.change || 0)
+    }));
+
     return res.status(200).json({
       success: true,
       totalUsers: userIds.length,
       totalBets: betData.length,
-      data: betData,
+      data: adminPerspectiveData,
       pagination: {
         total: totalCount,
         page: pageNum,
@@ -997,15 +1061,16 @@ export const getAllCasinoProfitLoss = async (req, res) => {
       ]);
 
       const plData = casinoPLData[0] || { totalStake: 0, totalChange: 0 };
-      const casinoPL = plData.totalChange || 0;
+      const casinoPL = -(plData.totalChange || 0); // Flipped to Admin P&L
+
       userPLReport.push({
         userId: downline._id.toString(),
         userName: downline.userName || '',
         role: downline.role || '',
         stake: plData.totalStake || 0,
-        casinoPL: plData.totalChange || 0,
-        internationalCasinoPL: 0,
-        uplinePL: -casinoPL || 0,
+        casinoPL: casinoPL,
+        internationalCasinoPL: 0, 
+        uplinePL: -casinoPL || 0, 
       });
     }
 

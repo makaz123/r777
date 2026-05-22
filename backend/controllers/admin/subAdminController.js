@@ -20,6 +20,7 @@ import {
   buildAccountSummary,
   getCurrentWeekRange,
   getDownlineUserIds,
+  isAccountInAdminDownline,
 } from '../../utils/accountSummaryUtils.js';
 import {
   adjustUserUpdatesForCommission,
@@ -141,21 +142,45 @@ const updateAdmin = async (id) => {
             },
           },
         ]);
-        const sportsBettingPL =
-          plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+        const sportsBettingPL = plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+
+        // Also aggregate Casino PL
+        const casinoPlResult = await mongoose.model('CasinoBetHistory').aggregate([
+          {
+            $match: {
+              userId: user._id.toString(),
+              $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalPL: {
+                $sum: {
+                  $subtract: [
+                    { $ifNull: ['$win_amount', 0] },
+                    { $ifNull: ['$bet_amount', 0] },
+                  ],
+                },
+              },
+            },
+          },
+        ]);
+        const casinoBettingPL = casinoPlResult.length > 0 ? roundMoney(casinoPlResult[0].totalPL) : 0;
+
+        const trueTotalPL = roundMoney(sportsBettingPL + casinoBettingPL);
         const storedPL = roundMoney(user.bettingProfitLoss || 0);
-        // Stored P/L includes casino callbacks; sports history is sports-only
-        const userBettingPL =
-          storedPL > sportsBettingPL + 0.01 ? storedPL : sportsBettingPL;
+        
+        const userBettingPL = storedPL > trueTotalPL + 0.01 ? storedPL : trueTotalPL;
 
         if (
-          storedPL <= sportsBettingPL + 0.01 &&
-          user.bettingProfitLoss !== sportsBettingPL
+          storedPL <= trueTotalPL + 0.01 &&
+          user.bettingProfitLoss !== trueTotalPL
         ) {
           console.log(
-            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${sportsBettingPL}`
+            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${trueTotalPL}`
           );
-          user.bettingProfitLoss = sportsBettingPL;
+          user.bettingProfitLoss = trueTotalPL;
           await user.save();
         }
         DownlineTotalBettingProfitLoss += getDownlineUplineBettingContribution({
@@ -583,15 +608,28 @@ export const createSubAdmin = async (req, res) => {
       userName,
       accountType,
       commition,
-      balance,
+      balance: balanceRaw,
       exposureLimit,
-      creditReference,
+      creditReference: creditReferenceRaw,
       rollingCommission,
       phone,
       password,
       masterPassword,
-      partnership,
+      partnership: partnershipRaw,
     } = req.body;
+
+    const balance =
+      balanceRaw == null || balanceRaw === '' ? 0 : Number(balanceRaw);
+    const creditReference =
+      creditReferenceRaw == null || creditReferenceRaw === ''
+        ? 0
+        : Number(creditReferenceRaw);
+    const partnership =
+      accountType === 'user'
+        ? 0
+        : partnershipRaw == null || partnershipRaw === ''
+          ? null
+          : Number(partnershipRaw);
 
     // Generate a Unique Code for Referral
     const uniqueCode = crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -660,21 +698,21 @@ export const createSubAdmin = async (req, res) => {
 
     const creditReferenceProfitLoss = balance - creditReference;
 
-    // Partnership validation
-    if (
-      partnership > 100 ||
-      partnership < 0 ||
-      isNaN(partnership) ||
-      partnership === undefined
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Partnership should be between 0 and 100' });
-    }
-
+    // Partnership validation (agent accounts only)
     if (accountType !== 'user') {
+      if (
+        partnership == null ||
+        Number.isNaN(partnership) ||
+        partnership < 0 ||
+        partnership > 100
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Partnership should be between 0 and 100' });
+      }
+
       const parentMyShareCap = getViewerMySharePercent(admin.partnership);
-      const parsedPartnership = Number(partnership) || 0;
+      const parsedPartnership = partnership;
       if (parsedPartnership > parentMyShareCap) {
         return res.status(400).json({
           message: `Partnership cannot exceed your my share (${parentMyShareCap}%)`,
@@ -780,6 +818,24 @@ export const createSubAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error('Create SubAdmin Error:', error);
+
+    if (error.name === 'ValidationError' && error.errors) {
+      const fieldLabels = {
+        name: 'Client name',
+        userName: 'User name',
+        password: 'Password',
+      };
+      const firstKey = Object.keys(error.errors)[0];
+      const firstErr = error.errors[firstKey];
+      const label = fieldLabels[firstKey] || firstKey;
+      const detail = firstErr?.message || error.message;
+      const message = /required/i.test(detail)
+        ? `${label} is required.`
+        : detail;
+
+      return res.status(400).json({ message });
+    }
+
     return res
       .status(500)
       .json({ message: 'Server error', error: error.message });
@@ -1095,10 +1151,18 @@ export const forceLogoutUser = async (req, res) => {
 
 export const getLoginHistory = async (req, res) => {
   try {
-    const { userId } = req.params; // passed in route as /credit-ref-history/:userId
-    // console.log("userId", userId);
-    const data = await LoginHistory.find({ userId }).sort({ createdAt: -1 }); // optional: latest first
-    // console.log("data", data);
+    const { userId } = req.params; // passed in route as /get/login-history/:userId
+    const { startDate, endDate } = req.query;
+
+    const query = { userId };
+    
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const data = await LoginHistory.find(query).sort({ createdAt: -1 }); // latest first
     res.status(200).json({
       message: 'Login history fetched successfully',
       data,
@@ -1355,16 +1419,24 @@ export const getAllOnlyUser = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    //  Base filter
-    let filter =
-      role === 'supperadmin'
-        ? {
-            _id: { $ne: id },
-            role: 'user',
-            status: { $ne: 'delete' },
-            invite: admin.code,
-          }
-        : { invite: admin.code, role: 'user', status: { $ne: 'delete' } };
+    const isSuperAdmin = role === 'supperadmin' || role === 'superadmin';
+
+    let filter;
+    if (isSuperAdmin) {
+      filter = { role: 'user', status: { $ne: 'delete' } };
+    } else {
+      const downlineIds = await getDownlineUserIds(SubAdmin, admin.code);
+      if (!downlineIds.length) {
+        return res.status(200).json({
+          message: 'All sub-admin details retrieved successfully',
+          data: [],
+          totalUsers: 0,
+          totalPages: 0,
+          currentPage: pageNum,
+        });
+      }
+      filter = { _id: { $in: downlineIds }, status: { $ne: 'delete' } };
+    }
 
     // 🔍 Add search by userName if searchQuery exists
     if (searchQuery && searchQuery !== undefined) {
@@ -3443,10 +3515,17 @@ export const getSettlementUsers = async (req, res) => {
     const debtors = [];
 
     downlines.forEach((user) => {
-      // clientPL = avbalance - baseBalance
-      // If clientPL > 0, admin owes user (Creditor / dena hai)
-      // If clientPL < 0, user owes admin (Debtor / lena hai)
-      const pl = (user.avbalance || 0) - (user.baseBalance || 0);
+      // For end-users, PL is their personal avbalance vs baseBalance
+      // For agents/masters, PL is their aggregated uplineBettingProfitLoss
+      let pl = 0;
+      if (user.role === 'user') {
+        pl = (user.avbalance || 0) - (user.baseBalance || 0);
+      } else {
+        pl = user.uplineBettingProfitLoss || 0;
+      }
+
+      // If pl > 0, admin owes user (Creditor / dena hai)
+      // If pl < 0, user owes admin (Debtor / lena hai)
 
       const userData = {
         _id: user._id,
@@ -3508,9 +3587,15 @@ export const settleUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // pl = avbalance - baseBalance
-    const pl = (editUser.avbalance || 0) - (editUser.baseBalance || 0);
-
+    // For end-users, PL is personal avbalance vs baseBalance
+    // For agents/masters, PL is uplineBettingProfitLoss
+    let pl = 0;
+    if (editUser.role === 'user') {
+      pl = (editUser.avbalance || 0) - (editUser.baseBalance || 0);
+    } else {
+      pl = editUser.uplineBettingProfitLoss || 0;
+    }
+    
     if (pl === 0) {
       return res
         .status(400)
@@ -3528,30 +3613,29 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      // To clear positive PL (avbalance > baseBalance), we INCREASE baseBalance
-      editUser.baseBalance += parsedAmount;
-      editUser.balance += parsedAmount;
-      // avbalance remains UNCHANGED!
+      // To clear positive PL (avbalance > baseBalance), we DECREASE avbalance
+      // (User is withdrawing their winnings)
+      editUser.avbalance -= parsedAmount;
+      editUser.balance -= parsedAmount; 
+      // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
         editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        // Admin lost this money, so admin's avbalance < baseBalance (negative PL)
-        // To clear admin's negative PL, we DECREASE admin's baseBalance
-        admin.baseBalance -= parsedAmount;
-        admin.balance -= parsedAmount;
+        admin.avbalance += parsedAmount;
+        admin.balance += parsedAmount;
       }
 
       await admin.save();
       await editUser.save();
 
-      // Log it as a settlement transaction (we can use WithdrawalHistory to represent admin paying out, or just TransactionHistory)
+      // Log it as a settlement transaction 
       await TransactionHistory.create({
         userId: editUser._id,
         userName: editUser.userName,
-        withdrawl: 0,
-        deposite: 0, // No actual funds moved in avbalance
+        withdrawl: parsedAmount, // It's a withdrawal of winnings
+        deposite: 0,
         amount: editUser.avbalance,
         from: admin.userName,
         to: editUser.userName,
@@ -3567,19 +3651,18 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      // To clear negative PL (avbalance < baseBalance), we DECREASE baseBalance
-      editUser.baseBalance -= parsedAmount;
-      editUser.balance -= parsedAmount;
-      // avbalance remains UNCHANGED!
+      // To clear negative PL (avbalance < baseBalance), we INCREASE avbalance
+      // (User is depositing their losses to pay off the debt)
+      editUser.avbalance += parsedAmount;
+      editUser.balance += parsedAmount;
+      // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
         editUser.baseBalance - (editUser.creditReference || 0);
 
       if (admin.role !== 'supperadmin' && admin.role !== 'superadmin') {
-        // Admin won this money, so admin's avbalance > baseBalance (positive PL)
-        // To clear admin's positive PL, we INCREASE admin's baseBalance
-        admin.baseBalance += parsedAmount;
-        admin.balance += parsedAmount;
+        admin.avbalance -= parsedAmount;
+        admin.balance -= parsedAmount;
       }
 
       await admin.save();
@@ -3589,7 +3672,7 @@ export const settleUser = async (req, res) => {
         userId: editUser._id,
         userName: editUser.userName,
         withdrawl: 0,
-        deposite: 0, // No actual funds moved in avbalance
+        deposite: parsedAmount, // Depositing to pay off losses
         amount: editUser.avbalance,
         from: editUser.userName,
         to: admin.userName,
@@ -3615,12 +3698,34 @@ export const settleUser = async (req, res) => {
 export const getUserFullDetails = async (req, res) => {
   try {
     const { userId } = req.params;
+    const { id, role } = req;
+
+    const viewer = await SubAdmin.findById(id, { code: 1, role: 1 }).lean();
+    if (!viewer) {
+      return res.status(404).json({ success: false, message: 'Admin not found' });
+    }
+
     const user = await SubAdmin.findById(userId);
 
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: 'User not found' });
+    }
+
+    const isSuperAdmin = role === 'supperadmin' || role === 'superadmin';
+    if (!isSuperAdmin) {
+      const inDownline = await isAccountInAdminDownline(
+        SubAdmin,
+        viewer.code,
+        user
+      );
+      if (!inDownline) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only view users in your downline',
+        });
+      }
     }
 
     // Get parent
@@ -3662,15 +3767,30 @@ export const getUserFullDetails = async (req, res) => {
       },
     ]);
 
-    // Aggregate Casino Bets
+    // Aggregate Casino Bets (net = win - stake; only real rounds)
     const casinoBetsAgg = await CasinoBetHistory.aggregate([
-      { $match: { userId: user._id.toString() } },
       {
-        $group: {
-          _id: '$game_name',
-          profitLoss: { $sum: '$change' },
+        $match: {
+          userId: user._id.toString(),
+          $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
         },
       },
+      {
+        $group: {
+          _id: { $ifNull: ['$game_name', 'Unknown'] },
+          profitLoss: {
+            $sum: {
+              $subtract: [
+                { $ifNull: ['$win_amount', 0] },
+                { $ifNull: ['$bet_amount', 0] },
+              ],
+            },
+          },
+          betCount: { $sum: 1 },
+          totalStaked: { $sum: { $ifNull: ['$bet_amount', 0] } },
+        },
+      },
+      { $match: { totalStaked: { $gt: 0 } } },
     ]);
 
     // Process Game Play Data
@@ -3690,7 +3810,12 @@ export const getUserFullDetails = async (req, res) => {
     sportsBetsAgg.forEach((item) => {
       const sport = item._id.sport || 'Unknown';
       const market = item._id.market || 'Unknown';
-      const pl = Number(item.profitLoss) || 0;
+
+      const pl = roundMoney(Number(item.profitLoss) || 0);
+      const betCount = Number(item.totalBet) || 0;
+      const betAmount = roundMoney(Number(item.betAmount) || 0);
+
+      // Extract match-odds win PL for commission reverse-calculation
       const matchOddsNetWinPL = Number(item.matchOddsNetWinPL) || 0;
 
       // Calculate commission debited dynamically
@@ -3712,25 +3837,35 @@ export const getUserFullDetails = async (req, res) => {
           profitLoss: 0,
         };
       }
-      sportSummary[sport].betCount += item.totalBet;
-      sportSummary[sport].betAmount += item.betAmount || 0;
+      sportSummary[sport].betCount += betCount;
+      sportSummary[sport].betAmount += betAmount;
       sportSummary[sport].profitLoss += pl;
-
-      // Push to market summary
-      marketSummary.push({ sport, market, profitLoss: pl });
-
+      
       overallSportsPL += pl;
-      overallSportsBets += item.totalBet;
+      overallSportsBets += betCount;
+
+      marketSummary.push({
+        sport,
+        market,
+        profitLoss: pl
+      });
     });
+
 
     const casinoSummary = [];
     let overallCasinoPL = 0;
     casinoBetsAgg.forEach((item) => {
-      const casino = item._id || 'Unknown';
-      const pl = Number(item.profitLoss) || 0;
-      casinoSummary.push({ casino, profitLoss: pl });
+      const pl = roundMoney(Number(item.profitLoss) || 0);
+      if (pl === 0 && (item.totalStaked || 0) <= 0) return;
+      const casino =
+        typeof item._id === 'string' ? item._id : item._id?.game_name || 'Unknown';
+      casinoSummary.push({ casino, profitLoss: pl, betCount: item.betCount || 0 });
       overallCasinoPL += pl;
     });
+
+    overallSportsPL = roundMoney(overallSportsPL);
+    overallCasinoPL = roundMoney(overallCasinoPL);
+    const totalPL = roundMoney(overallSportsPL + overallCasinoPL);
 
     // Calculate Exposure
     let exposure = user.exposure || 0;
@@ -3763,8 +3898,10 @@ export const getUserFullDetails = async (req, res) => {
         creditRef: user.creditReference || 0,
         balance: user.baseBalance || 0,
         availableBalance: user.avbalance || 0,
-        profitLoss: user.bettingProfitLoss || 0,
-        uplineBalance: (user.avbalance || 0) - (user.baseBalance || 0),
+        profitLoss: totalPL,
+        sportsPL: overallSportsPL,
+        casinoPL: overallCasinoPL,
+        uplineBalance: roundMoney((user.avbalance || 0) - (user.baseBalance || 0)),
         downlineBalance: 0, // Calculate if needed
         exposure: exposure,
         maxProfit: user.maxProfit || 0,
@@ -3774,12 +3911,15 @@ export const getUserFullDetails = async (req, res) => {
         createdOn: user.createdAt,
       },
       gamePlay: {
-        overallPL: overallSportsPL + overallCasinoPL,
+        overallPL: totalPL,
+        sportsPL: overallSportsPL,
+        casinoPL: overallCasinoPL,
         // Show calculated commission debited for user, or commissionEarned for agents
-        commission:
+        commission: roundMoney(
           user.role === 'user'
             ? totalCommissionDebited
-            : user.commissionEarned || 0,
+            : user.commissionEarned || 0
+        ),
         totalBet: overallSportsBets,
         sports: Object.values(sportSummary),
         casinos: casinoSummary,

@@ -3697,7 +3697,12 @@ export const getUserFullDetails = async (req, res) => {
     sportsBetsAgg.forEach(item => {
       const sport = item._id.sport || 'Unknown';
       const market = item._id.market || 'Unknown';
-      const pl = Number(item.profitLoss) || 0;
+      
+      const pl = -(Number(item.profitLoss) || 0); // Flipped to Admin P&L
+      const betCount = Number(item.totalBets) || 0;
+      const betAmount = Number(item.totalBetAmount) || 0;
+
+      // Extract match-odds win PL for commission reverse-calculation
       const matchOddsNetWinPL = Number(item.matchOddsNetWinPL) || 0;
       
       // Calculate commission debited dynamically
@@ -3714,22 +3719,26 @@ export const getUserFullDetails = async (req, res) => {
       if (!sportSummary[sport]) {
         sportSummary[sport] = { sport, betCount: 0, betAmount: 0, profitLoss: 0 };
       }
-      sportSummary[sport].betCount += item.totalBet;
-      sportSummary[sport].betAmount += item.betAmount || 0;
+      sportSummary[sport].betCount += betCount;
+      sportSummary[sport].betAmount += betAmount;
       sportSummary[sport].profitLoss += pl;
       
-      // Push to market summary
-      marketSummary.push({ sport, market, profitLoss: pl });
-      
       overallSportsPL += pl;
-      overallSportsBets += item.totalBet;
+      overallSportsBets += betCount;
+
+      marketSummary.push({
+        sport,
+        market,
+        profitLoss: pl
+      });
     });
+
 
     const casinoSummary = [];
     let overallCasinoPL = 0;
     casinoBetsAgg.forEach(item => {
       const casino = item._id || 'Unknown';
-      const pl = Number(item.profitLoss) || 0;
+      const pl = -(Number(item.profitLoss) || 0); // Flipped to Admin P&L
       casinoSummary.push({ casino, profitLoss: pl });
       overallCasinoPL += pl;
     });

@@ -868,11 +868,17 @@ export const getAllDownlineCasinoBetHistory = async (req, res) => {
       CasinoBetHistory.countDocuments(filter),
     ]);
 
+    // Flip change to show Admin P&L (bet - win) instead of User P&L (win - bet)
+    const adminPerspectiveData = betData.map(bet => ({
+      ...bet,
+      change: -(bet.change || 0)
+    }));
+
     return res.status(200).json({
       success: true,
       totalUsers: userIds.length,
       totalBets: betData.length,
-      data: betData,
+      data: adminPerspectiveData,
       pagination: {
         total: totalCount,
         page: pageNum,
@@ -993,15 +999,16 @@ export const getAllCasinoProfitLoss = async (req, res) => {
       ]);
 
       const plData = casinoPLData[0] || { totalStake: 0, totalChange: 0 };
-      const casinoPL = plData.totalChange || 0;
+      const casinoPL = -(plData.totalChange || 0); // Flipped to Admin P&L
+
       userPLReport.push({
         userId: downline._id.toString(),
         userName: downline.userName || '',
         role: downline.role || '',
         stake: plData.totalStake || 0,
-        casinoPL: plData.totalChange || 0,
-        internationalCasinoPL: 0,
-        uplinePL: -casinoPL || 0,
+        casinoPL: casinoPL,
+        internationalCasinoPL: 0, 
+        uplinePL: -casinoPL || 0, 
       });
     }
 

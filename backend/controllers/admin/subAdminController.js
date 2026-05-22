@@ -1143,10 +1143,18 @@ export const forceLogoutUser = async (req, res) => {
 
 export const getLoginHistory = async (req, res) => {
   try {
-    const { userId } = req.params; // passed in route as /credit-ref-history/:userId
-    // console.log("userId", userId);
-    const data = await LoginHistory.find({ userId }).sort({ createdAt: -1 }); // optional: latest first
-    // console.log("data", data);
+    const { userId } = req.params; // passed in route as /get/login-history/:userId
+    const { startDate, endDate } = req.query;
+
+    const query = { userId };
+    
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const data = await LoginHistory.find(query).sort({ createdAt: -1 }); // latest first
     res.status(200).json({
       message: 'Login history fetched successfully',
       data,

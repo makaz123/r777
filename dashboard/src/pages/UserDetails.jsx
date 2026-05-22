@@ -4,6 +4,9 @@ import Navbar from '../components/Navbar';
 import api from '../redux/api';
 import { toast } from 'react-toastify';
 import { getApiErrorMessage } from '../utils/apiErrorMessage';
+import { useDispatch } from 'react-redux';
+import { withdrawalAndDeposite, changePasswordByDownline } from '../redux/reducer/authReducer';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const UserDetails = () => {
   const { userInfo } = useSelector((state) => state.auth);
@@ -15,6 +18,28 @@ const UserDetails = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  
+  const dispatch = useDispatch();
+
+  // Modals state
+  const [depositPopup, setDepositPopup] = useState(false);
+  const [withdrawPopup, setWithdrawPopup] = useState(false);
+  const [passwordPopup, setPasswordPopup] = useState(false);
+  const [lastLoginPopup, setLastLoginPopup] = useState(false);
+
+  const [formData, setFormData] = useState({
+    remark: '',
+    balance: '',
+    masterPassword: '',
+  });
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [loginHistoryData, setLoginHistoryData] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loginStartDate, setLoginStartDate] = useState('');
+  const [loginEndDate, setLoginEndDate] = useState('');
   
   const dropdownRef = useRef(null);
 
@@ -64,6 +89,124 @@ const UserDetails = () => {
     } finally {
       setLoadingDetails(false);
     }
+  };
+
+  const handleCreditDepositSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.balance || isNaN(formData.balance) || Number(formData.balance) <= 0) {
+      toast.error('Please enter a valid deposit amount.');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Please enter your transaction password.');
+      return;
+    }
+    try {
+      const result = await dispatch(
+        withdrawalAndDeposite({
+          formData,
+          userId: selectedUserId,
+          type: 'deposite',
+        })
+      ).unwrap();
+      toast.success(result?.message || 'Deposit successful');
+      setDepositPopup(false);
+      setFormData({ remark: '', balance: '', masterPassword: '' });
+      fetchUserDetails(selectedUserId);
+    } catch (error) {
+      toast.error(error || 'Deposit failed');
+    }
+  };
+
+  const handleWithdrawSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.balance || isNaN(formData.balance) || Number(formData.balance) <= 0) {
+      toast.error('Please enter a valid withdraw amount.');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Please enter your transaction password.');
+      return;
+    }
+    try {
+      const result = await dispatch(
+        withdrawalAndDeposite({
+          formData,
+          userId: selectedUserId,
+          type: 'withdrawal',
+        })
+      ).unwrap();
+      toast.success(result?.message || 'Withdrawal successful');
+      setWithdrawPopup(false);
+      setFormData({ remark: '', balance: '', masterPassword: '' });
+      fetchUserDetails(selectedUserId);
+    } catch (error) {
+      toast.error(error || 'Withdrawal failed');
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword || newPassword !== confirmPassword) {
+      toast.error('Passwords do not match or are empty.');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Please enter master password.');
+      return;
+    }
+    try {
+      const result = await dispatch(
+        changePasswordByDownline({
+          id: selectedUserId,
+          masterPassword: formData.masterPassword,
+          newPassword,
+        })
+      ).unwrap();
+      toast.success(result?.message || 'Password changed');
+      setPasswordPopup(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setFormData({ ...formData, masterPassword: '' });
+    } catch (error) {
+      toast.error(error || 'Change password failed');
+    }
+  };
+
+  const fetchLoginHistoryData = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedUserId) return;
+    setLastLoginPopup(true);
+    try {
+      setLoadingHistory(true);
+      let query = '';
+      if (loginStartDate) query += `?startDate=${new Date(loginStartDate).toISOString()}`;
+      if (loginEndDate) query += `${query ? '&' : '?'}endDate=${new Date(loginEndDate).toISOString()}`;
+      
+      const res = await api.get(`/get/login-history/${selectedUserId}${query}`, {
+        withCredentials: true,
+      });
+      setLoginHistoryData(res.data?.data || []);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleResetLoginHistory = () => {
+    setLoginStartDate('');
+    setLoginEndDate('');
+    // Need to use setTimeout to allow state to clear before fetching
+    setTimeout(() => {
+      if (selectedUserId) {
+        setLoadingHistory(true);
+        api.get(`/get/login-history/${selectedUserId}`, { withCredentials: true })
+          .then(res => setLoginHistoryData(res.data?.data || []))
+          .catch(err => toast.error(getApiErrorMessage(err)))
+          .finally(() => setLoadingHistory(false));
+      }
+    }, 0);
   };
 
   const handleSelectUser = (user) => {
@@ -151,12 +294,12 @@ const UserDetails = () => {
                 <h2 className="font-bold text-[15px] mb-3 text-black">Setting:</h2>
                 <div className="grid grid-cols-4 gap-2 mb-4">
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">User Update</button>
-                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Deposit / Credit</button>
+                  <button onClick={() => setDepositPopup(true)} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Deposit / Credit</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Settlement</button>
-                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Last Login</button>
+                  <button onClick={fetchLoginHistoryData} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center">Last Login</button>
                   
-                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Change Password</button>
-                  <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Withdrawal</button>
+                  <button onClick={() => setPasswordPopup(true)} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Change Password</button>
+                  <button onClick={() => setWithdrawPopup(true)} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Withdrawal</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Game Control</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Casino Control</button>
                 </div>
@@ -315,6 +458,186 @@ const UserDetails = () => {
           </div>
         )}
       </div>
+
+      {/* Deposit Modal */}
+      <AnimatePresence>
+        {depositPopup && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-[500px] bg-white rounded-lg shadow-xl overflow-hidden"
+            >
+              <div className="flex justify-between items-center bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white">
+                <h3 className="font-semibold text-[16px]">Credit / Deposit</h3>
+                <button onClick={() => setDepositPopup(false)} className="text-xl leading-none font-bold">&times;</button>
+              </div>
+              <form onSubmit={handleCreditDepositSubmit} className="p-4 space-y-3 bg-sky-50 text-[13px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">{userDetails.userInfo.userName} Available</label>
+                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none" value={userDetails.accountDetails.availableBalance ?? ''} />
+                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#4ecdde] px-2 py-1.5 outline-none" value={Number(userDetails.accountDetails.availableBalance || 0) + Number(formData.balance || 0)} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Add Deposit</label>
+                  <input type="number" min="0" step="any" className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" required value={formData.balance} onChange={(e) => setFormData({ ...formData, balance: e.target.value })} />
+                </div>
+                <div className="flex flex-wrap items-start gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Remarks</label>
+                  <textarea rows={2} className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Master Password</label>
+                  <input type="password" required className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.masterPassword} onChange={(e) => setFormData({ ...formData, masterPassword: e.target.value })} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="submit" className="bg-[#146578] text-white px-4 py-1.5 rounded font-semibold">Submit</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Withdraw Modal */}
+      <AnimatePresence>
+        {withdrawPopup && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-[500px] bg-white rounded-lg shadow-xl overflow-hidden"
+            >
+              <div className="flex justify-between items-center bg-gradient-to-b from-[#f26522] to-[#b84814] px-4 py-2 text-white">
+                <h3 className="font-semibold text-[16px]">Withdrawal</h3>
+                <button onClick={() => setWithdrawPopup(false)} className="text-xl leading-none font-bold">&times;</button>
+              </div>
+              <form onSubmit={handleWithdrawSubmit} className="p-4 space-y-3 bg-orange-50 text-[13px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">{userDetails.userInfo.userName} Available</label>
+                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#f4a17d] px-2 py-1.5 outline-none" value={userDetails.accountDetails.availableBalance ?? ''} />
+                  <input type="text" readOnly className="min-w-[80px] flex-1 rounded-[2px] border border-gray-500 bg-[#f4a17d] px-2 py-1.5 outline-none" value={Number(userDetails.accountDetails.availableBalance || 0) - Number(formData.balance || 0)} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Withdrawal Amount</label>
+                  <input type="number" min="0" step="any" className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" required value={formData.balance} onChange={(e) => setFormData({ ...formData, balance: e.target.value })} />
+                </div>
+                <div className="flex flex-wrap items-start gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Remarks</label>
+                  <textarea rows={2} className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.remark} onChange={(e) => setFormData({ ...formData, remark: e.target.value })} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="min-w-[170px] shrink-0 text-gray-950 font-semibold">Master Password</label>
+                  <input type="password" required className="min-w-0 flex-1 rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.masterPassword} onChange={(e) => setFormData({ ...formData, masterPassword: e.target.value })} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="submit" className="bg-[#b84814] text-white px-4 py-1.5 rounded font-semibold">Submit</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Change Password Modal */}
+      <AnimatePresence>
+        {passwordPopup && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-[400px] bg-white rounded-lg shadow-xl overflow-hidden"
+            >
+              <div className="flex justify-between items-center bg-[#f0ad4e] px-4 py-2 text-white">
+                <h3 className="font-semibold text-[16px]">Change Password</h3>
+                <button onClick={() => setPasswordPopup(false)} className="text-xl leading-none font-bold">&times;</button>
+              </div>
+              <form onSubmit={handleChangePassword} className="p-4 space-y-3 bg-yellow-50 text-[13px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="w-full text-gray-950 font-semibold">New Password</label>
+                  <input type="password" required className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="w-full text-gray-950 font-semibold">Confirm Password</label>
+                  <input type="password" required className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="w-full text-gray-950 font-semibold">Master Password</label>
+                  <input type="password" required className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 outline-none" value={formData.masterPassword} onChange={(e) => setFormData({ ...formData, masterPassword: e.target.value })} />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="submit" className="bg-[#f0ad4e] text-white px-4 py-1.5 rounded font-semibold">Change</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Last Login Modal */}
+      <AnimatePresence>
+        {lastLoginPopup && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-3xl bg-[#f0f4f8] shadow-xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="flex justify-between items-center bg-gradient-to-b from-[#359db1] to-[#247c8f] px-4 py-2 text-white">
+                <h3 className="font-bold text-[15px]">Last Logins of {userDetails.userInfo.userName}</h3>
+                <button onClick={() => setLastLoginPopup(false)} className="text-xl leading-none font-bold text-gray-200">&times;</button>
+              </div>
+              <div className="bg-[#f0f4f8] p-4 flex gap-4 items-center">
+                <input 
+                  type="datetime-local" 
+                  className="border border-gray-400 rounded px-2 py-1 text-[13px] outline-none"
+                  value={loginStartDate}
+                  onChange={(e) => setLoginStartDate(e.target.value)}
+                />
+                <input 
+                  type="datetime-local" 
+                  className="border border-gray-400 rounded px-2 py-1 text-[13px] outline-none"
+                  value={loginEndDate}
+                  onChange={(e) => setLoginEndDate(e.target.value)}
+                />
+                <button onClick={fetchLoginHistoryData} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white px-4 py-1 rounded text-[13px] font-semibold border border-[#247c8f]">Go</button>
+                <button onClick={handleResetLoginHistory} className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white px-4 py-1 rounded text-[13px] font-semibold border border-[#247c8f]">Reset</button>
+              </div>
+              <div className="p-2 pt-0 flex-1 overflow-auto bg-[#f0f4f8]">
+                <table className="w-full text-left border-collapse border border-gray-300 bg-[#f0f4f8] text-[13px]">
+                  <thead>
+                    <tr className="bg-[#146578] text-white">
+                      <th className="p-2 font-semibold">Date & Time</th>
+                      <th className="p-2 font-semibold border-l border-white/20">IP</th>
+                      <th className="p-2 font-semibold border-l border-white/20">Device</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingHistory ? (
+                      <tr><td colSpan="3" className="p-2 text-center text-gray-500 bg-gray-200">Loading...</td></tr>
+                    ) : loginHistoryData.length === 0 ? (
+                      <tr><td colSpan="3" className="p-2 text-center text-gray-500 bg-gray-200">No Data Found.</td></tr>
+                    ) : (
+                      loginHistoryData.map((log, i) => (
+                        <tr key={i} className="bg-gray-100 border-b border-gray-300">
+                          <td className="p-2">{log.dateTime || new Date(log.createdAt).toLocaleString('en-GB')}</td>
+                          <td className="p-2 border-l border-gray-300">{log.ip || '-'}</td>
+                          <td className="p-2 border-l border-gray-300">{log.isp || log.device || '-'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

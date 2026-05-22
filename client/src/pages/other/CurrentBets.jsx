@@ -49,10 +49,20 @@ function CurrentBets() {
     setGoToPage(page);
   }, [page]);
 
-  // Filter bets by type (all/back/lay) and search term
+  const isCasinoBet = (bet) =>
+    bet?.betType === 'casino' ||
+    bet?.betType === 'live_casino' ||
+    bet?.gameName === 'Casino';
+
+  // Filter bets by type (all/back/lay) and search term; sports list excludes casino unless filter is Casino
   const filteredBets =
     betHistory?.filter((bet) => {
-      const matchesType = betType === 'all' || bet.otype === betType;
+      if (selectedGame !== 'Casino' && isCasinoBet(bet)) return false;
+      if (selectedGame === 'Casino' && !isCasinoBet(bet)) return false;
+      const matchesType =
+        betType === 'all' ||
+        bet.otype === betType ||
+        (betType !== 'lay' && bet.betType === 'live_casino');
       const matchesSearch =
         !searchTerm ||
         bet.eventName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,6 +75,9 @@ function CurrentBets() {
   // Calculate totals
   const totalBets = filteredBets.length;
   const totalAmount = filteredBets.reduce((sum, bet) => {
+    if (bet.betType === 'live_casino') {
+      return sum + (parseFloat(bet.betAmount) || 0);
+    }
     const amount = bet.otype === 'back' ? bet.price : bet.betAmount;
     return sum + (parseFloat(amount) || 0);
   }, 0);

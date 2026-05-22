@@ -37,6 +37,7 @@ import betModel from '../models/betModel.js';
 import SubAdmin from '../models/subAdminModel.js';
 import TransactionHistory from '../models/transtionHistoryModel.js';
 import CasinoBetHistory from '../models/casinoBetHistory.model.js';
+import { fetchUserLiveCasinoBetsForHistory } from './casinoControllerNew.js';
 import { getDateRangeUTC } from '../utils/dateUtils.js';
 import { isCasinoGame } from './casinoController.js';
 const {
@@ -4005,34 +4006,80 @@ export const getBetHistory = async (req, res) => {
   } = req.query;
 
   try {
-    const query = { userId: id, status: 0 };
+    const pageNum = Math.max(parseInt(page, 10), 1);
+    const limitNum = Math.max(parseInt(limit, 10), 1);
+    const skip = (pageNum - 1) * limitNum;
 
-    // Filter by date if both start and end dates are provided
+    const applyVoidFilter = (query) => {
+      if (selectedVoid === 'settel') {
+        query.status = { $ne: 0 };
+        query.betResult = { $not: { $regex: /^VOID$/i } };
+      } else if (selectedVoid === 'void') {
+        query.status = 2;
+        query.betResult = { $regex: /^VOID$/i };
+      } else {
+        query.status = 0;
+      }
+      return query;
+    };
+
+    // Live + in-app casino only when user explicitly picks Casino
+    if (selectedGame === 'Casino') {
+      const sportsCasinoQuery = applyVoidFilter({
+        userId: id,
+        betType: 'casino',
+      });
+      if (startDate && endDate) {
+        sportsCasinoQuery.createdAt = getDateRangeUTC(startDate, endDate);
+      }
+
+      const [sportsCasinoBets, liveCasinoBets] = await Promise.all([
+        betHistoryModel.find(sportsCasinoQuery).sort({ date: -1 }).lean(),
+        fetchUserLiveCasinoBetsForHistory({
+          userId: id,
+          startDate,
+          endDate,
+          selectedVoid,
+        }),
+      ]);
+
+      const combined = [...sportsCasinoBets, ...liveCasinoBets].sort(
+        (a, b) =>
+          new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
+      );
+      const total = combined.length;
+      const data = combined.slice(skip, skip + limitNum);
+
+      return res.status(200).json({
+        success: true,
+        data,
+        pagination: {
+          total,
+          page: pageNum,
+          pages: Math.ceil(total / limitNum) || 0,
+        },
+      });
+    }
+
+    // Sports bet history — never mix live casino rounds here
+    const query = applyVoidFilter({ userId: id });
+    query.betType = { $ne: 'casino' };
+
     if (startDate && endDate) {
       query.createdAt = getDateRangeUTC(startDate, endDate);
     }
 
-    // Filter by selectedGame if provided
     if (selectedGame) {
       query.gameName = selectedGame;
-    }
-
-    // Filter by selectedVoid if provided
-    if (selectedVoid === 'settel') {
-      query.status = { $ne: 0 };
-      query.betResult = { $not: { $regex: /^VOID$/i } };
-    } else if (selectedVoid === 'void') {
-      query.status = 2;
-      query.betResult = { $regex: /^VOID$/i };
-    } else if (selectedVoid === 'unsettel') {
-      query.status = 0;
+    } else {
+      query.gameName = { $ne: 'Casino' };
     }
 
     const bets = await betHistoryModel
       .find(query)
-      .sort({ date: -1 }) // most recent first
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limitNum);
 
     const total = await betHistoryModel.countDocuments(query);
 
@@ -4041,8 +4088,8 @@ export const getBetHistory = async (req, res) => {
       data: bets,
       pagination: {
         total,
-        page: parseInt(page),
-        pages: Math.ceil(total / limit),
+        page: pageNum,
+        pages: Math.ceil(total / limitNum) || 0,
       },
     });
   } catch (error) {

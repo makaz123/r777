@@ -90,6 +90,59 @@ export const startCasinoGame = async (req, res) => {
 };
 
 import CasinoBetHistory from '../models/casinoBetHistory.model.js';
+import { getDateRangeUTC } from '../utils/dateUtils.js';
+import { hasCasinoRoundActivity } from '../utils/casinoPlUtils.js';
+
+/** Map live-casino round to client bet-history table row shape. */
+export const mapCasinoBetToClientHistoryRow = (cb) => ({
+  _id: cb._id,
+  userId: cb.userId,
+  userName: cb.userName,
+  gameName: 'Casino',
+  eventName: cb.game_name || cb.game_uid || 'Casino Game',
+  marketName: `Round ${cb.game_round}`,
+  teamName: cb.game_name || '-',
+  xValue: '-',
+  otype: 'back',
+  price: cb.bet_amount ?? 0,
+  betAmount: cb.bet_amount ?? 0,
+  createdAt: cb.createdAt,
+  betType: 'live_casino',
+});
+
+/**
+ * Live casino rounds for user bet-history page (separate from sports betHistory).
+ */
+export const fetchUserLiveCasinoBetsForHistory = async ({
+  userId,
+  startDate,
+  endDate,
+  selectedVoid = 'unsettel',
+}) => {
+  const query = {
+    userId: String(userId),
+    $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+  };
+
+  if (startDate && endDate) {
+    query.createdAt = getDateRangeUTC(startDate, endDate);
+  }
+
+  if (selectedVoid === 'unsettel') {
+    query.bet_amount = { $gt: 0 };
+    query.win_amount = 0;
+  } else if (selectedVoid === 'settel') {
+    query.win_amount = { $gt: 0 };
+  } else if (selectedVoid === 'void') {
+    return [];
+  }
+
+  const rows = await CasinoBetHistory.find(query)
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return rows.filter(hasCasinoRoundActivity).map(mapCasinoBetToClientHistoryRow);
+};
 
 // export const casinoCallback = async (req, res) => {
 //   try {
@@ -644,8 +697,11 @@ export const getCasinoBetHistory = async (req, res) => {
       });
     }
 
-    // Build query
-    const query = { userId: userId };
+    // Build query — only real casino rounds
+    const query = {
+      userId: userId,
+      $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+    };
 
     // Add date filtering if provided
     if (startDate && endDate) {

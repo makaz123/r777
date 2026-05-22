@@ -124,7 +124,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
       name: 'Control',
       submenu: [
         { name: 'Game', path: '/gamebetlock' },
-        { name: 'Casino', path: '/' },
+        { name: 'Casino', path: '/casinolock' },
       ],
     },
     { name: 'Banner Settings', path: '/banner-settings', superAdminOnly: true },
@@ -311,7 +311,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </NavLink>
 
             <nav className='h-full text-black'>
-              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center z-999'>
+              <ul className='relative z-999 mx-auto flex h-full w-full flex-wrap items-center'>
                 {visibleNavItems.map((item, i) => (
                   <li
                     key={i}
@@ -332,7 +332,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                       </NavLink>
                     ) : (
                       <span
-                        className={`flex h-full cursor-pointer items-center gap-[2px] from-[#16a4bc] to-[#16a4bc] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
+                        className={`" flex h-full cursor-pointer items-center gap-[2px] from-[#16a4bc] to-[#16a4bc] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b`}
                       >
                         {item.name}
                         <IoMdArrowDropdown />

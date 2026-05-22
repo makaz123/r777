@@ -33,9 +33,8 @@ const formatBalance = (value) => {
 function AccountStatement() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { transHistory, accountStatementSummary, loading, pagination } = useSelector(
-    (state) => state.bet
-  );
+  const { transHistory, accountStatementSummary, loading, pagination } =
+    useSelector((state) => state.bet);
 
   const currentDate = new Date();
   const fourMonthsAgo = new Date();
@@ -79,22 +78,22 @@ function AccountStatement() {
     setSearchTerm('');
   };
 
-  const filteredData = transHistory?.filter((row) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      row.description?.toLowerCase().includes(searchLower) ||
-      String(row.credit ?? '').includes(searchTerm) ||
-      String(row.debit ?? '').includes(searchTerm)
-    );
-  }) || [];
+  const filteredData =
+    transHistory?.filter((row) => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        row.description?.toLowerCase().includes(searchLower) ||
+        String(row.credit ?? '').includes(searchTerm) ||
+        String(row.debit ?? '').includes(searchTerm)
+      );
+    }) || [];
 
   return (
     <div className='w-full p-2 text-sm text-[#333]'>
       <div className='w-full border border-[#00000020] bg-white shadow-[0_0_5px_#a4a4a4]'>
-        
         {/* Header */}
-        <div className='bg-[#18b0c8] text-white p-2'>
+        <div className='bg-[#18b0c8] p-2 text-white'>
           <h4 className='text-[16px] font-bold'>
             {t('account_statement', 'Account Statement')}
           </h4>
@@ -102,11 +101,11 @@ function AccountStatement() {
 
         <div className='w-full p-3'>
           {/* Top Controls Row */}
-          <div className='flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4'>
+          <div className='mb-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-start'>
             {/* Filters */}
             <div className='flex flex-wrap items-center gap-2'>
               <select
-                className='h-[32px] w-[180px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                className='h-[32px] w-[180px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value)}
               >
@@ -114,31 +113,33 @@ function AccountStatement() {
                 <option value='deposit'>{t('deposit', 'DEPOSIT')}</option>
                 <option value='withdraw'>{t('withdraw', 'WITHDRAW')}</option>
                 <option value='bet'>{t('bet', 'BET')}</option>
-                <option value='commission'>{t('commission', 'COMMISSION')}</option>
+                <option value='commission'>
+                  {t('commission', 'COMMISSION')}
+                </option>
               </select>
 
               <input
                 type='datetime-local'
-                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
                 value={`${startDate}T00:00`}
                 onChange={(e) => setStartDate(e.target.value.split('T')[0])}
               />
               <input
                 type='datetime-local'
-                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
                 value={`${endDate}T00:00`}
                 onChange={(e) => setEndDate(e.target.value.split('T')[0])}
               />
 
               <button
                 onClick={handleSubmit}
-                className='bg-[#18b0c8] text-white h-[32px] w-[60px] px-2 text-[14px] font-bold'
+                className='h-[32px] w-[60px] bg-[#18b0c8] px-2 text-[14px] font-bold text-white'
               >
                 {t('go', 'Go')}
               </button>
               <button
                 onClick={handleReset}
-                className='bg-[#18b0c8] text-white h-[32px] w-[60px] px-2 text-[14px] font-bold'
+                className='h-[32px] w-[60px] bg-[#18b0c8] px-2 text-[14px] font-bold text-white'
               >
                 {t('reset', 'Reset')}
               </button>
@@ -147,36 +148,46 @@ function AccountStatement() {
             {/* Balances */}
             <div className='border border-[#ccc] bg-white text-[13px]'>
               <div className='flex border-b border-[#ccc]'>
-                <div className='w-[130px] p-1.5 border-r border-[#ccc]'>{t('closing_balance', 'Closing Balance')}</div>
-                <div className='w-[100px] p-1.5 font-bold'>{formatBalance(accountStatementSummary?.closingBalance)}</div>
+                <div className='w-[130px] border-r border-[#ccc] p-1.5'>
+                  {t('closing_balance', 'Closing Balance')}
+                </div>
+                <div className='w-[100px] p-1.5 font-bold'>
+                  {formatBalance(accountStatementSummary?.closingBalance)}
+                </div>
               </div>
               <div className='flex'>
-                <div className='w-[130px] p-1.5 border-r border-[#ccc]'>{t('opening_balance', 'Opening Balance')}</div>
-                <div className='w-[100px] p-1.5 font-bold'>{formatBalance(accountStatementSummary?.openingBalance)}</div>
+                <div className='w-[130px] border-r border-[#ccc] p-1.5'>
+                  {t('opening_balance', 'Opening Balance')}
+                </div>
+                <div className='w-[100px] p-1.5 font-bold'>
+                  {formatBalance(accountStatementSummary?.openingBalance)}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Search and Entries Row */}
-          <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-2'>
+          <div className='mb-2 flex flex-col justify-between gap-3 lg:flex-row lg:items-center'>
             <div className='flex items-center gap-2'>
               <input
                 type='text'
                 placeholder={t('search_placeholder', 'Search')}
-                className='h-[30px] w-[150px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                className='h-[30px] w-[150px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button className='h-[30px] border border-[#dbdbdb] px-2 text-[11px] font-bold text-[#1e7e34] bg-[#f8f9fa] hover:bg-[#e2e6ea]'>CSV</button>
-              <button className='h-[30px] border border-[#dbdbdb] px-2 text-[11px] font-bold text-[#bd2130] bg-[#f8f9fa] hover:bg-[#e2e6ea]'>PDF</button>
+              <button className='h-[30px] border border-[#dbdbdb] bg-[#f8f9fa] px-2 text-[11px] font-bold text-[#1e7e34] hover:bg-[#e2e6ea]'>
+                CSV
+              </button>
+              <button className='h-[30px] border border-[#dbdbdb] bg-[#f8f9fa] px-2 text-[11px] font-bold text-[#bd2130] hover:bg-[#e2e6ea]'>
+                PDF
+              </button>
             </div>
 
             <div className='flex items-center gap-2'>
-              <span className='text-[13px]'>
-                {t('show', 'Show')}
-              </span>
+              <span className='text-[13px]'>{t('show', 'Show')}</span>
               <select
-                className='h-[30px] border border-[#ccc] p-1 text-[13px] outline-none text-[#555]'
+                className='h-[30px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
                 value={limit}
                 onChange={(e) => {
                   setLimit(Number(e.target.value));
@@ -188,9 +199,7 @@ function AccountStatement() {
                 <option value='50'>50</option>
                 <option value='100'>100</option>
               </select>
-              <span className='text-[13px]'>
-                {t('entries', 'entries')}
-              </span>
+              <span className='text-[13px]'>{t('entries', 'entries')}</span>
             </div>
           </div>
 
@@ -199,19 +208,19 @@ function AccountStatement() {
             <table className='w-full min-w-[900px] border-collapse'>
               <thead>
                 <tr className='bg-[#18b0c8] text-white'>
-                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-left whitespace-nowrap w-[180px]'>
+                  <th className='h-[35px] w-[180px] border-r border-[#ffffff40] p-2 text-left text-[13px] font-bold whitespace-nowrap'>
                     {t('date', 'Date')}
                   </th>
-                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-right whitespace-nowrap w-[100px]'>
+                  <th className='h-[35px] w-[100px] border-r border-[#ffffff40] p-2 text-right text-[13px] font-bold whitespace-nowrap'>
                     {t('credit', 'Credit')}
                   </th>
-                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-right whitespace-nowrap w-[100px]'>
+                  <th className='h-[35px] w-[100px] border-r border-[#ffffff40] p-2 text-right text-[13px] font-bold whitespace-nowrap'>
                     {t('debit', 'Debit')}
                   </th>
-                  <th className='h-[35px] border-r border-[#ffffff40] p-2 text-[13px] font-bold text-right whitespace-nowrap w-[100px]'>
+                  <th className='h-[35px] w-[100px] border-r border-[#ffffff40] p-2 text-right text-[13px] font-bold whitespace-nowrap'>
                     {t('balance', 'Balance')}
                   </th>
-                  <th className='h-[35px] p-2 text-[13px] font-bold text-left whitespace-nowrap'>
+                  <th className='h-[35px] p-2 text-left text-[13px] font-bold whitespace-nowrap'>
                     {t('description', 'Description')}
                   </th>
                 </tr>
@@ -219,7 +228,10 @@ function AccountStatement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan='5' className='h-8 border-b border-[#eee] p-2 text-center'>
+                    <td
+                      colSpan='5'
+                      className='h-8 border-b border-[#eee] p-2 text-center'
+                    >
                       {t('loading', 'Loading...')}
                     </td>
                   </tr>
@@ -230,8 +242,10 @@ function AccountStatement() {
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
-                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px] font-bold text-right text-[#0e9d57]'>
-                          {formatBalance(accountStatementSummary?.closingBalance)}
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-right text-[13px] font-bold text-[#0e9d57]'>
+                          {formatBalance(
+                            accountStatementSummary?.closingBalance
+                          )}
                         </td>
                         <td className='h-[35px] border-b border-[#eee] px-2 text-[13px] font-bold'>
                           Closing Balance
@@ -240,25 +254,29 @@ function AccountStatement() {
                     )}
                     {filteredData.map((row, index) => (
                       <tr key={index} className='hover:bg-[#f1f1f1]'>
-                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-left'>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-left text-[13px]'>
                           {formatStatementDate(row.date)}
                         </td>
-                        <td className={`h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-right ${row.credit > 0 ? 'text-[#0e9d57]' : ''}`}>
+                        <td
+                          className={`h-[35px] border-r border-b border-[#eee] px-2 text-right text-[13px] ${row.credit > 0 ? 'text-[#0e9d57]' : ''}`}
+                        >
                           {formatMoney(row.credit)}
                         </td>
-                        <td className={`h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-right ${row.debit > 0 ? 'text-[#e54b60]' : ''}`}>
+                        <td
+                          className={`h-[35px] border-r border-b border-[#eee] px-2 text-right text-[13px] ${row.debit > 0 ? 'text-[#e54b60]' : ''}`}
+                        >
                           {formatMoney(row.debit)}
                         </td>
-                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px] text-right font-bold text-[#0e9d57]'>
+                        <td className='h-[35px] border-r border-b border-[#eee] px-2 text-right text-[13px] font-bold text-[#0e9d57]'>
                           {formatBalance(row.balance)}
                         </td>
-                        <td className='h-[35px] border-b border-[#eee] px-2 text-[13px] text-left text-[#333]'>
+                        <td className='h-[35px] border-b border-[#eee] px-2 text-left text-[13px] text-[#333]'>
                           {row.type === 'bet' ? (
-                            <span className='text-[#18b0c8] cursor-pointer hover:underline'>
+                            <span className='cursor-pointer text-[#18b0c8] hover:underline'>
                               {row.description}
                             </span>
                           ) : row.type === 'commission' ? (
-                            <span className='text-[#18b0c8] cursor-pointer hover:underline'>
+                            <span className='cursor-pointer text-[#18b0c8] hover:underline'>
                               {row.description}
                             </span>
                           ) : (
@@ -270,7 +288,10 @@ function AccountStatement() {
                   </>
                 ) : (
                   <tr>
-                    <td colSpan='5' className='h-8 border-b border-[#eee] p-2 text-center'>
+                    <td
+                      colSpan='5'
+                      className='h-8 border-b border-[#eee] p-2 text-center'
+                    >
                       {t('no_data_found', 'No data found')}
                     </td>
                   </tr>
@@ -281,28 +302,30 @@ function AccountStatement() {
 
           {/* Pagination */}
           {!loading && filteredData.length > 0 && pagination?.pages > 0 && (
-            <div className='mt-4 flex flex-col lg:flex-row items-center justify-between gap-3 text-sm text-[#555]'>
+            <div className='mt-4 flex flex-col items-center justify-between gap-3 text-sm text-[#555] lg:flex-row'>
               <div>
-                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} entries
+                Showing {(page - 1) * limit + 1} to{' '}
+                {Math.min(page * limit, pagination.total)} of {pagination.total}{' '}
+                entries
               </div>
               <div className='flex items-center gap-0'>
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className='bg-[#18b0c8] text-white px-3 py-1 text-[13px] disabled:opacity-70 disabled:cursor-not-allowed border border-[#18b0c8] rounded-l-[3px]'
+                  className='rounded-l-[3px] border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {t('previous', 'Prev')}
                 </button>
                 <button
                   disabled={true}
-                  className='bg-[#18b0c8] text-white px-3 py-1 text-[13px] border-y border-[#18b0c8]'
+                  className='border-y border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white'
                 >
                   {page}
                 </button>
                 <button
                   disabled={page >= (pagination?.pages || 1)}
                   onClick={() => setPage((p) => p + 1)}
-                  className='bg-[#18b0c8] text-white px-3 py-1 text-[13px] disabled:opacity-70 disabled:cursor-not-allowed border border-[#18b0c8] rounded-r-[3px]'
+                  className='rounded-r-[3px] border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {t('next', 'Next')}
                 </button>

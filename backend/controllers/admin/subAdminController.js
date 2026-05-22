@@ -149,12 +149,20 @@ const updateAdmin = async (id) => {
           {
             $match: {
               userId: user._id.toString(),
+              $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
             },
           },
           {
             $group: {
               _id: null,
-              totalPL: { $sum: '$change' },
+              totalPL: {
+                $sum: {
+                  $subtract: [
+                    { $ifNull: ['$win_amount', 0] },
+                    { $ifNull: ['$bet_amount', 0] },
+                  ],
+                },
+              },
             },
           },
         ]);
@@ -3743,13 +3751,30 @@ export const getUserFullDetails = async (req, res) => {
       }}
     ]);
 
-    // Aggregate Casino Bets
+    // Aggregate Casino Bets (net = win - stake; only real rounds)
     const casinoBetsAgg = await CasinoBetHistory.aggregate([
-      { $match: { userId: user._id.toString() } },
-      { $group: {
-          _id: '$game_name',
-          profitLoss: { $sum: '$change' }
-      }}
+      {
+        $match: {
+          userId: user._id.toString(),
+          $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+        },
+      },
+      {
+        $group: {
+          _id: { $ifNull: ['$game_name', 'Unknown'] },
+          profitLoss: {
+            $sum: {
+              $subtract: [
+                { $ifNull: ['$win_amount', 0] },
+                { $ifNull: ['$bet_amount', 0] },
+              ],
+            },
+          },
+          betCount: { $sum: 1 },
+          totalStaked: { $sum: { $ifNull: ['$bet_amount', 0] } },
+        },
+      },
+      { $match: { totalStaked: { $gt: 0 } } },
     ]);
 
     // Process Game Play Data
@@ -3806,10 +3831,12 @@ export const getUserFullDetails = async (req, res) => {
 
     const casinoSummary = [];
     let overallCasinoPL = 0;
-    casinoBetsAgg.forEach(item => {
-      const casino = item._id || 'Unknown';
+    casinoBetsAgg.forEach((item) => {
       const pl = roundMoney(Number(item.profitLoss) || 0);
-      casinoSummary.push({ casino, profitLoss: pl });
+      if (pl === 0 && (item.totalStaked || 0) <= 0) return;
+      const casino =
+        typeof item._id === 'string' ? item._id : item._id?.game_name || 'Unknown';
+      casinoSummary.push({ casino, profitLoss: pl, betCount: item.betCount || 0 });
       overallCasinoPL += pl;
     });
 

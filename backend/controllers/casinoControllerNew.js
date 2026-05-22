@@ -515,7 +515,13 @@ export const casinoCallback = async (req, res) => {
       );
 
       betRecord.win_amount = win;
-      betRecord.change = Number(change || win);
+      const stake = Number(betRecord.bet_amount || bet) || 0;
+      const netRoundPL = win - stake;
+      betRecord.change = Number(
+        change !== undefined && change !== null && change !== ''
+          ? change
+          : netRoundPL
+      );
       betRecord.wallet_after = Number(updatedUser.avbalance);
       betRecord.providerRaw = req.body;
       betRecord.processedAt = new Date();

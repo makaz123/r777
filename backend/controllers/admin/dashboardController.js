@@ -6,6 +6,10 @@ import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
 import { getCurrentDashboardWeekRange } from '../../utils/dashboardWeekRange.js';
 import { getDateRangeUTC } from '../../utils/dateUtils.js';
+import {
+  getCasinoNetPL,
+  hasCasinoRoundActivity,
+} from '../../utils/casinoPlUtils.js';
 
 // Helper to round float values to exactly two decimal places
 const round2 = (val) => {
@@ -116,7 +120,7 @@ export const getDashboardStats = async (req, res) => {
       betHistoryModel
         .find({
           userId: { $in: downlineIds },
-          status: { $in: [0, 1, 2] }, // Placed (0) and settled (1, 2) bets
+          status: { $in: [1, 2] }, // Settled only for P&L / top players
           ...dateFilterBet,
         })
         .lean(),
@@ -160,10 +164,11 @@ export const getDashboardStats = async (req, res) => {
 
     let totalCasinoPL = 0;
     let totalCasinoBetAmount = 0;
-    const totalCasinoBets = casinoBets.length;
+    const activeCasinoBets = casinoBets.filter(hasCasinoRoundActivity);
+    const totalCasinoBets = activeCasinoBets.length;
 
-    casinoBets.forEach((bet) => {
-      totalCasinoPL += bet.change || 0;
+    activeCasinoBets.forEach((bet) => {
+      totalCasinoPL += getCasinoNetPL(bet);
       totalCasinoBetAmount += bet.bet_amount || 0;
     });
 
@@ -183,25 +188,24 @@ export const getDashboardStats = async (req, res) => {
       0
     );
 
-    // 6. Calculate Top 5 Winning & Losing Players
+    // 6. Calculate Top 5 Winning & Losing Players (user net P&L in period)
+    const userIdToName = Object.fromEntries(
+      downlineUsers.map((u) => [u._id.toString(), u.userName])
+    );
     const playerPLMap = {};
-    downlineUserNames.forEach((uName) => {
-      playerPLMap[uName] = 0;
-    });
+
+    const addPlayerPL = (userName, delta) => {
+      if (!userName) return;
+      playerPLMap[userName] = (playerPLMap[userName] || 0) + (delta || 0);
+    };
 
     sportsBets.forEach((bet) => {
-      const uName = bet.userName;
-      if (uName) {
-        playerPLMap[uName] =
-          (playerPLMap[uName] || 0) + (bet.profitLossChange || 0);
-      }
+      addPlayerPL(bet.userName, bet.profitLossChange || 0);
     });
 
-    casinoBets.forEach((bet) => {
-      const uName = bet.userName;
-      if (uName) {
-        playerPLMap[uName] = (playerPLMap[uName] || 0) + (bet.change || 0);
-      }
+    activeCasinoBets.forEach((bet) => {
+      const uName = bet.userName || userIdToName[bet.userId];
+      addPlayerPL(uName, getCasinoNetPL(bet));
     });
 
     const playerList = Object.entries(playerPLMap).map(
@@ -239,11 +243,11 @@ export const getDashboardStats = async (req, res) => {
       marketPLMap[key] = (marketPLMap[key] || 0) + (bet.profitLossChange || 0);
     });
 
-    casinoBets.forEach((bet) => {
+    activeCasinoBets.forEach((bet) => {
       const sport = 'Casino';
       const market = bet.game_name || 'Casino Game';
       const key = `${sport}||${market}`;
-      marketPLMap[key] = (marketPLMap[key] || 0) + (bet.change || 0);
+      marketPLMap[key] = (marketPLMap[key] || 0) + getCasinoNetPL(bet);
     });
 
     const marketList = Object.entries(marketPLMap).map(([key, amount]) => {
@@ -411,11 +415,12 @@ export const getDashboardStats = async (req, res) => {
     };
 
     let casinoTotalPL = 0;
-    casinoBets.forEach((bet) => {
+    activeCasinoBets.forEach((bet) => {
       const cat = getCasinoCategory(bet.game_name, bet.game_uid);
+      const net = getCasinoNetPL(bet);
       casinoGameplayBreakdown[cat] =
-        (casinoGameplayBreakdown[cat] || 0) + (bet.change || 0);
-      casinoTotalPL += bet.change || 0;
+        (casinoGameplayBreakdown[cat] || 0) + net;
+      casinoTotalPL += net;
     });
 
     // Apply decimal rounding to casino gameplay details

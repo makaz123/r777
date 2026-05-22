@@ -338,6 +338,12 @@ const UserDetails = () => {
   const plColorClass = (value) =>
     Number(value) >= 0 ? 'text-green-600' : 'text-red-600';
 
+  const activeCasinoRows = (userDetails?.gamePlay?.casinos || []).filter(
+    (c) =>
+      Math.abs(Number(c.profitLoss) || 0) > 0.001 ||
+      (c.betCount && c.betCount > 0)
+  );
+
   return (
     <div className="min-h-screen bg-[#f5f7f9]">
       <Navbar />
@@ -435,11 +441,13 @@ const UserDetails = () => {
                   <span className={`font-bold ${plColorClass(userDetails.accountDetails.profitLoss)}`}>
                     {formatPL(userDetails.accountDetails.profitLoss)}
                   </span>
-                  {(userDetails.accountDetails.sportsPL != null ||
-                    userDetails.accountDetails.casinoPL != null) && (
+                  {userDetails.accountDetails.sportsPL != null && (
                     <span className="ml-1 text-[10px] text-gray-400">
-                      (Sports {formatPL(userDetails.accountDetails.sportsPL)} + Casino{' '}
-                      {formatPL(userDetails.accountDetails.casinoPL)})
+                      (Sports {formatPL(userDetails.accountDetails.sportsPL)}
+                      {activeCasinoRows.length > 0
+                        ? ` + Casino ${formatPL(userDetails.accountDetails.casinoPL)}`
+                        : ''}
+                      )
                     </span>
                   )}
                 </div>
@@ -522,18 +530,18 @@ const UserDetails = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {userDetails.gamePlay.casinos.map((casino, i) => (
+                      {activeCasinoRows.map((casino, i) => (
                         <tr key={i} className="border-b border-gray-100 last:border-b-0">
                           <td className="p-2 text-gray-500">{casino.casino}</td>
                           <td className={`p-2 text-right ${plColorClass(casino.profitLoss)}`}>{formatPL(casino.profitLoss)}</td>
                         </tr>
                       ))}
-                      {userDetails.gamePlay.casinos.length === 0 && (
+                      {activeCasinoRows.length === 0 && (
                         <tr><td colSpan="2" className="p-2 text-center text-gray-400">No Casino bets</td></tr>
                       )}
                       <tr className="bg-[#f2f2f2] border-t-2 border-gray-300">
                         <td className="p-2 text-black font-semibold">Total</td>
-                        <td className={`p-2 text-right font-semibold ${plColorClass(userDetails.gamePlay.casinos.reduce((sum, c) => sum + c.profitLoss, 0))}`}>{formatPL(userDetails.gamePlay.casinos.reduce((sum, c) => sum + c.profitLoss, 0))}</td>
+                        <td className={`p-2 text-right font-semibold ${plColorClass(activeCasinoRows.reduce((sum, c) => sum + c.profitLoss, 0))}`}>{formatPL(activeCasinoRows.reduce((sum, c) => sum + c.profitLoss, 0))}</td>
                       </tr>
                     </tbody>
                   </table>

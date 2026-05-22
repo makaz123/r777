@@ -144,29 +144,68 @@ function Bookmaker({
   const handleCashOutClick = async () => {
     if (!hasCashoutAvailable || cashoutLoading) return;
 
-    const betIds = uniqueMarketBetsForCashout
-      .map((b) => b.betId || b._id)
-      .filter(Boolean);
+    const teams = bookmakerData.map((item) => item.team);
+    if (teams.length < 2) return;
 
-    for (const id of betIds) {
-      const result = await dispatch(executeCashout(id));
-      if (result.meta?.requestStatus === 'fulfilled') {
-        setCashedOutBetIds((prev) => new Set(prev).add(id));
-      } else {
-        toast.error(
-          result.payload?.message || 'Cashout failed. Please try again.'
-        );
-      }
+    const teamA = teams[0];
+    const teamB = teams[1];
+    const detailsA = getBetDetails(teamA);
+    const detailsB = getBetDetails(teamB);
+
+    // Calculate current net outcome for both teams
+    const plA = detailsA.netOutcome !== null ? detailsA.netOutcome : 0;
+    const plB = detailsB.netOutcome !== null ? detailsB.netOutcome : 0;
+
+    // If balanced, do nothing
+    if (Math.abs(plA - plB) < 0.1) {
+      toast.error('Bets are already balanced!');
+      return;
     }
+
+    // Team with highest PL is the one we want to LAY
+    const teamToBet = plA > plB ? teamA : teamB;
+    const pHigh = Math.max(plA, plB);
+    const pLow = Math.min(plA, plB);
+
+    const teamData = bookmakerData.find((t) => t.team === teamToBet);
+    if (!teamData) return;
+
+    // Find the best LAY odds (highest lay odds available > 0)
+    const layOdds = teamData.odds.filter((o) => o.otype === 'lay' && o.odds > 0);
+    if (layOdds.length === 0) {
+      toast.error('No lay odds available for cashout');
+      return;
+    }
+
+    const bestLayOdds = Math.max(...layOdds.map((o) => o.odds));
+    const bestLayItem = layOdds.find((o) => o.odds === bestLayOdds);
+
+    const X = parseFloat(bestLayOdds);
+    if (isNaN(X) || X <= 0) return;
+
+    // Cashout Formula: S = (pHigh - pLow) / (1 + X/100)
+    let calculatedStake = (pHigh - pLow) / (1 + (X / 100));
+    calculatedStake = Math.round(calculatedStake * 100) / 100;
+
+    if (calculatedStake <= 0) {
+      toast.error('Already balanced or no cashout needed.');
+      return;
+    }
+
+    onBetSelect({
+      team: teamToBet,
+      odds: X.toString(),
+      type: 'lay',
+      oname: bestLayItem?.oname || '',
+      stake: calculatedStake.toString(),
+      teams: teams,
+      marketName: BookmakerList?.[0]?.mname || 'Bookmaker',
+      gameType: 'Bookmaker',
+      maxAmount: BookmakerList?.[0]?.max || BookmakerList?.[0]?.maxb || 0,
+      minAmount: BookmakerList?.[0]?.min || 0,
+    });
 
     setShowCashoutOptions(false);
-    dispatch(clearCashoutValues());
-    await dispatch(getUser());
-    if (gameid) {
-      await dispatch(getPendingBetAmo(gameid));
-      await dispatch(getPendingBet(gameid));
-    }
-    setCashedOutBetIds(new Set());
   };
 
   // Helper function to format stake/size
@@ -397,26 +436,9 @@ function Bookmaker({
           {t('bookmaker', 'Bookmaker')}
         </span>
         <div>
-          {hasCashoutAvailable && showCashoutOptions ? (
+          {hasCashoutAvailable ? (
             <button
-              type='button'
-              disabled={!hasMergedValue || cashoutLoading}
               onClick={handleCashOutClick}
-              className={`flex items-center gap-1 p-1 font-[400] text-white ${
-                hasMergedValue && !cashoutLoading
-                  ? 'cursor-pointer bg-[#198754]'
-                  : 'cursor-not-allowed bg-[#198754] opacity-60'
-              }`}
-            >
-              <FaCheck className='text-xs' />
-              <span>{cashoutLoading ? '...' : t('cashout', 'Cash Out')}</span>
-            </button>
-          ) : hasCashoutAvailable ? (
-            <button
-              onClick={() => {
-                setShowCashoutOptions(true);
-                fetchCashoutQuotes();
-              }}
               className='cursor-pointer bg-[#198754] p-1 font-[400] text-white'
             >
               {t('cashout', 'Cashout')}

@@ -599,15 +599,28 @@ export const createSubAdmin = async (req, res) => {
       userName,
       accountType,
       commition,
-      balance,
+      balance: balanceRaw,
       exposureLimit,
-      creditReference,
+      creditReference: creditReferenceRaw,
       rollingCommission,
       phone,
       password,
       masterPassword,
-      partnership,
+      partnership: partnershipRaw,
     } = req.body;
+
+    const balance =
+      balanceRaw == null || balanceRaw === '' ? 0 : Number(balanceRaw);
+    const creditReference =
+      creditReferenceRaw == null || creditReferenceRaw === ''
+        ? 0
+        : Number(creditReferenceRaw);
+    const partnership =
+      accountType === 'user'
+        ? 0
+        : partnershipRaw == null || partnershipRaw === ''
+          ? null
+          : Number(partnershipRaw);
 
     // Generate a Unique Code for Referral
     const uniqueCode = crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -676,21 +689,21 @@ export const createSubAdmin = async (req, res) => {
 
     const creditReferenceProfitLoss = balance - creditReference;
 
-    // Partnership validation
-    if (
-      partnership > 100 ||
-      partnership < 0 ||
-      isNaN(partnership) ||
-      partnership === undefined
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Partnership should be between 0 and 100' });
-    }
-
+    // Partnership validation (agent accounts only)
     if (accountType !== 'user') {
+      if (
+        partnership == null ||
+        Number.isNaN(partnership) ||
+        partnership < 0 ||
+        partnership > 100
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Partnership should be between 0 and 100' });
+      }
+
       const parentMyShareCap = getViewerMySharePercent(admin.partnership);
-      const parsedPartnership = Number(partnership) || 0;
+      const parsedPartnership = partnership;
       if (parsedPartnership > parentMyShareCap) {
         return res.status(400).json({
           message: `Partnership cannot exceed your my share (${parentMyShareCap}%)`,
@@ -796,6 +809,24 @@ export const createSubAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error('Create SubAdmin Error:', error);
+
+    if (error.name === 'ValidationError' && error.errors) {
+      const fieldLabels = {
+        name: 'Client name',
+        userName: 'User name',
+        password: 'Password',
+      };
+      const firstKey = Object.keys(error.errors)[0];
+      const firstErr = error.errors[firstKey];
+      const label = fieldLabels[firstKey] || firstKey;
+      const detail = firstErr?.message || error.message;
+      const message = /required/i.test(detail)
+        ? `${label} is required.`
+        : detail;
+
+      return res.status(400).json({ message });
+    }
+
     return res
       .status(500)
       .json({ message: 'Server error', error: error.message });

@@ -1,6 +1,13 @@
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 
+const roundMoney = (value) => {
+  if (value == null || Number.isNaN(Number(value))) {
+    return 0;
+  }
+  return parseFloat(Number(value).toFixed(2));
+};
+
 const subAdminSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -11,17 +18,17 @@ const subAdminSchema = new mongoose.Schema(
     balance: {
       type: Number,
       default: 0,
-      get: (value) => parseFloat(value.toFixed(2)),
+      get: roundMoney,
     }, // Changed from String to Number
     baseBalance: {
       type: Number,
       default: 0,
-      get: (value) => parseFloat(value.toFixed(2)),
+      get: roundMoney,
     }, // Fixed base balance for calculations
     totalBalance: {
       type: Number,
       default: 0,
-      get: (value) => parseFloat(value.toFixed(2)),
+      get: roundMoney,
     },
     creditReferenceProfitLoss: { type: Number, default: 0 },
     uplineBettingProfitLoss: { type: Number, default: 0 },

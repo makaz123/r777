@@ -100,6 +100,26 @@ export default function InsertAgent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.accountType || formData.accountType === 'Select User Type') {
+      toast.error('Please select an account type');
+      return;
+    }
+    if (!formData.name?.trim()) {
+      toast.error('Client name is required');
+      return;
+    }
+    if (!formData.userName?.trim()) {
+      toast.error('User name is required');
+      return;
+    }
+    if (!formData.password) {
+      toast.error('Password is required');
+      return;
+    }
+    if (!formData.masterPassword) {
+      toast.error('Master password is required');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       toast.error('Password and Confirm Password do not match');
       return;
@@ -121,7 +141,9 @@ export default function InsertAgent() {
         dispatch(getAdmin());
         navigate('/user-download-list');
       } catch (error) {
-        toast.error(error);
+        toast.error(
+          typeof error === 'string' ? error : error?.message || 'Failed to create account'
+        );
       }
     } else {
       navigate('/login');

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { getAdmin, userLogout } from '../redux/reducer/authReducer';
@@ -8,13 +8,14 @@ import api from '../redux/api';
 const PrivateRoute = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, loading, error } = useSelector((state) => state.auth);
+  const { userInfo, loading } = useSelector((state) => state.auth);
+  const bootstrapAttempted = useRef(false);
 
   const processedUserInfo = useMemo(() => {
     return userInfo ? userInfo : null;
   }, [userInfo]);
 
-  const hasToken = useMemo(() => !!localStorage.getItem('auth'), []);
+  const hasToken = Boolean(localStorage.getItem('auth'));
 
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
@@ -36,19 +37,21 @@ const PrivateRoute = () => {
 
   useEffect(() => {
     if (!hasToken) {
+      bootstrapAttempted.current = false;
       return;
     }
-    if (!processedUserInfo && !loading) {
-      dispatch(getAdmin());
+    if (processedUserInfo || loading || bootstrapAttempted.current) {
+      return;
     }
-  }, [dispatch, hasToken, processedUserInfo, loading]);
 
-  useEffect(() => {
-    if (error && !loading) {
-      localStorage.removeItem('auth');
-      navigate('/login', { replace: true });
-    }
-  }, [error, loading, navigate]);
+    bootstrapAttempted.current = true;
+    dispatch(getAdmin())
+      .unwrap()
+      .catch(() => {
+        localStorage.removeItem('auth');
+        bootstrapAttempted.current = false;
+      });
+  }, [dispatch, hasToken, processedUserInfo, loading]);
 
   if (!hasToken) {
     return <Navigate to='/login' replace />;

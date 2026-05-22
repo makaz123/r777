@@ -1,3 +1,1 @@
-export {
-  getCurrentDashboardWeekRange,
-} from '@dashboard-week-range';
+export { getCurrentDashboardWeekRange } from '@dashboard-week-range';

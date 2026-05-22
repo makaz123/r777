@@ -50,8 +50,10 @@ export const getRemainingMySharePercent = (parentMyShare, downlineSharing) => {
  * Value stored on a new agent row: parent's share from that downline's P/L.
  * UI "downline sharing" = % given from the parent's my-share pool.
  */
-export const getParentShareStoredOnDownline = (parentMyShare, downlineSharing) =>
-  getRemainingMySharePercent(parentMyShare, downlineSharing);
+export const getParentShareStoredOnDownline = (
+  parentMyShare,
+  downlineSharing
+) => getRemainingMySharePercent(parentMyShare, downlineSharing);
 
 /** Commission is taken from net win profit (match odds only). */
 export const calculateWinCommission = (winProfit, commissionPercent) => {

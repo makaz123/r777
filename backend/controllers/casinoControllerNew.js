@@ -465,7 +465,10 @@ export const casinoCallback = async (req, res) => {
       try {
         await updateAllUplines(updatedUser._id.toString());
       } catch (uplineErr) {
-        console.error('[CASINO] updateAllUplines after bet:', uplineErr.message);
+        console.error(
+          '[CASINO] updateAllUplines after bet:',
+          uplineErr.message
+        );
       }
 
       console.log(`✅ BET stored | ${mobile} | Bet: ${bet} | Win: ${win}`);
@@ -529,7 +532,10 @@ export const casinoCallback = async (req, res) => {
       try {
         await updateAllUplines(updatedUser._id.toString());
       } catch (uplineErr) {
-        console.error('[CASINO] updateAllUplines after win:', uplineErr.message);
+        console.error(
+          '[CASINO] updateAllUplines after win:',
+          uplineErr.message
+        );
       }
 
       console.log(`🏆 WIN stored | ${mobile} | Win: ${win}`);

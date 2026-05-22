@@ -407,13 +407,13 @@ function CricketBet() {
                     allowFullScreen
                     loading='lazy'
                     allow='
-                  autoplay;
-                  encrypted-media;
-                  fullscreen;
-                  picture-in-picture;
-                  accelerometer;
-                  gyroscope
-                '
+                      autoplay;
+                      encrypted-media;
+                      fullscreen;
+                      picture-in-picture;
+                      accelerometer;
+                      gyroscope
+                    '
                   />
                 )}
               </div>

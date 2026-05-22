@@ -18,6 +18,7 @@ import UserWinLoss from './pages/UserWinLoss';
 import TotalProfitLoss from './pages/TotalProfitLoss';
 import CasinoResultReport from './pages/CasinoResultReport';
 import RegisterDetail from './pages/RegisterDetail';
+import UserDetails from './pages/UserDetails';
 import AccountStatement from './pages/AccountStatement';
 import ProfitLoss from './pages/ProfitLoss';
 import GeneralReport from './pages/GeneralReport';
@@ -121,6 +122,7 @@ function App() {
                     element={<AccountStatement />}
                   />
                   <Route path='/RegisterDetail' element={<RegisterDetail />} />
+                  <Route path='/user-details' element={<UserDetails />} />
                   <Route
                     path='/CasinoResultReport'
                     element={<CasinoResultReport />}

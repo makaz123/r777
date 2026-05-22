@@ -38,6 +38,7 @@ import {
   withdrowalAndDeposite,
   getSettlementUsers,
   settleUser,
+  getUserFullDetails,
 } from '../../controllers/admin/subAdminController.js';
 import { adminAuthMiddleware } from '../../middleware/authMiddleware.js';
 
@@ -126,6 +127,11 @@ router.post(
   '/change/password-subAdmin',
   adminAuthMiddleware,
   changePasswordBySubAdmin
+);
+router.get(
+  '/get/user-full-details/:userId',
+  adminAuthMiddleware,
+  getUserFullDetails
 );
 
 export default router;

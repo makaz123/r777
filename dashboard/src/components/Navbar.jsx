@@ -100,7 +100,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     {
       name: 'Reports',
       submenu: [
-        { name: 'User Detail', path: '/RegisterDetail' },
+        { name: 'User Detail', path: '/user-details' },
         { name: 'Account Statement', path: '/AccountStatement' },
         { name: 'Settlement/Balance Report', path: '/SettlementBalanceReport' },
         { name: 'Transaction Report', path: '/TransactionReport' },

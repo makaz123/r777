@@ -120,8 +120,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     {
       name: 'Control',
       submenu: [
-        { name: 'Game', path: '/live-casino?cat=Roulette' },
-        { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
+        { name: 'Game', path: '/gamebetlock' },
+        { name: 'Casino', path: '/' },
       ],
     },
     { name: 'Banner Settings', path: '/banner-settings', superAdminOnly: true },

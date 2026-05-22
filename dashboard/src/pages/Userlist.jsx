@@ -14,6 +14,7 @@ import {
   withdrawalAndDeposite,
   userSetting,
   getCreditRefHistory,
+  fetchSubAdminByLevel,
   updateExploserLimit,
   changePasswordByDownline,
   updateUserLock,
@@ -31,7 +32,8 @@ export default function Userlist() {
     const doc = new jsPDF();
     doc.text('User List', 14, 15);
 
-    const filteredUsers = onlyusers.filter((user) =>
+    const exportUsers = (isFetchingAllUsers === false ? users : onlyusers) || [];
+    const filteredUsers = exportUsers.filter((user) =>
       activeTab === 'active'
         ? user.status === 'active'
         : user.status !== 'active'
@@ -70,7 +72,8 @@ export default function Userlist() {
     doc.save(`${activeTab}-users.pdf`);
   };
   const downloadExcel = () => {
-    const filteredUsers = onlyusers.filter((user) =>
+    const exportUsers = (isFetchingAllUsers === false ? users : onlyusers) || [];
+    const filteredUsers = exportUsers.filter((user) =>
       activeTab === 'active'
         ? user.status === 'active'
         : user.status !== 'active'
@@ -110,7 +113,7 @@ export default function Userlist() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, currentPage, totalPages, onlyusers, downlineViewer } =
+  const { userInfo, currentPage, totalPages, onlyusers, users, downlineViewer } =
     useSelector((state) => state.auth);
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
@@ -341,14 +344,19 @@ export default function Userlist() {
       : num.toFixed(v.toString().split('.')[1]?.length === 1 ? 1 : 2);
   };
 
+  const listUsers = useMemo(
+    () => (isFetchingAllUsers === false ? users : onlyusers) || [],
+    [isFetchingAllUsers, users, onlyusers]
+  );
+
   const filteredUsers = useMemo(
     () =>
-      (onlyusers || []).filter((user) =>
+      listUsers.filter((user) =>
         activeTab === 'active'
           ? user.status === 'active'
           : user.status !== 'active'
       ),
-    [onlyusers, activeTab]
+    [listUsers, activeTab]
   );
 
   const getRowBalance = (row) =>
@@ -568,6 +576,14 @@ export default function Userlist() {
     }
   };
 
+  const handleLoadNextLevel = (user, code) => {
+    if (user.role !== 'user') {
+      setIsFetchingAllUsers(false);
+      dispatch(fetchSubAdminByLevel({ code: code }));
+    }
+  };
+
+
   return (
     <>
       <Navbar />
@@ -653,7 +669,10 @@ export default function Userlist() {
                 cell: (row) => {
                   const isClient = row.role === 'user';
                   return (
-                    <span className='flex items-center gap-2'>
+                    <span
+                      className={`flex items-center gap-2${!isClient ? ' cursor-pointer' : ''}`}
+                      onClick={() => handleLoadNextLevel(row, row.code)}
+                    >
                       <span className='inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#016a82] text-[10px] font-bold text-white'>
                         {isClient ? 'C' : 'A'}
                       </span>
@@ -782,63 +801,47 @@ export default function Userlist() {
               // },
               {
                 header: 'Actions',
-                cell: (row) =>
-                  isFetchingAllUsers ? (
-                    <div className='flex gap-1'>
-                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'>
-                        U
-                      </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] text-[11px] leading-none font-bold text-white'
-                        onClick={() => openCreditDepositModal(row)}
-                      >
-                        D/C
-                      </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] text-[11px] leading-none font-bold text-white'
-                        onClick={() => {
-                          setWithdrawPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        W
-                      </span>
-                      {/* <span
-                        className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                        onClick={() => {
-                          setPatnerPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        L
-                      </span> */}
-                      {/* C merged into D/C (Credit / Deposit modal) */}
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] text-[11px] leading-none font-bold text-black'
-                        onClick={() => {
-                          setPasswordPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        P
-                      </span>
-                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'>
-                        GC
-                      </span>
-                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'>
-                        CC
-                      </span>
-                      {/* <span
-                        className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                        onClick={() => {
-                          setSettingPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        S
-                      </span> */}
-                    </div>
-                  ) : null,
+                cell: (row) => (
+                  <div className='flex gap-1'>
+                    {isFetchingAllUsers ? (
+                      <>
+                        <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'>
+                          U
+                        </span>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#008000] text-[11px] leading-none font-bold text-white'
+                          onClick={() => openCreditDepositModal(row)}
+                        >
+                          D/C
+                        </span>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#274396] text-[11px] leading-none font-bold text-white'
+                          onClick={() => {
+                            setWithdrawPopup(true);
+                            setcurrentUser(row);
+                          }}
+                        >
+                          W
+                        </span>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#ff0] text-[11px] leading-none font-bold text-black'
+                          onClick={() => {
+                            setPasswordPopup(true);
+                            setcurrentUser(row);
+                          }}
+                        >
+                          P
+                        </span>
+                      </>
+                    ) : null}
+                    <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'>
+                      GC
+                    </span>
+                    <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'>
+                      CC
+                    </span>
+                  </div>
+                ),
               },
             ]}
           />
@@ -846,7 +849,7 @@ export default function Userlist() {
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
             <div>
-              Showing {currentPage} to {totalPages} of {onlyusers?.length}{' '}
+              Showing {currentPage} to {totalPages} of {listUsers?.length}{' '}
               entries
             </div>
             <div className='flex flex-wrap'>

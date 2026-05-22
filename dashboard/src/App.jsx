@@ -55,6 +55,7 @@ import BannerSettings from './pages/BannerSettings';
 import Notifications from './pages/Notifications';
 import CasinoAnalysis from './pages/CasinoAnalysis';
 import UserSettlement from './pages/UserSettlement';
+import GameBetLock from './pages/GameBetLock';
 
 function App() {
   return (
@@ -106,6 +107,7 @@ function App() {
                     path='/userbethistory/:userName'
                     element={<UserBetHistory />}
                   />
+                  <Route path='/gamebetlock' element={<GameBetLock/>}/>
                   <Route path='/downpl' element={<DownPL />} />
                   <Route path='/downplteam/:id' element={<DownPLteam />} />
                   <Route path='/betlist' element={<BetList />} />

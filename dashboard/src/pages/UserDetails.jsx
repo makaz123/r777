@@ -41,7 +41,7 @@ const UserDetails = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  
+
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -88,7 +88,7 @@ const UserDetails = () => {
       setShowDropdown(false);
       return;
     }
-    
+
     try {
       setLoadingSearch(true);
       const res = await api.get('/get/all-only-user', {
@@ -330,7 +330,11 @@ const UserDetails = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   const formatPL = (value) => Number(value || 0).toFixed(2);
@@ -345,10 +349,9 @@ const UserDetails = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f5f7f9]">
+    <div className='min-h-screen bg-[#f5f7f9]'>
       <Navbar />
-      <div className="p-4 md:p-6 max-w-[1400px] mx-auto text-[13px] text-[#333]">
-        
+      <div className='mx-auto max-w-[1400px] p-4 text-[13px] text-[#333] md:p-6'>
         {/* Search Section */}
         <div className="bg-white rounded border border-gray-200 p-4 mb-4 shadow-sm w-full md:w-1/3">
           <h2 className="font-bold text-[16px] mb-2 text-black">User Details</h2>
@@ -359,19 +362,21 @@ const UserDetails = () => {
           </p>
           <div className="relative" ref={dropdownRef}>
             <input
-              type="text"
-              placeholder="Search by client"
-              className="w-full border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:border-blue-400"
+              type='text'
+              placeholder='Search by client'
+              className='w-full rounded border border-gray-300 px-3 py-1.5 focus:border-blue-400 focus:outline-none'
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              onFocus={() => { if(searchResults.length > 0) setShowDropdown(true) }}
+              onFocus={() => {
+                if (searchResults.length > 0) setShowDropdown(true);
+              }}
             />
             {showDropdown && searchResults.length > 0 && (
-              <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-auto">
+              <ul className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded border border-gray-200 bg-white shadow-lg'>
                 {searchResults.map((user, index) => (
                   <li
                     key={user._id}
-                    className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${index % 2 === 1 ? 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]' : 'text-gray-700'}`}
+                    className={`cursor-pointer px-3 py-2 hover:bg-gray-100 ${index % 2 === 1 ? 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]' : 'text-gray-700'}`}
                     onClick={() => handleSelectUser(user)}
                   >
                     {user.userName}
@@ -382,27 +387,68 @@ const UserDetails = () => {
           </div>
         </div>
 
-        {loadingDetails && <div className="text-center p-4">Loading user details...</div>}
+        {loadingDetails && (
+          <div className='p-4 text-center'>Loading user details...</div>
+        )}
 
         {userDetails && !loadingDetails && (
-          <div className="space-y-4">
-            
+          <div className='space-y-4'>
             {/* Top Row: User Details & Settings */}
-            <div className="flex flex-col lg:flex-row gap-4">
-              
+            <div className='flex flex-col gap-4 lg:flex-row'>
               {/* User Details */}
-              <div className="bg-white rounded border border-gray-200 p-4 shadow-sm flex-1">
-                <h2 className="font-bold text-[15px] mb-3 text-black">User Details:</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-y-4 text-[13px]">
-                  <div><span className="text-gray-500 font-semibold mr-1">User Name :</span> {userDetails.userInfo.userName}</div>
-                  <div><span className="text-gray-500 font-semibold mr-1">Role :</span> <span className="font-bold">{userDetails.userInfo.role}</span></div>
-                  <div><span className="text-gray-500 font-semibold mr-1">Client Name :</span> <span className="font-bold">{userDetails.userInfo.clientName}</span></div>
-                  
-                  <div><span className="text-gray-500 font-semibold mr-1">Reference Name :</span> {userDetails.userInfo.referenceName}</div>
-                  <div><span className="text-gray-500 font-semibold mr-1">Email :</span> {userDetails.userInfo.email}</div>
-                  <div><span className="text-gray-500 font-semibold mr-1">Mobile :</span> {userDetails.userInfo.mobile}</div>
-                  
-                  <div className="col-span-3"><span className="text-gray-500 font-semibold mr-1">Parents :</span> {userDetails.userInfo.parents}</div>
+              <div className='flex-1 rounded border border-gray-200 bg-white p-4 shadow-sm'>
+                <h2 className='mb-3 text-[15px] font-bold text-black'>
+                  User Details:
+                </h2>
+                <div className='grid grid-cols-1 gap-y-4 text-[13px] md:grid-cols-3'>
+                  <div>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      User Name :
+                    </span>{' '}
+                    {userDetails.userInfo.userName}
+                  </div>
+                  <div>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      Role :
+                    </span>{' '}
+                    <span className='font-bold'>
+                      {userDetails.userInfo.role}
+                    </span>
+                  </div>
+                  <div>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      Client Name :
+                    </span>{' '}
+                    <span className='font-bold'>
+                      {userDetails.userInfo.clientName}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      Reference Name :
+                    </span>{' '}
+                    {userDetails.userInfo.referenceName}
+                  </div>
+                  <div>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      Email :
+                    </span>{' '}
+                    {userDetails.userInfo.email}
+                  </div>
+                  <div>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      Mobile :
+                    </span>{' '}
+                    {userDetails.userInfo.mobile}
+                  </div>
+
+                  <div className='col-span-3'>
+                    <span className='mr-1 font-semibold text-gray-500'>
+                      Parents :
+                    </span>{' '}
+                    {userDetails.userInfo.parents}
+                  </div>
                 </div>
               </div>
 
@@ -420,13 +466,33 @@ const UserDetails = () => {
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Game Control</button>
                   <button className="bg-gradient-to-b from-[#359db1] to-[#247c8f] text-white py-1 px-2 rounded-full text-[11px] shadow-sm text-center mt-1">Casino Control</button>
                 </div>
-                <div className="flex gap-6 justify-center mt-2">
-                  <label className="flex items-center gap-1 font-semibold cursor-pointer text-[12px]"><input type="checkbox" checked={userDetails.settings.userLock} readOnly /> User Lock</label>
-                  <label className="flex items-center gap-1 font-semibold cursor-pointer text-[12px]"><input type="checkbox" checked={userDetails.settings.betLock} readOnly /> Bet Lock</label>
-                  <label className="flex items-center gap-1 font-semibold cursor-pointer text-[12px]"><input type="checkbox" checked={userDetails.settings.checkLimit} readOnly /> Check Limit</label>
+                <div className='mt-2 flex justify-center gap-6'>
+                  <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
+                    <input
+                      type='checkbox'
+                      checked={userDetails.settings.userLock}
+                      readOnly
+                    />{' '}
+                    User Lock
+                  </label>
+                  <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
+                    <input
+                      type='checkbox'
+                      checked={userDetails.settings.betLock}
+                      readOnly
+                    />{' '}
+                    Bet Lock
+                  </label>
+                  <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
+                    <input
+                      type='checkbox'
+                      checked={userDetails.settings.checkLimit}
+                      readOnly
+                    />{' '}
+                    Check Limit
+                  </label>
                 </div>
               </div>
-
             </div>
 
             {/* Account Details */}
@@ -452,23 +518,75 @@ const UserDetails = () => {
                   )}
                 </div>
 
-                <div><span className="text-gray-500 font-semibold mr-1">UpLine Balance:</span> <span className="font-bold">{Number(userDetails.accountDetails.uplineBalance).toFixed(2)}</span></div>
-                <div><span className="text-gray-500 font-semibold mr-1">DownLine Balance:</span> {userDetails.accountDetails.downlineBalance}</div>
-                <div><span className="text-gray-500 font-semibold mr-1">Exposure :</span> {userDetails.accountDetails.exposure}</div>
-                <div><span className="text-gray-500 font-semibold mr-1">Max Profit:</span> {userDetails.accountDetails.maxProfit}</div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    UpLine Balance:
+                  </span>{' '}
+                  <span className='font-bold'>
+                    {Number(userDetails.accountDetails.uplineBalance).toFixed(
+                      2
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    DownLine Balance:
+                  </span>{' '}
+                  {userDetails.accountDetails.downlineBalance}
+                </div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    Exposure :
+                  </span>{' '}
+                  {userDetails.accountDetails.exposure}
+                </div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    Max Profit:
+                  </span>{' '}
+                  {userDetails.accountDetails.maxProfit}
+                </div>
 
-                <div><span className="text-gray-500 font-semibold mr-1">Max Bet:</span> {userDetails.accountDetails.maxBet}</div>
-                <div><span className="text-gray-500 font-semibold mr-1">Bet Lock:</span> <span className="font-bold">{userDetails.accountDetails.betLock}</span></div>
-                <div><span className="text-gray-500 font-semibold mr-1">Active :</span> <span className="font-bold">{userDetails.accountDetails.active}</span></div>
-                <div><span className="text-gray-500 font-semibold mr-1">Created On :</span> <span className="font-bold">{formatDate(userDetails.accountDetails.createdOn)}</span></div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    Max Bet:
+                  </span>{' '}
+                  {userDetails.accountDetails.maxBet}
+                </div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    Bet Lock:
+                  </span>{' '}
+                  <span className='font-bold'>
+                    {userDetails.accountDetails.betLock}
+                  </span>
+                </div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    Active :
+                  </span>{' '}
+                  <span className='font-bold'>
+                    {userDetails.accountDetails.active}
+                  </span>
+                </div>
+                <div>
+                  <span className='mr-1 font-semibold text-gray-500'>
+                    Created On :
+                  </span>{' '}
+                  <span className='font-bold'>
+                    {formatDate(userDetails.accountDetails.createdOn)}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Game Play */}
-            <div className="bg-white rounded border border-gray-200 p-4 shadow-sm">
-              <h2 className="font-bold text-[15px] mb-3 text-black">Game Play:</h2>
-              
-              <div className="bg-[#f0f4f8] border border-gray-300 rounded mb-4 grid grid-cols-3 text-center py-2 shadow-sm font-semibold text-[13px]">
+            <div className='rounded border border-gray-200 bg-white p-4 shadow-sm'>
+              <h2 className='mb-3 text-[15px] font-bold text-black'>
+                Game Play:
+              </h2>
+
+              <div className='mb-4 grid grid-cols-3 rounded border border-gray-300 bg-[#f0f4f8] py-2 text-center text-[13px] font-semibold shadow-sm'>
                 <div>
                   <div className="text-gray-500 mb-1">P&L</div>
                   <div className={plColorClass(userDetails.gamePlay.overallPL)}>
@@ -478,27 +596,34 @@ const UserDetails = () => {
                     )}
                   </div>
                 </div>
-                <div className="border-l border-r border-gray-300">
-                  <div className="text-gray-500 mb-1">Commission</div>
-                  <div className="text-red-500">{Number(userDetails.gamePlay.commission).toFixed(2)}</div>
+                <div className='border-r border-l border-gray-300'>
+                  <div className='mb-1 text-gray-500'>Commission</div>
+                  <div className='text-red-500'>
+                    {Number(userDetails.gamePlay.commission).toFixed(2)}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-gray-500 mb-1">Total Bet</div>
-                  <div className="text-black">{userDetails.gamePlay.totalBet}</div>
+                  <div className='mb-1 text-gray-500'>Total Bet</div>
+                  <div className='text-black'>
+                    {userDetails.gamePlay.totalBet}
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 align-top">
-                
+              <div className='grid grid-cols-1 gap-4 align-top lg:grid-cols-3'>
                 {/* Sports Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-gray-200">
+                <div className='overflow-x-auto'>
+                  <table className='w-full border-collapse border border-gray-200 text-left'>
                     <thead>
-                      <tr className="bg-white border-b border-gray-200 text-black">
-                        <th className="p-2 font-bold w-1/4">Sport</th>
-                        <th className="p-2 font-bold w-1/4 text-center">Bet</th>
-                        <th className="p-2 font-bold w-1/4 text-right">Bet Amount</th>
-                        <th className="p-2 font-bold w-1/4 text-right">P & L</th>
+                      <tr className='border-b border-gray-200 bg-white text-black'>
+                        <th className='w-1/4 p-2 font-bold'>Sport</th>
+                        <th className='w-1/4 p-2 text-center font-bold'>Bet</th>
+                        <th className='w-1/4 p-2 text-right font-bold'>
+                          Bet Amount
+                        </th>
+                        <th className='w-1/4 p-2 text-right font-bold'>
+                          P & L
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -521,12 +646,14 @@ const UserDetails = () => {
                 </div>
 
                 {/* Casino Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-gray-200">
+                <div className='overflow-x-auto'>
+                  <table className='w-full border-collapse border border-gray-200 text-left'>
                     <thead>
-                      <tr className="bg-white border-b border-gray-200 text-black">
-                        <th className="p-2 font-bold w-1/2">Casino</th>
-                        <th className="p-2 font-bold w-1/2 text-right">Total P & L</th>
+                      <tr className='border-b border-gray-200 bg-white text-black'>
+                        <th className='w-1/2 p-2 font-bold'>Casino</th>
+                        <th className='w-1/2 p-2 text-right font-bold'>
+                          Total P & L
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -548,13 +675,17 @@ const UserDetails = () => {
                 </div>
 
                 {/* Market Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse border border-gray-200">
+                <div className='overflow-x-auto'>
+                  <table className='w-full border-collapse border border-gray-200 text-left'>
                     <thead>
-                      <tr className="bg-white border-b border-gray-200 text-black">
-                        <th className="p-2 font-bold w-1/3">Sport</th>
-                        <th className="p-2 font-bold w-1/3 text-center">Market</th>
-                        <th className="p-2 font-bold w-1/3 text-right">P & L</th>
+                      <tr className='border-b border-gray-200 bg-white text-black'>
+                        <th className='w-1/3 p-2 font-bold'>Sport</th>
+                        <th className='w-1/3 p-2 text-center font-bold'>
+                          Market
+                        </th>
+                        <th className='w-1/3 p-2 text-right font-bold'>
+                          P & L
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -566,12 +697,18 @@ const UserDetails = () => {
                         </tr>
                       ))}
                       {userDetails.gamePlay.markets.length === 0 && (
-                        <tr><td colSpan="3" className="p-2 text-center text-gray-400">No Market bets</td></tr>
+                        <tr>
+                          <td
+                            colSpan='3'
+                            className='p-2 text-center text-gray-400'
+                          >
+                            No Market bets
+                          </td>
+                        </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
-
               </div>
             </div>
           </div>

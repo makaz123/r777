@@ -106,9 +106,7 @@ const Notifications = () => {
           notificationIds: [item._id],
         });
         setList((prev) =>
-          prev.map((n) =>
-            n._id === item._id ? { ...n, isRead: true } : n
-          )
+          prev.map((n) => (n._id === item._id ? { ...n, isRead: true } : n))
         );
       } catch {
         /* ignore */
@@ -228,7 +226,7 @@ const Notifications = () => {
                           From: {item.sentBy}
                         </p>
                         {expandedId === item._id ? (
-                          <p className='mt-2 text-[13px] leading-relaxed text-gray-700 whitespace-pre-wrap'>
+                          <p className='mt-2 text-[13px] leading-relaxed whitespace-pre-wrap text-gray-700'>
                             {item.message}
                           </p>
                         ) : (

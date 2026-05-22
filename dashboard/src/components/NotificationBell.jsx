@@ -77,9 +77,7 @@ const NotificationBell = ({ role }) => {
       });
       setUnreadCount(data?.unreadCount ?? 0);
       setItems((prev) =>
-        prev.map((n) =>
-          n._id === notificationId ? { ...n, isRead: true } : n
-        )
+        prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
       );
     } catch {
       /* ignore */
@@ -193,7 +191,7 @@ const NotificationBell = ({ role }) => {
                 <p className='text-[12px] font-semibold text-[#016a82]'>
                   {active.title}
                 </p>
-                <p className='mt-1 text-[12px] leading-relaxed text-gray-700 whitespace-pre-wrap'>
+                <p className='mt-1 text-[12px] leading-relaxed whitespace-pre-wrap text-gray-700'>
                   {active.message}
                 </p>
               </div>

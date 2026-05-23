@@ -79,9 +79,9 @@ const AccountSummaryBar = () => {
 
   const downlineTooltip =
     downlineLenDena === 'lena'
-      ? 'Positive: aapko apni downline se lena hai (unhone haare / aapka share profit).'
+      ? 'Outstanding: aapko apni downline se lena hai. Cash settlement se yeh amount kam hota hai; My P&L nahi.'
       : downlineLenDena === 'dena'
-        ? 'Negative: aapko downline ko dena hai (unhone jeete / aap unhe denge).'
+        ? 'Outstanding: aapko downline ko dena hai. Cash settlement se yeh amount kam hota hai; My P&L nahi.'
         : 'Down line settled — koi outstanding len-den nahi.';
 
   const uplineTooltip =
@@ -220,7 +220,7 @@ const AccountSummaryBar = () => {
               <div className='space-y-1'>
                 <MetricTooltipRow
                   label='Week P&L : '
-                  tooltip='Your share of settled downline P/L for the current week.'
+                  tooltip='Your share of downline betting P/L from bets settled this week (Mon–Sun).'
                 >
                   <span
                     className={plColorClass(summary?.currentWeekPL ?? 0)}
@@ -242,7 +242,7 @@ const AccountSummaryBar = () => {
             <div className='space-y-1 md:col-span-1'>
               <MetricTooltipRow
                 label='My P&L : '
-                tooltip='Mera Profit & Loss Account.'
+                tooltip='Your overall betting P/L from downline (all settled bets). Cash settlement does not change this.'
                 alignTooltip='center'
               >
                 <span

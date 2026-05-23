@@ -21,8 +21,10 @@ import {
   aggregateViewerOutstandingPL,
   aggregateViewerProfitLoss,
   buildAccountSummary,
+  expectedBettingPLFromHistory,
   getCurrentWeekRange,
   getDownlineUserIds,
+  getSettlementCashTotals,
   isAccountInAdminDownline,
 } from '../../utils/accountSummaryUtils.js';
 import { refreshUserAndDownlines } from '../../utils/userRefreshNotify.js';
@@ -184,16 +186,24 @@ const updateAdmin = async (id) => {
 
         const trueTotalPL = roundMoney(sportsBettingPL + casinoBettingPL);
         const storedPL = roundMoney(user.bettingProfitLoss || 0);
+        const settlementCash = await getSettlementCashTotals(
+          TransactionHistory,
+          user._id
+        );
+        const expectedPL = expectedBettingPLFromHistory(
+          trueTotalPL,
+          settlementCash
+        );
 
-        // Never raise stored P/L above bet history; never lower below stored (settlements).
+        // Sync to bet history + settlement cash; partial settlements keep stored below raw history.
         let userBettingPL = storedPL;
-        if (trueTotalPL > storedPL + 0.01) {
-          userBettingPL = trueTotalPL;
-          if (user.bettingProfitLoss !== trueTotalPL) {
+        if (Math.abs(expectedPL - storedPL) > 0.01) {
+          userBettingPL = expectedPL;
+          if (Math.abs(user.bettingProfitLoss - expectedPL) > 0.01) {
             console.log(
-              `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${trueTotalPL}`
+              `[UPDATE ADMIN] User ${user.userName}: syncing bettingProfitLoss from ${user.bettingProfitLoss} to ${expectedPL} (history=${trueTotalPL}, settlements w/d=${settlementCash.withdrawl}/${settlementCash.deposite})`
             );
-            user.bettingProfitLoss = trueTotalPL;
+            user.bettingProfitLoss = expectedPL;
             await user.save();
           }
         }
@@ -1197,30 +1207,45 @@ const loadAccountSummaryForAdmin = async (adminId) => {
   if (!updatedAdmin) return null;
 
   const weekRange = getCurrentWeekRange();
-  const [weekViewerPL, weekDownlinePL, tillViewerPL, tillDownlinePL] =
-    await Promise.all([
-      aggregateViewerProfitLoss(
-        SubAdmin,
-        betHistoryModel,
-        CasinoBetHistory,
-        updatedAdmin,
-        weekRange
-      ),
-      aggregateDownlineParentViewPL(
-        SubAdmin,
-        betHistoryModel,
-        CasinoBetHistory,
-        updatedAdmin.code,
-        weekRange
-      ),
-      aggregateViewerOutstandingPL(SubAdmin, updatedAdmin),
-      aggregateDownlineOutstandingGross(SubAdmin, updatedAdmin.code),
-    ]);
+  const [
+    weekViewerPL,
+    weekDownlinePL,
+    myPLTillDate,
+    tillViewerOutstandingPL,
+    tillDownlinePL,
+  ] = await Promise.all([
+    aggregateViewerProfitLoss(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      updatedAdmin,
+      weekRange
+    ),
+    aggregateDownlineParentViewPL(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      updatedAdmin.code,
+      weekRange
+    ),
+    // Lifetime betting P/L (bet history) — not reduced by cash settlement.
+    aggregateViewerProfitLoss(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      updatedAdmin,
+      null
+    ),
+    // Outstanding len-den with downline (stored PL after settlements).
+    aggregateViewerOutstandingPL(SubAdmin, updatedAdmin),
+    aggregateDownlineOutstandingGross(SubAdmin, updatedAdmin.code),
+  ]);
 
   const accountSummary = buildAccountSummary(updatedAdmin, {
     weekViewerPL,
     weekDownlinePL,
-    tillViewerPL,
+    myPLTillDate,
+    tillViewerOutstandingPL,
     tillDownlinePL,
   });
 
@@ -3603,15 +3628,19 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   };
 };
 
-/** After settling with an agent, scale end-users' bettingProfitLoss so share outstanding clears. */
+/** After settling with an agent, scale end-users' bettingProfitLoss so your share outstanding clears. */
 const applyBranchSettlementToEndUsers = async (
   agentCode,
   settleAmount,
-  grossClientPL
+  agentSharePL,
+  settlerAdmin,
+  settleRemark
 ) => {
-  if (!agentCode || Math.abs(grossClientPL) < 0.01) return;
+  const shareOutstanding = Math.abs(agentSharePL);
+  if (!agentCode || shareOutstanding < 0.01) return;
 
-  const ratio = settleAmount / grossClientPL;
+  // settleAmount is cash against the agent's *share* P/L, not gross client P/L.
+  const ratio = Math.min(1, settleAmount / shareOutstanding);
   const branch = await SubAdmin.aggregate([
     { $match: { code: agentCode, status: { $ne: 'delete' } } },
     {
@@ -3628,6 +3657,7 @@ const applyBranchSettlementToEndUsers = async (
     {
       $project: {
         _id: '$branch._id',
+        userName: '$branch.userName',
         bettingProfitLoss: '$branch.bettingProfitLoss',
       },
     },
@@ -3638,6 +3668,21 @@ const applyBranchSettlementToEndUsers = async (
     const newPL = roundMoney((row.bettingProfitLoss || 0) - adjustment);
     await SubAdmin.findByIdAndUpdate(row._id, {
       bettingProfitLoss: newPL,
+    });
+
+    if (Math.abs(adjustment) < 0.01) continue;
+
+    const cashAmount = Math.abs(adjustment);
+    await TransactionHistory.create({
+      userId: String(row._id),
+      userName: row.userName || '',
+      withdrawl: adjustment > 0 ? cashAmount : 0,
+      deposite: adjustment < 0 ? cashAmount : 0,
+      amount: newPL,
+      from: settlerAdmin?.userName || '',
+      to: row.userName || '',
+      remark: settleRemark || 'Settlement: branch',
+      invite: settlerAdmin?.code || '',
     });
   }
 };
@@ -3741,6 +3786,12 @@ export const settleUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    if (editUser.invite !== admin.code) {
+      return res.status(403).json({
+        message: 'You can only settle with your direct downlines.',
+      });
+    }
+
     const { clientPL: pl, grossClientPL } = await getDirectSettlementPL(
       admin,
       editUser
@@ -3789,7 +3840,7 @@ export const settleUser = async (req, res) => {
 
       // Log it as a settlement transaction
       await TransactionHistory.create({
-        userId: editUser._id,
+        userId: String(editUser._id),
         userName: editUser.userName,
         withdrawl: parsedAmount, // It's a withdrawal of winnings
         deposite: 0,
@@ -3804,7 +3855,9 @@ export const settleUser = async (req, res) => {
         await applyBranchSettlementToEndUsers(
           editUser.code,
           parsedAmount,
-          grossClientPL
+          pl,
+          admin,
+          settleRemark
         );
       }
     } else if (pl < 0) {
@@ -3841,7 +3894,7 @@ export const settleUser = async (req, res) => {
       await editUser.save();
 
       await TransactionHistory.create({
-        userId: editUser._id,
+        userId: String(editUser._id),
         userName: editUser.userName,
         withdrawl: 0,
         deposite: parsedAmount, // Depositing to pay off losses
@@ -3856,7 +3909,9 @@ export const settleUser = async (req, res) => {
         await applyBranchSettlementToEndUsers(
           editUser.code,
           parsedAmount,
-          grossClientPL
+          pl,
+          admin,
+          settleRemark
         );
       }
     }

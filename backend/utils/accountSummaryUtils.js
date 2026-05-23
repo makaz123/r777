@@ -364,8 +364,13 @@ export function buildAccountSummary(admin, plTotals = {}) {
     myShareExposureRaw > 0 ? -myShareExposureRaw : myShareExposureRaw;
 
   const weekViewerPL = roundMoney(plTotals.weekViewerPL ?? 0);
-  const tillViewerPL = roundMoney(plTotals.tillViewerPL ?? 0);
   const weekDownlinePL = roundMoney(plTotals.weekDownlinePL ?? 0);
+  const myPLTillDate = roundMoney(
+    plTotals.myPLTillDate ?? plTotals.tillViewerPL ?? 0
+  );
+  const tillViewerOutstandingPL = roundMoney(
+    plTotals.tillViewerOutstandingPL ?? plTotals.tillViewerPL ?? 0
+  );
   const tillDownlinePL = roundMoney(plTotals.tillDownlinePL ?? 0);
 
   const roleLabel =
@@ -389,29 +394,62 @@ export function buildAccountSummary(admin, plTotals = {}) {
     clientWeekPLTotal: roundMoney(-weekDownlinePL),
     currentWeekPL: weekViewerPL,
     currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
-    myPLTillDate: tillViewerPL,
+    /** Lifetime betting P/L (bet history); cash settlement does not change this. */
+    myPLTillDate,
     myPLTillDateTotal: tillDownlinePL,
     /** Amount passed to upline from downline P/L (your keep vs gross). */
-    uplineDena: roundMoney(tillDownlinePL - tillViewerPL),
-    /** Your share with downline — not gross client/downline total. */
-    downlineDena: tillViewerPL,
+    uplineDena: roundMoney(tillDownlinePL - tillViewerOutstandingPL),
+    /** Outstanding len-den with downline (reduces when you settle cash). */
+    downlineDena: tillViewerOutstandingPL,
     downlineDenaGross: tillDownlinePL,
     uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
     downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
     downlineLenDena:
-      tillViewerPL > 0.005
+      tillViewerOutstandingPL > 0.005
         ? 'lena'
-        : tillViewerPL < -0.005
+        : tillViewerOutstandingPL < -0.005
           ? 'dena'
           : 'clear',
     uplineLenDena:
-      roundMoney(tillDownlinePL - tillViewerPL) > 0.005
+      roundMoney(tillDownlinePL - tillViewerOutstandingPL) > 0.005
         ? 'dena'
-        : roundMoney(tillDownlinePL - tillViewerPL) < -0.005
+        : roundMoney(tillDownlinePL - tillViewerOutstandingPL) < -0.005
           ? 'lena'
           : 'clear',
     weekRange: getCurrentWeekRange(),
   };
+}
+
+/** Cash settlements logged on a user (Settlement: remarks). */
+export async function getSettlementCashTotals(TransactionHistory, userId) {
+  const id = String(userId);
+  const agg = await TransactionHistory.aggregate([
+    {
+      $match: {
+        userId: { $in: [id, userId] },
+        remark: { $regex: /^Settlement:/ },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        withdrawl: { $sum: { $ifNull: ['$withdrawl', 0] } },
+        deposite: { $sum: { $ifNull: ['$deposite', 0] } },
+      },
+    },
+  ]);
+  const row = agg[0] || {};
+  return {
+    withdrawl: roundMoney(row.withdrawl || 0),
+    deposite: roundMoney(row.deposite || 0),
+  };
+}
+
+/** Outstanding P/L after cash settlements: bet-history total minus withdrawals plus deposits. */
+export function expectedBettingPLFromHistory(trueTotalPL, settlementCash) {
+  const truePL = roundMoney(trueTotalPL);
+  const cash = settlementCash || { withdrawl: 0, deposite: 0 };
+  return roundMoney(truePL - (cash.withdrawl || 0) + (cash.deposite || 0));
 }
 
 /** Positive downline share = collect from downline (lena); negative = pay downline (dena). */

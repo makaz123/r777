@@ -10,14 +10,16 @@ import {
   masterBookReducer,
   masterBookReducerDownline,
 } from '../redux/reducer/marketAnalyzeReducer';
-import { HiOutlineExclamationCircle } from 'react-icons/hi2';
-import { FaArrowRight } from 'react-icons/fa';
+import { FaArrowRight, FaLock } from 'react-icons/fa';
+import OddsGridCells from '../components/OddsGridCells';
 import Spinner2 from '../components/Spinner2';
 import { host } from '../redux/api';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
-
+import { FaFilter } from 'react-icons/fa';
+import { BsGraphUpArrow } from 'react-icons/bs';
+import { TfiMenuAlt } from 'react-icons/tfi';
 export default function Tennisbet() {
   const [bettingData, setBettingData] = useState(null);
   const hasCheckedRef = useRef(false);
@@ -42,6 +44,7 @@ export default function Tennisbet() {
   const [viewMoreDetail, setViewMoreDetail] = useState(false);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showlivetv, setshowlivetv] = useState(false);
   const {
     loading,
     pendingBet,
@@ -356,10 +359,10 @@ export default function Tennisbet() {
     // console.log("existingBet", existingBet)
 
     return (
-      <div className='col-span-5 p-1 pl-4 text-left text-sm font-bold md:col-span-5 md:text-[11px]'>
-        <div>
+      <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
+        <div className='flex justify-between'>
           <p>{team}</p>
-          <p style={{ color: betColor }}>{displayValue || '0.00'}</p>
+          <p style={{ color: betColor }}>{displayValue}</p>
         </div>
       </div>
     );
@@ -377,6 +380,9 @@ export default function Tennisbet() {
     const n = Number(num) / 1000;
     return `${n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)}k`;
   };
+
+  const isSuspended = oddsData[0]?.status === 'SUSPENDED';
+
   const pratnerShip = (role, amount, part) => {
     const roundedAmount = Math.round(amount * 100) / 100; // Round to 2 decimals
     if (role === 'user') {
@@ -405,176 +411,123 @@ export default function Tennisbet() {
       ) : (
         <div className='flex w-full flex-col gap-4 bg-[#fbfbfc] p-1 md:flex-row md:p-5'>
           <div className='sm:w-full md:w-[60%]'>
+            <div className='flex items-center justify-between bg-[#18b0c8] px-[5px] py-[3px] text-[14px] font-bold text-white'>
+              <span className='flex items-center'>
+                {gameTitle} - {gameName}
+              </span>
+              <span>
+                {lastUpdateddate
+                  ? new Date(lastUpdateddate).toLocaleString('en-IN')
+                  : '—'}
+              </span>
+            </div>
             <div>
-              <div className='flex items-center justify-between bg-[#2c3e50] p-2.5 px-5 font-bold text-white uppercase'>
-                <span className='flex flex-1 items-center'>
-                  {gameTitle} <MdOutlineKeyboardArrowRight /> {gameName}
-                </span>
-                <span className=''>
-                  {lastUpdateddate
-                    ? new Date(lastUpdateddate).toLocaleString('en-IN')
-                    : '—'}
-                </span>
-              </div>
-              <div>
-                {oddsData.length > 0 && (
-                  <div>
-                    <div className='mx-auto bg-gray-200 text-[13px]'>
-                      <div className='flex items-center justify-between bg-[#2c3e50b3] p-2 px-4 font-bold text-white uppercase'>
-                        <span>{oddsData[0]?.mname}</span>
-                        <div className='font-bold'>Matched € 204.7K</div>
-                      </div>
-
-                      {oddsData[0]?.status === 'SUSPENDED' ? (
-                        <div className='relative mx-auto border-2 border-red-500'>
-                          <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
-                            <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
-                              SUSPENDED
-                            </p>
-                          </div>
-
-                          <div className='grid grid-cols-9 border-b border-gray-300 bg-white text-center'>
-                            <div className='col-span-5 p-1 md:col-span-5'>
-                              <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                                <span className='text-[#315195]'>Min/Max </span>
-                                {matchOddsList[0]?.min}-
-                                {formatToK(matchOddsList[0]?.maxb)}
-                              </div>
-                            </div>
-                            <div className='col-span-2 bg-[#72bbef] p-1 font-bold text-slate-800 md:col-span-1 md:rounded-t-2xl'>
-                              Back
-                            </div>
-                            <div className='col-span-2 bg-[#faa9ba] p-1 font-bold text-slate-800 md:col-span-1 md:rounded-t-2xl'>
-                              Lay
-                            </div>
-                            <div className='col-span-2 hidden rounded-lg p-1 text-[11px] font-semibold md:block'>
-                              <div className='rounded-md bg-[#bed5d8] p-0.5'>
-                                <span className='text-[#315195]'>Min/Max </span>
-                                {matchOddsList[0]?.min}-
-                                {formatToK(matchOddsList[0]?.maxb)}
-                              </div>
-                            </div>
-                          </div>
-                          {oddsData.map(({ team, odds }, index) => (
-                            <div key={index}>
-                              <div className='grid cursor-pointer grid-cols-9 border-b border-gray-300 bg-white text-center text-[10px] font-semibold opacity-30 hover:bg-gray-200'>
-                                <div className='col-span-5 p-1 pl-4 text-left text-[11px] font-bold md:col-span-3'>
-                                  {team}
-                                </div>
-                                {odds.map((odd, i) => (
-                                  <div
-                                    key={i}
-                                    className={`col-span-2 cursor-pointer p-1 md:col-span-1 ${
-                                      i === 0
-                                        ? 'hidden bg-sky-100 md:block'
-                                        : i === 1
-                                          ? 'hidden bg-sky-200 md:block'
-                                          : i === 2
-                                            ? 'bg-[#72bbef] '
-                                            : i === 3
-                                              ? 'bg-[#faa9ba]'
-                                              : i === 4
-                                                ? 'hidden bg-pink-200 md:block'
-                                                : 'hidden bg-pink-100 md:block'
-                                    }`}
-                                  >
-                                    <div className='font-bold'>
-                                      {odd?.odds || 0}
-                                    </div>
-                                    <div className='text-gray-800'>
-                                      {odd?.size || 0}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div>
-                          <div className='grid grid-cols-9 border-b border-gray-300 bg-white text-center'>
-                            <div className='col-span-5 p-1 md:col-span-5'>
-                              <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                                <span className='text-[#315195]'>Min/Max </span>
-                                {matchOddsList[0]?.min}-
-                                {formatToK(matchOddsList[0]?.maxb)}
-                              </div>
-                            </div>
-                            <div className='col-span-2 bg-[#72bbef] p-1 font-bold text-slate-800 md:col-span-1 md:rounded-t-2xl'>
-                              Back
-                            </div>
-                            <div className='col-span-2 bg-[#faa9ba] p-1 font-bold text-slate-800 md:col-span-1 md:rounded-t-2xl'>
-                              Lay
-                            </div>
-                            <div className='col-span-2 hidden rounded-lg p-1 text-[11px] font-semibold md:block'>
-                              <div className='rounded-md bg-[#bed5d8] p-0.5'>
-                                <span className='text-[#315195]'>Min/Max </span>
-                                {matchOddsList[0]?.min}-
-                                {formatToK(matchOddsList[0]?.maxb)}
-                              </div>
-                            </div>
-                          </div>
-                          {oddsData.map(({ team, odds }, index) => (
-                            <div key={index}>
-                              <div className='grid cursor-pointer grid-cols-9 border-b border-gray-300 bg-white text-center text-[10px] font-semibold hover:bg-gray-200'>
-                                <MyComponent
-                                  key={team}
-                                  team={team}
-                                  matchData={oddsData[0]}
-                                  pendingBet={pendingBet}
-                                  index={index}
-
-                                  // oddsValue={odd?.odds}
-                                />
-                                {odds.map(
-                                  (odd, i) =>
-                                    odd?.tno === 0 && (
-                                      <div
-                                        key={i}
-                                        className={`col-span-2 w-full cursor-pointer border-b p-1 text-center md:col-span-1 ${
-                                          odd?.otype === 'back'
-                                            ? 'bg-[#72bbef]'
-                                            : 'bg-[#faa9ba]'
-                                        }`}
-                                      >
-                                        <div>
-                                          <div className='font-bold'>
-                                            {odd?.odds}
-                                          </div>
-                                          <div className='text-gray-800'>
-                                            {formatToK(odd?.size) || 0}
-                                            {/* {odd?.size} */}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+              {oddsData.length > 0 && (
+                <>
+                  <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+                    <div className='flex items-center gap-1'>
+                      <span className='font-bold'>{oddsData[0]?.mname}</span>
+                      <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                        Book
+                      </span>
+                      <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                        BL <FaLock size={9} />
+                      </span>
+                      <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                        BetPlace
+                      </span>
+                      <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                        0
+                      </span>
+                    </div>
+                    <div>
+                      Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
                     </div>
                   </div>
-                )}
-              </div>
+
+                  <div className='relative'>
+                    {isSuspended && (
+                      <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
+                        <p className='text-3xl font-bold text-red-700'>SUSPENDED</p>
+                      </div>
+                    )}
+
+                    {/* Header */}
+                    <div className='flex border-b border-gray-300 bg-white text-center'>
+                      <div className='w-1/2 p-1'>
+                        <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
+                          <span className='text-[#315195]'>Min/Max </span>
+
+                          {isSuspended
+                            ? '100-100000'
+                            : `${matchOddsList[0]?.min}-${formatToK(matchOddsList[0]?.maxb)}`}
+                        </div>
+                      </div>
+
+                      <div className='grid w-1/2 grid-cols-6'>
+                        <div className='col-span-1'></div>
+                        <div className='col-span-1'></div>
+                        <div className='col-span-1 mx-0.5 mt-0.5 rounded-tl-2xl bg-[#72bbef] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
+                          Back
+                        </div>
+                        <div className='col-span-1 mx-0.5 mt-0.5 rounded-tr-2xl bg-[#faa9ba] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
+                          Lay
+                        </div>
+                        <div className='col-span-1'></div>
+                        <div className='col-span-1'></div>
+                      </div>
+                    </div>
+
+                    {/* Rows */}
+                    {oddsData.map(({ team, odds }, index) => (
+                      <div
+                        key={team}
+                        className={`flex border-b border-gray-300 bg-white text-center text-[10px] font-semibold ${
+                          isSuspended ? 'opacity-30' : ''
+                        }`}
+                      >
+                        {!isSuspended ? (
+                          <MyComponent
+                            team={team}
+                            matchData={oddsData[0]}
+                            pendingBet={pendingBet}
+                            index={index}
+                          />
+                        ) : (
+                          <div className='w-1/2 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[14px]'>
+                            {team}
+                          </div>
+                        )}
+
+                        <div className='grid w-1/2 grid-cols-6'>
+                          <OddsGridCells odds={odds} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className='md-mt-0 sm:w-full md:w-[40%]'>
-            <div>
-              <div>
+            <div className='mb-3'>
+              <div className='flex cursor-pointer items-center justify-between bg-[#016a82] px-1 py-0.5 text-[13px] text-white'>
+                <span className='font-bold'>Live TV</span>
                 <div
-                  className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'
-                  onClick={() => setUrl(!url)}
+                  className={`flex h-[14px] w-[24px] rounded-full p-0.5 transition-all duration-300 ${showlivetv ? 'justify-end bg-green-700' : 'justify-start bg-red-500'}`}
+                  onClick={() => setshowlivetv((prev) => !prev)}
                 >
-                  Live Streaming
+                  <span
+                    className={`block h-[10px] w-[10px] rounded-full bg-white transition-all duration-300 ${showlivetv ? 'bg-gray-400' : 'bg-white'}`}
+                  ></span>
                 </div>
-                {url ? (
+              </div>
+              {showlivetv && (
+                <div className='block aspect-video w-full'>
                   <iframe
-                    src={`https://test.bulkapi.co.in/api/v1/live-stream?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
+                    src={`https://81habibi.com/api/v1/live-stream?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
                     title='Watch Live'
-                    className='w-full rounded-lg'
-                    style={{ height: '50vh' }}
+                    className='h-full w-full'
                     allowFullScreen
                     loading='lazy'
                     allow='
@@ -586,36 +539,102 @@ export default function Tennisbet() {
                       gyroscope
                     '
                   />
-                ) : null}
-              </div>
-
-              <div className='mt-4'>
-                <div
-                  className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'
-                  onClick={() => setScoreUrl(!scoreUrl)}
-                >
-                  Score Card
                 </div>
-                {scoreUrl ? (
-                  <iframe
-                    src={`https://test.bulkapi.co.in/api/v1/live-scorecard?gmid=${gameid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52&sportid=2`}
-                    allowFullScreen
-                    className='w-full rounded-lg'
-                    style={{ height: '50vh' }}
-                    title='Live Score'
-                    allow='
-                      autoplay;
-                      encrypted-media;
-                      fullscreen;
-                      picture-in-picture;
-                      accelerometer;
-                      gyroscope
-                    '
-                  />
-                ) : null}
-              </div>
+              )}
+            </div>
 
-              {!isFromMarket && (
+            <div className='bg-[#27a6c3] px-2.5 py-[3px]'>
+              <div className='flex items-center justify-between'>
+                <div className='flex gap-2'>
+                  <div className='flex items-center gap-1 text-[12px] text-white'>
+                    Odds{' '}
+                    <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
+                      0
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-1 text-[12px] text-white'>
+                    BM{' '}
+                    <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
+                      0
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-1 text-[12px] text-white'>
+                    Fancy{' '}
+                    <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
+                      0
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white'>
+                    Reset <FaFilter className='text-white' size={10} />
+                  </div>
+                </div>
+                <div className='flex gap-2'>
+                  <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[5px] text-[12px] text-white'>
+                    P&L <BsGraphUpArrow className='text-white' size={12} />
+                  </div>
+                  <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[5px] text-[12px] text-white'>
+                    All Bets <TfiMenuAlt className='text-white' size={12} />
+                  </div>
+                </div>
+              </div>
+              <div className='mt-1.5 grid grid-cols-2 gap-1'>
+                <input
+                  type='text'
+                  className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
+                  placeholder='Filter by Amount from'
+                />
+                <input
+                  type='text'
+                  className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
+                  placeholder='Filter by Market Name'
+                />
+              </div>
+            </div>
+
+            <table className='mt-[1px] w-full'>
+              <thead>
+                <tr className='bg-[#016a82] text-[12px] text-white'>
+                  <th className='px-[3px] py-[2px] text-left font-medium'>
+                    UserName
+                  </th>
+                  <th className='px-[3px] py-[2px] text-left font-medium'>
+                    Market
+                  </th>
+                  <th className='px-[3px] py-[2px] text-left font-medium'>
+                    Runner
+                  </th>
+                  <th className='px-[3px] py-[2px] text-left font-medium'>
+                    Rate
+                  </th>
+                  <th className='px-[3px] py-[2px] text-left font-medium'>
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {betsData.map((item, index) => (
+                  <tr
+                    key={index}
+                    className={`border-y border-white text-[12px] ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
+                  >
+                    <td className='px-[3px] py-[2px]'>{item.userName}</td>
+                    <td className='px-[3px] py-[2px]'>{item.gameType}</td>
+                    <td className='px-[3px] py-[2px]'>{item.teamName}</td>
+                    <td className='px-[3px] py-[2px] font-semibold'>
+                      {item.gameType === 'Normal'
+                        ? `${item.fancyScore}/`
+                        : ''}
+                      {item.xValue}
+                    </td>
+                    <td className='px-[3px] py-[2px] font-semibold'>
+                      {item.otype === 'lay' ? item.betAmount : item.price}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+              {/* {!isFromMarket && (
                 <>
                   <div className='mt-4 flex min-h-[42px] cursor-pointer items-center justify-between rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                     <span>My Bets</span>
@@ -679,9 +698,9 @@ export default function Tennisbet() {
                     )}
                   </div>
                 </>
-              )}
+              )} */}
 
-              {isFromMarket && (
+              {/* {isFromMarket && (
                 <div className='mt-4 bg-white'>
                   <div className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                     Book
@@ -701,9 +720,9 @@ export default function Tennisbet() {
                     </button>
                   </div>
                 </div>
-              )}
+              )} */}
 
-              {isFromMarket && (
+              {/* {isFromMarket && (
                 <div className='mt-4 bg-white'>
                   <div className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                     <div className='flex w-2/3 justify-between p-0 md:w-[60%] md:p-4'>
@@ -717,9 +736,9 @@ export default function Tennisbet() {
                               id='uncheck'
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setLiveBets(betsData); // ✅ If checked
+                                  setLiveBets(betsData);
                                 } else {
-                                  setLiveBets([]); // ❌ If unchecked
+                                  setLiveBets([]);
                                 }
                               }}
                             />
@@ -819,7 +838,6 @@ export default function Tennisbet() {
                             </div>
                             <div className='col-span-2 text-[11px]'>
                               <div>
-                                {/* {item.xValue} */}
                                 {item.gameType === 'Normal'
                                   ? `${item.fancyScore}/`
                                   : ''}
@@ -853,7 +871,7 @@ export default function Tennisbet() {
                     </div>
                   )}
                 </div>
-              )}
+              )} */}
 
               {/* view more popup */}
 
@@ -1350,10 +1368,12 @@ export default function Tennisbet() {
                   </motion.div>
                 </div>
               )}
-            </div>
 
             {/* user bet presents popup */}
           </div>
+
+
+
           <div>
             {popup && (
               <div className='bg-opacity-50 fixed inset-0 z-9999 flex items-start justify-center bg-[#0000005d]'>

@@ -2,6 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { HiOutlineExclamationCircle } from 'react-icons/hi2';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
+import OddsGridCells from '../../components/OddsGridCells';
 const MatchOdd = ({ matchOddsList }) => {
   const { pendingBet } = useSelector((state) => state.market);
 
@@ -153,14 +154,6 @@ const MatchOdd = ({ matchOddsList }) => {
   };
   const isSuspended = oddsData[0]?.status === 'SUSPENDED';
 
-  const oddClasses = [
-    'hidden bg-[#d7e8f4] md:block',
-    'hidden bg-[#b7d5eb] md:block',
-    'bg-[#72bbef]',
-    'bg-[#faa9ba]',
-    'hidden bg-[#efd3d9] md:block',
-    'hidden bg-[#f6e6ea] md:block',
-  ];
   return (
     <div>
       <div>
@@ -242,19 +235,7 @@ const MatchOdd = ({ matchOddsList }) => {
                   )}
 
                   <div className='grid w-1/2 grid-cols-6'>
-                    {odds.map((odd, i) => (
-                      <div
-                        key={i}
-                        className={`col-span-1 m-0.5 min-h-[36px] px-[3px] py-0.5 ${oddClasses[i]}`}
-                      >
-                        <div className='text-[14px] leading-[18px] font-bold'>
-                          {odd?.odds}
-                        </div>
-                        <div className='text-[10px] text-[#43444a]'>
-                          {Number(odd?.size).toFixed(2)}
-                        </div>
-                      </div>
-                    ))}
+                    <OddsGridCells odds={odds} />
                   </div>
                 </div>
               ))}

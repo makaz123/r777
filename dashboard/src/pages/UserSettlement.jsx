@@ -83,39 +83,54 @@ const UserSettlement = ({ type = 'user' }) => {
     setShowModal(true);
   };
 
-  const handleSettleSubmit = async (e) => {
-    e.preventDefault();
-    if (
-      !settleAmount ||
-      isNaN(Number(settleAmount)) ||
-      Number(settleAmount) <= 0
-    ) {
-      toast.error('Please enter a valid positive settle amount');
-      return;
-    }
-    if (!masterPassword) {
+  const handleBulkSubmit = async () => {
+    if (!footerPassword) {
       toast.error('Master password is required');
       return;
     }
 
-    setSettleLoading(true);
-    try {
-      const res = await api.post('/sub-admin/settle', {
-        userId: selectedUser._id,
-        amount: Number(settleAmount),
-        remarks,
-        masterPassword,
-      });
-
-      if (res.data && res.data.success) {
-        toast.success(res.data.message || 'Settlement completed successfully');
-        setShowModal(false);
-        fetchSettlementUsers(); // Refresh data
+    const payloads = [];
+    Object.entries(settleAmounts).forEach(([userId, amount]) => {
+      if (amount && Number(amount) > 0) {
+        payloads.push({
+          userId,
+          amount: Number(amount),
+          remarks: rowRemarks[userId] || globalRemarks || 'Settlement',
+          masterPassword: footerPassword,
+        });
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Settlement failed');
-    } finally {
-      setSettleLoading(false);
+    });
+
+    if (payloads.length === 0) {
+      toast.error('No valid settle amounts entered.');
+      return;
+    }
+
+    setSettleLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const payload of payloads) {
+      try {
+        const res = await api.post('/sub-admin/settle', payload);
+        if (res.data && res.data.success) {
+          successCount++;
+        }
+      } catch (err) {
+        failCount++;
+        toast.error(`Failed for one user: ${err.response?.data?.message || err.message}`);
+        if (err.response?.status === 400 && err.response?.data?.message === 'Invalid Master password.') {
+          // Abort further attempts if password is wrong
+          break;
+        }
+      }
+    }
+
+    setSettleLoading(false);
+    if (successCount > 0) {
+      toast.success(`Successfully settled ${successCount} accounts.`);
+      handleClearAll();
+      fetchSettlementUsers();
     }
   };
 
@@ -334,9 +349,14 @@ const UserSettlement = ({ type = 'user' }) => {
             onChange={(e) => setFooterPassword(e.target.value)}
             className='h-[30px] w-[150px] rounded-sm bg-white px-2'
           />
-          <div className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white'>
-            Submit
-          </div>
+          <button
+            type='button'
+            onClick={handleBulkSubmit}
+            disabled={settleLoading}
+            className={`rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white ${settleLoading ? 'opacity-50' : 'cursor-pointer hover:opacity-90'}`}
+          >
+            {settleLoading ? 'Processing...' : 'Submit'}
+          </button>
           <button
             type='button'
             onClick={handleClearAll}

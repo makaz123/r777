@@ -1445,7 +1445,7 @@ const UserDetails = () => {
                   <div className='font-bold text-gray-800'>My Available Bal</div>
                   <div className='font-bold text-gray-800'>P&L</div>
                   
-                  <div className='font-bold text-green-600'>{Number(userInfo?.availableBalance || 0).toFixed(2)}</div>
+                  <div className='font-bold text-green-600'>{Number(userInfo?.avbalance || 0).toFixed(2)}</div>
                   <div className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}>
                     {formatPL(userDetails?.accountDetails?.profitLoss)}
                   </div>

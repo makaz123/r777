@@ -4,7 +4,7 @@ import DeactivatedMatch from '../../models/matchSettingsModel.js';
 export const toggleMatchStatus = async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { sport, matchName } = req.body;
+    const { sport, matchName, isTournament } = req.body;
 
     //Validation checks
     if (!matchId || !sport || !matchName) {
@@ -27,30 +27,31 @@ export const toggleMatchStatus = async (req, res) => {
       });
     }
 
-    //Check if match is already deactivated
-
+    //Check if match/tournament is already deactivated
     const existing = await DeactivatedMatch.findOne({ matchId });
 
     if (existing) {
-      //Match is already deactivated,so we need to activate it
+      //Match/Tournament is already deactivated, so we need to activate it
       await DeactivatedMatch.deleteOne({ matchId });
       return res.status(200).json({
         success: true,
-        message: 'Match activated successfully',
+        message: isTournament ? 'Tournament activated successfully' : 'Match activated successfully',
         data: {
           matchId,
           isActive: true,
+          isTournament: !!isTournament,
         },
       });
     } else {
-      //Match is active->Deactivate it
-      await DeactivatedMatch.create({ matchId, sport, matchName });
+      //Match/Tournament is active -> Deactivate it
+      await DeactivatedMatch.create({ matchId, sport, matchName, isTournament: !!isTournament });
       return res.status(200).json({
         success: true,
-        message: 'Match deactivated successfully',
+        message: isTournament ? 'Tournament deactivated successfully' : 'Match deactivated successfully',
         data: {
           matchId,
           isActive: false,
+          isTournament: !!isTournament,
         },
       });
     }

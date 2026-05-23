@@ -62,11 +62,26 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
   const dispatch = useDispatch();
   const [expandedKeys, setExpandedKeys] = useState(() => new Set());
 
-  const { matches: cricketMatches } = useSelector((state) => state.cricket);
+  const { matches: rawCricketMatches } = useSelector((state) => state.cricket);
+  const { matches: rawTennisMatches } = useSelector((state) => state.tennis);
+  const { matches: rawSoccerMatches } = useSelector((state) => state.soccer);
+  const deactivatedMatches = useSelector((state) => state.auth?.deactivatedMatches || []);
 
-  const { matches: tennisMatches } = useSelector((state) => state.tennis);
+  const filterActiveMatches = useCallback(
+    (matches) => {
+      if (!Array.isArray(matches)) return [];
+      return matches.filter(
+        (m) =>
+          !deactivatedMatches.includes(String(m.id)) &&
+          !deactivatedMatches.includes(String(m.title))
+      );
+    },
+    [deactivatedMatches]
+  );
 
-  const { matches: soccerMatches } = useSelector((state) => state.soccer);
+  const cricketMatches = useMemo(() => filterActiveMatches(rawCricketMatches), [filterActiveMatches, rawCricketMatches]);
+  const tennisMatches = useMemo(() => filterActiveMatches(rawTennisMatches), [filterActiveMatches, rawTennisMatches]);
+  const soccerMatches = useMemo(() => filterActiveMatches(rawSoccerMatches), [filterActiveMatches, rawSoccerMatches]);
 
   useEffect(() => {
     dispatch(fetchCricketData());

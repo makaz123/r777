@@ -461,15 +461,6 @@ function Bookmaker({
                   <div className='flex flex-col'>
                     <div className='flex items-center'>
                       <span>{team}</span>
-                      {showCashoutOptions && (
-                        <span
-                          className={`ml-2 text-[12px] font-bold ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {cashoutLoading
-                            ? '...'
-                            : `₹ ${mergedCashoutValue.toFixed(2)}`}
-                        </span>
-                      )}
                     </div>
                     {(() => {
                       if (!userInfo) return null;

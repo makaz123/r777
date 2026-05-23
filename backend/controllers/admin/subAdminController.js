@@ -152,20 +152,21 @@ const updateAdmin = async (id) => {
               userId: user._id.toString(),
               $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
             },
-            {
-              $group: {
-                _id: null,
-                totalPL: {
-                  $sum: {
-                    $subtract: [
-                      { $ifNull: ['$win_amount', 0] },
-                      { $ifNull: ['$bet_amount', 0] },
-                    ],
-                  },
+          },
+          {
+            $group: {
+              _id: null,
+              totalPL: {
+                $sum: {
+                  $subtract: [
+                    { $ifNull: ['$win_amount', 0] },
+                    { $ifNull: ['$bet_amount', 0] },
+                  ],
                 },
               },
             },
-          ]);
+          },
+        ]);
         const casinoBettingPL =
           casinoPlResult.length > 0 ? roundMoney(casinoPlResult[0].totalPL) : 0;
 

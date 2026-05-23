@@ -137,10 +137,10 @@ const MatchOdd = ({ matchOddsList }) => {
     })();
 
     return (
-      <div className='col-span-5 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[11px]'>
-        <div>
+      <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
+        <div className='flex justify-between'>
           <p>{team}</p>
-          <p style={{ color: betColor }}>{displayValue || '0.00'}</p>
+          <p style={{ color: betColor }}>{displayValue}</p>
         </div>
       </div>
     );
@@ -151,7 +151,16 @@ const MatchOdd = ({ matchOddsList }) => {
     const n = Number(num);
     return `${n / 1000}k`;
   };
+  const isSuspended = oddsData[0]?.status === 'SUSPENDED';
 
+  const oddClasses = [
+    'hidden bg-[#d7e8f4] md:block',
+    'hidden bg-[#b7d5eb] md:block',
+    'bg-[#72bbef]',
+    'bg-[#faa9ba]',
+    'hidden bg-[#efd3d9] md:block',
+    'hidden bg-[#f6e6ea] md:block',
+  ];
   return (
     <div>
       <div>
@@ -178,130 +187,78 @@ const MatchOdd = ({ matchOddsList }) => {
               </div>
             </div>
 
-            {oddsData[0]?.status === 'SUSPENDED' ? (
-              <div className='relative mx-auto border-2 border-red-500'>
-                <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
-                  <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
-                    SUSPENDED
-                  </p>
+            <div className='relative'>
+              {isSuspended && (
+                <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
+                  <p className='text-3xl font-bold text-red-700'>SUSPENDED</p>
+                </div>
+              )}
+
+              {/* Header */}
+              <div className='flex border-b border-gray-300 bg-white text-center'>
+                <div className='w-1/2 p-1'>
+                  <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
+                    <span className='text-[#315195]'>Min/Max </span>
+
+                    {isSuspended
+                      ? '100-100000'
+                      : `${matchOddsList[0]?.min}-${formatToK(matchOddsList[0]?.maxb)}`}
+                  </div>
                 </div>
 
-                <div className='grid grid-cols-9 border-b border-gray-300 bg-white text-center'>
-                  <div className='col-span-5 p-1 md:col-span-5'>
-                    <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      100-100000
-                    </div>
-                  </div>
-                  <div className='col-span-2 bg-[#72bbef] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
+                <div className='grid w-1/2 grid-cols-6'>
+                  <div className='col-span-1'></div>
+                  <div className='col-span-1'></div>
+                  <div className='col-span-1 mx-0.5 mt-0.5 rounded-tl-2xl bg-[#72bbef] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
                     Back
                   </div>
-                  <div className='col-span-2 bg-[#faa9ba] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
+                  <div className='col-span-1 mx-0.5 mt-0.5 rounded-tr-2xl bg-[#faa9ba] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
                     Lay
                   </div>
-                  <div className='col-span-2 hidden rounded-lg p-1 text-[11px] font-semibold md:block'>
-                    <div className='rounded-md bg-[#bed5d8] p-0.5'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      100-100000
-                    </div>
-                  </div>
+                  <div className='col-span-1'></div>
+                  <div className='col-span-1'></div>
                 </div>
-                {oddsData.map(({ team, odds }, index) => (
-                  <div key={index}>
-                    <div className='grid cursor-pointer grid-cols-9 border-b border-gray-300 bg-white text-center text-[10px] font-semibold opacity-30 hover:bg-gray-200'>
-                      <div className='col-span-5 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[11px]'>
-                        {team}
+              </div>
+
+              {/* Rows */}
+              {oddsData.map(({ team, odds }, index) => (
+                <div
+                  key={team}
+                  className={`flex border-b border-gray-300 bg-white text-center text-[10px] font-semibold ${
+                    isSuspended ? 'opacity-30' : ''
+                  }`}
+                >
+                  {!isSuspended ? (
+                    <MyComponent
+                      team={team}
+                      matchData={oddsData[0]}
+                      pendingBet={pendingBet}
+                      index={index}
+                    />
+                  ) : (
+                    <div className='w-1/2 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[14px]'>
+                      {team}
+                    </div>
+                  )}
+
+                  <div className='grid w-1/2 grid-cols-6'>
+                    {odds.map((odd, i) => (
+                      <div
+                        key={i}
+                        className={`col-span-1 m-0.5 min-h-[36px] px-[3px] py-0.5 ${oddClasses[i]}`}
+                      >
+                        <div className='text-[14px] leading-[18px] font-bold'>
+                          {odd?.odds}
+                        </div>
+                        <div className='text-[10px] text-[#43444a]'>
+                          {Number(odd?.size).toFixed(2)}
+                        </div>
                       </div>
-                      {odds.map((odd, i) => (
-                        <div
-                          key={i}
-                          className={`col-span-2 cursor-pointer p-1 md:col-span-1 ${
-                            i === 0
-                              ? 'hidden bg-sky-100 md:block'
-                              : i === 1
-                                ? 'hidden bg-sky-200 md:block'
-                                : i === 2
-                                  ? 'bg-[#72bbef] '
-                                  : i === 3
-                                    ? 'bg-[#faa9ba]'
-                                    : i === 4
-                                      ? 'hidden bg-pink-200 md:block'
-                                      : 'hidden bg-pink-100 md:block'
-                          }`}
-                        >
-                          <div className='font-bold'>{odd?.odds}</div>
-                          <div className='text-gray-800'>
-                            {' '}
-                            {formatToK(odd?.size)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div>
-                <div className='grid grid-cols-9 border-b border-gray-300 bg-white text-center'>
-                  <div className='col-span-5 p-1 md:col-span-5'>
-                    {' '}
-                    <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      {oddsData[0]?.min}-{formatToK(matchOddsList[0]?.maxb)}
-                    </div>
-                  </div>
-                  <div className='col-span-2 bg-[#72bbef] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
-                    Back
-                  </div>
-                  <div className='col-span-2 bg-[#faa9ba] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
-                    Lay
-                  </div>
-                  <div className='col-span-2 hidden rounded-lg p-1 text-[11px] font-semibold md:block'>
-                    <div className='rounded-md bg-[#bed5d8] p-0.5'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      {matchOddsList[0]?.min}-
-                      {formatToK(matchOddsList[0]?.maxb)}
-                    </div>
+                    ))}
                   </div>
                 </div>
-                {oddsData.map(({ team, odds }, index) => (
-                  <div key={index}>
-                    <div className='grid cursor-pointer grid-cols-9 border-b border-gray-300 bg-white text-center text-[10px] font-semibold hover:bg-gray-200'>
-                      <MyComponent
-                        key={team}
-                        team={team}
-                        matchData={oddsData[0]}
-                        pendingBet={pendingBet}
-                        index={index}
-                      />
-                      {odds.map((odd, i) => (
-                        <div
-                          key={i}
-                          className={`col-span-2 cursor-pointer p-1 md:col-span-1 ${
-                            i === 0
-                              ? 'hidden bg-sky-100 md:block'
-                              : i === 1
-                                ? 'hidden bg-sky-200 md:block'
-                                : i === 2
-                                  ? 'bg-[#72bbef] '
-                                  : i === 3
-                                    ? 'bg-[#faa9ba]'
-                                    : i === 4
-                                      ? 'hidden bg-pink-200 md:block'
-                                      : 'hidden bg-pink-100 md:block'
-                          }`}
-                        >
-                          <div>
-                            <div className='font-bold'>{odd?.odds}</div>
-                            <div className='text-gray-800'>{odd?.size}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
           </>
         )}
       </div>

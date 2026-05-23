@@ -141,7 +141,9 @@ export const fetchUserLiveCasinoBetsForHistory = async ({
     .sort({ createdAt: -1 })
     .lean();
 
-  return rows.filter(hasCasinoRoundActivity).map(mapCasinoBetToClientHistoryRow);
+  return rows
+    .filter(hasCasinoRoundActivity)
+    .map(mapCasinoBetToClientHistoryRow);
 };
 
 // export const casinoCallback = async (req, res) => {
@@ -931,9 +933,9 @@ export const getAllDownlineCasinoBetHistory = async (req, res) => {
     ]);
 
     // Flip change to show Admin P&L (bet - win) instead of User P&L (win - bet)
-    const adminPerspectiveData = betData.map(bet => ({
+    const adminPerspectiveData = betData.map((bet) => ({
       ...bet,
-      change: -(bet.change || 0)
+      change: -(bet.change || 0),
     }));
 
     return res.status(200).json({
@@ -1069,8 +1071,8 @@ export const getAllCasinoProfitLoss = async (req, res) => {
         role: downline.role || '',
         stake: plData.totalStake || 0,
         casinoPL: casinoPL,
-        internationalCasinoPL: 0, 
-        uplinePL: -casinoPL || 0, 
+        internationalCasinoPL: 0,
+        uplinePL: -casinoPL || 0,
       });
     }
 

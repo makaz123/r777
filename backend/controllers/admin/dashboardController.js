@@ -418,8 +418,7 @@ export const getDashboardStats = async (req, res) => {
     activeCasinoBets.forEach((bet) => {
       const cat = getCasinoCategory(bet.game_name, bet.game_uid);
       const net = getCasinoNetPL(bet);
-      casinoGameplayBreakdown[cat] =
-        (casinoGameplayBreakdown[cat] || 0) + net;
+      casinoGameplayBreakdown[cat] = (casinoGameplayBreakdown[cat] || 0) + net;
       casinoTotalPL += net;
     });
 

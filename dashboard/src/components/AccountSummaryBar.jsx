@@ -69,10 +69,10 @@ const AccountSummaryBar = () => {
             open ? 'Collapse account summary' : 'Expand account summary'
           }
           onClick={() => setOpen((prev) => !prev)}
-          className='flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#016a82] transition hover:bg-gray-100'
+          className='flex h-5.5 w-5.5 items-center justify-center rounded-full bg-white text-[#016a82] transition hover:bg-gray-100'
         >
           <FaChevronDown
-            className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            className={`h-3 w-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           />
         </button>
       </div>

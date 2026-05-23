@@ -142,36 +142,41 @@ const updateAdmin = async (id) => {
             },
           },
         ]);
-        const sportsBettingPL = plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+        const sportsBettingPL =
+          plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
 
         // Also aggregate Casino PL
-        const casinoPlResult = await mongoose.model('CasinoBetHistory').aggregate([
-          {
-            $match: {
-              userId: user._id.toString(),
-              $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+        const casinoPlResult = await mongoose
+          .model('CasinoBetHistory')
+          .aggregate([
+            {
+              $match: {
+                userId: user._id.toString(),
+                $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+              },
             },
-          },
-          {
-            $group: {
-              _id: null,
-              totalPL: {
-                $sum: {
-                  $subtract: [
-                    { $ifNull: ['$win_amount', 0] },
-                    { $ifNull: ['$bet_amount', 0] },
-                  ],
+            {
+              $group: {
+                _id: null,
+                totalPL: {
+                  $sum: {
+                    $subtract: [
+                      { $ifNull: ['$win_amount', 0] },
+                      { $ifNull: ['$bet_amount', 0] },
+                    ],
+                  },
                 },
               },
             },
-          },
-        ]);
-        const casinoBettingPL = casinoPlResult.length > 0 ? roundMoney(casinoPlResult[0].totalPL) : 0;
+          ]);
+        const casinoBettingPL =
+          casinoPlResult.length > 0 ? roundMoney(casinoPlResult[0].totalPL) : 0;
 
         const trueTotalPL = roundMoney(sportsBettingPL + casinoBettingPL);
         const storedPL = roundMoney(user.bettingProfitLoss || 0);
-        
-        const userBettingPL = storedPL > trueTotalPL + 0.01 ? storedPL : trueTotalPL;
+
+        const userBettingPL =
+          storedPL > trueTotalPL + 0.01 ? storedPL : trueTotalPL;
 
         if (
           storedPL <= trueTotalPL + 0.01 &&
@@ -1155,7 +1160,7 @@ export const getLoginHistory = async (req, res) => {
     const { startDate, endDate } = req.query;
 
     const query = { userId };
-    
+
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -3595,7 +3600,7 @@ export const settleUser = async (req, res) => {
     } else {
       pl = editUser.uplineBettingProfitLoss || 0;
     }
-    
+
     if (pl === 0) {
       return res
         .status(400)
@@ -3616,7 +3621,7 @@ export const settleUser = async (req, res) => {
       // To clear positive PL (avbalance > baseBalance), we DECREASE avbalance
       // (User is withdrawing their winnings)
       editUser.avbalance -= parsedAmount;
-      editUser.balance -= parsedAmount; 
+      editUser.balance -= parsedAmount;
       // baseBalance remains UNCHANGED!
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
@@ -3630,7 +3635,7 @@ export const settleUser = async (req, res) => {
       await admin.save();
       await editUser.save();
 
-      // Log it as a settlement transaction 
+      // Log it as a settlement transaction
       await TransactionHistory.create({
         userId: editUser._id,
         userName: editUser.userName,
@@ -3702,7 +3707,9 @@ export const getUserFullDetails = async (req, res) => {
 
     const viewer = await SubAdmin.findById(id, { code: 1, role: 1 }).lean();
     if (!viewer) {
-      return res.status(404).json({ success: false, message: 'Admin not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Admin not found' });
     }
 
     const user = await SubAdmin.findById(userId);
@@ -3840,17 +3847,16 @@ export const getUserFullDetails = async (req, res) => {
       sportSummary[sport].betCount += betCount;
       sportSummary[sport].betAmount += betAmount;
       sportSummary[sport].profitLoss += pl;
-      
+
       overallSportsPL += pl;
       overallSportsBets += betCount;
 
       marketSummary.push({
         sport,
         market,
-        profitLoss: pl
+        profitLoss: pl,
       });
     });
-
 
     const casinoSummary = [];
     let overallCasinoPL = 0;
@@ -3858,8 +3864,14 @@ export const getUserFullDetails = async (req, res) => {
       const pl = roundMoney(Number(item.profitLoss) || 0);
       if (pl === 0 && (item.totalStaked || 0) <= 0) return;
       const casino =
-        typeof item._id === 'string' ? item._id : item._id?.game_name || 'Unknown';
-      casinoSummary.push({ casino, profitLoss: pl, betCount: item.betCount || 0 });
+        typeof item._id === 'string'
+          ? item._id
+          : item._id?.game_name || 'Unknown';
+      casinoSummary.push({
+        casino,
+        profitLoss: pl,
+        betCount: item.betCount || 0,
+      });
       overallCasinoPL += pl;
     });
 
@@ -3901,7 +3913,9 @@ export const getUserFullDetails = async (req, res) => {
         profitLoss: totalPL,
         sportsPL: overallSportsPL,
         casinoPL: overallCasinoPL,
-        uplineBalance: roundMoney((user.avbalance || 0) - (user.baseBalance || 0)),
+        uplineBalance: roundMoney(
+          (user.avbalance || 0) - (user.baseBalance || 0)
+        ),
         downlineBalance: 0, // Calculate if needed
         exposure: exposure,
         maxProfit: user.maxProfit || 0,

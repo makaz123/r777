@@ -510,7 +510,18 @@ export default function Userlist() {
   const ExposureCell = ({ row }) => {
     const exp = getRowTotalExposure(row);
     const display = exp > 0 ? -exp : exp;
-    return <CurrentPLCell value={display} row={row} />;
+    const n = Number(display) || 0;
+    if (n === 0) {
+      return <span className='text-black'>{formatTableMoney(0)}</span>;
+    }
+    if (n < 0) {
+      return (
+        <span className='font-medium text-red-600'>{formatTableMoney(n)}</span>
+      );
+    }
+    return (
+      <span className='font-medium text-green-600'>{formatTableMoney(n)}</span>
+    );
   };
 
   const roleTypeLabel = (role) => {

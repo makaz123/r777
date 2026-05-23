@@ -60,46 +60,48 @@ function ProfitLoss() {
     fetchProfitLoss();
   };
 
-  const totalPL = proLossHistory?.reduce((sum, row) => sum + (Number(row.myProfit) || 0), 0) || 0;
+  const totalPL =
+    proLossHistory?.reduce(
+      (sum, row) => sum + (Number(row.myProfit) || 0),
+      0
+    ) || 0;
 
   return (
     <div className='w-full overflow-x-auto p-0.5'>
       <div className='w-full border border-[#00000020] bg-[#fff] shadow-[0_0_5px_#a4a4a4]'>
         <div className='bg-[#24b0c8] px-3 py-2 text-white'>
-          <h4 className='text-[15px] font-bold'>
-            Profit & Loss Report
-          </h4>
+          <h4 className='text-[15px] font-bold'>Profit & Loss Report</h4>
         </div>
-        <div className='mb-2 w-full p-2 bg-[#f8f9fa]'>
+        <div className='mb-2 w-full bg-[#f8f9fa] p-2'>
           {/* Top Filters Row */}
           <div className='flex flex-wrap items-center gap-2'>
             <input
               type='datetime-local'
-              className='h-[30px] w-[200px] border border-[#dbdbdb] px-2 text-[13px] outline-none rounded-sm'
+              className='h-[30px] w-[200px] rounded-sm border border-[#dbdbdb] px-2 text-[13px] outline-none'
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
             <input
               type='datetime-local'
-              className='h-[30px] w-[200px] border border-[#dbdbdb] px-2 text-[13px] outline-none rounded-sm'
+              className='h-[30px] w-[200px] rounded-sm border border-[#dbdbdb] px-2 text-[13px] outline-none'
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
             <button
               onClick={handleSubmit}
-              className='bg-gradient-to-b from-[#3ba2b8] to-[#1e7e92] text-white h-[30px] w-[60px] px-2 text-[13px] rounded shadow-sm border border-[#1a6e80]'
+              className='h-[30px] w-[60px] rounded border border-[#1a6e80] bg-gradient-to-b from-[#3ba2b8] to-[#1e7e92] px-2 text-[13px] text-white shadow-sm'
             >
               Go
             </button>
             <button
               onClick={handleReset}
-              className='bg-gradient-to-b from-[#3ba2b8] to-[#1e7e92] text-white h-[30px] w-[60px] px-2 text-[13px] rounded shadow-sm border border-[#1a6e80]'
+              className='h-[30px] w-[60px] rounded border border-[#1a6e80] bg-gradient-to-b from-[#3ba2b8] to-[#1e7e92] px-2 text-[13px] text-white shadow-sm'
             >
               Reset
             </button>
           </div>
 
-          <div className='scrollbar-hide overflow-x-auto mt-3 border border-[#dbdbdb] bg-white'>
+          <div className='scrollbar-hide mt-3 overflow-x-auto border border-[#dbdbdb] bg-white'>
             <table className='w-full min-w-[600px] border-collapse text-left text-[13px]'>
               <thead>
                 <tr className='bg-[#008ba3] text-white'>
@@ -109,9 +111,7 @@ function ProfitLoss() {
                   <th className='border-r border-white/20 px-3 py-2 font-bold'>
                     Market Name
                   </th>
-                  <th className='px-3 py-2 font-bold text-right'>
-                    Amount
-                  </th>
+                  <th className='px-3 py-2 text-right font-bold'>Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +132,13 @@ function ProfitLoss() {
                         className='border-b border-gray-200 hover:bg-gray-50'
                       >
                         <td className='border-r border-gray-200 px-3 py-2 text-[#333]'>
-                          {row.gameName === 'Cricket Game' ? 'Cricket' : row.gameName === 'Tennis Game' ? 'Tennis' : row.gameName === 'Soccer Game' ? 'Soccer' : row.gameName || '-'}
+                          {row.gameName === 'Cricket Game'
+                            ? 'Cricket'
+                            : row.gameName === 'Tennis Game'
+                              ? 'Tennis'
+                              : row.gameName === 'Soccer Game'
+                                ? 'Soccer'
+                                : row.gameName || '-'}
                         </td>
                         <td className='border-r border-gray-200 px-3 py-2 text-[#333]'>
                           {row.marketName || '-'}
@@ -145,7 +151,10 @@ function ProfitLoss() {
                       </tr>
                     ))}
                     <tr className='border-b border-gray-200'>
-                      <td colSpan='2' className='border-r border-gray-200 px-3 py-2 font-bold text-[#333]'>
+                      <td
+                        colSpan='2'
+                        className='border-r border-gray-200 px-3 py-2 font-bold text-[#333]'
+                      >
                         Total
                       </td>
                       <td

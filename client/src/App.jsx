@@ -41,8 +41,15 @@ function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Fetch deactivated matches/tournaments on app load
+    // Fetch immediately on mount
     dispatch(fetchDeactivatedMatches());
+
+    // Poll every 10 seconds so deactivations sync instantly without refreshing
+    const intervalId = setInterval(() => {
+      dispatch(fetchDeactivatedMatches());
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, [dispatch]);
 
   return (

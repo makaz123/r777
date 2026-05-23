@@ -4,10 +4,13 @@ import {
   calculateWinCommission,
   clampDownlineSharingPercent,
   getDownlineUplineBettingContribution,
+  getMatchOddsCommissionAmount,
+  getMatchOddsCommissionFromNetWin,
   getParentShareStoredOnDownline,
   getPartnershipUplineShare,
   getRemainingMySharePercent,
   getViewerMySharePercent,
+  isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
   splitProfitLossByMyShare,
@@ -17,8 +20,27 @@ describe('partnershipCommissionUtils', () => {
   test('isMatchOddsGameType matches match odds only', () => {
     expect(isMatchOddsGameType('Match Odds')).toBe(true);
     expect(isMatchOddsGameType('match odds')).toBe(true);
+    expect(isMatchOddsGameType('MATCH_ODDS')).toBe(true);
     expect(isMatchOddsGameType('Bookmaker')).toBe(false);
     expect(isMatchOddsGameType('Casino')).toBe(false);
+  });
+
+  test('isMatchOddsBetRecord checks gameType and marketName', () => {
+    expect(
+      isMatchOddsBetRecord({ gameType: 'Soccer Game', marketName: 'MATCH_ODDS' })
+    ).toBe(true);
+    expect(
+      isMatchOddsBetRecord({ gameType: 'fancy1', marketName: '1.3 over run SRH' })
+    ).toBe(false);
+  });
+
+  test('commission from net win matches account statement gross-up', () => {
+    expect(getMatchOddsCommissionFromNetWin(98, 2)).toBe(2);
+    expect(getMatchOddsCommissionFromNetWin(90, 2)).toBe(1.84);
+  });
+
+  test('getMatchOddsCommissionAmount handles gross stored wins', () => {
+    expect(getMatchOddsCommissionAmount(100, 2)).toBe(2.04);
   });
 
   test('partnership upline share applies to full P/L', () => {

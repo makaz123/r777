@@ -14,6 +14,11 @@ import {
 
 dotenv.config();
 
+import {
+  checkAdvancedBetLocks,
+  isSportGameBettingLocked,
+} from '../utils/betLockUtils.js';
+
 const rejectIfBetLocked = (user, res) => {
   if (user?.uLock) {
     res.status(403).json({ message: 'Your account is locked.' });
@@ -47,6 +52,7 @@ const {
 } = await import('./admin/subAdminController.js');
 import {
   calculateWinCommission,
+  isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
 } from '../utils/partnershipCommissionUtils.js';
@@ -295,11 +301,7 @@ const placeCasinoBet = async (req, res) => {
     }
     if (rejectIfBetLocked(user, res)) return;
 
-    // Check if Casino is locked for this user
-    const casinoLockEntry = user.gamelock?.find(
-      (g) => g.game.toLowerCase() === 'casino'
-    );
-    if (casinoLockEntry && casinoLockEntry.lock === false) {
+    if (isSportGameBettingLocked(user.gamelock, 'casino')) {
       return res
         .status(403)
         .json({ message: 'Casino betting is locked for your account' });
@@ -850,20 +852,21 @@ const placeBet = async (req, res) => {
     }
     if (rejectIfBetLocked(user, res)) return;
 
-    // Check if this sport is locked for the user
-    if (gameName && user.gamelock) {
-      const sportLockEntry = user.gamelock.find(
-        (g) => g.game.toLowerCase() === gameName.toLowerCase()
-      );
-      if (sportLockEntry && sportLockEntry.lock === false) {
-        return res
-          .status(403)
-          .json({ message: `${gameName} betting is locked for your account` });
-      }
-    }
-
     if (user.secret === 0) {
       return res.status(200).json({ message: 'created successfully' });
+    }
+
+    const advancedLockCheck = await checkAdvancedBetLocks(user, {
+      gameName,
+      gameType,
+      marketName,
+      gameId,
+      market_id: req.body.market_id || null,
+      sid,
+    });
+
+    if (advancedLockCheck.locked) {
+      return res.status(403).json({ message: advancedLockCheck.message });
     }
 
     const marketMeta = marketCheck.marketMeta || {};
@@ -1350,20 +1353,21 @@ export const placeFancyBet = async (req, res) => {
     }
     if (rejectIfBetLocked(user, res)) return;
 
-    // Check if this sport is locked for the user
-    if (gameName && user.gamelock) {
-      const sportLockEntry = user.gamelock.find(
-        (g) => g.game.toLowerCase() === gameName.toLowerCase()
-      );
-      if (sportLockEntry && sportLockEntry.lock === false) {
-        return res
-          .status(403)
-          .json({ message: `${gameName} betting is locked for your account` });
-      }
-    }
-
     if (user.secret === 0) {
       return res.status(200).json({ message: 'created successfully' });
+    }
+
+    const advancedLockCheck = await checkAdvancedBetLocks(user, {
+      gameName,
+      gameType,
+      marketName,
+      gameId,
+      market_id: req.body.market_id || null,
+      sid,
+    });
+
+    if (advancedLockCheck.locked) {
+      return res.status(403).json({ message: advancedLockCheck.message });
     }
 
     const uniqueKey = { gameId, eventName, marketName };
@@ -2056,7 +2060,7 @@ export const updateResultOfBets = async (req, res) => {
               }
 
               if (
-                isMatchOddsGameType(bet.gameType) &&
+                isMatchOddsBetRecord(historyRecord) &&
                 historyProfitLossChange > 0
               ) {
                 const rate = parseCommissionPercent(user?.commition);

@@ -18,6 +18,7 @@ import { host } from '../../redux/api';
 import { FaTv } from 'react-icons/fa6';
 import axios from 'axios';
 import { useTranslation } from '../../context/LanguageContext';
+import { createBetLockGuard } from '../../utils/betLockUtils';
 function TennisBet() {
   const { t } = useTranslation();
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
@@ -61,7 +62,22 @@ function TennisBet() {
   const { userInfo } = useSelector((state) => state.auth);
   const sharedSocketRef = useRef(null);
 
+  const checkBetLock = createBetLockGuard(userInfo, {
+    gameName: 'Tennis Game',
+    gameId: gameid,
+    sid: 2,
+  });
+
   const handleBetSelect = (betData) => {
+    const lockMessage = checkBetLock({
+      gameType: betData?.gameType,
+      marketName: betData?.marketName || betData?.gameType,
+      market_id: betData?.sid,
+    });
+    if (lockMessage) {
+      toast.error(lockMessage);
+      return;
+    }
     setSelectedBet(betData);
   };
 

@@ -27,6 +27,7 @@ import {
   adjustUserUpdatesForCommission,
   calculateWinCommission,
   getDownlineUplineBettingContribution,
+  isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
   getAccountMyKeepPercent,
@@ -263,7 +264,7 @@ export const applyMatchOddsWinCommissionOnSettlement = async (
   if (!settlementResult?.userUpdates || !user || !bet) {
     return { settlementResult, commission: 0 };
   }
-  if (!isMatchOddsGameType(bet.gameType)) {
+  if (!isMatchOddsBetRecord(bet)) {
     return { settlementResult, commission: 0 };
   }
 

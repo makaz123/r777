@@ -8,8 +8,44 @@ const MATCH_ODDS_REGEX = /^match\s*odds$/i;
 export const roundMoney = (value) =>
   Math.round((Number(value) || 0) * 100) / 100;
 
+const normalizeMatchOddsLabel = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/_/g, ' ');
+
 export const isMatchOddsGameType = (gameType) =>
-  MATCH_ODDS_REGEX.test(String(gameType || '').trim());
+  MATCH_ODDS_REGEX.test(normalizeMatchOddsLabel(gameType));
+
+const MATCH_ODDS_LOOSE_REGEX = /match\s*odds/i;
+
+const fieldIsMatchOdds = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return false;
+  return (
+    isMatchOddsGameType(raw) ||
+    MATCH_ODDS_LOOSE_REGEX.test(raw.replace(/_/g, ' '))
+  );
+};
+
+/** Match odds win on a settled bet/ history row (gameType or marketName). */
+export const isMatchOddsBetRecord = (bet) => {
+  if (!bet) return false;
+  return [bet.gameType, bet.marketName, bet.market_type, bet.fancyType].some(
+    fieldIsMatchOdds
+  );
+};
+
+/**
+ * Commission from stored net win (profitLossChange after settlement already deducted commission).
+ * Same gross-up as account statement: gross = net / (1 - rate/100).
+ */
+export const getMatchOddsCommissionFromNetWin = (netProfit, commissionPercent) => {
+  const net = Number(netProfit) || 0;
+  const rate = Number(commissionPercent) || 0;
+  if (net <= 0 || rate <= 0 || rate >= 100) return 0;
+  const gross = roundMoney(net / (1 - rate / 100));
+  return roundMoney(gross - net);
+};
 
 export const parseCommissionPercent = (commition) => {
   const raw = String(commition ?? '')
@@ -168,6 +204,19 @@ export const calculateWinCommission = (winProfit, commissionPercent) => {
   const commission = roundMoney((profit * rate) / 100);
   const netProfit = roundMoney(profit - commission);
   return { netProfit, commission };
+};
+
+/** Dashboard / reports: support net (after commission) or gross (legacy) stored P/L. */
+export const getMatchOddsCommissionAmount = (
+  profitLossChange,
+  commissionPercent
+) => {
+  const pl = Number(profitLossChange) || 0;
+  const rate = Number(commissionPercent) || 0;
+  if (pl <= 0 || rate <= 0) return 0;
+  const fromNet = getMatchOddsCommissionFromNetWin(pl, rate);
+  const fromGross = calculateWinCommission(pl, rate).commission;
+  return roundMoney(Math.max(fromNet, fromGross));
 };
 
 /** Parent's share of downline P/L when partnership is stored on the agent row. */

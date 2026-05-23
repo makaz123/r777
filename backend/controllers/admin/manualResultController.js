@@ -28,6 +28,7 @@ import {
 } from './subAdminController.js';
 import {
   calculateWinCommission,
+  isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
 } from '../../utils/partnershipCommissionUtils.js';
@@ -508,7 +509,7 @@ export const settleManualResult = async (req, res) => {
           }
 
           if (
-            isMatchOddsGameType(bet.gameType) &&
+            isMatchOddsBetRecord(historyRecord) &&
             historyProfitLossChange > 0
           ) {
             const rate = parseCommissionPercent(user?.commition);

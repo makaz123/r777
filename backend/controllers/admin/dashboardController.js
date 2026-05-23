@@ -11,7 +11,8 @@ import {
   hasCasinoRoundActivity,
 } from '../../utils/casinoPlUtils.js';
 import {
-  isMatchOddsGameType,
+  getMatchOddsCommissionAmount,
+  isMatchOddsBetRecord,
   parseCommissionPercent,
   roundMoney,
 } from '../../utils/partnershipCommissionUtils.js';
@@ -198,20 +199,40 @@ export const getDashboardStats = async (req, res) => {
     const totalSportsBets = sportsBets.length;
     let totalCommission = 0;
 
-    const userCommitionMap = {};
-    downlineUsers.forEach((u) => {
-      userCommitionMap[u._id.toString()] = parseCommissionPercent(u.commition);
-    });
+    const userCommitionMap = new Map(
+      downlineUsers
+        .filter((u) => u.role === 'user')
+        .map((u) => [u._id.toString(), parseCommissionPercent(u.commition)])
+    );
+    const userCommitionByName = new Map(
+      downlineUsers
+        .filter((u) => u.role === 'user')
+        .map((u) => [
+          String(u.userName || '').toLowerCase(),
+          parseCommissionPercent(u.commition),
+        ])
+    );
+
+    const resolveCommissionRate = (bet) => {
+      const byName = userCommitionByName.get(
+        String(bet.userName || '').toLowerCase()
+      );
+      if (byName) return byName;
+      const id = bet.userId ? String(bet.userId) : '';
+      return userCommitionMap.get(id) || 0;
+    };
 
     sportsBets.forEach((bet) => {
       totalSportsPL += bet.profitLossChange || 0;
       totalSportsBetAmount += bet.betAmount || 0;
 
-      if (isMatchOddsGameType(bet.marketName) && bet.profitLossChange > 0) {
-        const rate = userCommitionMap[bet.userId] || 0;
+      if (isMatchOddsBetRecord(bet) && bet.profitLossChange > 0) {
+        const rate = resolveCommissionRate(bet);
         if (rate > 0) {
-          const commission = (bet.profitLossChange * rate) / (100 - rate);
-          totalCommission += commission;
+          totalCommission += getMatchOddsCommissionAmount(
+            bet.profitLossChange,
+            rate
+          );
         }
       }
     });

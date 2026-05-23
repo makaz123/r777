@@ -82,6 +82,10 @@ const subAdminSchema = new mongoose.Schema(
         { game: 'Lottery', lock: true },
       ],
     },
+    advancedBetLocks: {
+      type: Object,
+      default: {},
+    },
     sessionToken: { type: String, default: null },
     lastLogin: { type: Date, default: null },
     lastDevice: { type: String, default: null },

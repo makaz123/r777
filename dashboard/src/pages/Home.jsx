@@ -68,13 +68,34 @@ const Home = () => {
     };
   }, [checkWeekRollover]);
 
+  const formatSignedMoney = (value) => {
+    const n = Number(value);
+    if (Number.isNaN(n)) return '0.00';
+    return n.toFixed(2);
+  };
+
+  const getSignedValueColor = (value) => {
+    const n = Number(value) || 0;
+    if (n > 0) return 'text-green-600';
+    if (n < 0) return 'text-red-600';
+    return 'text-gray-800';
+  };
+
   const summaryCards = [
-    { title: 'P&L', value: stats?.header?.pl ?? 0 },
+    {
+      title: 'P&L',
+      value: stats?.header?.pl ?? 0,
+      signed: true,
+    },
     { title: 'COMMISSION', value: stats?.header?.commission ?? 0 },
     { title: 'DEPOSIT', value: stats?.header?.deposit ?? 0 },
     { title: 'WITHDRAWAL', value: stats?.header?.withdrawal ?? 0 },
     { title: 'TOTAL BETS', value: stats?.header?.totalBets ?? 0 },
-    { title: 'SPORTBOOK P&L', value: stats?.header?.sportbookPL ?? 0 },
+    {
+      title: 'SPORTBOOK P&L',
+      value: stats?.header?.sportbookPL ?? 0,
+      signed: true,
+    },
   ];
 
   const casinoData = [
@@ -156,9 +177,13 @@ const Home = () => {
               </div>
 
               <div
-                className={`px-2.5 py-2 text-[18px] font-bold ${item.value < 0 ? 'text-red-500' : 'text-gray-800'}`}
+                className={`px-2.5 py-2 text-[18px] font-bold ${
+                  item.signed
+                    ? getSignedValueColor(item.value)
+                    : 'text-gray-800'
+                }`}
               >
-                {item.value}
+                {item.signed ? formatSignedMoney(item.value) : item.value}
               </div>
             </div>
           ))}

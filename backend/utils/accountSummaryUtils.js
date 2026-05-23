@@ -96,9 +96,22 @@ export async function aggregateWeekProfitLoss(
         $match: {
           userId: { $in: userIds },
           createdAt: dateFilter,
+          $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
         },
       },
-      { $group: { _id: null, total: { $sum: '$change' } } },
+      {
+        $group: {
+          _id: null,
+          total: {
+            $sum: {
+              $subtract: [
+                { $ifNull: ['$win_amount', 0] },
+                { $ifNull: ['$bet_amount', 0] },
+              ],
+            },
+          },
+        },
+      },
     ]);
     casinoPL = casinoAgg[0]?.total || 0;
   }
@@ -106,6 +119,9 @@ export async function aggregateWeekProfitLoss(
   const sportsPL = sportsAgg[0]?.total || 0;
   return roundMoney(sportsPL + casinoPL);
 }
+
+/** Client/downline settled P/L → parent/upline view (invert sign). */
+const toParentViewPL = (clientPL) => roundMoney(-(Number(clientPL) || 0));
 
 export function buildAccountSummary(admin, weekPLTotal) {
   const mySharePct = Number(admin.partnership) || 0;
@@ -116,11 +132,14 @@ export function buildAccountSummary(admin, weekPLTotal) {
   const myShareExposure =
     myShareExposureRaw > 0 ? -myShareExposureRaw : myShareExposureRaw;
 
-  const totalDownlinePL = roundMoney(
-    Number(admin.uplineBettingProfitLoss) || 0
-  );
-  const tillSplit = splitProfitLossByMyShare(totalDownlinePL, mySharePct);
-  const weekSplit = splitProfitLossByMyShare(weekPLTotal, mySharePct);
+  // Stored / aggregated downline P/L is client-side; parent profit is opposite sign
+  const clientTillPL = roundMoney(Number(admin.uplineBettingProfitLoss) || 0);
+  const clientWeekPL = roundMoney(weekPLTotal);
+  const parentTillPL = toParentViewPL(clientTillPL);
+  const parentWeekPL = toParentViewPL(clientWeekPL);
+
+  const tillSplit = splitProfitLossByMyShare(parentTillPL, mySharePct);
+  const weekSplit = splitProfitLossByMyShare(parentWeekPL, mySharePct);
 
   const roleLabel =
     admin.role === 'supperadmin'
@@ -137,13 +156,14 @@ export function buildAccountSummary(admin, weekPLTotal) {
     mySharePercent: mySharePct,
     exposureDisplay: myShareExposure,
     myShareExposureRaw,
-    currentWeekPLTotal: weekPLTotal,
+    currentWeekPLTotal: parentWeekPL,
+    clientWeekPLTotal: clientWeekPL,
     currentWeekPL: weekSplit.myPL,
     currentWeekUplinePL: weekSplit.uplinePL,
     myPLTillDate: tillSplit.myPL,
     myPLTillDateTotal: tillSplit.totalPL,
     uplineDena: roundMoney(tillSplit.uplinePL),
-    downlineDena: roundMoney(totalDownlinePL),
+    downlineDena: roundMoney(parentTillPL),
     uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
     downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
     weekRange: getCurrentWeekRange(),

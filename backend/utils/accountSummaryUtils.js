@@ -235,6 +235,44 @@ export function normalizePLByUserIds(users, plByUser) {
   return out;
 }
 
+/** Viewer's share of outstanding downline P/L (after settlements; uses stored bettingProfitLoss). */
+export async function aggregateViewerOutstandingPL(SubAdmin, viewer) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewer.code);
+  if (!downlineUserIds.length) return 0;
+
+  const [users, accountByCode] = await Promise.all([
+    SubAdmin.find({ _id: { $in: downlineUserIds } })
+      .select('_id userName role invite bettingProfitLoss')
+      .lean(),
+    getAccountByCodeMap(SubAdmin, viewer),
+  ]);
+
+  const clientPLByUserId = new Map();
+  for (const user of users) {
+    clientPLByUserId.set(
+      user._id.toString(),
+      roundMoney(user.bettingProfitLoss || 0)
+    );
+  }
+  return computeViewerPeriodPL(viewer, users, clientPLByUserId, accountByCode);
+}
+
+/** Gross parent-view outstanding P/L from end-users (respects settlement). */
+export async function aggregateDownlineOutstandingGross(SubAdmin, viewerCode) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewerCode);
+  if (!downlineUserIds.length) return 0;
+
+  const users = await SubAdmin.find({ _id: { $in: downlineUserIds } })
+    .select('bettingProfitLoss')
+    .lean();
+
+  let total = 0;
+  for (const user of users) {
+    total += roundMoney(-(user.bettingProfitLoss || 0));
+  }
+  return roundMoney(total);
+}
+
 /** Viewer's share of settled downline P/L (parent view: + = house profit). */
 export async function aggregateViewerProfitLoss(
   SubAdmin,
@@ -360,6 +398,32 @@ export function buildAccountSummary(admin, plTotals = {}) {
     downlineDenaGross: tillDownlinePL,
     uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
     downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
+    downlineLenDena:
+      tillViewerPL > 0.005
+        ? 'lena'
+        : tillViewerPL < -0.005
+          ? 'dena'
+          : 'clear',
+    uplineLenDena:
+      roundMoney(tillDownlinePL - tillViewerPL) > 0.005
+        ? 'dena'
+        : roundMoney(tillDownlinePL - tillViewerPL) < -0.005
+          ? 'lena'
+          : 'clear',
     weekRange: getCurrentWeekRange(),
   };
+}
+
+/** Positive downline share = collect from downline (lena); negative = pay downline (dena). */
+export function getDownlineLenDenaLabel(amount) {
+  const n = Number(amount) || 0;
+  if (Math.abs(n) < 0.01) return 'clear';
+  return n > 0 ? 'lena' : 'dena';
+}
+
+/** Positive upline share = pay upline (dena); negative = collect from upline (lena). */
+export function getUplineLenDenaLabel(amount) {
+  const n = Number(amount) || 0;
+  if (Math.abs(n) < 0.01) return 'clear';
+  return n > 0 ? 'dena' : 'lena';
 }

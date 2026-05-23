@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useDispatch } from 'react-redux';
 import api from '../redux/api';
 import Navbar from '../components/Navbar';
+import { getAdmin } from '../redux/reducer/authReducer';
+
+const roleBadge = (role) => {
+  const r = String(role || 'user');
+  if (r === 'user') return 'C';
+  return r.charAt(0).toUpperCase();
+};
 
 const UserSettlement = ({ type = 'user' }) => {
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [creditors, setCreditors] = useState([]);
   const [debtors, setDebtors] = useState([]);
@@ -131,6 +140,7 @@ const UserSettlement = ({ type = 'user' }) => {
       toast.success(`Successfully settled ${successCount} accounts.`);
       handleClearAll();
       fetchSettlementUsers();
+      dispatch(getAdmin());
     }
   };
 
@@ -185,7 +195,7 @@ const UserSettlement = ({ type = 'user' }) => {
                         <td className='w-[20%] p-2 leading-[16px] font-bold text-gray-800'>
                           <div className='flex items-center gap-1'>
                             <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
-                              C
+                              {roleBadge(user.role)}
                             </span>
                             {user.userName}
                           </div>
@@ -272,7 +282,7 @@ const UserSettlement = ({ type = 'user' }) => {
                         <td className='w-[20%] p-2 leading-[16px] font-bold text-gray-800'>
                           <div className='flex items-center gap-1'>
                             <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
-                              C
+                              {roleBadge(user.role)}
                             </span>
                             {user.userName}
                           </div>

@@ -52,6 +52,45 @@ const AccountSummaryBar = () => {
   const plColorClass = (v) =>
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
+  const downlineAmount = Number(
+    userInfo?.accountSummary?.downlineDena ??
+      downlineViewer?.totalPL ??
+      userInfo?.uplineBettingProfitLoss ??
+      0
+  );
+  const uplineAmount = Number(
+    userInfo?.accountSummary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
+  );
+
+  const downlineLenDena =
+    userInfo?.accountSummary?.downlineLenDena ??
+    (downlineAmount > 0.005
+      ? 'lena'
+      : downlineAmount < -0.005
+        ? 'dena'
+        : 'clear');
+  const uplineLenDena =
+    userInfo?.accountSummary?.uplineLenDena ??
+    (uplineAmount > 0.005
+      ? 'dena'
+      : uplineAmount < -0.005
+        ? 'lena'
+        : 'clear');
+
+  const downlineTooltip =
+    downlineLenDena === 'lena'
+      ? 'Positive: aapko apni downline se lena hai (unhone haare / aapka share profit).'
+      : downlineLenDena === 'dena'
+        ? 'Negative: aapko downline ko dena hai (unhone jeete / aap unhe denge).'
+        : 'Down line settled — koi outstanding len-den nahi.';
+
+  const uplineTooltip =
+    uplineLenDena === 'dena'
+      ? 'Positive: aapko upline ko dena hai (unka share upar jata hai).'
+      : uplineLenDena === 'lena'
+        ? 'Negative: aapko upline se lena hai.'
+        : 'Up line settled — koi outstanding len-den nahi.';
+
   const summary = userInfo?.accountSummary;
   const isClientRole = userInfo?.role === 'user';
   const roleDisplay =
@@ -130,44 +169,20 @@ const AccountSummaryBar = () => {
                 userInfo?.role
               ) && (
                 <MetricTooltipRow
-                  label='Up Line (dena) : '
-                  tooltip={
-                    summary?.uplineTooltip ??
-                    'Upper Level Ke Saath Hisab Ka Len-Den.'
-                  }
+                  label={`Up Line (${uplineLenDena}) : `}
+                  tooltip={summary?.uplineTooltip ?? uplineTooltip}
                 >
-                  <span
-                    className={plColorClass(
-                      summary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
-                    )}
-                  >
-                    {formatMoney(
-                      summary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
-                    )}
+                  <span className={plColorClass(uplineAmount)}>
+                    {formatMoney(uplineAmount)}
                   </span>
                 </MetricTooltipRow>
               )}
               <MetricTooltipRow
-                label='Down Line (dena) : '
-                tooltip={
-                  summary?.downlineTooltip ??
-                  'Down Line Ke Saath Hisab Ka Len-Den.'
-                }
+                label={`Down Line (${downlineLenDena}) : `}
+                tooltip={summary?.downlineTooltip ?? downlineTooltip}
               >
-                <span
-                  className={plColorClass(
-                    summary?.downlineDena ??
-                      downlineViewer?.totalPL ??
-                      userInfo?.uplineBettingProfitLoss ??
-                      0
-                  )}
-                >
-                  {formatMoney(
-                    summary?.downlineDena ??
-                      downlineViewer?.totalPL ??
-                      userInfo?.uplineBettingProfitLoss ??
-                      0
-                  )}
+                <span className={plColorClass(downlineAmount)}>
+                  {formatMoney(downlineAmount)}
                 </span>
               </MetricTooltipRow>
             </div>

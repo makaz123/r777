@@ -16,7 +16,9 @@ import WithdrawalHistory from '../../models/withdrawalHistoryModel.js';
 import { calculateAllExposure } from '../../utils/exposureUtils.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
 import {
+  aggregateDownlineOutstandingGross,
   aggregateDownlineParentViewPL,
+  aggregateViewerOutstandingPL,
   aggregateViewerProfitLoss,
   buildAccountSummary,
   getCurrentWeekRange,
@@ -119,7 +121,8 @@ const updateAdmin = async (id) => {
         // Only calculate from bets for actual end-users who place bets.
         if (user.role !== 'user') {
           DownlineTotalExposure += user.totalExposure || user.exposure || 0;
-          const agentDownlinePL = Number(user.bettingProfitLoss) || 0;
+          const agentDownlinePL =
+            Number(user.uplineBettingProfitLoss ?? user.bettingProfitLoss) || 0;
           const uplinePLShare = getDownlineUplineBettingContribution({
             totalPL: agentDownlinePL,
             partnershipPercent: user.partnership,
@@ -179,18 +182,17 @@ const updateAdmin = async (id) => {
         const trueTotalPL = roundMoney(sportsBettingPL + casinoBettingPL);
         const storedPL = roundMoney(user.bettingProfitLoss || 0);
 
-        const userBettingPL =
-          storedPL > trueTotalPL + 0.01 ? storedPL : trueTotalPL;
-
-        if (
-          storedPL <= trueTotalPL + 0.01 &&
-          user.bettingProfitLoss !== trueTotalPL
-        ) {
-          console.log(
-            `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${trueTotalPL}`
-          );
-          user.bettingProfitLoss = trueTotalPL;
-          await user.save();
+        // Never raise stored P/L above bet history; never lower below stored (settlements).
+        let userBettingPL = storedPL;
+        if (trueTotalPL > storedPL + 0.01) {
+          userBettingPL = trueTotalPL;
+          if (user.bettingProfitLoss !== trueTotalPL) {
+            console.log(
+              `[UPDATE ADMIN] User ${user.userName}: correcting bettingProfitLoss from ${user.bettingProfitLoss} to ${trueTotalPL}`
+            );
+            user.bettingProfitLoss = trueTotalPL;
+            await user.save();
+          }
         }
         // Store full client P/L on this admin; parent share is applied when rolling up via agent rows.
         DownlineTotalBettingProfitLoss += userBettingPL;
@@ -1183,6 +1185,57 @@ export const getLoginHistory = async (req, res) => {
   }
 };
 
+const loadAccountSummaryForAdmin = async (adminId) => {
+  await updateAdmin(adminId);
+  const updatedAdmin = await SubAdmin.findById(adminId).lean();
+  if (!updatedAdmin) return null;
+
+  const weekRange = getCurrentWeekRange();
+  const [weekViewerPL, weekDownlinePL, tillViewerPL, tillDownlinePL] =
+    await Promise.all([
+      aggregateViewerProfitLoss(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        updatedAdmin,
+        weekRange
+      ),
+      aggregateDownlineParentViewPL(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        updatedAdmin.code,
+        weekRange
+      ),
+      aggregateViewerOutstandingPL(SubAdmin, updatedAdmin),
+      aggregateDownlineOutstandingGross(SubAdmin, updatedAdmin.code),
+    ]);
+
+  const accountSummary = buildAccountSummary(updatedAdmin, {
+    weekViewerPL,
+    weekDownlinePL,
+    tillViewerPL,
+    tillDownlinePL,
+  });
+
+  return { admin: updatedAdmin, accountSummary };
+};
+
+const refreshSettlementHierarchy = async (settlerId, settledUserId) => {
+  await updateAdmin(settledUserId);
+  await updateAdmin(settlerId);
+
+  let node = await SubAdmin.findById(settlerId).select('invite').lean();
+  while (node?.invite) {
+    const parent = await SubAdmin.findOne({ code: node.invite })
+      .select('_id invite')
+      .lean();
+    if (!parent) break;
+    await updateAdmin(parent._id);
+    node = parent;
+  }
+};
+
 export const getSubAdmin = async (req, res) => {
   try {
     const { id } = req; // Get ID from request
@@ -1191,57 +1244,19 @@ export const getSubAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Admin ID is required' });
     }
 
-    // Find sub-admin & exclude sensitive fields
     const admin = await SubAdmin.findById(id);
-
     if (!admin) {
       return res.status(404).json({ message: 'Sub-admin not found' });
     }
-    await updateAdmin(id);
 
-    const updatedAdmin = await SubAdmin.findById(id).lean();
-    const weekRange = getCurrentWeekRange();
-    const [weekViewerPL, weekDownlinePL, tillViewerPL, tillDownlinePL] =
-      await Promise.all([
-        aggregateViewerProfitLoss(
-          SubAdmin,
-          betHistoryModel,
-          CasinoBetHistory,
-          updatedAdmin,
-          weekRange
-        ),
-        aggregateDownlineParentViewPL(
-          SubAdmin,
-          betHistoryModel,
-          CasinoBetHistory,
-          updatedAdmin.code,
-          weekRange
-        ),
-        aggregateViewerProfitLoss(
-          SubAdmin,
-          betHistoryModel,
-          CasinoBetHistory,
-          updatedAdmin,
-          null
-        ),
-        aggregateDownlineParentViewPL(
-          SubAdmin,
-          betHistoryModel,
-          CasinoBetHistory,
-          updatedAdmin.code,
-          null
-        ),
-      ]);
-    const accountSummary = buildAccountSummary(updatedAdmin, {
-      weekViewerPL,
-      weekDownlinePL,
-      tillViewerPL,
-      tillDownlinePL,
-    });
+    const payload = await loadAccountSummaryForAdmin(id);
+    if (!payload) {
+      return res.status(404).json({ message: 'Sub-admin not found' });
+    }
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: { ...updatedAdmin, accountSummary },
+      data: { ...payload.admin, accountSummary: payload.accountSummary },
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);
@@ -3549,9 +3564,11 @@ export const getSettlementUsers = async (req, res) => {
     if (roleType === 'user') {
       filter.role = 'user';
     } else if (roleType === 'master') {
-      filter.role = { $nin: ['user', 'supperadmin'] };
-    } else if (role === 'supperadmin' || role === 'superadmin') {
-      filter.role = { $ne: 'supperadmin' };
+      // Master settles direct agent/admin downlines only — not end users.
+      filter.role = { $in: ['agent', 'master', 'super', 'white', 'admin'] };
+    } else {
+      // Default non-user settlement: any direct downline except end users.
+      filter.role = { $nin: ['user', 'supperadmin', 'superadmin'] };
     }
 
     const downlines = await SubAdmin.find(filter).lean();
@@ -3655,6 +3672,7 @@ export const settleUser = async (req, res) => {
         editUser.uplineBettingProfitLoss = roundMoney(
           (editUser.uplineBettingProfitLoss || 0) - parsedAmount
         );
+        editUser.bettingProfitLoss = editUser.uplineBettingProfitLoss;
       }
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
@@ -3699,6 +3717,7 @@ export const settleUser = async (req, res) => {
         editUser.uplineBettingProfitLoss = roundMoney(
           (editUser.uplineBettingProfitLoss || 0) + parsedAmount
         );
+        editUser.bettingProfitLoss = editUser.uplineBettingProfitLoss;
       }
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
@@ -3725,9 +3744,28 @@ export const settleUser = async (req, res) => {
       });
     }
 
+    await refreshSettlementHierarchy(id, userId);
+
+    const { sendUserRefresh } = await import('../../socket/bettingSocket.js');
+    sendUserRefresh(String(id));
+    sendUserRefresh(String(userId));
+
+    let uplineNode = await SubAdmin.findById(id).select('invite').lean();
+    while (uplineNode?.invite) {
+      const parent = await SubAdmin.findOne({ code: uplineNode.invite })
+        .select('_id invite')
+        .lean();
+      if (!parent) break;
+      sendUserRefresh(String(parent._id));
+      uplineNode = parent;
+    }
+
+    const summaryPayload = await loadAccountSummaryForAdmin(id);
+
     return res.status(200).json({
       success: true,
       message: 'Settlement completed successfully',
+      accountSummary: summaryPayload?.accountSummary ?? null,
     });
   } catch (error) {
     console.error('Error in settleUser:', error);

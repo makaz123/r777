@@ -140,6 +140,16 @@ export default function Userlist() {
   const [lockForm, setLockForm] = useState({ remark: '', masterPassword: '' });
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Settlement state
+  const [settlePopup, setSettlePopup] = useState(false);
+  const [settleSelectedUser, setSettleSelectedUser] = useState(null);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleRemarks, setSettleRemarks] = useState('');
+  const [settlePassword, setSettlePassword] = useState('');
+  const [isSettling, setIsSettling] = useState(false);
+  const [settleUserPL, setSettleUserPL] = useState(0);
+
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -417,20 +427,81 @@ export default function Userlist() {
     );
   };
 
-  const CurrentPLCell = ({ value }) => {
+  const openSettleModal = (row, value) => {
+    if (!row) return;
+
+    if (row.invite !== userInfo?.code) {
+      toast.error('You can only settle with your direct downlines.');
+      return;
+    }
+
+    setSettleSelectedUser(row);
+    setSettleUserPL(value);
+    setSettleAmount('');
+    
+    if (value > 0) {
+      setSettleRemarks(`${row.userName} received cash from ${userInfo?.userName || ''}`);
+    } else {
+      setSettleRemarks(`${userInfo?.userName || ''} received cash from ${row.userName}`);
+    }
+    
+    setSettlePassword('');
+    setSettlePopup(true);
+  };
+
+  const handleSettleSubmit = async (e) => {
+    e.preventDefault();
+    if (!settleSelectedUser || !settleAmount || !settlePassword) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
+    
+    setIsSettling(true);
+    try {
+      const payload = {
+        userId: settleSelectedUser._id,
+        amount: Number(settleAmount),
+        remarks: settleRemarks,
+        masterPassword: settlePassword,
+      };
+      const res = await api.post('/sub-admin/settle', payload, {
+        withCredentials: true,
+      });
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Settled successfully');
+        setSettlePopup(false);
+        dispatch(getAdmin());
+        fetchUserList(1, 50, '', activeTab);
+      } else {
+        toast.error(res.data.message || 'Settlement failed');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Settlement failed');
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  const CurrentPLCell = ({ value, row }) => {
     const n = Number(value) || 0;
     if (n === 0) {
       return <span className='text-black'>{formatTableMoney(0)}</span>;
     }
     if (n < 0) {
       return (
-        <span className='inline-block rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+        <span 
+          onClick={() => openSettleModal(row, n)}
+          className='inline-block rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white cursor-pointer hover:bg-red-700'
+        >
           {formatTableMoney(n)}
         </span>
       );
     }
     return (
-      <span className='inline-block rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+      <span 
+        onClick={() => openSettleModal(row, n)}
+        className='inline-block rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white cursor-pointer hover:bg-green-700'
+      >
         {formatTableMoney(n)}
       </span>
     );
@@ -439,7 +510,7 @@ export default function Userlist() {
   const ExposureCell = ({ row }) => {
     const exp = getRowTotalExposure(row);
     const display = exp > 0 ? -exp : exp;
-    return <CurrentPLCell value={display} />;
+    return <CurrentPLCell value={display} row={row} />;
   };
 
   const roleTypeLabel = (role) => {
@@ -729,7 +800,7 @@ export default function Userlist() {
                 sortKey: 'currentPL',
                 sortValue: (row) => getRowCurrentPL(row),
                 align: 'right',
-                cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} />,
+                cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} row={row} />,
               },
               {
                 header: 'Exposure',
@@ -1605,6 +1676,111 @@ export default function Userlist() {
               </motion.div>
             </div>
           )}
+
+        {/* Settlement Modal */}
+        {settlePopup && settleSelectedUser && (
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.4 }}
+              className='w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
+            >
+              <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white'>
+                <span className='text-[16px] font-bold'>Settlement</span>
+                <button
+                  type='button'
+                  onClick={() => setSettlePopup(false)}
+                  className='text-xl leading-none font-bold text-gray-200'
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleSettleSubmit} className='space-y-4 px-6 py-4 text-[14px]'>
+                <div className='grid grid-cols-2 gap-y-4 gap-x-2'>
+                  <div className='font-bold text-gray-800'>User Name:</div>
+                  <div className='text-black'>{settleSelectedUser.userName}</div>
+
+                  <div className='font-bold text-gray-800'>My Available Bal</div>
+                  <div className='font-bold text-gray-800'>P&L</div>
+                  
+                  <div className='font-bold text-green-600'>{Number(userInfo?.availableBalance || 0).toFixed(2)}</div>
+                  <div className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {Number(settleUserPL || 0).toFixed(2)}
+                  </div>
+
+                  <div className='font-bold text-gray-800'>Exposure</div>
+                  <div className='font-bold text-gray-800'>Amount To Settle</div>
+                  
+                  <div className='text-black'>{Number(settleSelectedUser.exposure || 0).toFixed(2)}</div>
+                  <div className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {Number(settleUserPL || 0).toFixed(2)}
+                  </div>
+                </div>
+
+                <div className='flex items-center gap-2 mt-4'>
+                  <label className='w-[140px] font-bold text-gray-800'>Settle Amount</label>
+                  <input
+                    type='number'
+                    step='0.01'
+                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                    value={settleAmount}
+                    onChange={(e) => setSettleAmount(e.target.value)}
+                    required
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))}
+                    className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
+                  >
+                    Full Settle
+                  </button>
+                </div>
+
+                <div className='flex items-start gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>Remarks</label>
+                  <textarea
+                    rows={3}
+                    className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
+                    value={settleRemarks}
+                    onChange={(e) => setSettleRemarks(e.target.value)}
+                  />
+                </div>
+
+                <div className='flex items-center gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>Master Password</label>
+                  <input
+                    type='password'
+                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                    value={settlePassword}
+                    onChange={(e) => setSettlePassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className='flex justify-end gap-2 pt-2'>
+                  <button
+                    type='submit'
+                    disabled={isSettling}
+                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
+                  >
+                    {isSettling ? 'Processing...' : 'Submit'}
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setSettlePopup(false)}
+                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
         </div>
       </div>
     </>

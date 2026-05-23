@@ -254,7 +254,7 @@ const MatchControl = () => {
         <div className='rounded-sm border border-gray-200 bg-white px-5 py-3'>
           <div
             onClick={() => toggleTab('cricket')}
-            className='section-header bg-[#18b0c8] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#016a82] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Cricket
             <IoIosArrowDown
@@ -276,7 +276,7 @@ const MatchControl = () => {
 
           <div
             onClick={() => toggleTab('tennis')}
-            className='section-header bg-[#18b0c8] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#016a82] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Tennis
             <IoIosArrowDown
@@ -298,7 +298,7 @@ const MatchControl = () => {
 
           <div
             onClick={() => toggleTab('soccer')}
-            className='section-header bg-[#18b0c8] flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#016a82] flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Soccer
             <IoIosArrowDown
@@ -318,7 +318,7 @@ const MatchControl = () => {
             />
           )}
 
-          <div
+          {/* <div
             onClick={() => toggleTab('horse-racing')}
             className='section-header bg-[#18b0c8] mt-2 mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
           >
@@ -326,7 +326,7 @@ const MatchControl = () => {
             <IoIosArrowDown
               className={activeTab === 'horse-racing' ? 'rotate-180' : ''}
             />
-          </div>
+          </div> */}
 
           {activeTab === 'horse-racing' && (
             <MatchList

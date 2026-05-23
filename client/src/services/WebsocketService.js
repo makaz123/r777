@@ -61,11 +61,11 @@ class WebSocketService {
         }
 
         if (data.type === 'user_refresh_needed') {
-          // Trigger a user data refresh via Redux
-          if (!data.userId || data.userId === this.currentUserId) {
-            console.log(
-              '🔄 [WEBSOCKET] Casino callback received - refreshing user data'
-            );
+          const targetId = data.userId ? String(data.userId) : null;
+          const currentId = this.currentUserId
+            ? String(this.currentUserId)
+            : null;
+          if (!targetId || !currentId || targetId === currentId) {
             dispatch(getUser());
           }
         }

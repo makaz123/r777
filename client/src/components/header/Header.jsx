@@ -30,6 +30,7 @@ import Navbar from './Navbar';
 import LoginPopup from '../auth/LoginPopup';
 import LanguageSelector from '../language/LanguageSelector';
 import { useTranslation } from '../../context/LanguageContext';
+import { useUserLockSync } from '../../hooks/useUserLockSync';
 
 function Header({
   onMenuToggle,
@@ -63,6 +64,8 @@ function Header({
   const mobileDropdownRef = useRef(null);
   const dispatch = useDispatch();
   const { userInfo } = useSelector((state) => state.auth);
+
+  useUserLockSync(Boolean(userInfo?._id));
 
   useEffect(() => {
     if (!localStorage.getItem('auth')) return;

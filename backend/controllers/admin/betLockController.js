@@ -1,5 +1,6 @@
 import SubAdmin from '../../models/subAdminModel.js';
 import { fetchMatchList } from '../../services/matchApi/index.js';
+import { refreshUserAndDownlines } from '../../utils/userRefreshNotify.js';
 
 const getSportIdFromName = (name) => {
   const map = {
@@ -128,6 +129,8 @@ export const updateUserBetLocks = async (req, res) => {
     }
 
     await user.save();
+
+    await refreshUserAndDownlines(userId);
 
     return res.status(200).json({
       success: true,

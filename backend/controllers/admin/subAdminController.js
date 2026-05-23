@@ -23,6 +23,8 @@ import {
   getDownlineUserIds,
   isAccountInAdminDownline,
 } from '../../utils/accountSummaryUtils.js';
+import { refreshUserAndDownlines } from '../../utils/userRefreshNotify.js';
+import { sendUserRefresh } from '../../socket/bettingSocket.js';
 import {
   adjustUserUpdatesForCommission,
   calculateWinCommission,
@@ -3328,6 +3330,7 @@ export const updateGameLock = async (req, res) => {
 
     // User-level update
     if (admin.role === 'user') {
+      sendUserRefresh(String(admin._id));
       return res.status(200).json({
         success: true,
         message: `Lock status for ${admin.gamelock[gameIndex].game} updated successfully`,
@@ -3385,6 +3388,8 @@ export const updateGameLock = async (req, res) => {
           }
         }
       }
+
+      await refreshUserAndDownlines(admin._id);
 
       return res.status(200).json({
         success: true,

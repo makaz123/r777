@@ -482,9 +482,10 @@ export const sendToUser = (userName, payload) => {
 export const sendUserRefresh = (userId) => {
   console.log(' [WEBSOCKET] Sending user refresh request for userId:', userId);
 
+  const targetId = String(userId);
   let sentCount = 0;
   clients.forEach((client) => {
-    if (client.userId === userId && client.ws.readyState === 1) {
+    if (String(client.userId) === targetId && client.ws.readyState === 1) {
       client.ws.send(
         JSON.stringify({
           type: 'user_refresh_needed',

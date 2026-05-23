@@ -145,7 +145,7 @@ const updateAdmin = async (id) => {
         const sportsBettingPL = plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
 
         // Also aggregate Casino PL
-        const casinoPlResult = await mongoose.model('CasinoBetHistory').aggregate([
+        const casinoPlResult = await CasinoBetHistory.aggregate([
           {
             $match: {
               userId: user._id.toString(),

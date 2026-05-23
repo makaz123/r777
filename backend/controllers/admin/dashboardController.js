@@ -22,9 +22,9 @@ const round2 = (val) => {
   return parseFloat(val.toFixed(2));
 };
 
-/** Same as Userlist Current P&L: avbalance − balance */
+/** Same as Userlist Current P&L: avbalance − baseBalance (not balance field) */
 const getUserCurrentPL = (user) =>
-  roundMoney((user.avbalance || 0) - (user.balance || 0));
+  roundMoney((user.avbalance || 0) - (user.baseBalance || 0));
 
 /**
  * Header P&L (parent/upline view): end-users only.

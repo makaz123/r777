@@ -17,6 +17,7 @@ import { calculateAllExposure } from '../../utils/exposureUtils.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
 import {
   aggregateDownlineOutstandingGross,
+  aggregateDownlineClientPLSum,
   aggregateDownlineParentViewPL,
   aggregateViewerOutstandingPL,
   aggregateViewerProfitLoss,
@@ -997,10 +998,10 @@ export const loginSubAdmin = async (req, res) => {
     //  Compare password
     const isMatch = await bcrypt.compare(password, subAdmin.password);
 
-    // if (!isMatch) {
-    //   await saveLoginHistory(userName, subAdmin._id, 'Password Wrong', req);
-    //   return res.status(400).json({ message: 'Password Wrong !' });
-    // }
+    if (!isMatch) {
+      await saveLoginHistory(userName, subAdmin._id, 'Password Wrong', req);
+      return res.status(400).json({ message: 'Password Wrong !' });
+    }
 
     if (subAdmin.status !== 'active') {
       await saveLoginHistory(userName, subAdmin._id, 'Account Inactive', req);
@@ -1213,6 +1214,8 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     myPLTillDate,
     tillViewerOutstandingPL,
     tillDownlinePL,
+    downlineClientPL,
+    tillDownlinePLHistory,
   ] = await Promise.all([
     aggregateViewerProfitLoss(
       SubAdmin,
@@ -1236,9 +1239,35 @@ const loadAccountSummaryForAdmin = async (adminId) => {
       updatedAdmin,
       null
     ),
-    // Outstanding len-den with downline (stored PL after settlements).
-    aggregateViewerOutstandingPL(SubAdmin, updatedAdmin),
-    aggregateDownlineOutstandingGross(SubAdmin, updatedAdmin.code),
+    // Outstanding len-den with downline (bet history + cash settlements).
+    aggregateViewerOutstandingPL(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      updatedAdmin
+    ),
+    aggregateDownlineOutstandingGross(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      updatedAdmin.code
+    ),
+    aggregateDownlineClientPLSum(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      updatedAdmin.code
+    ),
+    aggregateDownlineParentViewPL(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      updatedAdmin.code,
+      null
+    ),
   ]);
 
   const accountSummary = buildAccountSummary(updatedAdmin, {
@@ -1247,6 +1276,8 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     myPLTillDate,
     tillViewerOutstandingPL,
     tillDownlinePL,
+    downlineClientPL,
+    tillDownlinePLHistory,
   });
 
   return { admin: updatedAdmin, accountSummary };

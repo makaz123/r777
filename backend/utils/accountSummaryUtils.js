@@ -235,40 +235,201 @@ export function normalizePLByUserIds(users, plByUser) {
   return out;
 }
 
-/** Viewer's share of outstanding downline P/L (after settlements; uses stored bettingProfitLoss). */
-export async function aggregateViewerOutstandingPL(SubAdmin, viewer) {
-  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewer.code);
-  if (!downlineUserIds.length) return 0;
+/**
+ * Per-user lifetime bet-history P/L and cash-settlement-adjusted outstanding P/L.
+ * Outstanding = history − withdrawals + deposits (same as updateAdmin sync).
+ */
+export async function getDownlineOutstandingPLMaps(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  TransactionHistory,
+  viewerCode
+) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewerCode);
+  if (!downlineUserIds.length) {
+    return { users: [], historyPLByUserId: new Map(), expectedPLByUserId: new Map() };
+  }
 
-  const [users, accountByCode] = await Promise.all([
+  const [users, plByUser] = await Promise.all([
     SubAdmin.find({ _id: { $in: downlineUserIds } })
       .select('_id userName role invite bettingProfitLoss')
       .lean(),
-    getAccountByCodeMap(SubAdmin, viewer),
+    aggregateSettledPLByUser(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      null
+    ),
   ]);
 
-  const clientPLByUserId = new Map();
-  for (const user of users) {
-    clientPLByUserId.set(
-      user._id.toString(),
-      roundMoney(user.bettingProfitLoss || 0)
-    );
-  }
-  return computeViewerPeriodPL(viewer, users, clientPLByUserId, accountByCode);
+  const historyPLByUserId = normalizePLByUserIds(users, plByUser);
+  const expectedPLByUserId = new Map();
+
+  await Promise.all(
+    users.map(async (user) => {
+      const id = user._id.toString();
+      const historyPL = historyPLByUserId.get(id) ?? 0;
+      const settlementCash = await getSettlementCashTotals(
+        TransactionHistory,
+        user._id
+      );
+      expectedPLByUserId.set(
+        id,
+        expectedBettingPLFromHistory(historyPL, settlementCash)
+      );
+    })
+  );
+
+  return { users, historyPLByUserId, expectedPLByUserId };
 }
 
-/** Gross parent-view outstanding P/L from end-users (respects settlement). */
-export async function aggregateDownlineOutstandingGross(SubAdmin, viewerCode) {
-  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewerCode);
-  if (!downlineUserIds.length) return 0;
+/**
+ * When a debtor is cash-settled but other downline users still have open P/L,
+ * zeroing their expected P/L removes their offset from the net and wrongly
+ * increases dena (or lena). Add back that cleared parent-view share.
+ */
+export function applyDebtorSettlementNetAddback(
+  viewer,
+  users,
+  historyPLByUserId,
+  expectedPLByUserId,
+  accountByCode,
+  baseOutstandingPL
+) {
+  const hasAnyOutstanding = users.some((user) => {
+    const id = user._id.toString();
+    return Math.abs(expectedPLByUserId.get(id) ?? 0) > 0.01;
+  });
+  if (!hasAnyOutstanding) return roundMoney(baseOutstandingPL);
 
-  const users = await SubAdmin.find({ _id: { $in: downlineUserIds } })
-    .select('bettingProfitLoss')
-    .lean();
+  let addback = 0;
+  for (const user of users) {
+    if (user.role !== 'user') continue;
+    const id = user._id.toString();
+    const historyPL = historyPLByUserId.get(id) ?? 0;
+    const expectedPL = expectedPLByUserId.get(id) ?? 0;
+    if (Math.abs(expectedPL) > 0.01) continue;
+    if (Math.abs(historyPL) < 0.01) continue;
+
+    const clearedShare =
+      getViewerShareOfUserClientPL(
+        viewer.code,
+        user,
+        accountByCode,
+        historyPL
+      ) -
+      getViewerShareOfUserClientPL(
+        viewer.code,
+        user,
+        accountByCode,
+        expectedPL
+      );
+    addback += clearedShare;
+  }
+
+  return roundMoney(baseOutstandingPL + addback);
+}
+
+/** Viewer's share of outstanding downline len-den (after cash settlements). */
+export async function aggregateViewerOutstandingPL(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  TransactionHistory,
+  viewer
+) {
+  const { users, historyPLByUserId, expectedPLByUserId } =
+    await getDownlineOutstandingPLMaps(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      viewer.code
+    );
+  if (!users.length) return 0;
+
+  const accountByCode = await getAccountByCodeMap(SubAdmin, viewer);
+  const base = computeViewerPeriodPL(
+    viewer,
+    users,
+    expectedPLByUserId,
+    accountByCode
+  );
+
+  return applyDebtorSettlementNetAddback(
+    viewer,
+    users,
+    historyPLByUserId,
+    expectedPLByUserId,
+    accountByCode,
+    base
+  );
+}
+
+/** Gross parent-view outstanding P/L from end-users (respects cash settlement). */
+export async function aggregateDownlineOutstandingGross(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  TransactionHistory,
+  viewerCode
+) {
+  const { users, historyPLByUserId, expectedPLByUserId } =
+    await getDownlineOutstandingPLMaps(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      viewerCode
+    );
+  if (!users.length) return 0;
 
   let total = 0;
   for (const user of users) {
-    total += roundMoney(-(user.bettingProfitLoss || 0));
+    const id = user._id.toString();
+    total += roundMoney(-(expectedPLByUserId.get(id) ?? 0));
+  }
+
+  const hasAnyOutstanding = users.some((user) => {
+    const id = user._id.toString();
+    return Math.abs(expectedPLByUserId.get(id) ?? 0) > 0.01;
+  });
+  if (!hasAnyOutstanding) return roundMoney(total);
+
+  for (const user of users) {
+    const id = user._id.toString();
+    const historyPL = historyPLByUserId.get(id) ?? 0;
+    const expectedPL = expectedPLByUserId.get(id) ?? 0;
+    if (Math.abs(expectedPL) > 0.01) continue;
+    if (Math.abs(historyPL) < 0.01) continue;
+    total += roundMoney(-historyPL + expectedPL);
+  }
+
+  return roundMoney(total);
+}
+
+/** Sum of end-users' outstanding client P/L (100% user view, after cash settlements). */
+export async function aggregateDownlineClientPLSum(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  TransactionHistory,
+  viewerCode
+) {
+  const { users, expectedPLByUserId } = await getDownlineOutstandingPLMaps(
+    SubAdmin,
+    betHistoryModel,
+    CasinoBetHistory,
+    TransactionHistory,
+    viewerCode
+  );
+  if (!users.length) return 0;
+
+  let total = 0;
+  for (const user of users) {
+    const id = user._id.toString();
+    total += roundMoney(expectedPLByUserId.get(id) ?? 0);
   }
   return roundMoney(total);
 }
@@ -372,6 +533,14 @@ export function buildAccountSummary(admin, plTotals = {}) {
     plTotals.tillViewerOutstandingPL ?? plTotals.tillViewerPL ?? 0
   );
   const tillDownlinePL = roundMoney(plTotals.tillDownlinePL ?? 0);
+  const tillDownlinePLHistory = roundMoney(
+    plTotals.tillDownlinePLHistory ?? tillDownlinePL
+  );
+  const downlineClientPL = roundMoney(
+    plTotals.downlineClientPL ?? -tillDownlinePL
+  );
+  /** Upline partnership share from bet history only — not reduced by downline cash settlement. */
+  const uplineSharePL = roundMoney(tillDownlinePLHistory - myPLTillDate);
 
   const roleLabel =
     admin.role === 'supperadmin'
@@ -396,14 +565,26 @@ export function buildAccountSummary(admin, plTotals = {}) {
     currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
     /** Lifetime betting P/L (bet history); cash settlement does not change this. */
     myPLTillDate,
-    myPLTillDateTotal: tillDownlinePL,
-    /** Amount passed to upline from downline P/L (your keep vs gross). */
-    uplineDena: roundMoney(tillDownlinePL - tillViewerOutstandingPL),
-    /** Outstanding len-den with downline (reduces when you settle cash). */
+    myPLTillDateTotal: tillDownlinePLHistory,
+    /** Upline partnership share (bet history); downline cash settlement does not change this. */
+    uplineDena: uplineSharePL,
+    uplineSharePL,
+    /** Viewer share of outstanding downline P/L (internal / legacy). */
     downlineDena: tillViewerOutstandingPL,
     downlineDenaGross: tillDownlinePL,
-    uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
-    downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
+    /** Gross client P/L across all downline users (100% user view). */
+    downlineClientPL,
+    uplineTooltip:
+      'Upline ka partnership share (bet history se) — downline cash settlement se yeh change nahi hota.',
+    downlineTooltip:
+      'Downline users ka total client P/L (100%) — aapka partnership share nahi.',
+    /** Client-view len-den: + client jeeta = dena, − client haara = lena. */
+    downlineClientLenDena:
+      downlineClientPL > 0.005
+        ? 'dena'
+        : downlineClientPL < -0.005
+          ? 'lena'
+          : 'clear',
     downlineLenDena:
       tillViewerOutstandingPL > 0.005
         ? 'lena'
@@ -411,9 +592,9 @@ export function buildAccountSummary(admin, plTotals = {}) {
           ? 'dena'
           : 'clear',
     uplineLenDena:
-      roundMoney(tillDownlinePL - tillViewerOutstandingPL) > 0.005
+      uplineSharePL > 0.005
         ? 'dena'
-        : roundMoney(tillDownlinePL - tillViewerOutstandingPL) < -0.005
+        : uplineSharePL < -0.005
           ? 'lena'
           : 'clear',
     weekRange: getCurrentWeekRange(),

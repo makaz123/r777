@@ -53,21 +53,26 @@ const AccountSummaryBar = () => {
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
   const downlineAmount = Number(
-    userInfo?.accountSummary?.downlineDena ??
+    userInfo?.accountSummary?.downlineClientPL ??
+      (userInfo?.accountSummary?.downlineDenaGross != null
+        ? -Number(userInfo.accountSummary.downlineDenaGross)
+        : null) ??
       downlineViewer?.totalPL ??
-      userInfo?.uplineBettingProfitLoss ??
       0
   );
   const uplineAmount = Number(
-    userInfo?.accountSummary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
+    userInfo?.accountSummary?.uplineSharePL ??
+      userInfo?.accountSummary?.uplineDena ??
+      downlineViewer?.uplinePL ??
+      0
   );
 
   const downlineLenDena =
-    userInfo?.accountSummary?.downlineLenDena ??
+    userInfo?.accountSummary?.downlineClientLenDena ??
     (downlineAmount > 0.005
-      ? 'lena'
+      ? 'dena'
       : downlineAmount < -0.005
-        ? 'dena'
+        ? 'lena'
         : 'clear');
   const uplineLenDena =
     userInfo?.accountSummary?.uplineLenDena ??
@@ -79,17 +84,17 @@ const AccountSummaryBar = () => {
 
   const downlineTooltip =
     downlineLenDena === 'lena'
-      ? 'Outstanding: aapko apni downline se lena hai. Cash settlement se yeh amount kam hota hai; My P&L nahi.'
+      ? 'Downline users ka total client P/L (100%): users ne haara — aapko lena hai. Cash settlement se kam hota hai.'
       : downlineLenDena === 'dena'
-        ? 'Outstanding: aapko downline ko dena hai. Cash settlement se yeh amount kam hota hai; My P&L nahi.'
-        : 'Down line settled — koi outstanding len-den nahi.';
+        ? 'Downline users ka total client P/L (100%): users ne jeeta — aapko dena hai. Cash settlement se kam hota hai.'
+        : 'Down line settled — koi outstanding client P/L nahi.';
 
   const uplineTooltip =
     uplineLenDena === 'dena'
-      ? 'Positive: aapko upline ko dena hai (unka share upar jata hai).'
+      ? 'Upline ka partnership share (bet history) — downline cash settlement se change nahi hota.'
       : uplineLenDena === 'lena'
-        ? 'Negative: aapko upline se lena hai.'
-        : 'Up line settled — koi outstanding len-den nahi.';
+        ? 'Upline se partnership share (bet history) — downline cash settlement se change nahi hota.'
+        : 'Up line settled — koi outstanding upline share nahi.';
 
   const summary = userInfo?.accountSummary;
   const isClientRole = userInfo?.role === 'user';

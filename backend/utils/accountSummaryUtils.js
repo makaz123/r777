@@ -3,7 +3,8 @@
  */
 
 import {
-  splitProfitLossByMyShare,
+  getAccountMyKeepPercent,
+  getViewerShareOfUserClientPL,
   roundMoney,
 } from './partnershipCommissionUtils.js';
 
@@ -124,26 +125,210 @@ export async function aggregateWeekProfitLoss(
   return roundMoney(sportsPL + casinoPL);
 }
 
-/** Client/downline settled P/L → parent/upline view (invert sign). */
-const toParentViewPL = (clientPL) => roundMoney(-(Number(clientPL) || 0));
+/** Per-user settled P/L (client-side). Optional dateRange = { start, end }. */
+export async function aggregateSettledPLByUser(
+  betHistoryModel,
+  CasinoBetHistory,
+  userIds,
+  dateRange = null
+) {
+  if (!userIds.length) return new Map();
 
-export function buildAccountSummary(admin, weekPLTotal) {
-  const mySharePct = Number(admin.partnership) || 0;
-  const totalExposure = roundMoney(
-    Number(admin.totalExposure ?? admin.exposure) || 0
+  const dateFilter = dateRange
+    ? {
+        $gte: dateRange.start,
+        $lte: dateRange.end,
+      }
+    : null;
+
+  const sportsMatch = {
+    userId: { $in: userIds },
+    status: { $in: [1, 2] },
+  };
+  if (dateFilter) {
+    sportsMatch.$or = [{ settledAt: dateFilter }, { createdAt: dateFilter }];
+  }
+
+  const sportsAgg = await betHistoryModel.aggregate([
+    { $match: sportsMatch },
+    { $group: { _id: '$userId', total: { $sum: '$profitLossChange' } } },
+  ]);
+
+  const byUser = new Map(userIds.map((id) => [id.toString(), 0]));
+  for (const row of sportsAgg) {
+    byUser.set(String(row._id), roundMoney(row.total || 0));
+  }
+
+  if (CasinoBetHistory) {
+    const casinoMatch = {
+      userId: { $in: userIds },
+      $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+    };
+    if (dateFilter) {
+      casinoMatch.createdAt = dateFilter;
+    }
+    const casinoAgg = await CasinoBetHistory.aggregate([
+      { $match: casinoMatch },
+      {
+        $group: {
+          _id: '$userId',
+          total: {
+            $sum: {
+              $subtract: [
+                { $ifNull: ['$win_amount', 0] },
+                { $ifNull: ['$bet_amount', 0] },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+    for (const row of casinoAgg) {
+      const id = String(row._id);
+      byUser.set(id, roundMoney((byUser.get(id) || 0) + (row.total || 0)));
+    }
+  }
+
+  return byUser;
+}
+
+export async function getAccountByCodeMap(SubAdmin, viewer) {
+  const result = await SubAdmin.aggregate([
+    { $match: { code: viewer.code } },
+    {
+      $graphLookup: {
+        from: 'subadmins',
+        startWith: '$code',
+        connectFromField: 'code',
+        connectToField: 'invite',
+        as: 'downline',
+      },
+    },
+  ]);
+  const accountByCode = new Map(
+    (result[0]?.downline || []).map((row) => [row.code, row])
   );
-  const myShareExposureRaw = roundMoney(totalExposure * (mySharePct / 100));
+  accountByCode.set(viewer.code, viewer);
+  return accountByCode;
+}
+
+/** Align aggregated P/L keys (userId string / userName) to SubAdmin _id strings. */
+export function normalizePLByUserIds(users, plByUser) {
+  const out = new Map();
+  for (const user of users) {
+    const id = user._id.toString();
+    let pl = plByUser.get(id) ?? 0;
+    if (!pl) {
+      for (const [key, value] of plByUser) {
+        if (
+          key === id ||
+          key === user.userName ||
+          key === String(user.userName || '').toLowerCase()
+        ) {
+          pl = value;
+          break;
+        }
+      }
+    }
+    out.set(id, roundMoney(pl));
+  }
+  return out;
+}
+
+/** Viewer's share of settled downline P/L (parent view: + = house profit). */
+export async function aggregateViewerProfitLoss(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  viewer,
+  dateRange = null
+) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewer.code);
+  if (!downlineUserIds.length) return 0;
+
+  const [users, plByUser, accountByCode] = await Promise.all([
+    SubAdmin.find({ _id: { $in: downlineUserIds } }).lean(),
+    aggregateSettledPLByUser(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      dateRange
+    ),
+    getAccountByCodeMap(SubAdmin, viewer),
+  ]);
+
+  const normalizedPL = normalizePLByUserIds(users, plByUser);
+  return computeViewerPeriodPL(viewer, users, normalizedPL, accountByCode);
+}
+
+/** Full downline settled P/L in parent view (all shares, before viewer keep). */
+export async function aggregateDownlineParentViewPL(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  viewerCode,
+  dateRange = null
+) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewerCode);
+  if (!downlineUserIds.length) return 0;
+
+  const plByUser = await aggregateSettledPLByUser(
+    betHistoryModel,
+    CasinoBetHistory,
+    downlineUserIds,
+    dateRange
+  );
+
+  let total = 0;
+  for (const userId of downlineUserIds) {
+    const clientPL = plByUser.get(userId.toString()) || 0;
+    total += roundMoney(-clientPL);
+  }
+  return roundMoney(total);
+}
+
+/** Sum viewer's share from per-user client P/L (e.g. dashboard bets already loaded). */
+export function computeViewerPeriodPL(
+  viewer,
+  endUsers,
+  clientPLByUserId,
+  accountByCode
+) {
+  let total = 0;
+  for (const user of endUsers) {
+    if (user.role !== 'user') continue;
+    const userId = user._id.toString();
+    const clientPL =
+      clientPLByUserId.get(userId) ??
+      clientPLByUserId.get(String(user._id)) ??
+      clientPLByUserId.get(user.userName) ??
+      clientPLByUserId.get(String(user.userName || '').toLowerCase()) ??
+      0;
+    if (!clientPL) continue;
+    total += getViewerShareOfUserClientPL(
+      viewer.code,
+      user,
+      accountByCode,
+      clientPL
+    );
+  }
+  return roundMoney(total);
+}
+
+export function buildAccountSummary(admin, plTotals = {}) {
+  const myKeepPct = getAccountMyKeepPercent(admin);
+  const isEndUserRole = admin.role === 'user';
+  const totalExposure = isEndUserRole
+    ? roundMoney(Number(admin.totalExposure ?? admin.exposure) || 0)
+    : 0;
+  const myShareExposureRaw = roundMoney(totalExposure * (myKeepPct / 100));
   const myShareExposure =
     myShareExposureRaw > 0 ? -myShareExposureRaw : myShareExposureRaw;
 
-  // Stored / aggregated downline P/L is client-side; parent profit is opposite sign
-  const clientTillPL = roundMoney(Number(admin.uplineBettingProfitLoss) || 0);
-  const clientWeekPL = roundMoney(weekPLTotal);
-  const parentTillPL = toParentViewPL(clientTillPL);
-  const parentWeekPL = toParentViewPL(clientWeekPL);
-
-  const tillSplit = splitProfitLossByMyShare(parentTillPL, mySharePct);
-  const weekSplit = splitProfitLossByMyShare(parentWeekPL, mySharePct);
+  const weekViewerPL = roundMoney(plTotals.weekViewerPL ?? 0);
+  const tillViewerPL = roundMoney(plTotals.tillViewerPL ?? 0);
+  const weekDownlinePL = roundMoney(plTotals.weekDownlinePL ?? 0);
+  const tillDownlinePL = roundMoney(plTotals.tillDownlinePL ?? 0);
 
   const roleLabel =
     admin.role === 'supperadmin'
@@ -156,18 +341,18 @@ export function buildAccountSummary(admin, weekPLTotal) {
     givenBal: roundMoney(admin.creditReference ?? admin.baseBalance ?? 0),
     available: roundMoney(admin.avbalance ?? 0),
     totalExposure,
-    myShareExposure,
-    mySharePercent: mySharePct,
-    exposureDisplay: myShareExposure,
-    myShareExposureRaw,
-    currentWeekPLTotal: parentWeekPL,
-    clientWeekPLTotal: clientWeekPL,
-    currentWeekPL: weekSplit.myPL,
-    currentWeekUplinePL: weekSplit.uplinePL,
-    myPLTillDate: tillSplit.myPL,
-    myPLTillDateTotal: tillSplit.totalPL,
-    uplineDena: roundMoney(tillSplit.uplinePL),
-    downlineDena: roundMoney(parentTillPL),
+    myShareExposure: isEndUserRole ? myShareExposure : 0,
+    mySharePercent: myKeepPct,
+    exposureDisplay: isEndUserRole ? myShareExposure : 0,
+    myShareExposureRaw: isEndUserRole ? myShareExposureRaw : 0,
+    currentWeekPLTotal: weekDownlinePL,
+    clientWeekPLTotal: roundMoney(-weekDownlinePL),
+    currentWeekPL: weekViewerPL,
+    currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
+    myPLTillDate: tillViewerPL,
+    myPLTillDateTotal: tillDownlinePL,
+    uplineDena: roundMoney(tillDownlinePL - tillViewerPL),
+    downlineDena: tillDownlinePL,
     uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
     downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
     weekRange: getCurrentWeekRange(),

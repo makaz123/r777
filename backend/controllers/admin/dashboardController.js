@@ -11,10 +11,14 @@ import {
   hasCasinoRoundActivity,
 } from '../../utils/casinoPlUtils.js';
 import {
-  getViewerMySharePercent,
+  isMatchOddsGameType,
+  parseCommissionPercent,
   roundMoney,
-  splitProfitLossByMyShare,
 } from '../../utils/partnershipCommissionUtils.js';
+import {
+  computeViewerPeriodPL,
+  getAccountByCodeMap,
+} from '../../utils/accountSummaryUtils.js';
 
 // Helper to round float values to exactly two decimal places
 const round2 = (val) => {
@@ -22,24 +26,34 @@ const round2 = (val) => {
   return parseFloat(val.toFixed(2));
 };
 
-/** Same as Userlist Current P&L: avbalance − baseBalance (not balance field) */
-const getUserCurrentPL = (user) =>
-  roundMoney((user.avbalance || 0) - (user.baseBalance || 0));
+/** Client-side settled P/L per user from bets already loaded for the period. */
+const buildClientPLByUserId = (sportsBets, casinoBets, downlineUsers) => {
+  const nameToId = new Map(
+    downlineUsers
+      .filter((u) => u.role === 'user')
+      .map((u) => [String(u.userName || '').toLowerCase(), u._id.toString()])
+  );
 
-/**
- * Header P&L (parent/upline view): end-users only.
- * User Current P&L is client-side (loss = negative); parent profit is the opposite sign × share.
- */
-const computeViewerHeaderPL = (downlineUsers, viewerPartnership) => {
-  const myShare = getViewerMySharePercent(viewerPartnership);
-  let total = 0;
-  for (const user of downlineUsers) {
-    if (user.role !== 'user') continue;
-    const clientPL = getUserCurrentPL(user);
-    const parentPL = splitProfitLossByMyShare(-clientPL, myShare).myPL;
-    total += parentPL;
+  const resolveUserId = (bet) => {
+    const byName = nameToId.get(String(bet.userName || '').toLowerCase());
+    if (byName) return byName;
+    return bet.userId ? String(bet.userId) : null;
+  };
+
+  const byUser = new Map();
+  const addPL = (bet, delta) => {
+    const id = resolveUserId(bet);
+    if (!id) return;
+    byUser.set(id, roundMoney((byUser.get(id) || 0) + (delta || 0)));
+  };
+
+  for (const bet of sportsBets) {
+    addPL(bet, bet.profitLossChange || 0);
   }
-  return roundMoney(total);
+  for (const bet of casinoBets) {
+    addPL(bet, getCasinoNetPL(bet));
+  }
+  return byUser;
 };
 
 /**
@@ -103,7 +117,9 @@ export const getDashboardStats = async (req, res) => {
             pl: 0,
             commission: 0,
             deposit: 0,
+            depositCount: 0,
             withdrawal: 0,
+            withdrawalCount: 0,
             totalBets: 0,
             sportbookPL: 0,
           },
@@ -177,14 +193,27 @@ export const getDashboardStats = async (req, res) => {
       }).lean(),
     ]);
 
-    // 5. Calculate Header Card Totals
     let totalSportsPL = 0;
     let totalSportsBetAmount = 0;
     const totalSportsBets = sportsBets.length;
+    let totalCommission = 0;
+
+    const userCommitionMap = {};
+    downlineUsers.forEach((u) => {
+      userCommitionMap[u._id.toString()] = parseCommissionPercent(u.commition);
+    });
 
     sportsBets.forEach((bet) => {
       totalSportsPL += bet.profitLossChange || 0;
       totalSportsBetAmount += bet.betAmount || 0;
+
+      if (isMatchOddsGameType(bet.marketName) && bet.profitLossChange > 0) {
+        const rate = userCommitionMap[bet.userId] || 0;
+        if (rate > 0) {
+          const commission = (bet.profitLossChange * rate) / (100 - rate);
+          totalCommission += commission;
+        }
+      }
     });
 
     let totalCasinoPL = 0;
@@ -197,7 +226,18 @@ export const getDashboardStats = async (req, res) => {
       totalCasinoBetAmount += bet.bet_amount || 0;
     });
 
-    const headerPL = computeViewerHeaderPL(downlineUsers, admin.partnership);
+    const accountByCode = await getAccountByCodeMap(SubAdmin, admin);
+    const clientPLByUser = buildClientPLByUserId(
+      sportsBets,
+      activeCasinoBets,
+      downlineUsers
+    );
+    const headerPL = computeViewerPeriodPL(
+      admin,
+      downlineUsers,
+      clientPLByUser,
+      accountByCode
+    );
     const totalBetsCount = totalSportsBets + totalCasinoBets;
 
     const totalDeposit =
@@ -205,11 +245,6 @@ export const getDashboardStats = async (req, res) => {
       openingBalanceDeposits.reduce((sum, t) => sum + (t.deposite || 0), 0);
     const totalWithdrawal = withdrawals.reduce(
       (sum, w) => sum + (w.amount || 0),
-      0
-    );
-
-    const totalCommission = downlineUsers.reduce(
-      (sum, u) => sum + (u.commissionEarned || 0),
       0
     );
 
@@ -461,7 +496,9 @@ export const getDashboardStats = async (req, res) => {
           pl: round2(headerPL),
           commission: round2(totalCommission),
           deposit: round2(totalDeposit),
+          depositCount: deposits.length + openingBalanceDeposits.length,
           withdrawal: round2(totalWithdrawal),
+          withdrawalCount: withdrawals.length,
           totalBets: totalBetsCount,
           sportbookPL: 0, // No sportbook API — reserved for future integration
         },

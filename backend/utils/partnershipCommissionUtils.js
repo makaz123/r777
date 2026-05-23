@@ -33,6 +33,78 @@ export const parsePartnershipPercent = (partnership) => {
 export const getViewerMySharePercent = (partnership) =>
   roundMoney(Math.max(0, parsePartnershipPercent(partnership)));
 
+export const isPartnershipRootAccount = (admin) =>
+  !admin?.invite ||
+  admin?.role === 'supperadmin' ||
+  admin?.role === 'superadmin';
+
+/**
+ * What this account keeps from its downline P/L.
+ * On agent rows, `partnership` stores the parent's take (e.g. 85 when 15% was given to agent).
+ */
+export const getAccountMyKeepPercent = (admin) => {
+  if (isPartnershipRootAccount(admin)) {
+    const p = parsePartnershipPercent(admin?.partnership);
+    return roundMoney(p > 0 ? p : 100);
+  }
+  return roundMoney(
+    Math.max(0, 100 - parsePartnershipPercent(admin?.partnership))
+  );
+};
+
+/** Parent's take stored on a downline row (used when rolling up to that parent). */
+export const getParentShareOnDownlineRow = (downline) =>
+  parsePartnershipPercent(downline?.partnership);
+
+const applyParentTakeFromChild = (parentViewPL, child) => {
+  if (!child || child.role === 'user') return roundMoney(parentViewPL);
+  const parentTake = getParentShareOnDownlineRow(child);
+  if (parentTake <= 0) return roundMoney(parentViewPL);
+  return splitProfitLossByMyShare(parentViewPL, parentTake).myPL;
+};
+
+/**
+ * Viewer's share of one end-user's client-side P/L (positive = user profit).
+ * Walks the invite chain; partnership on each agent row = direct parent's take.
+ */
+export const getViewerShareOfUserClientPL = (
+  viewerCode,
+  user,
+  accountByCode,
+  clientPL
+) => {
+  if (!viewerCode || !user || user.role !== 'user') return 0;
+
+  let parentViewPL = roundMoney(-(Number(clientPL) || 0));
+  if (parentViewPL === 0) return 0;
+
+  let node = user;
+  while (node?.invite && node.invite !== viewerCode) {
+    parentViewPL = applyParentTakeFromChild(parentViewPL, node);
+    const parent = accountByCode.get(node.invite);
+    if (!parent) return 0;
+    node = parent;
+  }
+
+  if (!node) return 0;
+
+  if (node.role === 'user' && node.invite === viewerCode) {
+    const viewer = accountByCode.get(viewerCode);
+    const myKeep = viewer ? getAccountMyKeepPercent(viewer) : 100;
+    return splitProfitLossByMyShare(parentViewPL, myKeep).myPL;
+  }
+
+  if (node.invite === viewerCode) {
+    return applyParentTakeFromChild(parentViewPL, node);
+  }
+
+  if (node.code === viewerCode) {
+    return parentViewPL;
+  }
+
+  return 0;
+};
+
 /** Downline % taken from the viewer's my-share pool (capped at maxMyShare). */
 export const clampDownlineSharingPercent = (raw, maxMyShare) => {
   const max = Number(maxMyShare) || 0;

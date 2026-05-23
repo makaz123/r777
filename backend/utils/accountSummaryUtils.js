@@ -44,7 +44,11 @@ export async function getDownlineUserIds(SubAdmin, adminCode) {
 }
 
 /** True if target account is anywhere under adminCode in the invite tree. */
-export async function isAccountInAdminDownline(SubAdmin, adminCode, targetUser) {
+export async function isAccountInAdminDownline(
+  SubAdmin,
+  adminCode,
+  targetUser
+) {
   if (!adminCode || !targetUser?.invite) return false;
 
   let currentInvite = targetUser.invite;

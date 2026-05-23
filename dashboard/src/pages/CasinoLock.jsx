@@ -52,7 +52,7 @@ const CasinoLock = () => {
     <>
       <Navbar />
       <div className="scrollbar-hide pt-[15px]' bg-[#f0f0f5] px-[15px] py-[13px]">
-        <div className='grid grid-cols-3 rounded-lg bg-white px-[15px] py-[7px] h-[calc(100vh-123px)]'>
+        <div className='grid h-[calc(100vh-123px)] grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='col-span-2'>
             {/* Event Type */}
             <SectionBox title='Provider:'>
@@ -86,9 +86,9 @@ const CasinoLock = () => {
                 className='flex cursor-pointer items-center gap-2 py-2'
               >
                 {open ? (
-                  <AiOutlineMinusSquare size={13}/>
+                  <AiOutlineMinusSquare size={13} />
                 ) : (
-                <AiOutlinePlusSquare size={13}/>
+                  <AiOutlinePlusSquare size={13} />
                 )}
 
                 <span className='text-[12px] font-semibold'>Indian Poker</span>
@@ -97,28 +97,25 @@ const CasinoLock = () => {
               {/* List */}
               {open && (
                 <div className='ml-7 flex flex-col gap-3'>
-                {casinoData.map((item, index) => (
-                  <div key={index} className='flex items-center gap-2'>
-                    {/* Cross Icon */}
-                    <div className='flex items-center justify-center border border-gray-300 bg-white'>
-                      <RxCross2 className='text-gray-400' size={12} />
-                    </div>
+                  {casinoData.map((item, index) => (
+                    <div key={index} className='flex items-center gap-2'>
+                      {/* Cross Icon */}
+                      <div className='flex items-center justify-center border border-gray-300 bg-white'>
+                        <RxCross2 className='text-gray-400' size={12} />
+                      </div>
 
-                    {/* Text */}
-                    <span className='text-[12px] font-semibold'>{item}</span>
+                      {/* Text */}
+                      <span className='text-[12px] font-semibold'>{item}</span>
 
-                    {/* Checkbox */}
-                    <input
+                      {/* Checkbox */}
+                      <input
                         type='checkbox'
                         className="relative h-[18px] w-[18px] cursor-pointer appearance-none border border-black bg-gray-200 after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[14px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
-                    />
-                  </div>
-                ))}
-              </div>
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
-              
-
-
             </div>
           </div>
           <div className='col-span-1 pr-[15px] pl-[30px]'>

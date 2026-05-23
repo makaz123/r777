@@ -39,7 +39,9 @@ function formatValidationDetail(raw) {
 export function getApiErrorMessage(error) {
   const data = error?.response?.data;
   if (!data) {
-    return typeof error === 'string' ? error : error?.message || 'Something went wrong';
+    return typeof error === 'string'
+      ? error
+      : error?.message || 'Something went wrong';
   }
 
   const detail = data.error || data.details;
@@ -47,10 +49,7 @@ export function getApiErrorMessage(error) {
 
   if (detail) {
     const formatted = formatValidationDetail(detail);
-    if (
-      formatted &&
-      (!message || GENERIC_SERVER_MESSAGES.has(message))
-    ) {
+    if (formatted && (!message || GENERIC_SERVER_MESSAGES.has(message))) {
       return formatted;
     }
   }

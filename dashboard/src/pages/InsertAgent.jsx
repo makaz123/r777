@@ -142,7 +142,9 @@ export default function InsertAgent() {
         navigate('/user-download-list');
       } catch (error) {
         toast.error(
-          typeof error === 'string' ? error : error?.message || 'Failed to create account'
+          typeof error === 'string'
+            ? error
+            : error?.message || 'Failed to create account'
         );
       }
     } else {

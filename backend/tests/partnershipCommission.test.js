@@ -3,9 +3,12 @@ import { describe, expect, test } from 'vitest';
 import {
   calculateWinCommission,
   clampDownlineSharingPercent,
+  getAccountMyKeepPercent,
+  getDownlineKeepPercentOnRow,
   getDownlineUplineBettingContribution,
   getMatchOddsCommissionAmount,
   getMatchOddsCommissionFromNetWin,
+  getParentShareOnDownlineRow,
   getParentShareStoredOnDownline,
   getPartnershipUplineShare,
   getRemainingMySharePercent,
@@ -14,6 +17,7 @@ import {
   isMatchOddsGameType,
   parseCommissionPercent,
   splitProfitLossByMyShare,
+  toStoredDownlineKeepPercent,
 } from '../utils/partnershipCommissionUtils.js';
 
 describe('partnershipCommissionUtils', () => {
@@ -99,5 +103,33 @@ describe('partnershipCommissionUtils', () => {
     expect(commission).toBe(2);
     expect(netProfit).toBe(98);
     expect(calculateWinCommission(-50, 2).commission).toBe(0);
+  });
+
+  test('stored partnership 15 = agent keeps 15%, master keeps 85%', () => {
+    const master = { role: 'master', partnership: 100, invite: 'ROOT' };
+    const agent = { role: 'agent', partnership: 15, invite: master.code };
+
+    expect(getDownlineKeepPercentOnRow(agent, master)).toBe(15);
+    expect(getParentShareOnDownlineRow(agent, master)).toBe(85);
+    expect(getAccountMyKeepPercent(agent)).toBe(15);
+
+    const gross = 627.1;
+    const { myPL } = splitProfitLossByMyShare(gross, 15);
+    expect(myPL).toBe(94.07);
+  });
+
+  test('legacy parent-take 85 on row converts to 15% downline keep', () => {
+    const master = { role: 'master', partnership: 100 };
+    const agent = { role: 'agent', partnership: 85 };
+
+    expect(getDownlineKeepPercentOnRow(agent, master)).toBe(15);
+    expect(getParentShareOnDownlineRow(agent, master)).toBe(85);
+    expect(toStoredDownlineKeepPercent(85, master)).toBe(15);
+  });
+
+  test('InsertAgent parent-share payload stores as downline keep', () => {
+    const master = { role: 'master', partnership: 100 };
+    expect(toStoredDownlineKeepPercent(85, master)).toBe(15);
+    expect(toStoredDownlineKeepPercent(15, master)).toBe(15);
   });
 });

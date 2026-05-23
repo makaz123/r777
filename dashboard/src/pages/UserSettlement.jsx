@@ -202,6 +202,15 @@ const UserSettlement = ({ type = 'user' }) => {
                         </td>
                         <td className='w-[12%] p-2 leading-[16px] font-bold text-green-600'>
                           {Number(user.clientPL).toFixed(2)}
+                          {/* {user.role !== 'user' &&
+                            user.grossClientPL != null &&
+                            Math.abs(user.grossClientPL - user.clientPL) >
+                              0.01 && (
+                              <span className='mt-0.5 block text-[10px] font-normal text-gray-600'>
+                                {user.sharePercent}% of gross{' '}
+                                {Number(user.grossClientPL).toFixed(2)}
+                              </span>
+                            )} */}
                         </td>
                         <td className='w-[16%] p-2 leading-[16px]'>
                           <input
@@ -289,6 +298,15 @@ const UserSettlement = ({ type = 'user' }) => {
                         </td>
                         <td className='w-[12%] p-2 leading-[16px] font-bold text-[#c7313f]'>
                           {Number(user.clientPL).toFixed(2)}
+                          {/* {user.role !== 'user' &&
+                            user.grossClientPL != null &&
+                            Math.abs(user.grossClientPL - user.clientPL) >
+                              0.01 && (
+                              <span className='mt-0.5 block text-[10px] font-normal text-gray-600'>
+                                {user.sharePercent}% of gross{' '}
+                                {Number(user.grossClientPL).toFixed(2)}
+                              </span>
+                            )} */}
                         </td>
                         <td className='w-[16%] p-2 leading-[16px]'>
                           <input

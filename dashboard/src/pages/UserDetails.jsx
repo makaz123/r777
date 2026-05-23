@@ -54,6 +54,13 @@ const UserDetails = () => {
   const [passwordPopup, setPasswordPopup] = useState(false);
   const [lastLoginPopup, setLastLoginPopup] = useState(false);
 
+  // Settlement state
+  const [settlePopup, setSettlePopup] = useState(false);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleRemarks, setSettleRemarks] = useState('');
+  const [settlePassword, setSettlePassword] = useState('');
+  const [isSettling, setIsSettling] = useState(false);
+
   const [formData, setFormData] = useState({
     remark: '',
     balance: '',
@@ -152,6 +159,59 @@ const UserDetails = () => {
 
   const clientAvBalance = userDetails?.accountDetails?.availableBalance ?? 0;
   const clientCreditRef = userDetails?.accountDetails?.creditRef ?? 0;
+
+  const openSettleModal = () => {
+    if (userDetails?.userInfo?.invite !== userInfo?.code) {
+      toast.error('You can only settle with your direct downlines.');
+      return;
+    }
+
+    const value = userDetails?.accountDetails?.profitLoss || 0;
+    
+    setSettlePopup(true);
+    setSettleAmount('');
+
+    if (value > 0) {
+      setSettleRemarks(`${userDetails?.userInfo?.userName} received cash from ${userInfo?.userName || ''}`);
+    } else {
+      setSettleRemarks(`${userInfo?.userName || ''} received cash from ${userDetails?.userInfo?.userName}`);
+    }
+
+    setSettlePassword('');
+  };
+
+  const handleSettleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedUserId || !settleAmount || !settlePassword) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
+    
+    setIsSettling(true);
+    try {
+      const payload = {
+        userId: selectedUserId,
+        amount: Number(settleAmount),
+        remarks: settleRemarks,
+        masterPassword: settlePassword,
+      };
+      const res = await api.post('/sub-admin/settle', payload, {
+        withCredentials: true,
+      });
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Settled successfully');
+        setSettlePopup(false);
+        dispatch(getAdmin());
+        fetchUserDetails(selectedUserId);
+      } else {
+        toast.error(res.data.message || 'Settlement failed');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Settlement failed');
+    } finally {
+      setIsSettling(false);
+    }
+  };
 
   const handleCreditDepositSubmit = async (e) => {
     e.preventDefault();
@@ -569,7 +629,8 @@ const UserDetails = () => {
                     Ref. P/L :
                   </span>
                   <span
-                    className={`font-bold ${plColorClass(userDetails.accountDetails.profitLoss)}`}
+                    onClick={openSettleModal}
+                    className={`cursor-pointer underline font-bold ${plColorClass(userDetails.accountDetails.profitLoss)}`}
                   >
                     {formatPL(userDetails.accountDetails.profitLoss)}
                   </span>
@@ -655,7 +716,10 @@ const UserDetails = () => {
               <div className='mb-4 grid grid-cols-3 rounded border border-gray-300 bg-[#f0f4f8] py-2 text-center text-[13px] font-semibold shadow-sm'>
                 <div>
                   <div className='mb-1 text-gray-500'>P&L</div>
-                  <div className={plColorClass(userDetails.gamePlay.overallPL)}>
+                  <div
+                    onClick={openSettleModal}
+                    className={`cursor-pointer underline ${plColorClass(userDetails.gamePlay.overallPL)}`}
+                  >
                     {formatPL(
                       userDetails.gamePlay.overallPL ??
                         userDetails.accountDetails.profitLoss
@@ -1349,6 +1413,109 @@ const UserDetails = () => {
                   </tbody>
                 </table>
               </div>
+            </motion.div>
+          </div>
+        )}
+        {/* Settlement Modal */}
+        {settlePopup && (
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.4 }}
+              className='w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
+            >
+              <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white'>
+                <span className='text-[16px] font-bold'>Settlement</span>
+                <button
+                  type='button'
+                  onClick={() => setSettlePopup(false)}
+                  className='text-xl leading-none font-bold text-gray-200'
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleSettleSubmit} className='space-y-4 px-6 py-4 text-[14px]'>
+                <div className='grid grid-cols-2 gap-y-4 gap-x-2'>
+                  <div className='font-bold text-gray-800'>User Name:</div>
+                  <div className='text-black'>{userDetails?.userInfo?.userName}</div>
+
+                  <div className='font-bold text-gray-800'>My Available Bal</div>
+                  <div className='font-bold text-gray-800'>P&L</div>
+                  
+                  <div className='font-bold text-green-600'>{Number(userInfo?.avbalance || 0).toFixed(2)}</div>
+                  <div className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}>
+                    {formatPL(userDetails?.accountDetails?.profitLoss)}
+                  </div>
+
+                  <div className='font-bold text-gray-800'>Exposure</div>
+                  <div className='font-bold text-gray-800'>Amount To Settle</div>
+                  
+                  <div className='text-black'>{formatPL(userDetails?.accountDetails?.exposure)}</div>
+                  <div className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}>
+                    {formatPL(userDetails?.accountDetails?.profitLoss)}
+                  </div>
+                </div>
+
+                <div className='flex items-center gap-2 mt-4'>
+                  <label className='w-[140px] font-bold text-gray-800'>Settle Amount</label>
+                  <input
+                    type='number'
+                    step='0.01'
+                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                    value={settleAmount}
+                    onChange={(e) => setSettleAmount(e.target.value)}
+                    required
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setSettleAmount(Math.abs(userDetails?.accountDetails?.profitLoss || 0).toFixed(2))}
+                    className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
+                  >
+                    Full Settle
+                  </button>
+                </div>
+
+                <div className='flex items-start gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>Remarks</label>
+                  <textarea
+                    rows={3}
+                    className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
+                    value={settleRemarks}
+                    onChange={(e) => setSettleRemarks(e.target.value)}
+                  />
+                </div>
+
+                <div className='flex items-center gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>Master Password</label>
+                  <input
+                    type='password'
+                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                    value={settlePassword}
+                    onChange={(e) => setSettlePassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className='flex justify-end gap-2 pt-2'>
+                  <button
+                    type='submit'
+                    disabled={isSettling}
+                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
+                  >
+                    {isSettling ? 'Processing...' : 'Submit'}
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setSettlePopup(false)}
+                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

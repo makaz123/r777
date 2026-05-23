@@ -128,6 +128,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
       ],
     },
     { name: 'Banner Settings', path: '/banner-settings', superAdminOnly: true },
+    { name: 'Match Control', path: '/match-control', superAdminOnly: true },
     // {
     //   name: 'Live Market',
     //   submenu: [

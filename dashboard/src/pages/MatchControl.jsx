@@ -33,38 +33,78 @@ const MatchList = ({
     );
   }
 
-  return matches.map((match) => {
-    const isActive = !deactivatedMatches.has(String(match.id));
-    const isToggling = togglingMatchId === match.id;
+  // Group by title (Tournament)
+  const grouped = matches.reduce((acc, m) => {
+    const t = m.title || m.cname || 'Other';
+    if (!acc[t]) acc[t] = [];
+    acc[t].push(m);
+    return acc;
+  }, {});
 
-    return (
-      <div
-        key={match.id}
-        className='flex items-center justify-between rounded-[20px] border-b border-gray-100 px-2 last:border-0 hover:bg-gray-100'
-      >
-        <span className='text-sm font-medium'>
-          {match.match}
-          {(match.inplay || match.iplay) && (
-            <span className='ml-2 text-xs font-bold text-green-600'>
-              (In-Play)
-            </span>
-          )}
-        </span>
+  return (
+    <div className="flex flex-col gap-2 mt-2">
+      {Object.entries(grouped).map(([tournamentName, tourMatches]) => {
+        const isTournamentActive = !deactivatedMatches.has(String(tournamentName));
+        const isTournamentToggling = togglingMatchId === tournamentName;
+        
+        return (
+          <div key={tournamentName} className="border border-gray-200 rounded-lg overflow-hidden mb-2">
+            <div className="bg-gray-100 px-3 py-2 flex justify-between items-center border-b border-gray-200">
+              <span className="font-bold text-gray-700">{tournamentName}</span>
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMatch(tournamentName, tournamentName, sport, true);
+                }}
+                className={`relative flex h-[19px] min-w-[34px] cursor-pointer items-center rounded-full transition-colors ${isTournamentActive ? 'bg-green-500' : 'bg-gray-300'} ${isTournamentToggling ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <span
+                  className={`absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white transition-all ${isTournamentActive ? 'right-[2px]' : 'left-[2px]'}`}
+                />
+              </div>
+            </div>
 
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleMatch(match.id, match.match, sport);
-          }}
-          className={`relative flex h-[19px] min-w-[34px] cursor-pointer items-center rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-gray-300'} ${isToggling ? 'pointer-events-none opacity-50' : ''} `}
-        >
-          <span
-            className={`absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white transition-all ${isActive ? 'right-[2px]' : 'left-[2px]'} `}
-          />
-        </div>
-      </div>
-    );
-  });
+            {isTournamentActive && (
+              <div className="px-2 pb-1 bg-white">
+                {tourMatches.map((match) => {
+                  const isActive = !deactivatedMatches.has(String(match.id));
+                  const isToggling = togglingMatchId === match.id;
+
+                  return (
+                    <div
+                      key={match.id}
+                      className='flex items-center justify-between border-b border-gray-100 py-2 px-2 last:border-0 hover:bg-gray-50'
+                    >
+                      <span className='text-sm font-medium text-gray-600 ml-2'>
+                        {match.match}
+                        {(match.inplay || match.iplay) && (
+                          <span className='ml-2 text-xs font-bold text-green-600'>
+                            (In-Play)
+                          </span>
+                        )}
+                      </span>
+
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleMatch(match.id, match.match, sport, false);
+                        }}
+                        className={`relative flex h-[19px] min-w-[34px] cursor-pointer items-center rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-gray-300'} ${isToggling ? 'pointer-events-none opacity-50' : ''}`}
+                      >
+                        <span
+                          className={`absolute top-1/2 h-[15px] w-[15px] -translate-y-1/2 rounded-full bg-white transition-all ${isActive ? 'right-[2px]' : 'left-[2px]'}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
 const MatchControl = () => {
@@ -153,6 +193,7 @@ const MatchControl = () => {
               flat.push({
                 id: race.gmid,
                 match: `${venue.ename} - R${i + 1}`,
+                title: venue.ename,
                 iplay: race.iplay,
               });
             });
@@ -171,7 +212,7 @@ const MatchControl = () => {
     fetchHorseRacing();
   }, []);
 
-  const handleToggleMatch = async (matchId, matchName, sport) => {
+  const handleToggleMatch = async (matchId, matchName, sport, isTournament = false) => {
     if (togglingMatchId === matchId) return;
     setTogglingMatchId(matchId);
 
@@ -179,6 +220,7 @@ const MatchControl = () => {
       const res = await api.patch(`/match-settings/${matchId}/toggle-active`, {
         sport,
         matchName,
+        isTournament,
       });
 
       if (res.data.success) {
@@ -212,7 +254,7 @@ const MatchControl = () => {
         <div className='rounded-sm border border-gray-200 bg-white px-5 py-3'>
           <div
             onClick={() => toggleTab('cricket')}
-            className='section-header bg-dark mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#016a82] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Cricket
             <IoIosArrowDown
@@ -234,7 +276,7 @@ const MatchControl = () => {
 
           <div
             onClick={() => toggleTab('tennis')}
-            className='section-header bg-dark mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#016a82] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Tennis
             <IoIosArrowDown
@@ -256,7 +298,7 @@ const MatchControl = () => {
 
           <div
             onClick={() => toggleTab('soccer')}
-            className='section-header bg-dark flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#016a82] flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Soccer
             <IoIosArrowDown
@@ -276,15 +318,15 @@ const MatchControl = () => {
             />
           )}
 
-          <div
+          {/* <div
             onClick={() => toggleTab('horse-racing')}
-            className='section-header bg-dark mt-2 mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header bg-[#18b0c8] mt-2 mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
           >
             Horse Racing
             <IoIosArrowDown
               className={activeTab === 'horse-racing' ? 'rotate-180' : ''}
             />
-          </div>
+          </div> */}
 
           {activeTab === 'horse-racing' && (
             <MatchList

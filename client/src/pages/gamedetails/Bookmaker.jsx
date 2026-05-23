@@ -306,104 +306,29 @@ function Bookmaker({
     const oddsNum = parseFloat(odds);
     if (isNaN(stakeNum) || isNaN(oddsNum) || stakeNum === 0) return null;
 
-    const { otype, totalBetAmount, totalPrice, teamName } = getBetDetails(team);
-    const isMatchedTeam = teamName?.toLowerCase() === team?.toLowerCase();
-    const existingBet =
-      (otype && totalBetAmount) || (totalPrice && teamName && isMatchedTeam);
+    const { netOutcome } = getBetDetails(team);
+    let newPL = netOutcome !== null ? netOutcome : 0;
 
-    if (!existingBet) {
-      // Bookmaker calculation: b = otype === 'lay' ? p : p * (x / 100), p = otype === 'lay' ? p * (x / 100) : p
-      const p = stakeNum;
-      const x = oddsNum;
-      const b = selectedType === 'lay' ? p : p * (x / 100);
-      const pCalc = selectedType === 'lay' ? p * (x / 100) : p;
+    const isMatchedTeam = team?.toLowerCase() === selectedTeam?.toLowerCase();
 
-      if (selectedType === 'back') {
-        const profit = b; // For BACK: profit = stake * (odds / 100)
-        return {
-          value: Math.abs(profit),
-          color: profit >= 0 ? 'green' : 'red',
-        };
+    if (selectedType === 'back') {
+      if (isMatchedTeam) {
+        newPL += stakeNum * (oddsNum / 100);
       } else {
-        // For LAY: if selected team wins, you lose pCalc (stake * odds / 100)
-        // The value should be negative to show loss
-        const profit = -pCalc; // Negative because it's a loss if selected team wins
-        return { value: Math.abs(profit), color: 'red' }; // Always red for LAY loss on selected team
+        newPL -= stakeNum;
+      }
+    } else if (selectedType === 'lay') {
+      if (isMatchedTeam) {
+        newPL -= stakeNum * (oddsNum / 100);
+      } else {
+        newPL += stakeNum;
       }
     }
 
-    // Complex calculation with existing bet (same logic as PlaceBet)
-    let p = stakeNum;
-    let x = oddsNum;
-    // Bookmaker calculation: b = otype === 'lay' ? p : p * (x / 100)
-    // p = otype === 'lay' ? p * (x / 100) : p
-    let b = selectedType === 'lay' ? p : p * (x / 100);
-    p = selectedType === 'lay' ? p * (x / 100) : p;
-
-    const totalBetAmt = parseFloat(totalBetAmount || 0);
-    const totalPrc = parseFloat(totalPrice || 0);
-
-    if (selectedTeam?.toLowerCase() === teamName?.toLowerCase()) {
-      if (selectedType === otype) {
-        // Same team, same type - merge
-        b = b + totalBetAmt;
-        p = p + totalPrc;
-        const calValue = selectedType === 'back' ? b : p;
-        return {
-          value: Math.abs(calValue),
-          color: selectedType === 'back' && calValue >= 0 ? 'green' : 'red',
-        };
-      } else {
-        // Same team, opposite type - offset
-        if (selectedType === 'back') {
-          if (totalBetAmt > p) {
-            p = totalPrc - b;
-            return { value: Math.abs(p), color: 'red' };
-          } else {
-            b = b - totalPrc;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          }
-        } else if (selectedType === 'lay') {
-          if (totalPrc >= b) {
-            b = totalBetAmt - p;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          } else {
-            p = p - totalBetAmt;
-            return { value: Math.abs(p), color: 'red' };
-          }
-        }
-      }
-    } else {
-      // Different team
-      if (selectedType === otype) {
-        if (selectedType === 'back') {
-          if (totalPrc >= b) {
-            p = totalPrc - b;
-            return { value: Math.abs(p), color: 'red' };
-          } else {
-            b = b - totalPrc;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          }
-        } else if (selectedType === 'lay') {
-          if (totalPrc >= b) {
-            b = totalBetAmt - p;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          } else {
-            p = p - totalBetAmt;
-            return { value: Math.abs(p), color: 'red' };
-          }
-        }
-      } else {
-        // Different team, different type - add
-        b = b + totalBetAmt;
-        p = p + totalPrc;
-        const calValue = selectedType === 'back' ? b : p;
-        return {
-          value: Math.abs(calValue),
-          color: selectedType === 'back' && calValue >= 0 ? 'green' : 'red',
-        };
-      }
-    }
+    return {
+      value: newPL,
+      color: newPL >= 0 ? 'green' : 'red',
+    };
   };
 
   const handleOddsClick = (team, rate, type, sid, oname) => {
@@ -532,78 +457,27 @@ function Bookmaker({
             <React.Fragment key={teamIndex}>
               <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
                 {/* Team Name with suggestions */}
-                <div className='ml-2 truncate text-[13px] font-bold text-black lg:text-[14px]'>
-                  <div className='flex items-center'>
-                    <span>{team}</span>
-                    {showCashoutOptions && (
-                      <span
-                        className={`ml-2 text-[12px] font-bold ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        {cashoutLoading
-                          ? '...'
-                          : `₹ ${mergedCashoutValue.toFixed(2)}`}
-                      </span>
-                    )}
-                  </div>
-                  {(() => {
-                    if (!userInfo) return null;
-                    const isBookmakerBet =
-                      selectedBet?.gameType === 'Bookmaker' ||
-                      selectedBet?.marketName === 'Bookmaker';
-
-                    const {
-                      otype,
-                      totalBetAmount,
-                      totalPrice,
-                      teamName,
-                      isHedged,
-                      netOutcome,
-                    } = getBetDetails(team);
-                    const isMatchedTeam =
-                      teamName?.toLowerCase() === team?.toLowerCase();
-                    const existingBet =
-                      isHedged ||
-                      (otype && totalBetAmount) ||
-                      (totalPrice && teamName && isMatchedTeam);
-
-                    const isSelectedTeam =
-                      selectedBet?.team?.toLowerCase() === team?.toLowerCase();
-
-                    if (isBookmakerBet && selectedBet?.stake) {
-                      let suggestionValue = null;
-                      let suggestionColor = 'green';
-
-                      if (isSelectedTeam) {
-                        const suggestion = calculateSuggestion(
-                          team,
-                          selectedBet.team,
-                          selectedBet.type,
-                          selectedBet.stake,
-                          selectedBet.odds
-                        );
-                        if (suggestion) {
-                          if (
-                            selectedBet.type === 'lay' &&
-                            suggestion.color === 'red'
-                          ) {
-                            suggestionValue = -suggestion.value;
-                          } else {
-                            suggestionValue = suggestion.value;
-                          }
-                          suggestionColor = suggestion.color;
-                        }
-                      } else {
-                        const stakeNum = parseFloat(selectedBet.stake);
-                        if (!isNaN(stakeNum) && stakeNum > 0) {
-                          if (selectedBet.type === 'back') {
-                            suggestionValue = stakeNum;
-                            suggestionColor = 'red';
-                          } else {
-                            suggestionValue = stakeNum;
-                            suggestionColor = 'green';
-                          }
-                        }
-                      }
+                <div className='ml-2 flex items-center justify-between truncate text-[13px] font-bold text-black lg:text-[14px]'>
+                  <div className='flex flex-col'>
+                    <div className='flex items-center'>
+                      <span>{team}</span>
+                    </div>
+                    {(() => {
+                      if (!userInfo) return null;
+                      const {
+                        otype,
+                        totalBetAmount,
+                        totalPrice,
+                        teamName,
+                        isHedged,
+                        netOutcome,
+                      } = getBetDetails(team);
+                      const isMatchedTeam =
+                        teamName?.toLowerCase() === team?.toLowerCase();
+                      const existingBet =
+                        isHedged ||
+                        (otype && totalBetAmount) ||
+                        (totalPrice && teamName && isMatchedTeam);
 
                       if (existingBet) {
                         let betColor;
@@ -639,10 +513,7 @@ function Bookmaker({
                         }
 
                         return (
-                          <div
-                            className='flex gap-1'
-                            style={{ color: betColor }}
-                          >
+                          <div className='flex gap-1' style={{ color: betColor }}>
                             {displayValue !== '' &&
                               displayValue !== null &&
                               displayValue !== undefined && (
@@ -651,73 +522,41 @@ function Bookmaker({
                                   {parseFloat(displayValue).toFixed(2)}
                                 </span>
                               )}
-                            {suggestionValue !== null && (
-                              <span
-                                style={{ color: suggestionColor }}
-                                className='text-[11px]'
-                              >
-                                ({suggestionValue < 0 ? '-' : ''}
-                                {Math.abs(suggestionValue).toFixed(2)})
-                              </span>
-                            )}
                           </div>
                         );
-                      } else {
-                        if (suggestionValue !== null) {
-                          return (
-                            <span
-                              style={{ color: suggestionColor }}
-                              className='text-[11px]'
-                            >
-                              ({suggestionValue < 0 ? '-' : ''}
-                              {Math.abs(suggestionValue).toFixed(2)})
-                            </span>
-                          );
-                        }
                       }
-                    } else if (existingBet) {
-                      let betColor;
-                      let displayValue;
+                      return null;
+                    })()}
+                  </div>
 
-                      if (isHedged && netOutcome !== null) {
-                        displayValue = netOutcome;
-                        betColor = netOutcome >= 0 ? 'green' : 'red';
-                      } else {
-                        betColor =
-                          otype === 'lay'
-                            ? isMatchedTeam
-                              ? 'red'
-                              : 'green'
-                            : otype === 'back'
-                              ? isMatchedTeam
-                                ? 'green'
-                                : 'red'
-                              : 'green';
+                  {/* Suggestion Value on the right */}
+                  {(() => {
+                    if (!userInfo) return null;
+                    const isBookmakerBet =
+                      selectedBet?.gameType === 'Bookmaker' ||
+                      selectedBet?.marketName === 'Bookmaker';
 
-                        displayValue = (() => {
-                          if (otype === 'lay') {
-                            return isMatchedTeam ? totalPrice : totalBetAmount;
-                          } else if (otype === 'back') {
-                            return isMatchedTeam ? totalBetAmount : totalPrice;
-                          }
-                          return '';
-                        })();
-                      }
-
-                      return (
-                        <div className='flex gap-1' style={{ color: betColor }}>
-                          {displayValue !== '' &&
-                            displayValue !== null &&
-                            displayValue !== undefined && (
-                              <span className='flex items-center gap-0.5 text-[11px]'>
-                                <FaArrowRight />
-                                {parseFloat(displayValue).toFixed(2)}
-                              </span>
-                            )}
-                        </div>
+                    if (isBookmakerBet && selectedBet?.stake) {
+                      const suggestion = calculateSuggestion(
+                        team,
+                        selectedBet.team,
+                        selectedBet.type,
+                        selectedBet.stake,
+                        selectedBet.odds
                       );
-                    }
 
+                      if (suggestion) {
+                        return (
+                          <span
+                            style={{ color: suggestion.color }}
+                            className='mr-2 text-[12px] font-bold'
+                          >
+                            {suggestion.value < 0 ? '-' : ''}
+                            {Math.abs(suggestion.value).toFixed(2)}
+                          </span>
+                        );
+                      }
+                    }
                     return null;
                   })()}
                 </div>

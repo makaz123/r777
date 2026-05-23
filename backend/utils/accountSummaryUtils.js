@@ -261,7 +261,7 @@ export async function aggregateViewerProfitLoss(
   return computeViewerPeriodPL(viewer, users, normalizedPL, accountByCode);
 }
 
-/** Full downline settled P/L in parent view (all shares, before viewer keep). */
+/** Gross downline settled P/L in parent view (full branch, before your keep %). */
 export async function aggregateDownlineParentViewPL(
   SubAdmin,
   betHistoryModel,
@@ -338,7 +338,9 @@ export function buildAccountSummary(admin, plTotals = {}) {
   return {
     userId: admin.userName,
     userType: roleLabel,
-    givenBal: roundMoney(admin.creditReference ?? admin.baseBalance ?? 0),
+    givenBal: isEndUserRole
+      ? roundMoney(admin.creditReference ?? admin.baseBalance ?? 0)
+      : roundMoney((admin.totalBalance || 0) - (admin.uplineBettingProfitLoss || 0)),
     available: roundMoney(admin.avbalance ?? 0),
     totalExposure,
     myShareExposure: isEndUserRole ? myShareExposure : 0,
@@ -351,8 +353,11 @@ export function buildAccountSummary(admin, plTotals = {}) {
     currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
     myPLTillDate: tillViewerPL,
     myPLTillDateTotal: tillDownlinePL,
+    /** Amount passed to upline from downline P/L (your keep vs gross). */
     uplineDena: roundMoney(tillDownlinePL - tillViewerPL),
-    downlineDena: tillDownlinePL,
+    /** Your share with downline — not gross client/downline total. */
+    downlineDena: tillViewerPL,
+    downlineDenaGross: tillDownlinePL,
     uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
     downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
     weekRange: getCurrentWeekRange(),

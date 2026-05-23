@@ -105,6 +105,37 @@ export const getViewerShareOfUserClientPL = (
   return 0;
 };
 
+/**
+ * What the viewer RECEIVES from their direct downlines (before viewer applies their own myKeep).
+ */
+export const getViewerReceivedFromDownlineOfUserClientPL = (
+  viewerCode,
+  user,
+  accountByCode,
+  clientPL
+) => {
+  if (!viewerCode || !user || user.role !== 'user') return 0;
+
+  let parentViewPL = roundMoney(-(Number(clientPL) || 0));
+  if (parentViewPL === 0) return 0;
+
+  let node = user;
+  while (node?.invite && node.invite !== viewerCode) {
+    parentViewPL = applyParentTakeFromChild(parentViewPL, node);
+    const parent = accountByCode.get(node.invite);
+    if (!parent) return 0;
+    node = parent;
+  }
+
+  // If the node is directly under the viewer, the parentViewPL at this point
+  // is exactly what this branch passes up to the viewer.
+  if (node && node.invite === viewerCode) {
+    return parentViewPL;
+  }
+
+  return 0;
+};
+
 /** Downline % taken from the viewer's my-share pool (capped at maxMyShare). */
 export const clampDownlineSharingPercent = (raw, maxMyShare) => {
   const max = Number(maxMyShare) || 0;

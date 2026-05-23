@@ -95,7 +95,11 @@ const AccountSummaryBar = () => {
             <div className='space-y-1'>
               <MetricTooltipRow
                 label='Given Bal : '
-                tooltip='Aapko Upper Se Diya Gaya Balance.'
+                tooltip={
+                  isClientRole
+                    ? 'Aapko Upper Se Diya Gaya Balance.'
+                    : 'Aapne Niche Diya Gaya Balance.'
+                }
               >
                 <span
                   className={plColorClass(
@@ -122,7 +126,7 @@ const AccountSummaryBar = () => {
             </div>
 
             <div className='space-y-1'>
-              {!['supperadmin', 'superadmin', 'admin'].includes(
+              {!['supperadmin'].includes(
                 userInfo?.role
               ) && (
                 <MetricTooltipRow
@@ -209,6 +213,14 @@ const AccountSummaryBar = () => {
                     {formatMoney(summary?.currentWeekPL ?? 0)}
                   </span>
                 </MetricTooltipRow>
+                {/* <MetricTooltipRow
+                  label='My Share : '
+                  tooltip='Your partnership percentage share.'
+                >
+                  <span className='font-semibold text-blue-300'>
+                    {summary?.mySharePercent ?? 0}%
+                  </span>
+                </MetricTooltipRow> */}
               </div>
             )}
 

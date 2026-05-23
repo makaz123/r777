@@ -28,7 +28,13 @@ class WebSocketService {
     // Store userId for filtering incoming messages
     this.currentUserId = userId || localStorage.getItem('userId');
 
-    this.socket = new WebSocket(host);
+    let wsUrl = host;
+    if (wsUrl === '/') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.host}`;
+    }
+
+    this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
       this.isConnected = true;

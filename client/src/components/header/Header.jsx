@@ -234,7 +234,11 @@ function Header({
               <div className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'>
                 <p>{t('p_and_l', 'P&L')}</p>
                 <p className='text-black'>
-                  {userInfo?.bettingProfitLoss?.toFixed(2)}
+                  {(
+                    Number(userInfo?.avbalance || 0) -
+                    Number(userInfo?.baseBalance || 0) +
+                    Math.abs(Number(userInfo?.exposure || 0))
+                  ).toFixed(2)}
                 </p>
               </div>
             </div>

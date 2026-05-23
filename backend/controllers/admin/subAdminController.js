@@ -146,14 +146,11 @@ const updateAdmin = async (id) => {
           plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
 
         // Also aggregate Casino PL
-        const casinoPlResult = await mongoose
-          .model('CasinoBetHistory')
-          .aggregate([
-            {
-              $match: {
-                userId: user._id.toString(),
-                $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
-              },
+        const casinoPlResult = await CasinoBetHistory.aggregate([
+          {
+            $match: {
+              userId: user._id.toString(),
+              $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
             },
             {
               $group: {
@@ -3492,6 +3489,14 @@ export const getRegisterDetailReport = async (req, res) => {
   }
 };
 
+/** Settled-bet P/L only (excludes open/unsettled exposure in avbalance). */
+const getSettledClientPL = (account) => {
+  if (account.role === 'user') {
+    return roundMoney(account.bettingProfitLoss || 0);
+  }
+  return roundMoney(account.uplineBettingProfitLoss || 0);
+};
+
 export const getSettlementUsers = async (req, res) => {
   try {
     const { id, role } = req;
@@ -3520,17 +3525,11 @@ export const getSettlementUsers = async (req, res) => {
     const debtors = [];
 
     downlines.forEach((user) => {
-      // For end-users, PL is their personal avbalance vs baseBalance
-      // For agents/masters, PL is their aggregated uplineBettingProfitLoss
-      let pl = 0;
-      if (user.role === 'user') {
-        pl = (user.avbalance || 0) - (user.baseBalance || 0);
-      } else {
-        pl = user.uplineBettingProfitLoss || 0;
-      }
+      const pl = getSettledClientPL(user);
+      if (Math.abs(pl) < 0.01) return;
 
-      // If pl > 0, admin owes user (Creditor / dena hai)
-      // If pl < 0, user owes admin (Debtor / lena hai)
+      // pl > 0: client won settled bets (creditor / dena hai)
+      // pl < 0: client lost settled bets (debtor / lena hai)
 
       const userData = {
         _id: user._id,
@@ -3592,19 +3591,12 @@ export const settleUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // For end-users, PL is personal avbalance vs baseBalance
-    // For agents/masters, PL is uplineBettingProfitLoss
-    let pl = 0;
-    if (editUser.role === 'user') {
-      pl = (editUser.avbalance || 0) - (editUser.baseBalance || 0);
-    } else {
-      pl = editUser.uplineBettingProfitLoss || 0;
-    }
+    const pl = getSettledClientPL(editUser);
 
-    if (pl === 0) {
+    if (Math.abs(pl) < 0.01) {
       return res
         .status(400)
-        .json({ message: 'User has no outstanding balance to settle' });
+        .json({ message: 'No settled P/L to settle for this account' });
     }
 
     const settleRemark = `Settlement: ${remarks || ''}`.trim();
@@ -3618,11 +3610,17 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      // To clear positive PL (avbalance > baseBalance), we DECREASE avbalance
-      // (User is withdrawing their winnings)
       editUser.avbalance -= parsedAmount;
       editUser.balance -= parsedAmount;
-      // baseBalance remains UNCHANGED!
+      if (editUser.role === 'user') {
+        editUser.bettingProfitLoss = roundMoney(
+          (editUser.bettingProfitLoss || 0) - parsedAmount
+        );
+      } else {
+        editUser.uplineBettingProfitLoss = roundMoney(
+          (editUser.uplineBettingProfitLoss || 0) - parsedAmount
+        );
+      }
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
         editUser.baseBalance - (editUser.creditReference || 0);
@@ -3656,11 +3654,17 @@ export const settleUser = async (req, res) => {
           .json({ message: 'Cannot settle more than the outstanding P/L' });
       }
 
-      // To clear negative PL (avbalance < baseBalance), we INCREASE avbalance
-      // (User is depositing their losses to pay off the debt)
       editUser.avbalance += parsedAmount;
       editUser.balance += parsedAmount;
-      // baseBalance remains UNCHANGED!
+      if (editUser.role === 'user') {
+        editUser.bettingProfitLoss = roundMoney(
+          (editUser.bettingProfitLoss || 0) + parsedAmount
+        );
+      } else {
+        editUser.uplineBettingProfitLoss = roundMoney(
+          (editUser.uplineBettingProfitLoss || 0) + parsedAmount
+        );
+      }
       editUser.remark = settleRemark;
       editUser.creditReferenceProfitLoss =
         editUser.baseBalance - (editUser.creditReference || 0);

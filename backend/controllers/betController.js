@@ -4293,6 +4293,7 @@ export const getProfitlossHistory = async (req, res) => {
     gameName,
     marketName,
     marketId,
+    groupByMarket,
   } = req.query;
 
   try {
@@ -4337,7 +4338,7 @@ export const getProfitlossHistory = async (req, res) => {
         userName: cb.userName,
         gameName: 'Casino',
         eventName: cb.game_name || cb.game_uid || 'Casino Game',
-        marketName: 'Round ' + cb.game_round,
+        marketName: cb.game_name || cb.game_uid || 'Casino Game',
         market_id: cb.game_round,
         betResult: cb.change >= 0 ? 'WIN' : 'LOSE',
         createdAt: cb.createdAt,
@@ -4393,7 +4394,9 @@ export const getProfitlossHistory = async (req, res) => {
     for (const bet of allBets) {
       // const key = bet[groupKey]?.trim() || "Unknown";
       let key;
-      if (eventName && !gameName && !marketName) {
+      if (groupByMarket) {
+        key = `${bet.gameName}_${bet.marketName}`.trim() || 'Unknown';
+      } else if (eventName && !gameName && !marketName) {
         // For EventMatches page, show individual markets
         key =
           `${bet.marketName}_${bet.market_id || bet._id}`.trim() || 'Unknown';

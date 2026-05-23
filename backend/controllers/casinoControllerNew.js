@@ -108,6 +108,9 @@ export const mapCasinoBetToClientHistoryRow = (cb) => ({
   betAmount: cb.bet_amount ?? 0,
   createdAt: cb.createdAt,
   betType: 'live_casino',
+  resultAmount: Math.abs(cb.change || 0),
+  profitLossChange: cb.change || 0,
+  status: (cb.change || 0) >= 0 ? 1 : 2,
 });
 
 /**

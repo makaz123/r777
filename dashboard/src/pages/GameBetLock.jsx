@@ -1,165 +1,334 @@
-import React, { useState } from 'react';
-import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
-import { FaArrowRight } from 'react-icons/fa';
-import Navbar from '../components/Navbar';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ImPlus, ImMinus } from 'react-icons/im';
-const GameBetLock = () => {
-  const [selected, setSelected] = useState({});
-  const [openIds, setOpenIds] = useState([1, 2]);
+import { FaArrowRight } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
+import api from '../redux/api';
+import Navbar from '../components/Navbar';
+import { toast } from 'react-toastify';
 
-  const toggleCheckbox = (key) => {
-    setSelected((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+const SPORTS_TABS = [
+  'Cricket',
+  'Soccer',
+  'Tennis',
+  'Kabaddi',
+  'Election',
+  'Horse',
+  'GreyHound',
+];
+
+const emptySportLocks = () => ({
+  types: [],
+  marketTypes: [],
+  tournaments: [],
+  matches: [],
+  markets: [],
+});
+
+const GameBetLock = () => {
+  const { userInfo } = useSelector((state) => state.auth);
+  const [selected, setSelected] = useState({});
+  const [openIds, setOpenIds] = useState([]);
+  const [activeTab, setActiveTab] = useState('Cricket');
+  const [dates, setDates] = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [competitionData, setCompetitionData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedLocks, setSavedLocks] = useState([]);
+
+  useEffect(() => {
+    const dateArray = [];
+    for (let i = -5; i <= 5; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateString = d.toISOString().split('T')[0];
+      const formattedDate = d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      dateArray.push({ value: dateString, label: formattedDate });
+      if (i === 0) setSelectedDate(dateString);
+    }
+    setDates(dateArray);
+  }, []);
+
+  const fetchUserLocks = useCallback(async () => {
+    if (!userInfo?._id) return;
+    try {
+      const { data } = await api.get(`/admin/betlock/${userInfo._id}`);
+      if (data.success) {
+        const advancedLocks = data.advancedBetLocks || {};
+        const newSelected = {};
+        const newSavedLocks = [];
+
+        Object.keys(advancedLocks).forEach((sportStr) => {
+          const sportLocks = advancedLocks[sportStr];
+          if (sportLocks.types) {
+            sportLocks.types.forEach((type) => {
+              newSelected[`type-${type}`] = true;
+              newSavedLocks.push({
+                sport: sportStr,
+                type: 'Type',
+                description: type,
+                id: `type-${type}`,
+              });
+            });
+          }
+          if (sportLocks.marketTypes) {
+            sportLocks.marketTypes.forEach((mt) => {
+              newSelected[`marketType-${mt}`] = true;
+              newSavedLocks.push({
+                sport: sportStr,
+                type: 'Market Type',
+                description: mt,
+                id: `marketType-${mt}`,
+              });
+            });
+          }
+          if (sportLocks.tournaments) {
+            sportLocks.tournaments.forEach((t) => {
+              newSelected[`comp-${t}`] = true;
+              newSavedLocks.push({
+                sport: sportStr,
+                type: 'Tournament',
+                description: t,
+                id: `comp-${t}`,
+              });
+            });
+          }
+          if (sportLocks.matches) {
+            sportLocks.matches.forEach((m) => {
+              newSelected[`match-${m}`] = true;
+              newSavedLocks.push({
+                sport: sportStr,
+                type: 'Match',
+                description: m,
+                id: `match-${m}`,
+              });
+            });
+          }
+          if (sportLocks.markets) {
+            sportLocks.markets.forEach((mk) => {
+              newSelected[`market-${mk}`] = true;
+              newSavedLocks.push({
+                sport: sportStr,
+                type: 'Market',
+                description: mk,
+                id: `market-${mk}`,
+              });
+            });
+          }
+        });
+        setSelected(newSelected);
+        setSavedLocks(newSavedLocks);
+      }
+    } catch (error) {
+      console.error('Error fetching locks:', error);
+      toast.error('Failed to fetch user locks');
+    }
+  }, [userInfo?._id]);
+
+  useEffect(() => {
+    fetchUserLocks();
+  }, [fetchUserLocks]);
+
+  useEffect(() => {
+    if (selectedDate && activeTab) {
+      fetchTreeData();
+    }
+  }, [selectedDate, activeTab]);
+
+  const buildAdvancedBetLocks = (locksList, selectedMap) => {
+    const advancedBetLocks = {};
+    SPORTS_TABS.forEach((sport) => {
+      advancedBetLocks[sport.toLowerCase()] = emptySportLocks();
+    });
+
+    locksList.forEach((lock) => {
+      if (!selectedMap[lock.id]) return;
+
+      const sportLower = String(lock.sport || '').toLowerCase();
+      if (!advancedBetLocks[sportLower]) {
+        advancedBetLocks[sportLower] = emptySportLocks();
+      }
+
+      const { id } = lock;
+      if (id.startsWith('type-')) {
+        advancedBetLocks[sportLower].types.push(id.replace('type-', ''));
+      } else if (id.startsWith('marketType-')) {
+        advancedBetLocks[sportLower].marketTypes.push(
+          id.replace('marketType-', '')
+        );
+      } else if (id.startsWith('comp-')) {
+        advancedBetLocks[sportLower].tournaments.push(id.replace('comp-', ''));
+      } else if (id.startsWith('match-')) {
+        advancedBetLocks[sportLower].matches.push(id.replace('match-', ''));
+      } else if (id.startsWith('market-')) {
+        advancedBetLocks[sportLower].markets.push(id.replace('market-', ''));
+      }
+    });
+
+    return advancedBetLocks;
   };
 
-  const sportsTabs = [
-    'Cricket',
-    'Soccer',
-    'Tennis',
-    'Kabaddi',
-    'Election',
-    'Horse',
-    'GreyHound',
-  ];
+  const persistLocks = async (locksList, selectedMap, successMessage) => {
+    if (!userInfo?._id) return false;
+    setSaving(true);
+    try {
+      const advancedBetLocks = buildAdvancedBetLocks(locksList, selectedMap);
+      const { data } = await api.post(`/admin/betlock/${userInfo._id}`, {
+        advancedBetLocks,
+      });
 
-  const competitionData = [
-    {
-      id: 1,
-      title: '101480 - Indian Premier League',
-      checked: false,
-      children: [
-        {
-          id: 11,
-          title: '35617510 - Chennai Super Kings v Mumbai Indians',
-          checked: false,
-          markets: [
-            {
-              id: 111,
-              name: '43814603 - Bookmaker 0 Commission',
-              checked: false,
-            },
-            {
-              id: 112,
-              name: '43814604 - To Win The Toss',
-              checked: false,
-            },
-            {
-              id: 113,
-              name: '1.258307842 - Match Odds',
-              checked: false,
-            },
-          ],
-        },
-      ],
-    },
+      if (data.success) {
+        toast.success(successMessage || 'Locks saved successfully');
+        await fetchUserLocks();
+        return true;
+      }
+      toast.error('Failed to save locks');
+      return false;
+    } catch (error) {
+      console.error('Error saving locks:', error);
+      toast.error(
+        'Error saving locks: ' + (error.response?.data?.message || error.message)
+      );
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    {
-      id: 2,
-      title: '11365612 - Test Matches',
-      checked: false,
-      children: [
-        {
-          id: 21,
-          title: '35617510 - England Lions v South Africa A',
-          checked: false,
-          markets: [
-            {
-              id: 211,
-              name: '43814603 - Bookmaker 0 Commission',
-              checked: false,
-            },
-            {
-              id: 212,
-              name: '43814604 - To Win The Toss',
-              checked: false,
-            },
-            {
-              id: 213,
-              name: '1.258307842 - Match Odds',
-              checked: false,
-            },
-          ],
-        },
-      ],
-    },
+  const fetchTreeData = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(
+        `/admin/betlock/tree?sport=${activeTab}&date=${selectedDate}`
+      );
+      if (data.success) {
+        setCompetitionData(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tree data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    {
-      id: 3,
-      title: '11893330 - T20 Blast',
-      checked: false,
-      children: [
-        {
-          id: 31,
-          title: '35617511 - Yorkshire v Lancashire',
-          checked: false,
-          markets: [
-            {
-              id: 311,
-              name: '43814605 - Match Odds',
-              checked: false,
-            },
-            {
-              id: 312,
-              name: '43814606 - Top Batsman',
-              checked: false,
-            },
-          ],
-        },
-      ],
-    },
+  const toggleCheckbox = (id, typeName, description, sport) => {
+    setSelected((prev) => {
+      const isChecked = !prev[id];
+      const newState = { ...prev, [id]: isChecked };
 
-    {
-      id: 4,
-      title: "12735685 - Women's T20 Blast",
-      checked: false,
-      children: [
-        {
-          id: 41,
-          title: '35617512 - Sydney Women v Brisbane Women',
-          checked: false,
-          markets: [
-            {
-              id: 411,
-              name: '43814607 - Match Odds',
-              checked: false,
-            },
-            {
-              id: 412,
-              name: '43814608 - To Win Toss',
-              checked: false,
-            },
-          ],
-        },
-      ],
-    },
+      let locksToAdd = [];
+      let locksToRemove = [id];
 
-    {
-      id: 5,
-      title: "12735687 - Women's T20 Blast Div 2",
-      checked: false,
-      children: [
-        {
-          id: 51,
-          title: '35617513 - Adelaide Women v Perth Women',
-          checked: false,
-          markets: [
-            {
-              id: 511,
-              name: '43814609 - Match Odds',
-              checked: false,
-            },
-            {
-              id: 512,
-              name: '43814610 - Over/Under',
-              checked: false,
-            },
-          ],
-        },
-      ],
-    },
-  ];
+      if (isChecked) {
+        locksToAdd.push({ sport, type: typeName, description, id });
+      }
+
+      if (id.startsWith('comp-')) {
+        const compIdStr = id.replace('comp-', '');
+        const comp = competitionData.find(
+          (c) => String(c.id) === String(compIdStr)
+        );
+        if (comp?.children) {
+          comp.children.forEach((event) => {
+            const eventId = `match-${event.id}`;
+            newState[eventId] = isChecked;
+            if (isChecked) {
+              locksToAdd.push({
+                sport,
+                type: 'Match',
+                description: event.title,
+                id: eventId,
+              });
+            } else {
+              locksToRemove.push(eventId);
+            }
+
+            event.markets.forEach((market) => {
+              const marketId = `market-${market.id}`;
+              newState[marketId] = isChecked;
+              if (isChecked) {
+                locksToAdd.push({
+                  sport,
+                  type: 'Market',
+                  description: market.name,
+                  id: marketId,
+                });
+              } else {
+                locksToRemove.push(marketId);
+              }
+            });
+          });
+        }
+      }
+
+      if (id.startsWith('match-')) {
+        const eventIdStr = id.replace('match-', '');
+        const event = competitionData
+          .flatMap((c) => c.children || [])
+          .find((e) => String(e.id) === String(eventIdStr));
+        event?.markets?.forEach((market) => {
+          const marketId = `market-${market.id}`;
+          newState[marketId] = isChecked;
+          if (isChecked) {
+            locksToAdd.push({
+              sport,
+              type: 'Market',
+              description: market.name,
+              id: marketId,
+            });
+          } else {
+            locksToRemove.push(marketId);
+          }
+        });
+      }
+
+      setSavedLocks((s) => {
+        let updated = s.filter((l) => !locksToRemove.includes(l.id));
+        locksToAdd.forEach((lock) => {
+          if (!updated.some((l) => l.id === lock.id)) updated.push(lock);
+        });
+        return updated;
+      });
+
+      return newState;
+    });
+  };
+
+  const removeLock = async (id) => {
+    const idsToClear = new Set([id]);
+
+    if (id.startsWith('comp-')) {
+      const comp = competitionData.find((c) => `comp-${c.id}` === id);
+      comp?.children?.forEach((ev) => {
+        idsToClear.add(`match-${ev.id}`);
+        ev.markets?.forEach((m) => idsToClear.add(`market-${m.id}`));
+      });
+    } else if (id.startsWith('match-')) {
+      const eventId = id.replace('match-', '');
+      const event = competitionData
+        .flatMap((c) => c.children || [])
+        .find((e) => String(e.id) === String(eventId));
+      event?.markets?.forEach((m) => idsToClear.add(`market-${m.id}`));
+    }
+
+    const nextSelected = { ...selected };
+    idsToClear.forEach((lockId) => {
+      nextSelected[lockId] = false;
+    });
+
+    const nextSaved = savedLocks.filter((l) => !idsToClear.has(l.id));
+    setSelected(nextSelected);
+    setSavedLocks(nextSaved);
+    await persistLocks(nextSaved, nextSelected, 'Lock removed');
+  };
+
+  const handleSaveLocks = async () => {
+    await persistLocks(savedLocks, selected);
+  };
 
   const toggleOpen = (id) => {
     setOpenIds((prev) =>
@@ -167,13 +336,13 @@ const GameBetLock = () => {
     );
   };
 
-  const CheckboxItem = ({ label, id }) => (
+  const CheckboxItem = ({ label, id, typeName, sportName }) => (
     <label className='flex cursor-pointer items-center gap-1.5'>
       <span className='text-[14px]'>{label}</span>
       <input
         type='checkbox'
-        checked={selected[id] || false}
-        onChange={() => toggleCheckbox(id)}
+        checked={Boolean(selected[id])}
+        onChange={() => toggleCheckbox(id, typeName, label, sportName)}
         className="relative h-[18px] w-[18px] cursor-pointer appearance-none border border-black bg-gray-200 after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[14px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
       />
     </label>
@@ -186,34 +355,76 @@ const GameBetLock = () => {
     </fieldset>
   );
 
+  const getMarketTypes = (sport) => {
+    if (sport === 'Cricket')
+      return [
+        'Match Odds',
+        'Bookmaker',
+        'Special Maker',
+        'Tournament Winner',
+        'Tied Match',
+        'Completed Match',
+        'To Win the Toss',
+        '1st Inning Runs',
+        'Over',
+        'Lambi',
+        'Batsman',
+        'Single Over',
+        'Odd Even',
+        'Lottery',
+      ];
+    if (sport === 'Soccer')
+      return [
+        'Match Odds',
+        'Bookmaker',
+        'Special Maker',
+        'Over Under 05',
+        'Over Under 15',
+        'Over Under 25',
+        'Lottery',
+      ];
+    if (sport === 'Tennis')
+      return [
+        'Match Odds',
+        'Set Winner',
+        'Bookmaker',
+        'Special Maker',
+        'Lottery',
+      ];
+    return ['Match Odds', 'Bookmaker'];
+  };
+
   return (
     <>
       <Navbar />
       <div className="scrollbar-hide pt-[15px]' bg-[#f0f0f5] px-[15px] py-[13px]">
         <div className='grid grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='col-span-2'>
-            <div className='mb-2 text-[15px] font-bold'>
-              Lock Application - rakesh1234567890
+            <div className='mb-2 flex justify-between text-[15px] font-bold'>
+              <span>Lock Application - {userInfo?.userName}</span>
+              <button
+                onClick={handleSaveLocks}
+                disabled={saving}
+                className='rounded bg-blue-600 px-4 py-1 text-white hover:bg-blue-700 disabled:opacity-60'
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
 
-            {/* Event Type */}
             <SectionBox title='Event Type:'>
               <div className='flex flex-wrap gap-3 px-2 text-[14px]'>
-                {[
-                  'Cricket',
-                  'Soccer',
-                  'Tennis',
-                  'Kabaddi',
-                  'Election',
-                  'Horse',
-                  'GreyHound',
-                ].map((item) => (
-                  <CheckboxItem key={item} label={item} id={item} />
+                {SPORTS_TABS.map((item) => (
+                  <CheckboxItem
+                    key={item}
+                    label={item}
+                    id={`type-${item}`}
+                    typeName='Event Type'
+                    sportName={item}
+                  />
                 ))}
               </div>
             </SectionBox>
 
-            {/* Type */}
             <SectionBox title='Type:'>
               <div className='flex flex-wrap gap-3 px-2 text-[14px]'>
                 {[
@@ -224,116 +435,62 @@ const GameBetLock = () => {
                   'Exch Fancy',
                   'Other Fancy',
                 ].map((item) => (
-                  <CheckboxItem key={item} label={item} id={item} />
+                  <CheckboxItem
+                    key={item}
+                    label={item}
+                    id={`type-${item}`}
+                    typeName='Type'
+                    sportName={activeTab}
+                  />
                 ))}
               </div>
             </SectionBox>
 
-            {/* Market Type */}
             <SectionBox title='Market Type:'>
-              {/* Cricket */}
               <div className='mb-2'>
                 <div className='-mt-2.5 mb-2 px-1 text-[14px] font-bold'>
-                  Cricket
+                  {activeTab}
                 </div>
-
                 <div className='flex flex-wrap gap-x-3 gap-y-2 px-2 text-[14px]'>
-                  {[
-                    'Match Odds',
-                    'Bookmaker',
-                    'Special Maker',
-                    'Tournament Winner',
-                    'Tied Match',
-                    'Completed Match',
-                    'To Win the Toss',
-                    '1st Inning Runs',
-                    '1st Inning 6 Ovr Line',
-                    '1st Inning 10 Ovr Line',
-                    '1st Inning 15 Ovr Line',
-                    '1st Inning 20 Ovr Line',
-                    '2nd inning Runs',
-                    '2nd Inning 6 Ovr Line',
-                    '2nd Inning 10 Ovr Line',
-                    '2nd Inning 15 Ovr Line',
-                    'Over',
-                    'Lambi',
-                    'Batsman',
-                    'Single Over',
-                    'Odd Even',
-                    'Three Selection',
-                    'Ball By Ball',
-                    'Lottery',
-                  ].map((item) => (
-                    <CheckboxItem key={item} label={item} id={item} />
-                  ))}
-                </div>
-              </div>
-
-              {/* Soccer */}
-              <div className='mb-2'>
-                <h2 className='mb-2 px-1 text-[14px] font-bold'>Soccer</h2>
-
-                <div className='flex flex-wrap gap-x-3 gap-y-2 px-2 text-[14px]'>
-                  {[
-                    'Match Odds',
-                    'Bookmaker',
-                    'Special Maker',
-                    'Over Under 05',
-                    'Over Under 15',
-                    'Over Under 25',
-                    'Over Under 35',
-                    'Lottery',
-                  ].map((item) => (
+                  {getMarketTypes(activeTab).map((item) => (
                     <CheckboxItem
-                      key={`soccer-${item}`}
+                      key={item}
                       label={item}
-                      id={`soccer-${item}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Tennis */}
-              <div className='mb-2'>
-                <h2 className='mb-2 px-1 text-[14px] font-bold'>Tennis</h2>
-
-                <div className='flex flex-wrap gap-x-3 gap-y-2 px-2 text-[14px]'>
-                  {[
-                    'Match Odds',
-                    'Set Winner',
-                    'Bookmaker',
-                    'Special Maker',
-                    'Lottery',
-                  ].map((item) => (
-                    <CheckboxItem
-                      key={`tennis-${item}`}
-                      label={item}
-                      id={`tennis-${item}`}
+                      id={`marketType-${item}`}
+                      typeName='Market Type'
+                      sportName={activeTab}
                     />
                   ))}
                 </div>
               </div>
             </SectionBox>
 
-            {/* Header */}
             <div className='mt-2 flex items-center justify-between'>
               <h2 className='text-[14px] font-semibold'>
                 Competition / Event / Markets
               </h2>
 
-              <select className='min-w-[220px] rounded border border-gray-300 bg-white px-2 py-2 text-[14px] text-gray-600'>
-                <option>May 22, 2026</option>
+              <select
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className='min-w-[220px] rounded border border-gray-300 bg-white px-2 py-2 text-[14px] text-gray-600'
+              >
+                {dates.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
               </select>
             </div>
 
-            {/* Tabs */}
-            <div className='mb-3 flex items-center border-b border-gray-300'>
-              {sportsTabs.map((tab, index) => (
+            <div className='mb-3 flex items-center overflow-x-auto border-b border-gray-300 scrollbar-hide'>
+              {SPORTS_TABS.map((tab, index) => (
                 <button
                   key={index}
+                  onClick={() => setActiveTab(tab)}
                   className={`px-4 py-2 text-[14px] whitespace-nowrap ${
-                    index === 0
-                      ? '-mb-px border border-gray-300 border-b-white bg-white'
+                    activeTab === tab
+                      ? '-mb-px border border-gray-300 border-b-white bg-white font-bold'
                       : ''
                   } `}
                 >
@@ -342,99 +499,154 @@ const GameBetLock = () => {
               ))}
             </div>
 
-            {/* Competition List */}
-            <div className='space-y-3'>
-              {competitionData.map((competition) => {
-                const isOpen = openIds.includes(competition.id);
+            <div className='min-h-[200px] space-y-3'>
+              {loading ? (
+                <div className='flex justify-center p-4'>Loading...</div>
+              ) : competitionData.length === 0 ? (
+                <div className='p-4 text-center text-gray-500'>
+                  No events found for {activeTab} on this date.
+                </div>
+              ) : (
+                competitionData.map((competition) => {
+                  const compId = `comp-${competition.id}`;
+                  const isOpen = openIds.includes(competition.id);
 
-                return (
-                  <div key={competition.id}>
-                    {/* Competition Row */}
-                    <div className='flex items-center justify-between bg-[#169bb3] px-2 py-1 font-semibold text-white'>
-                      <div className='flex items-center gap-2'>
-                        <span className='text-[14px]'>{competition.title}</span>
+                  return (
+                    <div key={competition.id}>
+                      <div className='flex items-center justify-between bg-[#169bb3] px-2 py-1 font-semibold text-white'>
+                        <div className='flex items-center gap-2'>
+                          <span className='text-[14px]'>{competition.title}</span>
 
-                        <input
-                          type='checkbox'
-                          checked={selected[competition.id] || false}
-                          onChange={() => toggleCheckbox(competition.id)}
-                          className="relative h-4 w-4 cursor-pointer appearance-none border border-gray-400 bg-white after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[15px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
-                        />
+                          <input
+                            type='checkbox'
+                            checked={Boolean(selected[compId])}
+                            onChange={() =>
+                              toggleCheckbox(
+                                compId,
+                                'Tournament',
+                                competition.title,
+                                activeTab
+                              )
+                            }
+                            className="relative h-4 w-4 cursor-pointer appearance-none border border-gray-400 bg-white after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[15px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
+                          />
+                        </div>
+
+                        <button onClick={() => toggleOpen(competition.id)}>
+                          {isOpen ? <ImMinus size={12} /> : <ImPlus size={12} />}
+                        </button>
                       </div>
 
-                      <button onClick={() => toggleOpen(competition.id)}>
-                        {isOpen ? <ImMinus size={12} /> : <ImPlus size={12} />}
-                      </button>
-                    </div>
-
-                    {/* Children */}
-                    {isOpen &&
-                      competition.children.map((event) => (
-                        <div key={event.id} className='mt-2 ml-12'>
-                          {/* Event Row */}
-                          <div className='flex items-center gap-2 bg-[#066f88] px-4 py-1 font-semibold text-white'>
-                            <span className='text-[14px]'>{event.title}</span>
-
-                            <input
-                              type='checkbox'
-                              checked={selected[event.id] || false}
-                              onChange={() => toggleCheckbox(event.id)}
-                              className="relative h-4 w-4 cursor-pointer appearance-none border border-gray-400 bg-gray-200 after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[15px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
-                            />
-                          </div>
-
-                          {/* Markets */}
-                          <div>
-                            {event.markets.map((market) => (
-                              <div
-                                key={market.id}
-                                className='flex items-center gap-2 border-b border-gray-200 py-1 pr-2 pl-7'
-                              >
-                                <FaArrowRight className='text-[14px]' />
-
-                                <span className='text-[14px]'>
-                                  {market.name}
-                                </span>
+                      {isOpen &&
+                        competition.children.map((event) => {
+                          const eventId = `match-${event.id}`;
+                          return (
+                            <div key={event.id} className='mt-2 ml-12'>
+                              <div className='flex items-center gap-2 bg-[#066f88] px-4 py-1 font-semibold text-white'>
+                                <span className='text-[14px]'>{event.title}</span>
 
                                 <input
                                   type='checkbox'
-                                  checked={selected[market.id] || false}
-                                  onChange={() => toggleCheckbox(market.id)}
+                                  checked={Boolean(selected[eventId])}
+                                  onChange={() =>
+                                    toggleCheckbox(
+                                      eventId,
+                                      'Match',
+                                      event.title,
+                                      activeTab
+                                    )
+                                  }
                                   className="relative h-4 w-4 cursor-pointer appearance-none border border-gray-400 bg-gray-200 after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[15px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
                                 />
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                );
-              })}
+
+                              <div>
+                                {event.markets.map((market) => {
+                                  const marketId = `market-${market.id}`;
+                                  return (
+                                    <div
+                                      key={market.id}
+                                      className='flex items-center gap-2 border-b border-gray-200 py-1 pr-2 pl-7'
+                                    >
+                                      <FaArrowRight className='text-[14px]' />
+
+                                      <span className='text-[14px]'>
+                                        {market.name}
+                                      </span>
+
+                                      <input
+                                        type='checkbox'
+                                        checked={Boolean(selected[marketId])}
+                                        onChange={() =>
+                                          toggleCheckbox(
+                                            marketId,
+                                            'Market',
+                                            market.name,
+                                            activeTab
+                                          )
+                                        }
+                                        className="relative h-4 w-4 cursor-pointer appearance-none border border-gray-400 bg-gray-200 after:absolute after:top-1/2 after:left-1/2 after:hidden after:-translate-x-1/2 after:-translate-y-1/2 after:text-[15px] after:font-bold after:text-white after:content-['✓'] checked:border-black checked:bg-black checked:after:block"
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
           <div className='col-span-1 pr-[15px] pl-[30px]'>
-            <table className='w-full'>
+            <p className='mb-2 text-[11px] text-gray-600'>
+              Uncheck a lock or click Del, then Save Changes. Del saves immediately.
+            </p>
+            <table className='w-full border-collapse'>
               <thead>
                 <tr className='bg-[#066f88] text-[12px] text-white'>
-                  <th className='px-1 py-0.5 text-left font-normal'>User</th>
-                  <th className='px-1 py-0.5 text-left font-normal'>Type</th>
-                  <th className='px-1 py-0.5 text-left font-normal'>
-                    Description
-                  </th>
-                  <th className='px-1 py-0.5 text-left font-normal'>Action</th>
+                  <th className='px-2 py-1.5 text-left font-normal'>Sport</th>
+                  <th className='px-2 py-1.5 text-left font-normal'>Type</th>
+                  <th className='px-2 py-1.5 text-left font-normal'>Description</th>
+                  <th className='px-2 py-1.5 text-left font-normal'>Action</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className='text-[12px]'>
-                  <td className='px-1 py-0.5'>rakesh</td>
-                  <td className='px-1 py-0.5'>ET</td>
-                  <td className='px-1 py-0.5'>Cricket</td>
-                  <td className='px-1 py-0.5'>
-                    <span className='inline-block rounded-sm bg-red-600 p-0.5 font-semibold text-white'>
-                      Del
-                    </span>
-                  </td>
-                </tr>
+                {savedLocks.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan='4'
+                      className='py-4 text-center text-[12px] text-gray-500'
+                    >
+                      No locks active
+                    </td>
+                  </tr>
+                ) : (
+                  savedLocks.map((lock, idx) => (
+                    <tr key={idx} className='border-b border-gray-200 text-[12px]'>
+                      <td className='px-2 py-1.5'>{lock.sport}</td>
+                      <td className='px-2 py-1.5'>{lock.type}</td>
+                      <td
+                        className='max-w-[150px] truncate px-2 py-1.5'
+                        title={lock.description}
+                      >
+                        {lock.description}
+                      </td>
+                      <td className='px-2 py-1.5'>
+                        <button
+                          type='button'
+                          onClick={() => removeLock(lock.id)}
+                          disabled={saving}
+                          className='inline-block rounded-sm bg-red-600 px-1.5 py-0.5 font-semibold text-white hover:bg-red-700 disabled:opacity-60'
+                        >
+                          Del
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

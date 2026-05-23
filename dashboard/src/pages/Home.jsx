@@ -88,8 +88,14 @@ const Home = () => {
       signed: true,
     },
     { title: 'COMMISSION', value: stats?.header?.commission ?? 0 },
-    { title: 'DEPOSIT', value: stats?.header?.deposit ?? 0 },
-    { title: 'WITHDRAWAL', value: stats?.header?.withdrawal ?? 0 },
+    {
+      title: 'DEPOSIT',
+      value: `${stats?.header?.deposit ?? 0}${stats?.header?.depositCount !== undefined ? ` (${stats?.header?.depositCount})` : ''}`,
+    },
+    {
+      title: 'WITHDRAWAL',
+      value: `${stats?.header?.withdrawal ?? 0}${stats?.header?.withdrawalCount !== undefined ? ` (${stats?.header?.withdrawalCount})` : ''}`,
+    },
     { title: 'TOTAL BETS', value: stats?.header?.totalBets ?? 0 },
     {
       title: 'SPORTBOOK P&L',

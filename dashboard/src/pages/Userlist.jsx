@@ -369,21 +369,26 @@ export default function Userlist() {
 
   const getRowBalance = (row) => Number(row.baseBalance || 0);
 
-  const getRowTotalExposure = (row) =>
-    Number(row.totalExposure ?? row.exposure ?? 0);
+  const getRowTotalExposure = (row) => {
+    if (row.role !== 'user') return 0;
+    return Number(row.totalExposure ?? row.exposure ?? 0);
+  };
 
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
+
+  /** Current P&L (settled matches from Client perspective): avbalance - balance + exposure */
+  const getRowCurrentPL = (row) => {
+    if (row.role !== 'user') return 0;
+    // Exposure in the database is a positive number, but it reduces avbalance.
+    // So we add it back to find the actual settled P/L.
+    const current = getRowAvbalance(row) - getRowBalance(row) + Math.abs(getRowTotalExposure(row));
+    return Math.round(current * 100) / 100;
+  };
 
   /** Pending balance = negative of balance */
   const getRowPendingBal = (row) => {
     const pending = -getRowBalance(row);
     return Math.round(pending * 100) / 100;
-  };
-
-  /** Current P&L = available − balance (= −pending balance) */
-  const getRowCurrentPL = (row) => {
-    const current = getRowAvbalance(row) - getRowBalance(row);
-    return Math.round(current * 100) / 100;
   };
 
   const formatTableMoney = (v) => {

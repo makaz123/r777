@@ -24,8 +24,11 @@ import {
 } from '../../redux/reducer/betReducer';
 import { toast } from 'react-toastify';
 import { host } from '../../redux/api';
+import { createBetLockGuard } from '../../utils/betLockUtils';
 import LiveTv from './LiveTv';
 import LiveScore from './LiveScore';
+
+const CRICKET_SID = 4;
 function CricketBet() {
   const { t } = useTranslation();
   const key = import.meta.env.VITE_LIVE_STREAM_KEY;
@@ -96,7 +99,22 @@ function CricketBet() {
   const team2 = teams[1] || 'Team 2';
   console.log(showodds);
 
+  const checkBetLock = createBetLockGuard(userInfo, {
+    gameName: 'Cricket Game',
+    gameId: gameid,
+    sid: CRICKET_SID,
+  });
+
   const handleBetSelect = (betData) => {
+    const lockMessage = checkBetLock({
+      gameType: betData?.gameType,
+      marketName: betData?.marketName || betData?.gameType,
+      market_id: betData?.sid,
+    });
+    if (lockMessage) {
+      toast.error(lockMessage);
+      return;
+    }
     setSelectedBet(betData);
   };
 

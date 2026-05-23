@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getAdmin, user_reset } from '../redux/reducer/authReducer';
 import RouteLoader from './RouteLoader';
-import api from '../redux/api';
+import api, { host } from '../redux/api';
+import { updateReduxUserBalance } from '../redux/reducer/authReducer';
 
 /** Full profile from API; JWT decode only has id/role/sessionToken. */
 export const hasValidSessionUser = (user) =>
@@ -67,6 +68,43 @@ const PrivateRoute = () => {
       cancelled = true;
     };
   }, [dispatch, hasToken, hasProfile]);
+
+  useEffect(() => {
+    if (!sessionReady || !userInfo?._id) return;
+
+    let ws = null;
+    let wsUrl = host;
+    // Fix ws:// or wss:// if host is just a path
+    if (wsUrl === '/') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.host}`;
+    }
+    
+    try {
+      ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'register', userId: userInfo._id }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'balance_update') {
+            dispatch(updateReduxUserBalance({ userId: data.userId, newBalance: data.newBalance }));
+          } else if (data.type === 'exposure_update') {
+            dispatch(updateReduxUserBalance({ userId: data.userId, newExposure: data.newExposure }));
+          } else if (data.type === 'user_refresh_needed' && data.userId === userInfo._id) {
+            dispatch(getAdmin());
+          }
+        } catch (e) {}
+      };
+    } catch (e) {}
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, [sessionReady, userInfo?._id, dispatch]);
 
   if (!hasToken) {
     return <Navigate to='/login' replace state={{ from: location }} />;

@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useDispatch } from 'react-redux';
 import api from '../redux/api';
 import Navbar from '../components/Navbar';
+import { getAdmin } from '../redux/reducer/authReducer';
+
+const roleBadge = (role) => {
+  const r = String(role || 'user');
+  if (r === 'user') return 'C';
+  return r.charAt(0).toUpperCase();
+};
 
 const UserSettlement = ({ type = 'user' }) => {
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [creditors, setCreditors] = useState([]);
   const [debtors, setDebtors] = useState([]);
@@ -83,39 +92,55 @@ const UserSettlement = ({ type = 'user' }) => {
     setShowModal(true);
   };
 
-  const handleSettleSubmit = async (e) => {
-    e.preventDefault();
-    if (
-      !settleAmount ||
-      isNaN(Number(settleAmount)) ||
-      Number(settleAmount) <= 0
-    ) {
-      toast.error('Please enter a valid positive settle amount');
-      return;
-    }
-    if (!masterPassword) {
+  const handleBulkSubmit = async () => {
+    if (!footerPassword) {
       toast.error('Master password is required');
       return;
     }
 
-    setSettleLoading(true);
-    try {
-      const res = await api.post('/sub-admin/settle', {
-        userId: selectedUser._id,
-        amount: Number(settleAmount),
-        remarks,
-        masterPassword,
-      });
-
-      if (res.data && res.data.success) {
-        toast.success(res.data.message || 'Settlement completed successfully');
-        setShowModal(false);
-        fetchSettlementUsers(); // Refresh data
+    const payloads = [];
+    Object.entries(settleAmounts).forEach(([userId, amount]) => {
+      if (amount && Number(amount) > 0) {
+        payloads.push({
+          userId,
+          amount: Number(amount),
+          remarks: rowRemarks[userId] || globalRemarks || 'Settlement',
+          masterPassword: footerPassword,
+        });
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Settlement failed');
-    } finally {
-      setSettleLoading(false);
+    });
+
+    if (payloads.length === 0) {
+      toast.error('No valid settle amounts entered.');
+      return;
+    }
+
+    setSettleLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const payload of payloads) {
+      try {
+        const res = await api.post('/sub-admin/settle', payload);
+        if (res.data && res.data.success) {
+          successCount++;
+        }
+      } catch (err) {
+        failCount++;
+        toast.error(`Failed for one user: ${err.response?.data?.message || err.message}`);
+        if (err.response?.status === 400 && err.response?.data?.message === 'Invalid Master password.') {
+          // Abort further attempts if password is wrong
+          break;
+        }
+      }
+    }
+
+    setSettleLoading(false);
+    if (successCount > 0) {
+      toast.success(`Successfully settled ${successCount} accounts.`);
+      handleClearAll();
+      fetchSettlementUsers();
+      dispatch(getAdmin());
     }
   };
 
@@ -135,7 +160,7 @@ const UserSettlement = ({ type = 'user' }) => {
           ) : (
             <div className='grid gap-[30px] md:grid-cols-2'>
               {/* Creditors Account (dena hai) */}
-              <table className='w-full border border-[#dee2e6] text-left text-[14px]'>
+              <table className='w-full border border-[#dee2e6] text-left text-[14px] h-fit'>
                 <thead className=''>
                   <tr className='bg-[#28a745] font-bold text-white'>
                     <th colSpan={5} className='p-2 leading-[16px]'>
@@ -170,13 +195,22 @@ const UserSettlement = ({ type = 'user' }) => {
                         <td className='w-[20%] p-2 leading-[16px] font-bold text-gray-800'>
                           <div className='flex items-center gap-1'>
                             <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
-                              C
+                              {roleBadge(user.role)}
                             </span>
                             {user.userName}
                           </div>
                         </td>
                         <td className='w-[12%] p-2 leading-[16px] font-bold text-green-600'>
                           {Number(user.clientPL).toFixed(2)}
+                          {/* {user.role !== 'user' &&
+                            user.grossClientPL != null &&
+                            Math.abs(user.grossClientPL - user.clientPL) >
+                              0.01 && (
+                              <span className='mt-0.5 block text-[10px] font-normal text-gray-600'>
+                                {user.sharePercent}% of gross{' '}
+                                {Number(user.grossClientPL).toFixed(2)}
+                              </span>
+                            )} */}
                         </td>
                         <td className='w-[16%] p-2 leading-[16px]'>
                           <input
@@ -257,13 +291,22 @@ const UserSettlement = ({ type = 'user' }) => {
                         <td className='w-[20%] p-2 leading-[16px] font-bold text-gray-800'>
                           <div className='flex items-center gap-1'>
                             <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
-                              C
+                              {roleBadge(user.role)}
                             </span>
                             {user.userName}
                           </div>
                         </td>
                         <td className='w-[12%] p-2 leading-[16px] font-bold text-[#c7313f]'>
                           {Number(user.clientPL).toFixed(2)}
+                          {/* {user.role !== 'user' &&
+                            user.grossClientPL != null &&
+                            Math.abs(user.grossClientPL - user.clientPL) >
+                              0.01 && (
+                              <span className='mt-0.5 block text-[10px] font-normal text-gray-600'>
+                                {user.sharePercent}% of gross{' '}
+                                {Number(user.grossClientPL).toFixed(2)}
+                              </span>
+                            )} */}
                         </td>
                         <td className='w-[16%] p-2 leading-[16px]'>
                           <input
@@ -334,9 +377,14 @@ const UserSettlement = ({ type = 'user' }) => {
             onChange={(e) => setFooterPassword(e.target.value)}
             className='h-[30px] w-[150px] rounded-sm bg-white px-2'
           />
-          <div className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white'>
-            Submit
-          </div>
+          <button
+            type='button'
+            onClick={handleBulkSubmit}
+            disabled={settleLoading}
+            className={`rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white ${settleLoading ? 'opacity-50' : 'cursor-pointer hover:opacity-90'}`}
+          >
+            {settleLoading ? 'Processing...' : 'Submit'}
+          </button>
           <button
             type='button'
             onClick={handleClearAll}

@@ -1,6 +1,10 @@
 /**
  * Partnership: upline share applies to ALL settled P/L (sports, casino, etc.).
  * Commission on winning: match odds only (user commition % → agent commissionEarned).
+ *
+ * Stored on each agent row: `partnership` = % that account KEEPS from its downline
+ * (e.g. 15 means agent keeps 15%, parent keeps 85%). Legacy rows may still store
+ * parent take (e.g. 85); use normalizeStoredDownlineKeepPercent() to read either.
  */
 
 const MATCH_ODDS_REGEX = /^match\s*odds$/i;
@@ -8,8 +12,40 @@ const MATCH_ODDS_REGEX = /^match\s*odds$/i;
 export const roundMoney = (value) =>
   Math.round((Number(value) || 0) * 100) / 100;
 
+const normalizeMatchOddsLabel = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/_/g, ' ');
+
 export const isMatchOddsGameType = (gameType) =>
-  MATCH_ODDS_REGEX.test(String(gameType || '').trim());
+  MATCH_ODDS_REGEX.test(normalizeMatchOddsLabel(gameType));
+
+const MATCH_ODDS_LOOSE_REGEX = /match\s*odds/i;
+
+const fieldIsMatchOdds = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return false;
+  return (
+    isMatchOddsGameType(raw) ||
+    MATCH_ODDS_LOOSE_REGEX.test(raw.replace(/_/g, ' '))
+  );
+};
+
+/** Match odds win on a settled bet/ history row (gameType or marketName). */
+export const isMatchOddsBetRecord = (bet) => {
+  if (!bet) return false;
+  return [bet.gameType, bet.marketName, bet.market_type, bet.fancyType].some(
+    fieldIsMatchOdds
+  );
+};
+
+export const getMatchOddsCommissionFromNetWin = (netProfit, commissionPercent) => {
+  const net = Number(netProfit) || 0;
+  const rate = Number(commissionPercent) || 0;
+  if (net <= 0 || rate <= 0 || rate >= 100) return 0;
+  const gross = roundMoney(net / (1 - rate / 100));
+  return roundMoney(gross - net);
+};
 
 export const parseCommissionPercent = (commition) => {
   const raw = String(commition ?? '')
@@ -29,33 +65,158 @@ export const parsePartnershipPercent = (partnership) => {
   return Math.min(n, 100);
 };
 
-/** Viewer's "my share" cap when assigning partnership to a new downline agent. */
 export const getViewerMySharePercent = (partnership) =>
   roundMoney(Math.max(0, parsePartnershipPercent(partnership)));
 
-/** Downline % taken from the viewer's my-share pool (capped at maxMyShare). */
+export const isPartnershipRootAccount = (admin) =>
+  !admin?.invite ||
+  admin?.role === 'supperadmin' ||
+  admin?.role === 'superadmin';
+
+/**
+ * Downline keep % stored on row (15 = downline keeps 15%).
+ * Legacy: value may be parent take (85) — detected when stored > half of parent's keep.
+ */
+export const normalizeStoredDownlineKeepPercent = (downline, parent) => {
+  const stored = parsePartnershipPercent(downline?.partnership);
+  if (!parent) {
+    if (stored >= 100) return 100;
+    if (stored > 50 && stored < 100) {
+      return roundMoney(100 - stored);
+    }
+    return roundMoney(stored);
+  }
+  const parentKeep = getAccountMyKeepPercent(parent);
+  if (stored > parentKeep / 2) {
+    return roundMoney(Math.max(0, parentKeep - stored));
+  }
+  return roundMoney(Math.min(stored, parentKeep));
+};
+
+/** What this account keeps from its downline P/L. */
+export const getAccountMyKeepPercent = (admin) => {
+  if (isPartnershipRootAccount(admin)) {
+    const p = parsePartnershipPercent(admin?.partnership);
+    return roundMoney(p > 0 ? p : 100);
+  }
+  const stored = parsePartnershipPercent(admin?.partnership);
+  if (stored >= 100) return 100;
+  // Legacy rows stored parent take (e.g. 85) instead of downline keep (15).
+  if (stored > 50 && stored < 100) {
+    return roundMoney(100 - stored);
+  }
+  return roundMoney(stored);
+};
+
+export const getDownlineKeepPercentOnRow = (downline, parent) =>
+  normalizeStoredDownlineKeepPercent(downline, parent);
+
+/** Parent's take from this downline row = parent keep − downline keep. */
+export const getParentShareOnDownlineRow = (downline, parent) => {
+  const parentKeep = parent ? getAccountMyKeepPercent(parent) : 100;
+  const downKeep = getDownlineKeepPercentOnRow(downline, parent);
+  return roundMoney(Math.max(0, parentKeep - downKeep));
+};
+
+/** Convert UI/body value to downline keep for storage (accepts keep or legacy parent-take). */
+export const toStoredDownlineKeepPercent = (rawValue, parent) => {
+  const stored = parsePartnershipPercent(rawValue);
+  const parentKeep = parent ? getAccountMyKeepPercent(parent) : 100;
+  if (stored > parentKeep / 2) {
+    return roundMoney(Math.max(0, parentKeep - stored));
+  }
+  return roundMoney(Math.min(stored, parentKeep));
+};
+
+const applyParentTakeFromChild = (parentViewPL, child, accountByCode) => {
+  if (!child || child.role === 'user') return roundMoney(parentViewPL);
+  const parent = accountByCode?.get(child.invite);
+  const parentTake = getParentShareOnDownlineRow(child, parent);
+  if (parentTake <= 0) return roundMoney(parentViewPL);
+  return splitProfitLossByMyShare(parentViewPL, parentTake).myPL;
+};
+
+export const getViewerShareOfUserClientPL = (
+  viewerCode,
+  user,
+  accountByCode,
+  clientPL
+) => {
+  if (!viewerCode || !user || user.role !== 'user') return 0;
+
+  let parentViewPL = roundMoney(-(Number(clientPL) || 0));
+  if (parentViewPL === 0) return 0;
+
+  let node = user;
+  while (node?.invite && node.invite !== viewerCode) {
+    parentViewPL = applyParentTakeFromChild(parentViewPL, node, accountByCode);
+    const parent = accountByCode.get(node.invite);
+    if (!parent) return 0;
+    node = parent;
+  }
+
+  if (!node) return 0;
+
+  if (node.role === 'user' && node.invite === viewerCode) {
+    const viewer = accountByCode.get(viewerCode);
+    const myKeep = viewer ? getAccountMyKeepPercent(viewer) : 100;
+    return splitProfitLossByMyShare(parentViewPL, myKeep).myPL;
+  }
+
+  if (node.invite === viewerCode) {
+    return applyParentTakeFromChild(parentViewPL, node, accountByCode);
+  }
+
+  if (node.code === viewerCode) {
+    return parentViewPL;
+  }
+
+  return 0;
+};
+
+export const getViewerReceivedFromDownlineOfUserClientPL = (
+  viewerCode,
+  user,
+  accountByCode,
+  clientPL
+) => {
+  if (!viewerCode || !user || user.role !== 'user') return 0;
+
+  let parentViewPL = roundMoney(-(Number(clientPL) || 0));
+  if (parentViewPL === 0) return 0;
+
+  let node = user;
+  while (node?.invite && node.invite !== viewerCode) {
+    parentViewPL = applyParentTakeFromChild(parentViewPL, node, accountByCode);
+    const parent = accountByCode.get(node.invite);
+    if (!parent) return 0;
+    node = parent;
+  }
+
+  if (node && node.invite === viewerCode) {
+    return parentViewPL;
+  }
+
+  return 0;
+};
+
 export const clampDownlineSharingPercent = (raw, maxMyShare) => {
   const max = Number(maxMyShare) || 0;
   return roundMoney(Math.min(parsePartnershipPercent(raw), max));
 };
 
-/** Remaining my share after allocating downlineSharing from the viewer pool. */
 export const getRemainingMySharePercent = (parentMyShare, downlineSharing) => {
   const parent = Number(parentMyShare) || 0;
   const down = clampDownlineSharingPercent(downlineSharing, parent);
   return roundMoney(Math.max(0, parent - down));
 };
 
-/**
- * Value stored on a new agent row: parent's share from that downline's P/L.
- * UI "downline sharing" = % given from the parent's my-share pool.
- */
+/** Value for API from InsertAgent: still parent-share; convert with toStoredDownlineKeepPercent on save. */
 export const getParentShareStoredOnDownline = (
   parentMyShare,
   downlineSharing
 ) => getRemainingMySharePercent(parentMyShare, downlineSharing);
 
-/** Commission is taken from net win profit (match odds only). */
 export const calculateWinCommission = (winProfit, commissionPercent) => {
   const profit = Number(winProfit) || 0;
   const rate = Number(commissionPercent) || 0;
@@ -67,7 +228,18 @@ export const calculateWinCommission = (winProfit, commissionPercent) => {
   return { netProfit, commission };
 };
 
-/** Parent's share of downline P/L when partnership is stored on the agent row. */
+export const getMatchOddsCommissionAmount = (
+  profitLossChange,
+  commissionPercent
+) => {
+  const pl = Number(profitLossChange) || 0;
+  const rate = Number(commissionPercent) || 0;
+  if (pl <= 0 || rate <= 0) return 0;
+  const fromNet = getMatchOddsCommissionFromNetWin(pl, rate);
+  const fromGross = calculateWinCommission(pl, rate).commission;
+  return roundMoney(Math.max(fromNet, fromGross));
+};
+
 export const getPartnershipUplineShare = (totalPL, partnershipPercent) => {
   const pl = Number(totalPL) || 0;
   const pct = Number(partnershipPercent) || 0;
@@ -76,10 +248,6 @@ export const getPartnershipUplineShare = (totalPL, partnershipPercent) => {
   return roundMoney((pl * pct) / 100);
 };
 
-/**
- * Split downline P/L by your partnership (my share %).
- * Example: user P/L +100, my share 20% → myPL +20, uplinePL +80
- */
 export const splitProfitLossByMyShare = (totalPL, mySharePercent) => {
   const pl = Number(totalPL) || 0;
   const myPct = Number(mySharePercent) || 0;
@@ -94,7 +262,6 @@ export const splitProfitLossByMyShare = (totalPL, mySharePercent) => {
   return { myPL, uplinePL, totalPL: roundMoney(pl) };
 };
 
-/** How much of a downline's P/L counts toward this admin's bettingProfitLoss. */
 export const getDownlineUplineBettingContribution = ({
   totalPL,
   partnershipPercent,
@@ -124,7 +291,6 @@ export const adjustHistoryProfitLossForCommission = (
   return roundMoney(profitLossChange - commission);
 };
 
-/** Sum settled P/L from bet history for end-users (sports). */
 export const aggregateSportsBetPLForUserIds = async (
   betHistoryModel,
   userIds

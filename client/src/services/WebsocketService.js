@@ -28,7 +28,13 @@ class WebSocketService {
     // Store userId for filtering incoming messages
     this.currentUserId = userId || localStorage.getItem('userId');
 
-    this.socket = new WebSocket(host);
+    let wsUrl = host;
+    if (wsUrl === '/') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.host}`;
+    }
+
+    this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
       this.isConnected = true;
@@ -55,11 +61,11 @@ class WebSocketService {
         }
 
         if (data.type === 'user_refresh_needed') {
-          // Trigger a user data refresh via Redux
-          if (!data.userId || data.userId === this.currentUserId) {
-            console.log(
-              '🔄 [WEBSOCKET] Casino callback received - refreshing user data'
-            );
+          const targetId = data.userId ? String(data.userId) : null;
+          const currentId = this.currentUserId
+            ? String(this.currentUserId)
+            : null;
+          if (!targetId || !currentId || targetId === currentId) {
             dispatch(getUser());
           }
         }

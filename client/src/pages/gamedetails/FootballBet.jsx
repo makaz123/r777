@@ -21,6 +21,7 @@ import { toast } from 'react-toastify';
 import { host } from '../../redux/api';
 import { FaTv } from 'react-icons/fa6';
 import axios from 'axios';
+import { createBetLockGuard } from '../../utils/betLockUtils';
 function FootballBet() {
   const { t } = useTranslation();
   const key_new = import.meta.env.VITE_LIVE_STREAM_KEY_NEW;
@@ -65,7 +66,22 @@ function FootballBet() {
   const team2 = teams[1] || 'Team 2';
   console.log(showodds);
 
+  const checkBetLock = createBetLockGuard(userInfo, {
+    gameName: 'Soccer Game',
+    gameId: gameid,
+    sid: 1,
+  });
+
   const handleBetSelect = (betData) => {
+    const lockMessage = checkBetLock({
+      gameType: betData?.gameType,
+      marketName: betData?.marketName || betData?.gameType,
+      market_id: betData?.sid,
+    });
+    if (lockMessage) {
+      toast.error(lockMessage);
+      return;
+    }
     setSelectedBet(betData);
   };
 

@@ -1182,8 +1182,45 @@ const userSlice = createSlice({
         state.error = action.payload;
       });
   },
+  reducers: {
+    messageClear: (state) => {
+      state.errorMessage = '';
+      state.successMessage = '';
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    user_reset: (state) => {
+      state.user = null;
+      state.userInfo = null;
+      state.isPasswordChanged = null;
+      state.singleadmin = null;
+    },
+    setCurrentPage: (state, action) => {
+      state.currentPage = action.payload;
+    },
+    updateReduxUserBalance: (state, action) => {
+      const { userId, newBalance, newExposure } = action.payload;
+      const updateUser = (users) => {
+        return users?.map((u) => {
+          if (u._id === userId) {
+            const updated = { ...u };
+            if (newBalance !== undefined) updated.avbalance = newBalance;
+            if (newExposure !== undefined) {
+              updated.exposure = newExposure;
+              if (updated.totalExposure !== undefined) updated.totalExposure = newExposure;
+            }
+            return updated;
+          }
+          return u;
+        });
+      };
+      state.users = updateUser(state.users);
+      state.onlyusers = updateUser(state.onlyusers);
+    },
+  },
 });
 
-export const { clearError, user_reset, setCurrentPage } = userSlice.actions;
+export const { messageClear, clearError, user_reset, setCurrentPage, updateReduxUserBalance } = userSlice.actions;
 
 export default userSlice.reducer;

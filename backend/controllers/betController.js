@@ -51,11 +51,11 @@ const {
   creditAgentCommissionEarned,
 } = await import('./admin/subAdminController.js');
 import {
+  calculateWinCommission,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
   isSettledClientWinPL,
   parseCommissionPercent,
-  resolveMatchOddsWinCommission,
 } from '../utils/partnershipCommissionUtils.js';
 import {
   sendBalanceUpdates,
@@ -2051,17 +2051,17 @@ export const updateResultOfBets = async (req, res) => {
                 }
               }
 
-              if (isMatchOddsBetRecord(historyRecord)) {
+              if (
+                isMatchOddsBetRecord(historyRecord) &&
+                isSettledClientWinPL(historyProfitLossChange, historyStatus)
+              ) {
                 const rate = parseCommissionPercent(user?.commition);
-                const { netProfit, commission } = resolveMatchOddsWinCommission(
+                const { netProfit, commission } = calculateWinCommission(
                   historyProfitLossChange,
-                  rate,
-                  historyStatus
+                  rate
                 );
-                if (commission > 0) {
-                  historyProfitLossChange = netProfit;
-                  totalMatchOddsCommission += commission;
-                }
+                historyProfitLossChange = netProfit;
+                totalMatchOddsCommission += commission;
               }
 
               betHistoryTotalPL += historyProfitLossChange;

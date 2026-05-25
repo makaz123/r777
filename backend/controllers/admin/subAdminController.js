@@ -44,8 +44,8 @@ import { sendUserRefresh } from '../../socket/bettingSocket.js';
 import {
   adjustUserUpdatesForCommission,
   BET_STATUS_WIN,
+  calculateWinCommission,
   isSettledClientWinPL,
-  resolveMatchOddsWinCommission,
   getDownlineUplineBettingContribution,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
@@ -346,11 +346,7 @@ export const applyMatchOddsWinCommissionOnSettlement = async (
   }
 
   const rate = parseCommissionPercent(user.commition);
-  const { netProfit, commission } = resolveMatchOddsWinCommission(
-    profit,
-    rate,
-    betStatus
-  );
+  const { netProfit, commission } = calculateWinCommission(profit, rate);
   if (commission <= 0) {
     return { settlementResult, commission: 0 };
   }

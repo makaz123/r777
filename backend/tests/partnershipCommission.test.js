@@ -61,12 +61,8 @@ describe('partnershipCommissionUtils', () => {
     ).toBe(0);
   });
 
-  test('resolveMatchOddsWinCommission deducts from gross win at settlement', () => {
-    const { netProfit, commission } = resolveMatchOddsWinCommission(
-      100,
-      2,
-      BET_STATUS_WIN
-    );
+  test('calculateWinCommission deducts from gross win at settlement', () => {
+    const { netProfit, commission } = calculateWinCommission(100, 2);
     expect(commission).toBe(2);
     expect(netProfit).toBe(98);
   });

@@ -4,7 +4,11 @@ import { HiOutlineExclamationCircle } from 'react-icons/hi2';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../../components/OddsGridCells';
 const MatchOdd = ({ matchOddsList }) => {
-  const { pendingBet } = useSelector((state) => state.market);
+  const { pendingBet, betsData } = useSelector((state) => state.market);
+
+  const betCount = Array.isArray(betsData) 
+    ? betsData.filter(item => item?.gameType === 'Match Odds' || item?.gameType === 'Winner' || item?.marketName === 'Match Odds' || item?.marketName === 'TOURNAMENT_WINNER').length 
+    : 0;
 
   const oddsData = matchOddsList[0]?.section?.length
     ? matchOddsList[0]?.section?.map((sec) => ({
@@ -172,7 +176,7 @@ const MatchOdd = ({ matchOddsList }) => {
                   BetPlace
                 </span>
                 <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                  0
+                  {betCount}
                 </span>
               </div>
               <div>

@@ -1,7 +1,16 @@
+import dotenv from "dotenv";
+import dns from "dns";
+
+// Force IPv4 (Node.js v17+ issue fix)
+dns.setDefaultResultOrder("ipv4first");
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
+// Load env variables
+dotenv.config();
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
 import express from 'express';
 import http from 'http';
 import morgan from 'morgan';

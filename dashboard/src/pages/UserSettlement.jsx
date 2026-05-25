@@ -121,15 +121,28 @@ const UserSettlement = ({ type = 'user' }) => {
 
     for (const payload of payloads) {
       try {
-        const res = await api.post('/sub-admin/settle', payload);
+        const res = await api.post('/sub-admin/settle', payload, {
+          withCredentials: true,
+        });
         if (res.data && res.data.success) {
           successCount++;
+        } else {
+          failCount++;
+          toast.error(
+            res.data?.message || 'Settlement failed for one account.'
+          );
         }
       } catch (err) {
         failCount++;
-        toast.error(`Failed for one user: ${err.response?.data?.message || err.message}`);
-        if (err.response?.status === 400 && err.response?.data?.message === 'Invalid Master password.') {
-          // Abort further attempts if password is wrong
+        toast.error(
+          err.response?.data?.message ||
+            err.message ||
+            'Settlement failed for one account.'
+        );
+        if (
+          err.response?.status === 400 &&
+          err.response?.data?.message === 'Invalid Master password.'
+        ) {
           break;
         }
       }
@@ -137,10 +150,12 @@ const UserSettlement = ({ type = 'user' }) => {
 
     setSettleLoading(false);
     if (successCount > 0) {
-      toast.success(`Successfully settled ${successCount} accounts.`);
+      toast.success(`Successfully settled ${successCount} account(s).`);
       handleClearAll();
       fetchSettlementUsers();
       dispatch(getAdmin());
+    } else if (failCount > 0) {
+      toast.error('No accounts were settled. Check amounts and master password.');
     }
   };
 

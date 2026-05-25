@@ -171,49 +171,40 @@ export const placeBetUnified = async (req, res) => {
 };
 export const getExposureDetails = async (req, res) => {
   try {
-    const { id } = req;
-    const user = await SubAdmin.findById(id);
+    const targetId = req.query.userId || req.id;
+    const user = await SubAdmin.findById(targetId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Group by MARKET + EVENT using betHistoryModel
-    const marketDetails = await betHistoryModel.aggregate([
-      {
-        $match: {
-          userId: id,
-          status: 0,
-        },
-      },
-      {
-        $group: {
-          _id: {
-            marketName: '$marketName',
-            eventName: '$eventName',
-            eventId: '$eventId',
-            gameId: '$gameId',
-            sportId: '$sid',
-            sportName: '$gameName',
-          },
-          betCounts: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          marketName: '$_id.marketName',
-          eventName: '$_id.eventName',
-          eventId: '$_id.eventId',
-          gameId: '$_id.gameId',
-          sportId: '$_id.sportId',
-          sportName: '$_id.sportName',
-          betCounts: 1,
-        },
-      },
-      {
-        $sort: { betCounts: -1 },
-      },
-    ]);
+    const activeBets = await betModel.find({ userId: targetId, status: 0 });
+
+    const groupedBets = {};
+    activeBets.forEach((bet) => {
+      if (!groupedBets[bet.gameId]) {
+        groupedBets[bet.gameId] = [];
+      }
+      groupedBets[bet.gameId].push(bet);
+    });
+
+    const marketDetails = [];
+
+    for (const [gameId, bets] of Object.entries(groupedBets)) {
+      const sampleBet = bets[0];
+      const exposure = calculateAllExposure(bets);
+      
+      if (exposure > 0) {
+        marketDetails.push({
+          gameId: sampleBet.gameId,
+          eventName: sampleBet.eventName,
+          sportName: sampleBet.gameName,
+          marketName: sampleBet.marketName,
+          eventDate: sampleBet.date || sampleBet.createdAt,
+          exposure: exposure,
+          displayExposure: -exposure
+        });
+      }
+    }
 
     return res.status(200).json({
       data: marketDetails,

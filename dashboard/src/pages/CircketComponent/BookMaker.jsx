@@ -4,7 +4,7 @@ import { FaArrowRight, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../../components/OddsGridCells';
 
 const BookMaker = ({ BookmakerList }) => {
-  const { pendingBet } = useSelector((state) => state.market);
+  const { pendingBet, betsData } = useSelector((state) => state.market);
 
   const bookmakerData =
     Array.isArray(BookmakerList) &&
@@ -20,6 +20,10 @@ const BookMaker = ({ BookmakerList }) => {
           status: sec.gstatus,
         }))
       : [];
+
+  const betCount = Array.isArray(betsData) 
+    ? betsData.filter(item => item?.gameType === 'Bookmaker' || item?.marketName === 'Bookmaker' || item?.gameType === bookmakerData[0]?.mname).length 
+    : 0;
 
   const getBetDetails = (pendingBet, matchData, team) => {
     const marketBets =
@@ -169,7 +173,7 @@ const BookMaker = ({ BookmakerList }) => {
                   BetPlace
                 </span>
                 <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                  0
+                  {betCount}
                 </span>
               </div>
               <div>

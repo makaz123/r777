@@ -61,7 +61,29 @@ const soccerSlice = createSlice({
           // Format date: "1/23/2026 11:00:00 AM" -> "23/01/2026 11:00"
           const formatDate = (dateString) => {
             if (!dateString) return '';
+            
+            // Try to parse "MM/DD/YYYY h:mm:ss A" explicitly
+            const parts = String(dateString).split(' ');
+            if (parts.length === 3) {
+              const [datePart, timePart, ampm] = parts;
+              const dateSplit = datePart.split('/');
+              const timeSplit = timePart.split(':');
+              
+              if (dateSplit.length === 3 && timeSplit.length >= 2) {
+                const [month, day, year] = dateSplit;
+                const [hours, minutes] = timeSplit;
+                
+                let hr = parseInt(hours, 10);
+                if (ampm.toUpperCase() === 'PM' && hr < 12) hr += 12;
+                if (ampm.toUpperCase() === 'AM' && hr === 12) hr = 0;
+                
+                return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year} ${String(hr).padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+              }
+            }
+
+            // Fallback for other formats
             const date = new Date(dateString);
+            if (isNaN(date)) return dateString;
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();

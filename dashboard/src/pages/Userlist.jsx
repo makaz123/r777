@@ -21,6 +21,7 @@ import {
 } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
+import api from '../redux/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AiOutlineFileExcel } from 'react-icons/ai';
@@ -40,11 +41,19 @@ export default function Userlist() {
         : user.status !== 'active'
     );
 
+    const exportExposure = (user) => {
+      if (user.role !== 'user') return user.exposure || 0;
+      if (user.shareExposure != null) return user.shareExposure;
+      const gross = Number(user.totalExposure ?? user.exposure ?? 0);
+      const pct = Number(user.parentSharePercent ?? user.mySharePercent ?? 100);
+      return Math.round(gross * (pct / 100) * 100) / 100;
+    };
+
     const tableData = filteredUsers.map((user) => [
       user.userName,
       user.creditReference || '-',
       user.balance || 0,
-      user.exposure || 0,
+      exportExposure(user),
       user.exposureLimit || 0,
       user.avbalance || 0,
       user.bettingProfitLoss || 0,
@@ -81,11 +90,19 @@ export default function Userlist() {
         : user.status !== 'active'
     );
 
+    const exportExposure = (user) => {
+      if (user.role !== 'user') return user.exposure || 0;
+      if (user.shareExposure != null) return user.shareExposure;
+      const gross = Number(user.totalExposure ?? user.exposure ?? 0);
+      const pct = Number(user.parentSharePercent ?? user.mySharePercent ?? 100);
+      return Math.round(gross * (pct / 100) * 100) / 100;
+    };
+
     const tableData = filteredUsers.map((user) => ({
       Username: user.userName,
       'Credit Ref.': user.creditReference || '-',
       Balance: user.baseBalance || 0,
-      Exposure: user.exposure || 0,
+      Exposure: exportExposure(user),
       'Exposure Limit': user.exposureLimit || 0,
       'Avail. Bal.': user.avbalance || 0,
       'Ref. P/L': user.bettingProfitLoss || 0,
@@ -121,7 +138,6 @@ export default function Userlist() {
     totalPages,
     onlyusers,
     users,
-    downlineViewer,
   } = useSelector((state) => state.auth);
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
@@ -132,6 +148,7 @@ export default function Userlist() {
   const [settingPopup, setSettingPopup] = useState(false);
   const [currentUser, setcurrentUser] = useState(null);
   const [isFetchingAllUsers, setIsFetchingAllUsers] = useState(null);
+  const [activeListCode, setActiveListCode] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
   const [passwordPopup, setPasswordPopup] = useState(false);
   const [lockPopup, setLockPopup] = useState(false);
@@ -149,6 +166,11 @@ export default function Userlist() {
   const [settlePassword, setSettlePassword] = useState('');
   const [isSettling, setIsSettling] = useState(false);
   const [settleUserPL, setSettleUserPL] = useState(0);
+
+  // Exposure modal state
+  const [exposurePopup, setExposurePopup] = useState(false);
+  const [exposureData, setExposureData] = useState([]);
+  const [isFetchingExposure, setIsFetchingExposure] = useState(false);
 
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
@@ -296,6 +318,25 @@ export default function Userlist() {
     }
   };
 
+  const handleExposureClick = async (userId) => {
+    try {
+      setIsFetchingExposure(true);
+      setExposurePopup(true);
+      const res = await api.get(`/admin/exposure-details?userId=${userId}`);
+      if (res?.data?.status || res?.data?.meta?.status) {
+        setExposureData(res.data.data);
+      } else {
+        setExposureData([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch exposure', error);
+      toast.error('Failed to fetch exposure details');
+      setExposureData([]);
+    } finally {
+      setIsFetchingExposure(false);
+    }
+  };
+
   const handleSetting = async (e) => {
     e.preventDefault();
     try {
@@ -344,6 +385,7 @@ export default function Userlist() {
 
   useEffect(() => {
     setIsFetchingAllUsers(true);
+    setActiveListCode(null);
     dispatch(
       getDownlineList({
         page: currentPage,
@@ -353,6 +395,21 @@ export default function Userlist() {
       })
     );
   }, [dispatch, currentPage, entries, searchQuery]);
+
+  const reloadUserList = () => {
+    if (isFetchingAllUsers === false && activeListCode) {
+      dispatch(fetchSubAdminByLevel({ code: activeListCode }));
+    } else {
+      dispatch(
+        getDownlineList({
+          page: currentPage,
+          limit: entries,
+          searchQuery,
+          listType: 'all',
+        })
+      );
+    }
+  };
 
   const formatNumber = (v) => {
     const num = Math.abs(Number(v));
@@ -383,6 +440,20 @@ export default function Userlist() {
     if (row.role !== 'user') return 0;
     return Number(row.totalExposure ?? row.exposure ?? 0);
   };
+
+  /** Client exposure at viewer's partnership % (My % on the row). */
+  const getRowShareExposure = (row) => {
+    if (row.role !== 'user') return 0;
+    if (row.shareExposure != null && !Number.isNaN(Number(row.shareExposure))) {
+      return Number(row.shareExposure);
+    }
+    const gross = getRowTotalExposure(row);
+    const pct = Number(row.parentSharePercent ?? row.mySharePercent ?? 100);
+    return Math.round(gross * (pct / 100) * 100) / 100;
+  };
+
+  const getRowDisplayExposure = (row) =>
+    row.role === 'user' ? getRowShareExposure(row) : getRowTotalExposure(row);
 
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
 
@@ -471,7 +542,7 @@ export default function Userlist() {
         toast.success(res.data.message || 'Settled successfully');
         setSettlePopup(false);
         dispatch(getAdmin());
-        fetchUserList(1, 50, '', activeTab);
+        reloadUserList();
       } else {
         toast.error(res.data.message || 'Settlement failed');
       }
@@ -508,19 +579,49 @@ export default function Userlist() {
   };
 
   const ExposureCell = ({ row }) => {
-    const exp = getRowTotalExposure(row);
+    const gross = getRowTotalExposure(row);
+    const exp = getRowDisplayExposure(row);
     const display = exp > 0 ? -exp : exp;
     const n = Number(display) || 0;
+    const title =
+      row.role === 'user' && Math.abs(gross - exp) > 0.01
+        ? `Client exposure: ${formatTableMoney(gross)}`
+        : undefined;
+    
+    // Disable click for non-users or if exposure is 0? The request didn't specify.
+    // Let's allow clicking for anyone if they have exposure.
+    const isClickable = row.role === 'user'; // Or maybe everyone
+
     if (n === 0) {
-      return <span className='text-black'>{formatTableMoney(0)}</span>;
+      return (
+        <span 
+          className={`text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+          title={title}
+          onClick={() => isClickable && handleExposureClick(row._id)}
+        >
+          {formatTableMoney(0)}
+        </span>
+      );
     }
     if (n < 0) {
       return (
-        <span className='font-medium text-red-600'>{formatTableMoney(n)}</span>
+        <span 
+          className={`font-medium text-red-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+          title={title}
+          onClick={() => isClickable && handleExposureClick(row._id)}
+        >
+          {formatTableMoney(n)}
+        </span>
       );
     }
     return (
-      <span className='font-medium text-green-600'>{formatTableMoney(n)}</span>
+      <span 
+        className={`font-medium text-green-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+        title={title}
+        onClick={() => isClickable && handleExposureClick(row._id)}
+      >
+        {formatTableMoney(n)}
+      </span>
     );
   };
 
@@ -539,7 +640,7 @@ export default function Userlist() {
         acc.pendingBal += getRowPendingBal(row);
         acc.avbalance += Number(row.avbalance) || 0;
         acc.currentPL += getRowCurrentPL(row);
-        const exp = getRowTotalExposure(row);
+        const exp = getRowDisplayExposure(row);
         acc.exposure += exp > 0 ? -exp : exp;
         return acc;
       },
@@ -671,6 +772,7 @@ export default function Userlist() {
   const handleLoadNextLevel = (user, code) => {
     if (user.role !== 'user') {
       setIsFetchingAllUsers(false);
+      setActiveListCode(code);
       dispatch(fetchSubAdminByLevel({ code: code }));
     }
   };
@@ -815,8 +917,8 @@ export default function Userlist() {
               },
               {
                 header: 'Exposure',
-                sortKey: 'exposure',
-                sortValue: (row) => getRowTotalExposure(row),
+                sortKey: 'shareExposure',
+                sortValue: (row) => getRowDisplayExposure(row),
                 align: 'right',
                 cell: (row) => <ExposureCell row={row} />,
               },
@@ -848,22 +950,12 @@ export default function Userlist() {
                 header: 'My %',
                 align: 'right',
                 cell: (row) => {
-                  if (row.myPercent && !String(row.myPercent).includes('/')) {
-                    return row.myPercent;
-                  }
-                  if (row.role === 'user') {
-                    const pct =
-                      row.parentSharePercent ??
-                      downlineViewer?.mySharePercent ??
-                      0;
-                    return `${pct}%`;
-                  }
-                  const mine =
+                  const pct =
                     row.parentSharePercent ??
+                    row.mySharePercent ??
                     row.viewerShareOnRow ??
-                    row.partnership ??
                     0;
-                  return `${mine}%`;
+                  return `${pct}%`;
                 },
               },
               {
@@ -1725,7 +1817,13 @@ export default function Userlist() {
                   <div className='font-bold text-gray-800'>Exposure</div>
                   <div className='font-bold text-gray-800'>Amount To Settle</div>
                   
-                  <div className='text-black'>{Number(settleSelectedUser.exposure || 0).toFixed(2)}</div>
+                  <div className='text-black'>
+                    {Number(
+                      settleSelectedUser.shareExposure ??
+                        settleSelectedUser.exposure ??
+                        0
+                    ).toFixed(2)}
+                  </div>
                   <div className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {Number(settleUserPL || 0).toFixed(2)}
                   </div>
@@ -1788,6 +1886,81 @@ export default function Userlist() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Exposure Modal */}
+        {exposurePopup && (
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className='w-full max-w-4xl overflow-hidden rounded bg-white shadow-xl'
+            >
+              <div className='flex items-center justify-between bg-gradient-to-r from-teal-500 to-teal-700 px-4 py-2 text-white'>
+                <h2 className='text-[15px] font-bold'>User Event Exposure</h2>
+                <button
+                  onClick={() => setExposurePopup(false)}
+                  className='text-2xl font-bold leading-none hover:text-gray-200'
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className='p-4 max-h-[80vh] overflow-y-auto bg-gray-50'>
+                {isFetchingExposure ? (
+                  <div className='text-center py-10'>Loading...</div>
+                ) : exposureData && exposureData.length > 0 ? (
+                  <table className='w-full border-collapse border border-gray-300 text-[13px]'>
+                    <thead>
+                      <tr className='bg-gray-500 text-white'>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Event Date & Time</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Series Name</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Event Name</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Market Type</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-right font-bold'>Exposure</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {exposureData.map((item, idx) => (
+                        <tr key={idx} className='bg-white'>
+                          <td className='border border-gray-300 px-2 py-1.5'>
+                            {item.eventDate ? new Date(item.eventDate).toLocaleString('en-IN') : '—'}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5'>{item.sportName}</td>
+                          <td className='border border-gray-300 px-2 py-1.5'>
+                            <span 
+                              className='font-bold underline cursor-pointer text-black hover:text-blue-600'
+                              onClick={() => {
+                                setExposurePopup(false);
+                                const sName = item.sportName?.toLowerCase() || '';
+                                if(sName === 'cricket' || sName === 'tennis' || sName === 'soccer') {
+                                  navigate(`/${sName}-bet/${item.sportName}/${item.eventName}/${item.gameId}`);
+                                } else if(sName === 'casino') {
+                                  navigate(`/casino-bet/${item.gameId}`);
+                                } else {
+                                  // default fallback 
+                                  navigate(`/cricket-bet/Cricket/${item.eventName}/${item.gameId}`);
+                                }
+                              }}
+                            >
+                              {item.eventName}
+                            </span>
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 uppercase'>{item.marketName}</td>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-red-600'>
+                            {Number(item.displayExposure).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className='text-center py-10'>No exposure found.</div>
+                )}
+              </div>
             </motion.div>
           </div>
         )}

@@ -3,7 +3,11 @@ import { useSelector } from 'react-redux';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../../components/OddsGridCells';
 const SoccerOdds = ({ matchOddsList }) => {
-  const { pendingBet } = useSelector((state) => state.market);
+  const { pendingBet, betsData } = useSelector((state) => state.market);
+
+  const betCount = Array.isArray(betsData) 
+    ? betsData.filter(item => item?.gameType === 'Match Odds' || item?.gameType === 'Winner').length 
+    : 0;
 
   const oddsData =
     Array.isArray(matchOddsList) &&
@@ -171,7 +175,7 @@ const SoccerOdds = ({ matchOddsList }) => {
                   BetPlace
                 </span>
                 <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                  0
+                  {betCount}
                 </span>
               </div>
               <div>

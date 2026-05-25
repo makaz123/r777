@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../../components/OddsGridCells';
 const TiedMatch = ({ tiedMatchList }) => {
-  const { pendingBet } = useSelector((state) => state.market);
+  const { pendingBet, betsData } = useSelector((state) => state.market);
 
   const tiedData = tiedMatchList[0]?.section?.length
     ? tiedMatchList[0]?.section.map((sec) => ({
@@ -19,6 +19,10 @@ const TiedMatch = ({ tiedMatchList }) => {
         status: sec.gstatus,
       }))
     : [];
+
+  const betCount = Array.isArray(betsData) 
+    ? betsData.filter(item => item?.gameType === 'Tied Match' || item?.marketName === 'Tied Match' || item?.gameType === tiedData[0]?.mname || item?.marketName === tiedData[0]?.mname).length 
+    : 0;
 
   // Helper function
   const getBetDetails = (pendingBet, matchData, team) => {
@@ -173,7 +177,7 @@ const TiedMatch = ({ tiedMatchList }) => {
                   BetPlace
                 </span>
                 <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                  0
+                  {betCount}
                 </span>
               </div>
               <div>

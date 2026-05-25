@@ -1,5 +1,5 @@
 /**
- * Account summary bar: week P/L (Mon–Sun, resets Sunday 11:59 PM), exposure share, dena fields.
+ * Account summary bar: week P/L clears only on cash settlement (not calendar week).
  */
 
 import {
@@ -9,7 +9,7 @@ import {
   splitProfitLossByMyShare,
 } from './partnershipCommissionUtils.js';
 
-/** Current betting week: Monday 00:00 through Sunday 23:59:59.999 */
+/** Calendar week (Mon–Sun) — used by dashboard date picker only, not account summary Week P/L. */
 export function getCurrentWeekRange(now = new Date()) {
   const d = new Date(now);
   const day = d.getDay();
@@ -22,7 +22,180 @@ export function getCurrentWeekRange(now = new Date()) {
   end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
 
-  return { start, end, weekEndsAt: end };
+  return { start, end, weekEndsAt: end, isCalendarWeek: true };
+}
+
+/**
+ * Week P/L window: from last full clear (weekPLResetAt) or account creation — not reset on partial settlement.
+ */
+export async function getWeekPLRangeForAdmin(admin) {
+  const end = new Date();
+  let start = admin?.weekPLResetAt
+    ? new Date(admin.weekPLResetAt)
+    : admin?.createdAt
+      ? new Date(admin.createdAt)
+      : new Date(0);
+
+  if (start > end) start = new Date(end);
+
+  return {
+    start,
+    end,
+    weekEndsAt: end,
+    isSettlementPeriod: true,
+    resetAt: start,
+  };
+}
+
+/** Mark week P/L period start (only after downline is fully cash-cleared). */
+export async function setWeekPLResetNow(SubAdmin, adminId, at = new Date()) {
+  await SubAdmin.findByIdAndUpdate(adminId, { weekPLResetAt: at });
+}
+
+/** Settlement cash per user within a date range. */
+export async function getSettlementCashTotalsByUserInRange(
+  TransactionHistory,
+  userIds,
+  dateRange
+) {
+  const ids = (userIds || []).map((id) => String(id));
+  const empty = new Map(ids.map((id) => [id, { withdrawl: 0, deposite: 0 }]));
+  if (!ids.length || !dateRange?.start) return empty;
+
+  const agg = await TransactionHistory.aggregate([
+    {
+      $match: {
+        userId: { $in: ids },
+        remark: { $regex: /^Settlement:/ },
+        createdAt: { $gte: dateRange.start, $lte: dateRange.end },
+      },
+    },
+    {
+      $group: {
+        _id: '$userId',
+        withdrawl: { $sum: { $ifNull: ['$withdrawl', 0] } },
+        deposite: { $sum: { $ifNull: ['$deposite', 0] } },
+      },
+    },
+  ]);
+
+  for (const row of agg) {
+    const id = String(row._id);
+    empty.set(id, {
+      withdrawl: roundMoney(row.withdrawl || 0),
+      deposite: roundMoney(row.deposite || 0),
+    });
+  }
+  return empty;
+}
+
+/** Week P/L maps: settled bets in range minus cash settlements in the same range. */
+export async function getDownlineWeekPLMaps(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  TransactionHistory,
+  viewerCode,
+  weekRange
+) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewerCode);
+  if (!downlineUserIds.length) {
+    return {
+      users: [],
+      historyPLByUserId: new Map(),
+      expectedPLByUserId: new Map(),
+    };
+  }
+
+  const [users, plByUser, settlementByUser] = await Promise.all([
+    SubAdmin.find({ _id: { $in: downlineUserIds } })
+      .select('_id userName role invite bettingProfitLoss')
+      .lean(),
+    aggregateSettledPLByUser(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      weekRange
+    ),
+    getSettlementCashTotalsByUserInRange(
+      TransactionHistory,
+      downlineUserIds,
+      weekRange
+    ),
+  ]);
+
+  const historyPLByUserId = normalizePLByUserIds(users, plByUser);
+  const expectedPLByUserId = new Map();
+
+  for (const user of users) {
+    const id = user._id.toString();
+    const historyPL = historyPLByUserId.get(id) ?? 0;
+    const settlementCash = settlementByUser.get(id) ?? {
+      withdrawl: 0,
+      deposite: 0,
+    };
+    expectedPLByUserId.set(
+      id,
+      expectedBettingPLFromHistory(historyPL, settlementCash)
+    );
+  }
+
+  return { users, historyPLByUserId, expectedPLByUserId };
+}
+
+/**
+ * Week P/L for account summary: betting P/L in period adjusted by settlements in that period.
+ * Partial settlement reduces Week P/L (e.g. settle ₹100 → Week P/L drops by ₹100 share), does not zero the window.
+ */
+export async function aggregateViewerWeekPL(
+  SubAdmin,
+  betHistoryModel,
+  CasinoBetHistory,
+  TransactionHistory,
+  viewer,
+  weekRange
+) {
+  const { users, historyPLByUserId, expectedPLByUserId } =
+    await getDownlineWeekPLMaps(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      viewer.code,
+      weekRange
+    );
+
+  if (!users.length) {
+    return { weekViewerPL: 0, weekDownlinePL: 0 };
+  }
+
+  const accountByCode = await getAccountByCodeMap(SubAdmin, viewer);
+  const base = computeViewerPeriodPL(
+    viewer,
+    users,
+    expectedPLByUserId,
+    accountByCode
+  );
+  const weekViewerPL = applyDebtorSettlementNetAddback(
+    viewer,
+    users,
+    historyPLByUserId,
+    expectedPLByUserId,
+    accountByCode,
+    base
+  );
+
+  let weekDownlineClient = 0;
+  for (const user of users) {
+    if (user.role !== 'user') continue;
+    const id = user._id.toString();
+    weekDownlineClient += roundMoney(expectedPLByUserId.get(id) ?? 0);
+  }
+
+  return {
+    weekViewerPL,
+    weekDownlinePL: roundMoney(-weekDownlineClient),
+  };
 }
 
 export async function getDownlineUserIds(SubAdmin, adminCode) {
@@ -724,7 +897,7 @@ export function buildAccountSummary(admin, plTotals = {}) {
         : uplineSharePL < -0.005
           ? 'lena'
           : 'clear',
-    weekRange: getCurrentWeekRange(),
+    weekRange: plTotals.weekRange ?? getCurrentWeekRange(),
   };
 }
 

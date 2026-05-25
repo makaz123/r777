@@ -19,11 +19,14 @@ import {
   aggregateDownlineOutstandingGross,
   aggregateDownlineClientPLSum,
   aggregateDownlineParentViewPL,
+  aggregateViewerWeekPL,
   aggregateViewerOutstandingPL,
   aggregateViewerProfitLoss,
   buildAccountSummary,
   expectedBettingPLFromHistory,
   getCurrentWeekRange,
+  getWeekPLRangeForAdmin,
+  setWeekPLResetNow,
   getDownlineUserIds,
   getSettlementCashTotals,
   isAccountInAdminDownline,
@@ -1215,28 +1218,21 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     }
   }
 
-  const weekRange = getCurrentWeekRange();
+  const weekRange = await getWeekPLRangeForAdmin(updatedAdmin);
   const [
-    weekViewerPL,
-    weekDownlinePL,
+    { weekViewerPL, weekDownlinePL },
     myPLTillDate,
     tillViewerOutstandingPL,
     tillDownlinePL,
     downlineClientPL,
     tillDownlinePLHistory,
   ] = await Promise.all([
-    aggregateViewerProfitLoss(
+    aggregateViewerWeekPL(
       SubAdmin,
       betHistoryModel,
       CasinoBetHistory,
+      TransactionHistory,
       updatedAdmin,
-      weekRange
-    ),
-    aggregateDownlineParentViewPL(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      updatedAdmin.code,
       weekRange
     ),
     // Lifetime betting P/L (bet history) — not reduced by cash settlement.
@@ -1287,6 +1283,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     downlineClientPL,
     tillDownlinePLHistory,
     uplineKeepPercent,
+    weekRange,
   });
 
   return { admin: updatedAdmin, accountSummary };
@@ -1700,6 +1697,9 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
   const avbalance = roundMoney(row.avbalance || 0);
   const pendingBal = roundMoney(-balance);
   const totalExposure = isEndUser ? roundMoney(exposure) : 0;
+  const shareExposure = isEndUser
+    ? roundMoney(totalExposure * (parentSharePercent / 100))
+    : roundMoney(exposure);
   const hasOpenExposure = Math.abs(totalExposure) > 0.001;
   const currentPL =
     isEndUser && !hasOpenExposure
@@ -1710,6 +1710,8 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
     ...row,
     exposure: totalExposure,
     totalExposure,
+    shareExposure,
+    fullExposure: totalExposure,
     pendingBal,
     currentPL,
     balance,
@@ -4004,6 +4006,20 @@ export const settleUser = async (req, res) => {
 
     await refreshSettlementHierarchy(id, userId);
 
+    let summaryPayload = await loadAccountSummaryForAdmin(id);
+    const settledAt = new Date();
+    const outstanding = Math.abs(
+      summaryPayload?.accountSummary?.downlineDena ?? 0
+    );
+    if (outstanding < 0.01) {
+      await setWeekPLResetNow(SubAdmin, id, settledAt);
+    } else {
+      await SubAdmin.findByIdAndUpdate(id, {
+        $unset: { weekPLResetAt: 1 },
+      });
+    }
+    summaryPayload = await loadAccountSummaryForAdmin(id);
+
     const { sendUserRefresh } = await import('../../socket/bettingSocket.js');
     sendUserRefresh(String(id));
     sendUserRefresh(String(userId));
@@ -4017,8 +4033,6 @@ export const settleUser = async (req, res) => {
       sendUserRefresh(String(parent._id));
       uplineNode = parent;
     }
-
-    const summaryPayload = await loadAccountSummaryForAdmin(id);
 
     return res.status(200).json({
       success: true,

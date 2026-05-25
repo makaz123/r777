@@ -57,7 +57,7 @@ function CricketBet() {
   const [showodds, setshowodds] = useState(true);
   const [selectedBet, setSelectedBet] = useState(null);
   const { battingData } = useSelector((state) => state.cricket);
-  const { pendingBetAmounts, successMessage, errorMessage } = useSelector(
+  const { pendingBetAmounts, betHistory, successMessage, errorMessage } = useSelector(
     (state) => state.bet
   );
   const { userInfo } = useSelector((state) => state.auth);
@@ -470,7 +470,7 @@ function CricketBet() {
             onClick={() => setshowodds(false)}
           >
             {' '}
-            {t('open_bets', 'Open Bets')}
+            {t('open_bets', 'Open Bets')} ({betHistory?.filter(bet => bet.gameId === gameid).length || 0})
           </div>
         </div>
 
@@ -662,7 +662,7 @@ function CricketBet() {
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
             <span className='text-[14px]'>
-              {t('matched_bet', 'Matched Bet')}
+              {t('matched_bet', 'Matched Bet')} ({betHistory?.filter(bet => bet.gameId === gameid).length || 0})
             </span>
           </div>
           <MatchedBet gameid={gameid} />

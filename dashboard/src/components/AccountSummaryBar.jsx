@@ -237,7 +237,7 @@ const AccountSummaryBar = () => {
               <div className='space-y-1'>
                 <MetricTooltipRow
                   label='Week P&L : '
-                  tooltip='Your share of downline betting P/L from bets settled this week (Mon–Sun).'
+                  tooltip='Your share of downline P/L this period (bets minus cash settled in the same period). Partial settlement reduces this amount; it only resets when fully cleared.'
                 >
                   <span
                     className={plColorClass(summary?.currentWeekPL ?? 0)}

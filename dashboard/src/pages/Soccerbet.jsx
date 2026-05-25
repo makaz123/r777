@@ -19,7 +19,7 @@ import Navbar from '../components/Navbar';
 import { getAdmin } from '../redux/reducer/authReducer';
 import { motion } from 'framer-motion';
 import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
-import { FaFilter } from 'react-icons/fa';
+import { FaFilter, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { BsGraphUpArrow } from 'react-icons/bs';
 import { TfiMenuAlt } from 'react-icons/tfi';
 export default function Soccerbet() {
@@ -44,6 +44,8 @@ export default function Soccerbet() {
   const [viewMoreDetail, setViewMoreDetail] = useState(false);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [amountFilter, setAmountFilter] = useState('');
+  const [marketNameFilter, setMarketNameFilter] = useState('');
   const { userInfo } = useSelector((state) => state.auth);
   const [showlivetv, setshowlivetv] = useState(false);
   const {
@@ -54,7 +56,23 @@ export default function Soccerbet() {
     masterData,
     masterDataDownline,
     lastUpdateddate,
+    pendingBet,
   } = useSelector((state) => state.market);
+
+  const [isComboBookOpen, setIsComboBookOpen] = useState(true);
+
+  const filteredBetsData = Array.isArray(betsData) ? betsData.filter((item) => {
+    let matchesAmount = true;
+    if (amountFilter) {
+      const amount = item.otype === 'lay' ? parseFloat(item.betAmount) : parseFloat(item.price);
+      matchesAmount = amount >= parseFloat(amountFilter);
+    }
+    let matchesMarket = true;
+    if (marketNameFilter) {
+      matchesMarket = item.gameType?.toLowerCase().includes(marketNameFilter.toLowerCase());
+    }
+    return matchesAmount && matchesMarket;
+  }) : [];
 
   let sharedSocket;
 
@@ -294,6 +312,42 @@ export default function Soccerbet() {
         : true
     )
     .slice(0, entriesPerPage);
+
+  const calculatedComboBookData = (() => {
+    const teams = matchOddsList?.[0]?.section?.map((sec) => sec.nat) || [];
+    if (!teams.length || !pendingBet || pendingBet.length === 0) return [];
+
+    const comboBets = pendingBet.filter(
+      (b) => b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
+    );
+    
+    return teams.map((team) => {
+      let netOutcome = 0;
+      comboBets.forEach((bet) => {
+        const isBetOnThisTeam = bet.teamName?.toLowerCase() === team.toLowerCase();
+        const betAmount = parseFloat(bet.totalBetAmount) || 0;
+        const stake = parseFloat(bet.totalPrice) || 0;
+
+        if (bet.otype === 'back') {
+          if (isBetOnThisTeam) {
+            netOutcome += betAmount;
+          } else {
+            netOutcome -= stake;
+          }
+        } else if (bet.otype === 'lay') {
+          if (isBetOnThisTeam) {
+            netOutcome -= stake;
+          } else {
+            netOutcome += betAmount;
+          }
+        }
+      });
+      return {
+        teamName: team,
+        netOutcome: Math.round(netOutcome * 100) / 100
+      };
+    });
+  })();
   return (
     <div className='relative'>
       <Navbar />
@@ -315,6 +369,40 @@ export default function Soccerbet() {
                   : '—'}
               </span>
             </div>
+            <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+              <div className='flex items-center gap-1'>
+                <span className='font-bold'>Combo Book</span>
+              </div>
+              <div className='cursor-pointer' onClick={() => setIsComboBookOpen(!isComboBookOpen)}>
+                {isComboBookOpen ? <FaMinusCircle className='text-[18px]' /> : <FaPlusCircle className='text-[18px]' />}
+              </div>
+            </div>
+            {isComboBookOpen && (
+              <table className='w-full'>
+                <tbody>
+                {calculatedComboBookData && calculatedComboBookData.length > 0 ? (
+                  calculatedComboBookData.map((item, index) => {
+                    const isPositive = item.netOutcome >= 0;
+                    const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
+                    return (
+                      <tr key={index} className='leading-[22px] text-[14px] border-y border-gray-200'>
+                        <td className='py-0.5 pl-3 font-bold'>{item.teamName}</td>
+                        <td className='text-right py-0.5 px-1'>
+                          <span className={`font-bold w-[155px] max-w-[240px] inline-block ${colorClass}`}>
+                            {item.netOutcome}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
+                    <td colSpan={2} className='py-0.5 px-3 text-center text-gray-500'>No Combo Book Data Available</td>
+                  </tr>
+                )}
+                </tbody>
+              </table>
+            )}
             <div className='mx-auto text-[13px]'>
               {/* odds match data */}
               <SoccerOdds
@@ -384,7 +472,7 @@ export default function Soccerbet() {
                   <div className='flex items-center gap-1 text-[12px] text-white'>
                     Odds{' '}
                     <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
-                      0
+                      {matchOdd?.length || 0}
                     </span>
                   </div>
                   <div className='flex items-center gap-1 text-[12px] text-white'>
@@ -417,11 +505,15 @@ export default function Soccerbet() {
                   type='text'
                   className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
                   placeholder='Filter by Amount from'
+                  value={amountFilter}
+                  onChange={(e) => setAmountFilter(e.target.value)}
                 />
                 <input
                   type='text'
                   className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
                   placeholder='Filter by Market Name'
+                  value={marketNameFilter}
+                  onChange={(e) => setMarketNameFilter(e.target.value)}
                 />
               </div>
             </div>
@@ -447,7 +539,7 @@ export default function Soccerbet() {
                 </tr>
               </thead>
               <tbody>
-                {betsData.map((item, index) => (
+                {filteredBetsData.map((item, index) => (
                   <tr
                     key={index}
                     className={`border-y border-white text-[12px] ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
@@ -491,7 +583,7 @@ export default function Soccerbet() {
                             <div className='col-span-1 text-right'>Amount</div>
                           </div>
 
-                          {betsData.map((item, index) => (
+                          {filteredBetsData.map((item, index) => (
                             <div
                               key={index}
                               className={`${item.otype === 'back' ? 'border-[#89c9f8] bg-[#b6defa]' : 'border-[#f8e8eb] bg-[#f8e8eb]'} border px-2 py-1 text-sm`}

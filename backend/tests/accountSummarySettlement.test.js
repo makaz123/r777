@@ -6,6 +6,7 @@ import {
   expectedBettingPLFromHistory,
   getViewerPLSharePercentOnUser,
   getViewerShareRatioForUser,
+  getWeekPLRangeForAdmin,
   scaleClientPLForViewer,
 } from '../utils/accountSummaryUtils.js';
 import { getViewerShareOfUserClientPL } from '../utils/partnershipCommissionUtils.js';
@@ -276,6 +277,50 @@ describe('getViewerPLSharePercentOnUser (dashboard root Client List My %)', () =
     expect(scaled.sharePct).toBe(100);
     expect(scaled.clientScaled).toBeCloseTo(1001.8, 2);
     expect(scaled.parentPL).toBeCloseTo(-1001.8, 2);
+  });
+});
+
+describe('getWeekPLRangeForAdmin (settlement period, not calendar week)', () => {
+  it('uses weekPLResetAt as period start when set', async () => {
+    const resetAt = new Date('2026-05-10T12:00:00Z');
+    const admin = {
+      userName: 'agent1',
+      weekPLResetAt: resetAt,
+      createdAt: new Date('2020-01-01'),
+    };
+    const range = await getWeekPLRangeForAdmin(admin);
+    expect(range.isSettlementPeriod).toBe(true);
+    expect(range.start.getTime()).toBe(resetAt.getTime());
+    expect(range.end.getTime()).toBeGreaterThanOrEqual(resetAt.getTime());
+  });
+
+  it('partial settlement in period reduces expected week client P/L', () => {
+    expect(
+      expectedBettingPLFromHistory(100, { withdrawl: 100, deposite: 0 })
+    ).toBe(0);
+    expect(
+      expectedBettingPLFromHistory(200, { withdrawl: 100, deposite: 0 })
+    ).toBe(100);
+    expect(
+      expectedBettingPLFromHistory(-200, { withdrawl: 0, deposite: 100 })
+    ).toBe(-100);
+  });
+
+  it('buildAccountSummary exposes settlement weekRange from plTotals', () => {
+    const resetAt = new Date('2026-05-15T00:00:00Z');
+    const summary = buildAccountSummary(
+      { userName: 'a1', role: 'agent', partnership: 100, avbalance: 0 },
+      {
+        weekViewerPL: 0,
+        weekRange: {
+          start: resetAt,
+          end: new Date('2026-05-20T00:00:00Z'),
+          isSettlementPeriod: true,
+        },
+      }
+    );
+    expect(summary.weekRange.start).toEqual(resetAt);
+    expect(summary.weekRange.isSettlementPeriod).toBe(true);
   });
 });
 

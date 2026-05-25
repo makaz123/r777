@@ -444,7 +444,7 @@ export default function Tennisbet() {
       (b) => b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
     );
     
-    return teams.map((team) => {
+    const results = teams.map((team) => {
       let netOutcome = 0;
       comboBets.forEach((bet) => {
         const isBetOnThisTeam = bet.teamName?.toLowerCase() === team.toLowerCase();
@@ -469,6 +469,21 @@ export default function Tennisbet() {
         teamName: team,
         netOutcome: Math.round(netOutcome * 100) / 100
       };
+    });
+
+    return results.map(item => {
+      let ratio = null;
+      let otherTeam = null;
+      if (item.netOutcome !== 0 && results.length >= 2) {
+        const opposite = results.find(r => r.teamName !== item.teamName && (
+          (item.netOutcome > 0 && r.netOutcome < 0) || (item.netOutcome < 0 && r.netOutcome > 0)
+        ));
+        if (opposite && opposite.netOutcome !== 0) {
+          ratio = Math.abs(item.netOutcome / opposite.netOutcome);
+          otherTeam = opposite.teamName;
+        }
+      }
+      return { ...item, betAverage: ratio, averageRelativeTeam: otherTeam };
     });
   })();
 
@@ -507,7 +522,14 @@ export default function Tennisbet() {
                     const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
                     return (
                       <tr key={index} className='leading-[22px] text-[14px] border-y border-gray-200'>
-                        <td className='py-0.5 pl-3 font-bold'>{item.teamName}</td>
+                        <td className='py-0.5 pl-3 font-bold'>
+                          {item.teamName}
+                          {item.betAverage !== null && (
+                            <span className='text-[11px] text-[#4d6a8a] ml-1 font-normal tracking-tight'>
+                              [{item.averageRelativeTeam} : {item.betAverage.toFixed(2)}]
+                            </span>
+                          )}
+                        </td>
                         <td className='text-right py-0.5 px-1'>
                           <span className={`font-bold w-[155px] max-w-[240px] inline-block ${colorClass}`}>
                             {item.netOutcome}

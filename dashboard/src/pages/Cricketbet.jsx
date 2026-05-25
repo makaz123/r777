@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchCricketData } from '../redux/reducer/cricketSlice';
+import { formatApiMatchDateTime } from '../utils/formatMatchDateTime';
 import { BsGraphUpArrow } from 'react-icons/bs';
 import { TfiMenuAlt } from 'react-icons/tfi';
 import {
@@ -59,8 +61,10 @@ export default function Cricketbet() {
   const { gameTitle } = useParams() || {};
   const { match } = useParams() || {};
   const dispatch = useDispatch();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isFromMarket = searchParams.get('from') === 'market';
+  const { matches: cricketMatches } = useSelector((state) => state.cricket);
 
   const { userInfo } = useSelector((state) => state.auth);
   // const { pendingBetAmounts } = useSelector((state) => state.bet);
@@ -78,7 +82,6 @@ export default function Cricketbet() {
     betPerantsData,
     masterData,
     masterDataDownline,
-    lastUpdateddate,
     comboBookData,
   } = useSelector((state) => state.market);
 
@@ -103,24 +106,15 @@ export default function Cricketbet() {
   const [marketNameFilter, setMarketNameFilter] = useState('');
   const [showlivetv, setshowlivetv] = useState(false);
 
-  const formatDashboardDate = (dateString) => {
-    if (!dateString) return '—';
-    const parts = String(dateString).split(' ');
-    if (parts.length === 3) {
-      const [datePart, timePart, ampm] = parts;
-      const dateSplit = datePart.split('/');
-      const timeSplit = timePart.split(':');
-      if (dateSplit.length === 3 && timeSplit.length >= 2) {
-        const [month, day, year] = dateSplit;
-        const [hours, minutes] = timeSplit;
-        const secs = timeSplit[2] || '00';
-        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}, ${hours}:${minutes}:${secs} ${ampm.toLowerCase()}`;
-      }
-    }
-    const d = new Date(dateString);
-    if (isNaN(d)) return dateString;
-    return d.toLocaleString('en-IN');
-  };
+  const matchStartTime = useMemo(() => {
+    if (location.state?.time) return location.state.time;
+    const listed = cricketMatches?.find(
+      (m) => String(m.id) === String(gameid)
+    );
+    if (listed?.time) return listed.time;
+    if (listed?.date) return formatApiMatchDateTime(listed.date);
+    return null;
+  }, [location.state?.time, cricketMatches, gameid]);
 
   const filteredBetsData = Array.isArray(betsData) ? betsData.filter((item) => {
     let matchesAmount = true;
@@ -143,6 +137,10 @@ export default function Cricketbet() {
   console.log('masterData', masterData);
   console.log('betsData', betsData);
   //  Fetch once before using socket (optional)
+  useEffect(() => {
+    dispatch(fetchCricketData());
+  }, [dispatch]);
+
   useEffect(() => {
     if (gameid) {
       setLoader(true);
@@ -540,9 +538,7 @@ export default function Cricketbet() {
                     {gameTitle} - {gameName}
                   </span>
                   <span>
-                    {lastUpdateddate
-                      ? formatDashboardDate(lastUpdateddate)
-                      : '—'}
+                    {matchStartTime || '—'}
                   </span>
                 </div>
                 <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
@@ -1073,7 +1069,7 @@ export default function Cricketbet() {
                               <div className='flex items-center justify-between'>
                                 <div className='font-bold'>{item.gameType}</div>
                                 <div className='text-[10px] text-gray-600 uppercase'>
-                                  {formatDashboardDate(item.date)}
+                                  {formatApiMatchDateTime(item.date)}
                                 </div>
                               </div>
                               <div
@@ -1395,10 +1391,10 @@ export default function Cricketbet() {
                                         {item.xValue}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {formatDashboardDate(item.createdAt)}
+                                        {formatApiMatchDateTime(item.createdAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {formatDashboardDate(item.updatedAt)}
+                                        {formatApiMatchDateTime(item.updatedAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
                                         {item.gameType}

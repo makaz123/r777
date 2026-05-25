@@ -167,6 +167,11 @@ export default function Userlist() {
   const [isSettling, setIsSettling] = useState(false);
   const [settleUserPL, setSettleUserPL] = useState(0);
 
+  // Exposure modal state
+  const [exposurePopup, setExposurePopup] = useState(false);
+  const [exposureData, setExposureData] = useState([]);
+  const [isFetchingExposure, setIsFetchingExposure] = useState(false);
+
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -310,6 +315,25 @@ export default function Userlist() {
       closeCreditDepositModal();
     } catch (error) {
       toast.error(error);
+    }
+  };
+
+  const handleExposureClick = async (userId) => {
+    try {
+      setIsFetchingExposure(true);
+      setExposurePopup(true);
+      const res = await api.get(`/bet/user/exposure-details?userId=${userId}`);
+      if (res?.data?.status || res?.data?.meta?.status) {
+        setExposureData(res.data.data);
+      } else {
+        setExposureData([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch exposure', error);
+      toast.error('Failed to fetch exposure details');
+      setExposureData([]);
+    } finally {
+      setIsFetchingExposure(false);
     }
   };
 
@@ -563,22 +587,39 @@ export default function Userlist() {
       row.role === 'user' && Math.abs(gross - exp) > 0.01
         ? `Client exposure: ${formatTableMoney(gross)}`
         : undefined;
+    
+    // Disable click for non-users or if exposure is 0? The request didn't specify.
+    // Let's allow clicking for anyone if they have exposure.
+    const isClickable = row.role === 'user'; // Or maybe everyone
+
     if (n === 0) {
       return (
-        <span className='text-black' title={title}>
+        <span 
+          className={`text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+          title={title}
+          onClick={() => isClickable && handleExposureClick(row._id)}
+        >
           {formatTableMoney(0)}
         </span>
       );
     }
     if (n < 0) {
       return (
-        <span className='font-medium text-red-600' title={title}>
+        <span 
+          className={`font-medium text-red-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+          title={title}
+          onClick={() => isClickable && handleExposureClick(row._id)}
+        >
           {formatTableMoney(n)}
         </span>
       );
     }
     return (
-      <span className='font-medium text-green-600' title={title}>
+      <span 
+        className={`font-medium text-green-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+        title={title}
+        onClick={() => isClickable && handleExposureClick(row._id)}
+      >
         {formatTableMoney(n)}
       </span>
     );
@@ -1845,6 +1886,81 @@ export default function Userlist() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Exposure Modal */}
+        {exposurePopup && (
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className='w-full max-w-4xl overflow-hidden rounded bg-white shadow-xl'
+            >
+              <div className='flex items-center justify-between bg-gradient-to-r from-teal-500 to-teal-700 px-4 py-2 text-white'>
+                <h2 className='text-[15px] font-bold'>User Event Exposure</h2>
+                <button
+                  onClick={() => setExposurePopup(false)}
+                  className='text-2xl font-bold leading-none hover:text-gray-200'
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className='p-4 max-h-[80vh] overflow-y-auto bg-gray-50'>
+                {isFetchingExposure ? (
+                  <div className='text-center py-10'>Loading...</div>
+                ) : exposureData && exposureData.length > 0 ? (
+                  <table className='w-full border-collapse border border-gray-300 text-[13px]'>
+                    <thead>
+                      <tr className='bg-gray-500 text-white'>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Event Date & Time</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Series Name</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Event Name</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Market Type</th>
+                        <th className='border border-gray-300 px-2 py-1.5 text-right font-bold'>Exposure</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {exposureData.map((item, idx) => (
+                        <tr key={idx} className='bg-white'>
+                          <td className='border border-gray-300 px-2 py-1.5'>
+                            {item.eventDate ? new Date(item.eventDate).toLocaleString('en-IN') : '—'}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5'>{item.sportName}</td>
+                          <td className='border border-gray-300 px-2 py-1.5'>
+                            <span 
+                              className='font-bold underline cursor-pointer text-black hover:text-blue-600'
+                              onClick={() => {
+                                setExposurePopup(false);
+                                const sName = item.sportName?.toLowerCase() || '';
+                                if(sName === 'cricket' || sName === 'tennis' || sName === 'soccer') {
+                                  navigate(`/${sName}-bet/${item.sportName}/${item.eventName}/${item.gameId}`);
+                                } else if(sName === 'casino') {
+                                  navigate(`/casino-bet/${item.gameId}`);
+                                } else {
+                                  // default fallback 
+                                  navigate(`/cricket-bet/Cricket/${item.eventName}/${item.gameId}`);
+                                }
+                              }}
+                            >
+                              {item.eventName}
+                            </span>
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 uppercase'>{item.marketName}</td>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-red-600'>
+                            {Number(item.displayExposure).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className='text-center py-10'>No exposure found.</div>
+                )}
+              </div>
             </motion.div>
           </div>
         )}

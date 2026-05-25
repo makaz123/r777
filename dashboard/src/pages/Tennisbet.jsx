@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchTennisData } from '../redux/reducer/tennisSlice';
+import { formatApiMatchDateTime } from '../utils/formatMatchDateTime';
 
 import {
   getPendingBetAmo,
@@ -24,6 +26,7 @@ export default function Tennisbet() {
   const [bettingData, setBettingData] = useState(null);
   const hasCheckedRef = useRef(false);
   const dispatch = useDispatch();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isFromMarket = searchParams.get('from') === 'market';
   const navigate = useNavigate();
@@ -47,25 +50,18 @@ export default function Tennisbet() {
   const [amountFilter, setAmountFilter] = useState('');
   const [marketNameFilter, setMarketNameFilter] = useState('');
   const [showlivetv, setshowlivetv] = useState(false);
+  const { matches: tennisMatches } = useSelector((state) => state.tennis);
 
-  const formatDashboardDate = (dateString) => {
-    if (!dateString) return '—';
-    const parts = String(dateString).split(' ');
-    if (parts.length === 3) {
-      const [datePart, timePart, ampm] = parts;
-      const dateSplit = datePart.split('/');
-      const timeSplit = timePart.split(':');
-      if (dateSplit.length === 3 && timeSplit.length >= 2) {
-        const [month, day, year] = dateSplit;
-        const [hours, minutes] = timeSplit;
-        const secs = timeSplit[2] || '00';
-        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}, ${hours}:${minutes}:${secs} ${ampm.toLowerCase()}`;
-      }
-    }
-    const d = new Date(dateString);
-    if (isNaN(d)) return dateString;
-    return d.toLocaleString('en-IN');
-  };
+  const matchStartTime = useMemo(() => {
+    if (location.state?.time) return location.state.time;
+    const listed = tennisMatches?.find(
+      (m) => String(m.id) === String(gameid)
+    );
+    if (listed?.time) return listed.time;
+    if (listed?.date) return formatApiMatchDateTime(listed.date);
+    return null;
+  }, [location.state?.time, tennisMatches, gameid]);
+
   const {
     loading,
     pendingBet,
@@ -74,7 +70,6 @@ export default function Tennisbet() {
     betPerantsData,
     masterData,
     masterDataDownline,
-    lastUpdateddate,
   } = useSelector((state) => state.market);
   const { userInfo } = useSelector((state) => state.auth);
 
@@ -92,6 +87,10 @@ export default function Tennisbet() {
     }
     return matchesAmount && matchesMarket;
   }) : [];
+
+  useEffect(() => {
+    dispatch(fetchTennisData());
+  }, [dispatch]);
 
   // Initial fetch
   useEffect(() => {
@@ -488,11 +487,7 @@ export default function Tennisbet() {
               <span className='flex items-center'>
                 {gameTitle} - {gameName}
               </span>
-              <span>
-                {lastUpdateddate
-                  ? new Date(lastUpdateddate).toLocaleString('en-IN')
-                  : '—'}
-              </span>
+              <span>{matchStartTime || '—'}</span>
             </div>
             
             <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
@@ -777,7 +772,7 @@ export default function Tennisbet() {
                             <div className='flex items-center justify-between'>
                               <div className='font-bold'>{item.gameType}</div>
                               <div className='text-[10px] text-gray-600 uppercase'>
-                                {new Date(item.date).toLocaleString('en-IN')}
+                                {formatApiMatchDateTime(item.date)}
                               </div>
                             </div>
                             <div
@@ -1097,14 +1092,10 @@ export default function Tennisbet() {
                                       {item.xValue}
                                     </td>
                                     <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                      {new Date(item.createdAt).toLocaleString(
-                                        'en-IN'
-                                      )}
+                                      {formatApiMatchDateTime(item.createdAt)}
                                     </td>
                                     <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                      {new Date(item.updatedAt).toLocaleString(
-                                        'en-IN'
-                                      )}
+                                      {formatApiMatchDateTime(item.updatedAt)}
                                     </td>
                                     <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
                                       {item.gameType}

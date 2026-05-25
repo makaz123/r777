@@ -1,6 +1,7 @@
 // controllers/tennisController.js
 import dotenv from 'dotenv';
 import { fetchMatchList, fetchMatchData } from '../services/matchApi/index.js';
+import { parseApiMatchDate } from '../utils/formatMatchDateTime.js';
 
 dotenv.config();
 
@@ -35,7 +36,11 @@ export const fetchTennisData = async (req, res) => {
           return acc;
         }, []),
       }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      .sort((a, b) => {
+        const da = parseApiMatchDate(a.date);
+        const db = parseApiMatchDate(b.date);
+        return (da?.getTime() ?? 0) - (db?.getTime() ?? 0);
+      });
 
     res.status(200).json({ success: true, data: combinedData });
   } catch (error) {

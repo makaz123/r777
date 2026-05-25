@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchSoccerData } from '../redux/reducer/soccerSlice';
+import { formatApiMatchDateTime } from '../utils/formatMatchDateTime';
 import {
   getPendingBetAmo,
   fetchSoccerBatingData,
@@ -12,7 +14,7 @@ import SoccerOdds from './SoccerComponents/SoccerOdds';
 import SoccerOver15 from './SoccerComponents/SoccerOver15';
 import SoccerOver5 from './SoccerComponents/SoccerOver_5';
 import SoccerOver25 from './SoccerComponents/SoccerOver25';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { host } from '../redux/api';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
@@ -25,6 +27,7 @@ import { TfiMenuAlt } from 'react-icons/tfi';
 export default function Soccerbet() {
   const [bettingData, setBettingData] = useState(null);
   const dispatch = useDispatch();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isFromMarket = searchParams.get('from') === 'market';
   const { gameid } = useParams() || {};
@@ -47,26 +50,19 @@ export default function Soccerbet() {
   const [amountFilter, setAmountFilter] = useState('');
   const [marketNameFilter, setMarketNameFilter] = useState('');
   const { userInfo } = useSelector((state) => state.auth);
+  const { matches: soccerMatches } = useSelector((state) => state.soccer);
   const [showlivetv, setshowlivetv] = useState(false);
 
-  const formatDashboardDate = (dateString) => {
-    if (!dateString) return '—';
-    const parts = String(dateString).split(' ');
-    if (parts.length === 3) {
-      const [datePart, timePart, ampm] = parts;
-      const dateSplit = datePart.split('/');
-      const timeSplit = timePart.split(':');
-      if (dateSplit.length === 3 && timeSplit.length >= 2) {
-        const [month, day, year] = dateSplit;
-        const [hours, minutes] = timeSplit;
-        const secs = timeSplit[2] || '00';
-        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}, ${hours}:${minutes}:${secs} ${ampm.toLowerCase()}`;
-      }
-    }
-    const d = new Date(dateString);
-    if (isNaN(d)) return dateString;
-    return d.toLocaleString('en-IN');
-  };
+  const matchStartTime = useMemo(() => {
+    if (location.state?.time) return location.state.time;
+    const listed = soccerMatches?.find(
+      (m) => String(m.id) === String(gameid)
+    );
+    if (listed?.time) return listed.time;
+    if (listed?.date) return formatApiMatchDateTime(listed.date);
+    return null;
+  }, [location.state?.time, soccerMatches, gameid]);
+
   const {
     loading,
     battingData,
@@ -74,7 +70,6 @@ export default function Soccerbet() {
     betPerantsData,
     masterData,
     masterDataDownline,
-    lastUpdateddate,
     pendingBet,
   } = useSelector((state) => state.market);
 
@@ -94,6 +89,10 @@ export default function Soccerbet() {
   }) : [];
 
   let sharedSocket;
+
+  useEffect(() => {
+    dispatch(fetchSoccerData());
+  }, [dispatch]);
 
   useEffect(() => {
     if (!gameid) return;
@@ -382,11 +381,7 @@ export default function Soccerbet() {
               <span className='flex items-center'>
                 {gameTitle} - {gameName}
               </span>
-              <span>
-                {lastUpdateddate
-                  ? formatDashboardDate(lastUpdateddate)
-                  : '—'}
-              </span>
+              <span>{matchStartTime || '—'}</span>
             </div>
             <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
               <div className='flex items-center gap-1'>
@@ -610,7 +605,7 @@ export default function Soccerbet() {
                               <div className='flex items-center justify-between'>
                                 <div className='font-bold'>{item.gameType}</div>
                                 <div className='text-[10px] text-gray-600 uppercase'>
-                                  {formatDashboardDate(item.date)}
+                                  {formatApiMatchDateTime(item.date)}
                                 </div>
                               </div>
                               <div
@@ -930,10 +925,10 @@ export default function Soccerbet() {
                                         {item.xValue}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {formatDashboardDate(item.createdAt)}
+                                        {formatApiMatchDateTime(item.createdAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {formatDashboardDate(item.updatedAt)}
+                                        {formatApiMatchDateTime(item.updatedAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
                                         {item.gameType}

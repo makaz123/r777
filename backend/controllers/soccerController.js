@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { fetchMatchList, fetchMatchData } from '../services/matchApi/index.js';
+import { parseApiMatchDate } from '../utils/formatMatchDateTime.js';
 
 dotenv.config();
 
@@ -10,7 +11,8 @@ export const fetchSoccerData = async (req, res) => {
     const t1Data = data.data.t1 || [];
     const t2Data = data.data.t2 || [];
 
-    const combinedData = [...t1Data, ...t2Data].map((match) => ({
+    const combinedData = [...t1Data, ...t2Data]
+      .map((match) => ({
       id: match.gmid,
       title: match.cname,
       match: match.ename,
@@ -32,7 +34,12 @@ export const fetchSoccerData = async (req, res) => {
 
         return acc;
       }, []),
-    }));
+    }))
+      .sort((a, b) => {
+        const da = parseApiMatchDate(a.date);
+        const db = parseApiMatchDate(b.date);
+        return (da?.getTime() ?? 0) - (db?.getTime() ?? 0);
+      });
 
     res.status(200).json({ success: true, data: combinedData });
   } catch (error) {

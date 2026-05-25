@@ -106,7 +106,8 @@ function SportsSidebar({ isOpen, onClose }) {
                           onClick={(e) => {
                             e.preventDefault();
                             navigate(
-                              `${routePrefix}/${match.title}/${match.game}/${match.id}`
+                              `${routePrefix}/${match.title}/${match.game}/${match.id}`,
+                              { state: { time: match.time } }
                             );
                             onClose();
                           }}

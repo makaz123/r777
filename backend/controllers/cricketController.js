@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 
 import adminModel from '../models/adminModel.js';
 import { fetchMatchData, fetchMatchList } from '../services/matchApi/index.js';
+import { parseApiMatchDate } from '../utils/formatMatchDateTime.js';
 
 dotenv.config();
 
@@ -48,12 +49,16 @@ export const getCricketData = async (req, res) => {
             f: match.f,
           };
         })
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+        .sort((a, b) => {
+          const da = parseApiMatchDate(a.date);
+          const db = parseApiMatchDate(b.date);
+          return (da?.getTime() ?? 0) - (db?.getTime() ?? 0);
+        });
 
       const now = new Date();
       const filteredMatches = transformed.filter((match) => {
-        const matchDate = new Date(match.date);
-        return match.inplay === true || matchDate >= now;
+        const matchDate = parseApiMatchDate(match.date);
+        return match.inplay === true || (matchDate && matchDate >= now);
       });
 
       return res.status(200).json({ success: true, matches: filteredMatches });

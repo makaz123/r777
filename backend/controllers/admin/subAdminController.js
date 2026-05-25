@@ -127,17 +127,6 @@ const updateAdmin = async (id) => {
         // Only calculate from bets for actual end-users who place bets.
         if (user.role !== 'user') {
           DownlineTotalExposure += user.totalExposure || user.exposure || 0;
-          const agentDownlinePL =
-            Number(user.uplineBettingProfitLoss ?? user.bettingProfitLoss) || 0;
-          const parentTakePct = getParentShareOnDownlineRow(user, admin);
-          const uplinePLShare = getPartnershipUplineShare(
-            agentDownlinePL,
-            parentTakePct
-          );
-          DownlineTotalBettingProfitLoss += uplinePLShare;
-          console.log(
-            `[UPDATE ADMIN] Agent/Admin ${user.userName}: exposure=${user.totalExposure || user.exposure || 0} downlinePL=${agentDownlinePL} uplineShare=${uplinePLShare} (partnership=${user.partnership || 0}%)`
-          );
           continue;
         }
 
@@ -233,6 +222,15 @@ const updateAdmin = async (id) => {
         DownlineTotalBettingProfitLoss += user.bettingProfitLoss || 0;
       }
     }
+
+    // Use exact outstanding PL calculation without compounding bugs
+    DownlineTotalBettingProfitLoss = await aggregateViewerOutstandingPL(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      admin
+    );
 
     // CLEAN SEPARATION: Update admin with separate fields
     admin.bettingProfitLoss = DownlineTotalBettingProfitLoss; // Sum of downlines' betting P/L
@@ -1207,6 +1205,16 @@ const loadAccountSummaryForAdmin = async (adminId) => {
   const updatedAdmin = await SubAdmin.findById(adminId).lean();
   if (!updatedAdmin) return null;
 
+  let uplineKeepPercent = 0;
+  if (updatedAdmin.invite) {
+    const parentAdmin = await SubAdmin.findOne({ code: updatedAdmin.invite }).lean();
+    if (parentAdmin) {
+      // Import and calculate the parent's keep percentage
+      const { getAccountMyKeepPercent } = await import('../../utils/partnershipCommissionUtils.js');
+      uplineKeepPercent = getAccountMyKeepPercent(parentAdmin);
+    }
+  }
+
   const weekRange = getCurrentWeekRange();
   const [
     weekViewerPL,
@@ -1278,6 +1286,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     tillDownlinePL,
     downlineClientPL,
     tillDownlinePLHistory,
+    uplineKeepPercent,
   });
 
   return { admin: updatedAdmin, accountSummary };
@@ -1606,6 +1615,123 @@ export const getAllOnlyUser = async (req, res) => {
   }
 };
 
+const buildDownlineViewerPayload = (admin) => {
+  const viewerMySharePercent = getAccountMyKeepPercent(admin);
+  const viewerUplineSharePercent = roundMoney(
+    Math.max(0, 100 - viewerMySharePercent)
+  );
+  return {
+    partnership: Number(admin.partnership) || 0,
+    mySharePercent: viewerMySharePercent,
+    uplineSharePercent: viewerUplineSharePercent,
+    myPercentLabel: `${viewerMySharePercent}%`,
+    uplinePercentLabel: `${viewerUplineSharePercent}%`,
+    role: admin.role,
+    userName: admin.userName,
+    code: admin.code,
+    ...splitProfitLossByMyShare(
+      roundMoney(-(admin.uplineBettingProfitLoss || 0)),
+      viewerMySharePercent
+    ),
+  };
+};
+
+/**
+ * @param rootViewer - logged-in admin (whose "My %" column is shown)
+ * @param listParent - immediate parent whose downline is listed (same as rootViewer on top-level list)
+ */
+const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
+  let exposure = user.exposure || 0;
+  if (user.role === 'user') {
+    try {
+      const pendingBets = await betModel.find({
+        userId: user._id,
+        status: 0,
+      });
+      exposure = calculateAllExposure(pendingBets);
+    } catch (err) {
+      console.error(
+        `[DOWNLINE LIST] exposure for ${user.userName}:`,
+        err.message
+      );
+    }
+  } else {
+    exposure = user.totalExposure || user.exposure || 0;
+  }
+
+  const row =
+    typeof user.toObject === 'function' ? user.toObject() : { ...user };
+  const rootMySharePercent = getAccountMyKeepPercent(rootViewer);
+  const rootUplineSharePercent = roundMoney(
+    Math.max(0, 100 - rootMySharePercent)
+  );
+  const isEndUser = row.role === 'user';
+  const isNestedList = listParent.code !== rootViewer.code;
+
+  const parentShareOnRow = getParentShareOnDownlineRow(row, rootViewer);
+  const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, rootViewer);
+  const commissionPct = parseCommissionPercent(row.commition);
+
+  // End-users on a nested drill-down: show root viewer's share on the branch (e.g. 90%), not agent keep (10%).
+  const parentSharePercent = isEndUser
+    ? isNestedList
+      ? getParentShareOnDownlineRow(listParent, rootViewer)
+      : rootMySharePercent
+    : parentShareOnRow;
+  const downlineKeepPercent = isEndUser
+    ? commissionPct || rootUplineSharePercent
+    : downlineKeepOnRow;
+
+  const myPercent = isEndUser
+    ? `${parentSharePercent}%`
+    : `${parentSharePercent}% / ${downlineKeepPercent}%`;
+
+  const rawBettingPL = roundMoney(row.bettingProfitLoss || 0);
+  const parentViewPL = roundMoney(-rawBettingPL);
+  const plSplit = splitProfitLossByMyShare(
+    parentViewPL,
+    isEndUser ? parentSharePercent : parentShareOnRow
+  );
+
+  const baseBalance = isEndUser
+    ? roundMoney(row.baseBalance ?? row.balance ?? 0)
+    : roundMoney((row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0));
+  const balance = baseBalance;
+  const avbalance = roundMoney(row.avbalance || 0);
+  const pendingBal = roundMoney(-balance);
+  const totalExposure = isEndUser ? roundMoney(exposure) : 0;
+  const hasOpenExposure = Math.abs(totalExposure) > 0.001;
+  const currentPL =
+    isEndUser && !hasOpenExposure
+      ? roundMoney(avbalance - baseBalance)
+      : 0;
+
+  return {
+    ...row,
+    exposure: totalExposure,
+    totalExposure,
+    pendingBal,
+    currentPL,
+    balance,
+    downlinePartnership: parentShareOnRow,
+    parentSharePercent,
+    downlineKeepPercent,
+    downlineSharePercent: downlineKeepPercent,
+    viewerShareOnRow: parentSharePercent,
+    myPartnershipPercent: rootMySharePercent,
+    mySharePercent: parentSharePercent,
+    myPercent,
+    rawBettingPL,
+    myPLShare: plSplit.myPL,
+    uplinePLShare: plSplit.uplinePL,
+    uplinePartnershipPercent: isEndUser
+      ? rootUplineSharePercent
+      : downlineKeepPercent,
+    commition: row.commition || '0',
+    commissionEarned: row.commissionEarned || 0,
+  };
+};
+
 /**
  * Unified downline list for Agent List (agents) and Client List (users).
  * Includes viewer partnership % and per-row share labels.
@@ -1637,12 +1763,6 @@ export const getDownlineList = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    const viewerPartnership = Number(admin.partnership) || 0;
-    const viewerMySharePercent = getAccountMyKeepPercent(admin);
-    const viewerUplineSharePercent = roundMoney(
-      Math.max(0, 100 - viewerMySharePercent)
-    );
-
     const baseInviteFilter =
       role === 'supperadmin'
         ? { _id: { $ne: id }, invite: admin.code, status: { $ne: 'delete' } }
@@ -1671,89 +1791,7 @@ export const getDownlineList = async (req, res) => {
       .skip((pageNum - 1) * limitNum);
 
     const data = await Promise.all(
-      allUsers.map(async (user) => {
-        let exposure = user.exposure || 0;
-        if (user.role === 'user') {
-          try {
-            const pendingBets = await betModel.find({
-              userId: user._id,
-              status: 0,
-            });
-            exposure = calculateAllExposure(pendingBets);
-          } catch (err) {
-            console.error(
-              `[DOWNLINE LIST] exposure for ${user.userName}:`,
-              err.message
-            );
-          }
-        } else {
-          exposure = user.totalExposure || user.exposure || 0;
-        }
-
-        const row = user.toObject();
-        const isEndUser = row.role === 'user';
-        const parentShareOnRow = getParentShareOnDownlineRow(row, admin);
-        const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, admin);
-        const commissionPct = parseCommissionPercent(row.commition);
-
-        const parentSharePercent = isEndUser
-          ? viewerMySharePercent
-          : parentShareOnRow;
-        const downlineKeepPercent = isEndUser
-          ? commissionPct || viewerUplineSharePercent
-          : downlineKeepOnRow;
-
-        const myPercent = isEndUser
-          ? `${parentSharePercent}%`
-          : `${parentSharePercent}% / ${downlineKeepPercent}%`;
-
-        const rawBettingPL = roundMoney(row.bettingProfitLoss || 0);
-        const parentViewPL = roundMoney(-rawBettingPL);
-        const plSplit = splitProfitLossByMyShare(
-          parentViewPL,
-          isEndUser ? viewerMySharePercent : parentShareOnRow
-        );
-
-        const baseBalance = isEndUser
-          ? roundMoney(row.baseBalance ?? row.balance ?? 0)
-          : roundMoney(
-              (row.baseBalance || 0) + (row.uplineBettingProfitLoss || 0)
-            );
-        const balance = baseBalance;
-        const avbalance = roundMoney(row.avbalance || 0);
-        const pendingBal = roundMoney(-balance);
-        const totalExposure = isEndUser ? roundMoney(exposure) : 0;
-        const hasOpenExposure = Math.abs(totalExposure) > 0.001;
-        const currentPL =
-          isEndUser && !hasOpenExposure
-            ? roundMoney(avbalance - baseBalance)
-            : 0;
-
-        return {
-          ...row,
-          exposure: totalExposure,
-          totalExposure,
-          pendingBal,
-          currentPL,
-          balance,
-          downlinePartnership: parentShareOnRow,
-          parentSharePercent,
-          downlineKeepPercent,
-          downlineSharePercent: downlineKeepPercent,
-          viewerShareOnRow: parentSharePercent,
-          myPartnershipPercent: viewerMySharePercent,
-          mySharePercent: parentSharePercent,
-          myPercent,
-          rawBettingPL,
-          myPLShare: plSplit.myPL,
-          uplinePLShare: plSplit.uplinePL,
-          uplinePartnershipPercent: isEndUser
-            ? viewerUplineSharePercent
-            : downlineKeepPercent,
-          commition: row.commition || '0',
-          commissionEarned: row.commissionEarned || 0,
-        };
-      })
+      allUsers.map((user) => enrichDownlineRow(user, admin, admin))
     );
 
     const totalUsers = await SubAdmin.countDocuments(filter);
@@ -1762,19 +1800,7 @@ export const getDownlineList = async (req, res) => {
       success: true,
       message: 'Downline list retrieved successfully',
       listType: type,
-      viewer: {
-        partnership: viewerPartnership,
-        mySharePercent: viewerMySharePercent,
-        uplineSharePercent: viewerUplineSharePercent,
-        myPercentLabel: `${viewerMySharePercent}%`,
-        uplinePercentLabel: `${viewerUplineSharePercent}%`,
-        role: admin.role,
-        userName: admin.userName,
-        ...splitProfitLossByMyShare(
-          roundMoney(-(admin.uplineBettingProfitLoss || 0)),
-          viewerMySharePercent
-        ),
-      },
+      viewer: buildDownlineViewerPayload(admin),
       data,
       totalUsers,
       totalPages: Math.ceil(totalUsers / limitNum) || 1,
@@ -1827,13 +1853,27 @@ export const getUsersByInvite = async (req, res) => {
 
 export const getSubAdminuser = async (req, res) => {
   try {
-    const { code } = req.body; // Get invite code from request body
+    const { id } = req;
+    const { code } = req.body;
     const { page = 1, limit = 10 } = req.query;
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
     if (!code) {
       return res.status(400).json({ message: 'Admin invite code is required' });
+    }
+
+    const rootViewer = await SubAdmin.findById(id);
+    if (!rootViewer) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    const listParent = await SubAdmin.findOne({
+      code,
+      status: { $ne: 'delete' },
+    });
+    if (!listParent) {
+      return res.status(404).json({ message: 'Parent account not found' });
     }
 
     const filter = { invite: code, status: { $ne: 'delete' } };
@@ -1841,9 +1881,24 @@ export const getSubAdminuser = async (req, res) => {
     const subAdmins = await SubAdmin.find(filter)
       .limit(limitNum)
       .skip((pageNum - 1) * limitNum);
+
+    const data = await Promise.all(
+      subAdmins.map((user) => enrichDownlineRow(user, rootViewer, listParent))
+    );
+    const totalUsers = await SubAdmin.countDocuments(filter);
+
     return res.status(200).json({
-      message: `Sub-admin details for level  retrieved successfully`,
-      data: subAdmins,
+      message: 'Sub-admin details for level retrieved successfully',
+      data,
+      viewer: buildDownlineViewerPayload(rootViewer),
+      listParent: {
+        userName: listParent.userName,
+        code: listParent.code,
+        role: listParent.role,
+      },
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limitNum) || 1,
+      currentPage: pageNum,
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);

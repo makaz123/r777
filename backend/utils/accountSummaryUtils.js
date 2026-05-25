@@ -6,6 +6,7 @@ import {
   getAccountMyKeepPercent,
   getViewerShareOfUserClientPL,
   roundMoney,
+  splitProfitLossByMyShare,
 } from './partnershipCommissionUtils.js';
 
 /** Current betting week: Monday 00:00 through Sunday 23:59:59.999 */
@@ -514,6 +515,125 @@ export function computeViewerPeriodPL(
   return roundMoney(total);
 }
 
+/**
+ * Fraction (0–1) of a downline end-user's client P/L that flows to this viewer
+ * after all partnership splits in between. Multiply by clientPL to get the
+ * viewer's user-perspective share of that user's P/L (sign preserved: + = user won).
+ */
+export function getViewerShareRatioForUser(viewer, user, accountByCode) {
+  if (!viewer || !user || user.role !== 'user') return 0;
+  const parentViewForUnitClient = getViewerShareOfUserClientPL(
+    viewer.code,
+    user,
+    accountByCode,
+    1
+  );
+  return -parentViewForUnitClient;
+}
+
+/** Viewer partnership % on an end-user row — matches root Client List My % (viewer keep, not agent row). */
+export function getViewerPLSharePercentOnUser(viewer, endUser, accountByCode) {
+  if (!viewer || !endUser || endUser.role !== 'user') return 0;
+  return getAccountMyKeepPercent(viewer);
+}
+
+/** Scale one bet's client P/L to the viewer's partnership share (matches Userlist My %). */
+export function scaleClientPLForViewer(
+  viewer,
+  endUser,
+  clientPL,
+  accountByCode
+) {
+  const parentPL = getViewerShareOfUserClientPL(
+    viewer.code,
+    endUser,
+    accountByCode,
+    clientPL
+  );
+
+  const ratio = getViewerShareRatioForUser(viewer, endUser, accountByCode);
+  const sharePct = roundMoney(ratio * 100);
+
+  return {
+    sharePct,
+    clientScaled: roundMoney(-parentPL),
+    parentPL,
+  };
+}
+
+/** Map: userId → viewer share ratio (0–1). Pre-computed for fast per-bet scaling. */
+export function buildViewerShareRatioByUserId(viewer, endUsers, accountByCode) {
+  const map = new Map();
+  for (const user of endUsers) {
+    if (user.role !== 'user') continue;
+    map.set(
+      user._id.toString(),
+      getViewerShareRatioForUser(viewer, user, accountByCode)
+    );
+  }
+  return map;
+}
+
+/** Ensure every downline row is in the invite-tree map (partnership chain lookups). */
+export function mergeDownlineIntoAccountByCode(accountByCode, downlineRows) {
+  for (const row of downlineRows || []) {
+    if (row?.code) accountByCode.set(row.code, row);
+  }
+  return accountByCode;
+}
+
+/** Resolve end-user row for a settled bet (by userId then userName). */
+export function resolveBetEndUser(bet, endUsers) {
+  if (!bet) return null;
+  const id = bet.userId ? String(bet.userId) : '';
+  if (id) {
+    const byId = endUsers.find(
+      (u) => u.role === 'user' && u._id.toString() === id
+    );
+    if (byId) return byId;
+  }
+  const name = String(bet.userName || '').toLowerCase();
+  if (!name) return null;
+  return (
+    endUsers.find(
+      (u) => u.role === 'user' && String(u.userName || '').toLowerCase() === name
+    ) || null
+  );
+}
+
+/** Viewer's parent-view P/L share from one bet's client-side delta. */
+export function getViewerParentPLFromClientDelta(
+  viewer,
+  endUser,
+  clientPL,
+  accountByCode
+) {
+  if (!viewer || !endUser || endUser.role !== 'user') return 0;
+  return getViewerShareOfUserClientPL(
+    viewer.code,
+    endUser,
+    accountByCode,
+    clientPL
+  );
+}
+
+/** Client-side P/L scaled to viewer's partnership share (sign matches client P/L). */
+export function getViewerClientScaledPL(
+  viewer,
+  endUser,
+  clientPL,
+  accountByCode
+) {
+  return roundMoney(
+    -getViewerParentPLFromClientDelta(
+      viewer,
+      endUser,
+      clientPL,
+      accountByCode
+    )
+  );
+}
+
 export function buildAccountSummary(admin, plTotals = {}) {
   const myKeepPct = getAccountMyKeepPercent(admin);
   const isEndUserRole = admin.role === 'user';
@@ -539,8 +659,14 @@ export function buildAccountSummary(admin, plTotals = {}) {
   const downlineClientPL = roundMoney(
     plTotals.downlineClientPL ?? -tillDownlinePL
   );
-  /** Upline partnership share from bet history only — not reduced by downline cash settlement. */
-  const uplineSharePL = roundMoney(tillDownlinePLHistory - myPLTillDate);
+  
+  // Calculate Upline and Other Admin Shares
+  const uplinePct = Number(plTotals.uplineKeepPercent) || 0;
+  const uplineSharePL = uplinePct > 0 
+    ? roundMoney((tillDownlinePLHistory * uplinePct) / 100) 
+    : 0;
+  // Other Admin is whatever remains after My Share and Upline Share
+  const otherAdminSharePL = roundMoney(tillDownlinePLHistory - myPLTillDate - uplineSharePL);
 
   const roleLabel =
     admin.role === 'supperadmin'
@@ -569,6 +695,7 @@ export function buildAccountSummary(admin, plTotals = {}) {
     /** Upline partnership share (bet history); downline cash settlement does not change this. */
     uplineDena: uplineSharePL,
     uplineSharePL,
+    otherAdminSharePL,
     /** Viewer share of outstanding downline P/L (internal / legacy). */
     downlineDena: tillViewerOutstandingPL,
     downlineDenaGross: tillDownlinePL,

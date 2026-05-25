@@ -628,8 +628,8 @@ export default function AgentLIst() {
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       {user.myPercent ??
                         (user.role === 'user'
-                          ? `${user.parentSharePercent ?? downlineViewer?.mySharePercent ?? 0}%`
-                          : `${user.parentSharePercent ?? user.partnership ?? 0}% / ${user.downlineKeepPercent ?? 100 - (user.partnership || 0)}%`)}
+                          ? `${user.parentSharePercent ?? user.mySharePercent ?? 0}%`
+                          : `${user.parentSharePercent ?? user.viewerShareOnRow ?? user.partnership ?? 0}% / ${user.downlineKeepPercent ?? user.downlineSharePercent ?? 0}%`)}
                     </td>
                     <td className='border border-gray-100 px-[10px] py-[9px]'>
                       <div className='flex items-center gap-x-2'>

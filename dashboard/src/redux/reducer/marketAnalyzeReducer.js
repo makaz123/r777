@@ -267,6 +267,7 @@ const initialState = {
   errorMessage: null,
   successMessage: null,
   marketData: [],
+  sportAnalysis: {},
   pendingBet: [],
   betsData: [],
   battingData: [],
@@ -279,6 +280,7 @@ const initialState = {
   casinoAnalysisLoading: false,
   loading: false,
   lastUpdateddate: null,
+  comboBookData: [],
 };
 
 const marketSlice = createSlice({
@@ -303,7 +305,8 @@ const marketSlice = createSlice({
       //For Market Games
       .addCase(marketGames.fulfilled, (state, action) => {
         state.loading = false;
-        state.marketData = action.payload.data;
+        state.marketData = action.payload?.data ?? [];
+        state.sportAnalysis = action.payload?.sportAnalysis ?? {};
       })
       .addCase(marketGames.pending, (state) => {
         state.loading = true;
@@ -324,6 +327,7 @@ const marketSlice = createSlice({
         state.loading = false;
         state.pendingBet = payload?.data.data;
         state.betsData = payload?.data.betsData;
+        state.comboBookData = payload?.data.comboBookData || [];
         state.successMessage = payload?.message;
       })
       .addCase(getPendingBetAmo.rejected, (state, { payload }) => {

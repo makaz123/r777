@@ -1,7 +1,163 @@
 import betModel from '../../models/betModel.js';
 import SubAdmin from '../../models/subAdminModel.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
-import { calculateOutcomeScenarios } from '../../utils/marketCalculationUtils.js';
+import {
+  calculateOutcomeScenarios,
+} from '../../utils/marketCalculationUtils.js';
+import { getViewerShareOfUserClientPL } from '../../utils/partnershipCommissionUtils.js';
+
+const round2 = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
+const SPORT_TAB_MAP = {
+  'Cricket Game': 'Cricket',
+  'Tennis Game': 'Tennis',
+  'Soccer Game': 'Soccer',
+  'Horse Racing Game': 'Horse Racing',
+  'Horse Racing': 'Horse Racing',
+};
+
+const normalizeSportTab = (gameName) => SPORT_TAB_MAP[gameName] || null;
+
+const splitEventName = (eventName) => {
+  const name = String(eventName || '').trim();
+  const sep = ' - ';
+  const idx = name.indexOf(sep);
+  if (idx > 0) {
+    return {
+      title: name.slice(0, idx).trim(),
+      match: name.slice(idx + sep.length).trim() || name,
+    };
+  }
+  return { title: name, match: name };
+};
+
+const buildMarketRow = (marketName, bets) => {
+  const scenarios = calculateOutcomeScenarios(bets);
+  const teams = Object.keys(scenarios).filter((t) => t !== '__OTHER__');
+  const team1 = teams[0] || 'Team 1';
+  const team2 =
+    teams[1] || (scenarios['__OTHER__'] !== undefined ? 'Team 2' : 'Team 2');
+  const team1Value = round2(scenarios[team1] ?? 0);
+  const team2Value = round2(
+    scenarios[team2] ?? scenarios['__OTHER__'] ?? 0
+  );
+  const outcomeVals = Object.values(scenarios);
+  const exposureVal = outcomeVals.length ? round2(Math.min(...outcomeVals)) : 0;
+  const maxProfit = outcomeVals.length ? round2(Math.max(...outcomeVals)) : 0;
+
+  return {
+    name: marketName,
+    bets: bets.length,
+    exposure: exposureVal,
+    maxProfit,
+    team1,
+    team2,
+    team1Value,
+    team2Value,
+  };
+};
+
+/** Build per-sport event rows for Sports Analysis UI (exposure, markets, teams). */
+export const buildSportAnalysisFromBets = (bets) => {
+  const buckets = {
+    Cricket: [],
+    Tennis: [],
+    Soccer: [],
+    'Horse Racing': [],
+  };
+
+  const eventMap = new Map();
+
+  for (const bet of bets) {
+    const sport = normalizeSportTab(bet.gameName);
+    if (!sport) continue;
+    const key = `${sport}|${bet.gameId}|${bet.eventName}`;
+    if (!eventMap.has(key)) {
+      const { title, match } = splitEventName(bet.eventName);
+      eventMap.set(key, {
+        sport,
+        gameId: bet.gameId,
+        gameName: bet.gameName,
+        eventName: bet.eventName,
+        title,
+        match,
+        bets: [],
+      });
+    }
+    eventMap.get(key).bets.push(bet);
+  }
+
+  for (const event of eventMap.values()) {
+    const marketsMap = new Map();
+    for (const bet of event.bets) {
+      const mKey = bet.gameType || bet.marketName || 'Market';
+      if (!marketsMap.has(mKey)) marketsMap.set(mKey, []);
+      marketsMap.get(mKey).push(bet);
+    }
+
+    const markets = [];
+    let totalBets = 0;
+    let totalAmount = 0;
+
+    for (const [name, mBets] of marketsMap) {
+      const row = buildMarketRow(name, mBets);
+      markets.push(row);
+      totalBets += row.bets;
+      totalAmount += mBets.reduce(
+        (s, b) => s + (Number(b.betAmount) || 0),
+        0
+      );
+    }
+
+    const primary =
+      markets.find((m) => m.name === 'Match Odds') || markets[0] || null;
+
+    buckets[event.sport].push({
+      title: event.title,
+      match: event.match,
+      eventName: event.eventName,
+      gameId: event.gameId,
+      gameName: event.gameName,
+      totalBets,
+      exposure: primary?.exposure ?? 0,
+      totalAmount: round2(totalAmount),
+      maxProfit: primary?.maxProfit ?? 0,
+      team1: primary?.team1 ?? 'Team 1',
+      team2: primary?.team2 ?? 'Team 2',
+      market: primary,
+      markets,
+    });
+  }
+
+  const sportAnalysis = {};
+  for (const [sport, events] of Object.entries(buckets)) {
+    sportAnalysis[sport] = { count: events.length, events };
+  }
+  return sportAnalysis;
+};
+
+async function getDownlineUserIds(adminId) {
+  const downlines = await SubAdmin.aggregate([
+    { $match: { _id: adminId } },
+    {
+      $graphLookup: {
+        from: 'subadmins',
+        startWith: '$code',
+        connectFromField: 'code',
+        connectToField: 'invite',
+        as: 'downline',
+        depthField: 'level',
+        restrictSearchWithMatch: { status: { $ne: 'delete' } },
+      },
+    },
+    {
+      $project: {
+        ids: { $map: { input: '$downline', as: 'u', in: '$$u._id' } },
+      },
+    },
+  ]);
+  return (downlines[0]?.ids || []).map((x) => x.toString());
+}
 
 export const getDownlinePendingBetsByGame = async (req, res) => {
   const { id } = req;
@@ -15,28 +171,14 @@ export const getDownlinePendingBetsByGame = async (req, res) => {
         .status(404)
         .json({ success: false, message: 'User not found' });
 
-    const downlines = await SubAdmin.aggregate([
-      { $match: { _id: admin._id } },
-      {
-        $graphLookup: {
-          from: 'subadmins',
-          startWith: '$code',
-          connectFromField: 'code',
-          connectToField: 'invite',
-          as: 'downline',
-          depthField: 'level',
-          restrictSearchWithMatch: { status: { $ne: 'delete' } },
-        },
-      },
-      {
-        $project: {
-          ids: { $map: { input: '$downline', as: 'u', in: '$$u._id' } },
-        },
-      },
-    ]);
-
-    const ids = (downlines[0]?.ids || []).map((x) => x.toString());
-    if (ids.length === 0) return res.json({ success: true, data: [] });
+    const ids = await getDownlineUserIds(admin._id);
+    if (ids.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        sportAnalysis: buildSportAnalysisFromBets([]),
+      });
+    }
 
     const pipeline = [{ $match: { userId: { $in: ids }, status: 0 } }];
 
@@ -77,9 +219,12 @@ export const getDownlinePendingBetsByGame = async (req, res) => {
       events: g.events,
     }));
 
-    console.log('GetDownlinePendingBetByGame', result);
+    const pendingBets = await betModel
+      .find({ userId: { $in: ids }, status: 0 })
+      .lean();
+    const sportAnalysis = buildSportAnalysisFromBets(pendingBets);
 
-    return res.status(200).json({ success: true, data: result });
+    return res.status(200).json({ success: true, data: result, sportAnalysis });
   } catch (err) {
     console.error(err);
     return res
@@ -129,13 +274,23 @@ export const getPendingMarketAmounts = async (req, res) => {
       },
       {
         $project: {
-          ids: { $map: { input: '$downline', as: 'u', in: '$$u._id' } },
+          users: '$downline',
         },
       },
     ]);
 
-    const ids = (downlines[0]?.ids || []).map((x) => x.toString());
-    if (ids.length === 0) return res.json({ success: true, data: [] });
+    const downlineUsers = downlines[0]?.users || [];
+    const ids = downlineUsers.map((x) => x._id.toString());
+    if (ids.length === 0) return res.json({ success: true, data: [], comboBookData: [] });
+
+    const userMap = {};
+    const accountByCode = new Map();
+    accountByCode.set(admin.code, admin);
+
+    for (const u of downlineUsers) {
+      userMap[u._id.toString()] = u;
+      accountByCode.set(u.code, u);
+    }
 
     const validGameTypes = betTypes.map((bt) => bt.gameType);
 
@@ -152,6 +307,24 @@ export const getPendingMarketAmounts = async (req, res) => {
     let op = 0;
 
     for (const bet of bets) {
+      const clientUser = userMap[bet.userId.toString()];
+      if (!clientUser) continue;
+      
+      const shareAmountFor100 = getViewerShareOfUserClientPL(admin.code, clientUser, accountByCode, 100);
+      const shareRatio = shareAmountFor100 / (-100);
+
+      // Apply vice-versa for Admin
+      let adminOtype = bet.otype;
+      let adminTotalPrice = bet.price * shareRatio;
+      let adminTotalBetAmount = bet.betAmount * shareRatio;
+
+      // Swap back/lay for non-fancy to show liability properly
+      if (bet.gameType !== 'Normal' && !bet.gameType.toLowerCase().includes('fancy')) {
+         adminOtype = bet.otype === 'back' ? 'lay' : 'back';
+         adminTotalPrice = bet.betAmount * shareRatio;
+         adminTotalBetAmount = bet.price * shareRatio;
+      }
+
       const gameKey = `${bet.gameType}`;
 
       if (!grouped[gameKey]) {
@@ -159,9 +332,9 @@ export const getPendingMarketAmounts = async (req, res) => {
         grouped[gameKey] = {
           gameType: bet.gameType,
           teamName: bet.teamName,
-          otype: bet.otype,
-          totalBetAmount: bet.betAmount,
-          totalPrice: bet.price,
+          otype: adminOtype,
+          totalBetAmount: adminTotalBetAmount,
+          totalPrice: adminTotalPrice,
         };
       } else {
         const existing = grouped[gameKey];
@@ -172,56 +345,116 @@ export const getPendingMarketAmounts = async (req, res) => {
         // Case 1: Same team & same type
         if (
           existing.teamName === bet.teamName &&
-          existing.otype === bet.otype
+          existing.otype === adminOtype
         ) {
-          existing.totalBetAmount += bet.betAmount;
-          existing.totalPrice += bet.price;
+          existing.totalBetAmount += adminTotalBetAmount;
+          existing.totalPrice += adminTotalPrice;
         }
 
         // Case 2: Same team but different type (back/lay)
         else if (
           existing.teamName === bet.teamName &&
-          existing.otype !== bet.otype
+          existing.otype !== adminOtype
         ) {
-          if (bet.price >= existing.totalBetAmount) {
-            existing.totalPrice = bet.price - ob;
-            existing.totalBetAmount = bet.betAmount - op;
-            existing.otype = bet.otype;
+          if (adminTotalPrice >= existing.totalBetAmount) {
+            existing.totalPrice = adminTotalPrice - ob;
+            existing.totalBetAmount = adminTotalBetAmount - op;
+            existing.otype = adminOtype;
           } else {
-            existing.totalPrice = op - bet.betAmount;
-            existing.totalBetAmount = ob - bet.price;
+            existing.totalPrice = op - adminTotalBetAmount;
+            existing.totalBetAmount = ob - adminTotalPrice;
           }
         }
 
         // Case 3: Different team, same type
         else if (
           existing.teamName !== bet.teamName &&
-          existing.otype === bet.otype
+          existing.otype === adminOtype
         ) {
-          if (bet.price >= existing.totalBetAmount) {
-            existing.totalPrice = bet.price - ob;
-            existing.totalBetAmount = bet.betAmount - op;
+          if (adminTotalPrice >= existing.totalBetAmount) {
+            existing.totalPrice = adminTotalPrice - ob;
+            existing.totalBetAmount = adminTotalBetAmount - op;
             existing.teamName = bet.teamName;
           } else {
-            existing.totalPrice = op - bet.betAmount;
-            existing.totalBetAmount = ob - bet.price;
+            existing.totalPrice = op - adminTotalBetAmount;
+            existing.totalBetAmount = ob - adminTotalPrice;
           }
         }
 
         // Case 4: Different team and different type
         else {
-          existing.totalBetAmount += bet.betAmount;
-          existing.totalPrice += bet.price;
+          existing.totalBetAmount += adminTotalBetAmount;
+          existing.totalPrice += adminTotalPrice;
         }
       }
     }
 
-    const result = Object.values(grouped);
+    const result = Object.values(grouped).map(g => ({
+       ...g,
+       totalBetAmount: Math.round(g.totalBetAmount * 100) / 100,
+       totalPrice: Math.round(g.totalPrice * 100) / 100,
+    }));
     console.log('GetPendingMarketAmounts', result);
+
+    const comboBookDataMap = {}; // { [teamName]: adminNetOutcome }
+    const matchOddsBets = bets.filter(b => b.gameType === 'Match Odds' || b.gameType === 'Winner');
+    
+    // Find all unique teams involved in Match Odds bets
+    const matchOddsTeams = new Set();
+    for (const bet of matchOddsBets) {
+       if (bet.teamName) matchOddsTeams.add(bet.teamName);
+    }
+    const allTeams = Array.from(matchOddsTeams);
+
+    // Initialize map
+    for (const team of allTeams) {
+       comboBookDataMap[team] = 0;
+    }
+
+    // Now calculate Admin net outcome per team
+    for (const bet of matchOddsBets) {
+      const clientUser = userMap[bet.userId.toString()];
+      if (!clientUser) continue;
+      
+      const shareAmountFor100 = getViewerShareOfUserClientPL(admin.code, clientUser, accountByCode, 100);
+      const shareRatio = shareAmountFor100 / (-100);
+      
+      const betTeam = bet.teamName;
+      const profit = Number(bet.betAmount) || 0;
+      const stake = Number(bet.price) || 0;
+      
+      for (const team of allTeams) {
+        let userNetOutcome = 0;
+        const isBetOnThisTeam = (betTeam === team);
+        
+        if (bet.otype === 'back') {
+           if (isBetOnThisTeam) {
+              userNetOutcome = profit;
+           } else {
+              userNetOutcome = -stake;
+           }
+        } else { // lay
+           if (isBetOnThisTeam) {
+              userNetOutcome = -stake;
+           } else {
+              userNetOutcome = profit;
+           }
+        }
+        
+        // Admin liability is vice-versa (-1) * shareRatio
+        const adminOutcome = -1 * userNetOutcome * shareRatio;
+        comboBookDataMap[team] += adminOutcome;
+      }
+    }
+    
+    const comboBookData = Object.keys(comboBookDataMap).map(team => ({
+       teamName: team,
+       netOutcome: Math.round(comboBookDataMap[team] * 100) / 100
+    }));
 
     return res
       .status(200)
-      .json({ success: true, data: result, betsData: bets });
+      .json({ success: true, data: result, betsData: bets, comboBookData });
   } catch (error) {
     console.error('Error fetching bets:', error);
     return res.status(500).json({ message: 'Server error' });

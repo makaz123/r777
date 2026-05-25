@@ -53,10 +53,7 @@ const AccountSummaryBar = () => {
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
   const downlineAmount = Number(
-    userInfo?.accountSummary?.downlineClientPL ??
-      (userInfo?.accountSummary?.downlineDenaGross != null
-        ? -Number(userInfo.accountSummary.downlineDenaGross)
-        : null) ??
+    userInfo?.accountSummary?.downlineDenaGross ??
       downlineViewer?.totalPL ??
       0
   );
@@ -65,6 +62,9 @@ const AccountSummaryBar = () => {
       userInfo?.accountSummary?.uplineDena ??
       downlineViewer?.uplinePL ??
       0
+  );
+  const otherAdminAmount = Number(
+    userInfo?.accountSummary?.otherAdminSharePL ?? 0
   );
 
   const downlineLenDena =
@@ -84,16 +84,16 @@ const AccountSummaryBar = () => {
 
   const downlineTooltip =
     downlineLenDena === 'lena'
-      ? 'Downline users ka total client P/L (100%): users ne haara — aapko lena hai. Cash settlement se kam hota hai.'
+      ? 'Downline users ka total client P/L (100%): users ne haara — aapko lena hai (Positive value).'
       : downlineLenDena === 'dena'
-        ? 'Downline users ka total client P/L (100%): users ne jeeta — aapko dena hai. Cash settlement se kam hota hai.'
+        ? 'Downline users ka total client P/L (100%): users ne jeeta — aapko dena hai.'
         : 'Down line settled — koi outstanding client P/L nahi.';
 
   const uplineTooltip =
     uplineLenDena === 'dena'
-      ? 'Upline ka partnership share (bet history) — downline cash settlement se change nahi hota.'
+      ? 'Upline ka partnership share (bet history) — ONLY UPLINE percentage.'
       : uplineLenDena === 'lena'
-        ? 'Upline se partnership share (bet history) — downline cash settlement se change nahi hota.'
+        ? 'Upline se partnership share (bet history) — ONLY UPLINE percentage.'
         : 'Up line settled — koi outstanding upline share nahi.';
 
   const summary = userInfo?.accountSummary;
@@ -173,14 +173,26 @@ const AccountSummaryBar = () => {
               {!['supperadmin'].includes(
                 userInfo?.role
               ) && (
-                <MetricTooltipRow
-                  label={`Up Line (${uplineLenDena}) : `}
-                  tooltip={summary?.uplineTooltip ?? uplineTooltip}
-                >
-                  <span className={plColorClass(uplineAmount)}>
-                    {formatMoney(uplineAmount)}
-                  </span>
-                </MetricTooltipRow>
+                <>
+                  <MetricTooltipRow
+                    label={`Up Line (${uplineLenDena}) : `}
+                    tooltip={summary?.uplineTooltip ?? uplineTooltip}
+                  >
+                    <span className={plColorClass(uplineAmount)}>
+                      {formatMoney(uplineAmount)}
+                    </span>
+                  </MetricTooltipRow>
+                  {otherAdminAmount !== 0 && (
+                    <MetricTooltipRow
+                      label={`Other Admin : `}
+                      tooltip="Shows ONLY other admin percentage"
+                    >
+                      <span className={plColorClass(otherAdminAmount)}>
+                        {formatMoney(otherAdminAmount)}
+                      </span>
+                    </MetricTooltipRow>
+                  )}
+                </>
               )}
               <MetricTooltipRow
                 label={`Down Line (${downlineLenDena}) : `}
@@ -207,8 +219,8 @@ const AccountSummaryBar = () => {
                   </span>
                 </MetricTooltipRow>
                 <MetricTooltipRow
-                  label='Exposure : '
-                  tooltip='Your current market exposure with all kind of games that your clients are playing currently.'
+                  label='My Exposure : '
+                  tooltip='Shows ONLY your percentage exposure (Total Exposure x My %)'
                 >
                   <span
                     className={plColorClass(
@@ -246,8 +258,8 @@ const AccountSummaryBar = () => {
 
             <div className='space-y-1 md:col-span-1'>
               <MetricTooltipRow
-                label='My P&L : '
-                tooltip='Your overall betting P/L from downline (all settled bets). Cash settlement does not change this.'
+                label='Dashboard P&L : '
+                tooltip='Shows ONLY your percentage (P x My % / 100). Lifetime betting P&L from downline.'
                 alignTooltip='center'
               >
                 <span

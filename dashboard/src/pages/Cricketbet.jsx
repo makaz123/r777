@@ -78,6 +78,7 @@ export default function Cricketbet() {
     masterData,
     masterDataDownline,
     lastUpdateddate,
+    comboBookData,
   } = useSelector((state) => state.market);
 
   const [activeTab, setActiveTab] = useState('fancy');
@@ -482,14 +483,24 @@ export default function Cricketbet() {
                 </div>
                 <table className='w-full'>
                   <tbody>
-                    <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
-                      <td className='py-0.5 pl-3 font-bold'>Lucknow Super Giants</td>
-                      <td className='text-right py-0.5 px-1'>[<span className='text-[12px]'>Punjab Kings</span> :<span className='text-red-500 text-[12px]'>0.98</span>] <span className='font-bold text-red-500 w-[155px] max-w-[240px] inline-block'>-15.00</span></td>
-                    </tr>
-                    <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
-                      <td className='py-0.5 pl-3 font-bold'>Punjab Kings</td>
-                      <td className='text-right py-0.5 px-1'>[<span className='text-[12px]'>Punjab Kings</span> :<span className='text-green-500 text-[12px]'>0.98</span>] <span className='font-bold text-green-500 w-[155px] max-w-[240px] inline-block'>-15.00</span></td>
-                    </tr>
+                    {comboBookData && comboBookData.length > 0 ? (
+                      comboBookData.map((item, index) => {
+                        const isPositive = item.netOutcome >= 0;
+                        const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
+                        return (
+                          <tr key={index} className='leading-[22px] text-[14px] border-y border-gray-200'>
+                            <td className='py-0.5 pl-3 font-bold'>{item.teamName}</td>
+                            <td className='text-right py-0.5 px-1'>
+                              [<span className='text-[12px]'>{item.teamName}</span> :<span className={`text-[12px] ${colorClass}`}>0.98</span>] <span className={`font-bold w-[155px] max-w-[240px] inline-block ${colorClass}`}>{item.netOutcome}</span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
+                        <td colSpan={2} className='py-0.5 px-3 text-center text-gray-500'>No Combo Book Data Available</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
 

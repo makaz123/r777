@@ -121,7 +121,6 @@ export default function Userlist() {
     totalPages,
     onlyusers,
     users,
-    downlineViewer,
   } = useSelector((state) => state.auth);
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
@@ -814,7 +813,7 @@ export default function Userlist() {
                 cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} row={row} />,
               },
               {
-                header: 'Exposure',
+                header: 'Full Exposure',
                 sortKey: 'exposure',
                 sortValue: (row) => getRowTotalExposure(row),
                 align: 'right',
@@ -848,14 +847,12 @@ export default function Userlist() {
                 header: 'My %',
                 align: 'right',
                 cell: (row) => {
-                  if (row.myPercent && !String(row.myPercent).includes('/')) {
+                  if (row.myPercent) {
                     return row.myPercent;
                   }
                   if (row.role === 'user') {
                     const pct =
-                      row.parentSharePercent ??
-                      downlineViewer?.mySharePercent ??
-                      0;
+                      row.parentSharePercent ?? row.mySharePercent ?? 0;
                     return `${pct}%`;
                   }
                   const mine =
@@ -863,7 +860,9 @@ export default function Userlist() {
                     row.viewerShareOnRow ??
                     row.partnership ??
                     0;
-                  return `${mine}%`;
+                  const downlineKeep =
+                    row.downlineKeepPercent ?? row.downlineSharePercent ?? 0;
+                  return `${mine}% / ${downlineKeep}%`;
                 },
               },
               {

@@ -260,15 +260,54 @@ const updateAdmin = async (id) => {
   }
 };
 
-/** Credit agent when user wins on match odds (uses Commission % only, not Rolling Commission). */
-export const creditAgentCommissionEarned = async (user, commission) => {
-  if (!user?.invite || !commission || commission <= 0) return null;
-  const agent = await SubAdmin.findOne({ code: user.invite });
-  if (!agent) return null;
-  await SubAdmin.findByIdAndUpdate(agent._id, {
-    $inc: { commissionEarned: commission },
-  });
-  return agent;
+/** 
+ * Credit commission up the chain based on partnership percentages.
+ * The direct agent keeps their partnership share of the commission, passing the rest up.
+ * Master takes their share from the passed up amount, passing the rest up, etc.
+ */
+export const distributeCommissionUpChain = async (user, initialCommissionAmount) => {
+  if (!user?.invite || !initialCommissionAmount || initialCommissionAmount <= 0) return null;
+  
+  let currentAmount = Number(initialCommissionAmount) || 0;
+  let childNode = user;
+  let currentParentCode = user.invite;
+  
+  const directAgent = await SubAdmin.findOne({ code: currentParentCode });
+  if (!directAgent) return null;
+  
+  const firstAgent = directAgent;
+
+  while (currentParentCode && currentAmount > 0) {
+    const parent = await SubAdmin.findOne({ code: currentParentCode });
+    if (!parent) break;
+
+    let parentKeepAmount = 0;
+
+    if (childNode.role === 'user') {
+      // The direct agent keeps their partnership share of the commission.
+      const parentKeepPercent = getAccountMyKeepPercent(parent);
+      const split = splitProfitLossByMyShare(currentAmount, parentKeepPercent);
+      parentKeepAmount = split.myPL;
+      currentAmount = split.uplinePL;
+    } else {
+      // This is an admin taking from a child admin.
+      const parentTakePercent = getParentShareOnDownlineRow(childNode, parent);
+      const split = splitProfitLossByMyShare(currentAmount, parentTakePercent);
+      parentKeepAmount = split.myPL;
+      currentAmount = split.uplinePL;
+    }
+
+    if (parentKeepAmount > 0) {
+      await SubAdmin.findByIdAndUpdate(parent._id, {
+        $inc: { commissionEarned: parentKeepAmount },
+      });
+    }
+
+    childNode = parent;
+    currentParentCode = parent.invite;
+  }
+  
+  return firstAgent;
 };
 
 /**
@@ -298,7 +337,8 @@ export const applyMatchOddsWinCommissionOnSettlement = async (
     return { settlementResult, commission: 0 };
   }
 
-  const agent = await creditAgentCommissionEarned(user, commission);
+  const agent = await distributeCommissionUpChain(user, commission);
+
   if (agent) {
     console.log(
       `[COMMISSION] Match Odds | user=${user.userName} agent=${agent.userName} earned=${commission} rate=${rate}%`

@@ -237,10 +237,11 @@ export default function InsertAgent() {
                         <input
                           type='text'
                           className='h-[30px] w-[15%] rounded-sm border border-[#ced4da] px-2 py-[1px] font-light text-gray-500'
-                          value={1}
+                          value={formData.commition}
+                          onChange={(e) => setFormData({ ...formData, commition: e.target.value })}
                         />
                         <span className='px-0.5 text-[#a1aed4]'>%</span>
-                        <span>(1%)</span>
+                        <span>({formData.commition || 0}%)</span>
                       </div>
                     </div>
                     <div></div>

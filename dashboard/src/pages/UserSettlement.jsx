@@ -84,6 +84,16 @@ const UserSettlement = ({ type = 'user' }) => {
     fetchSettlementUsers();
   }, [type]);
 
+  useEffect(() => {
+    const onRefresh = () => {
+      fetchSettlementUsers();
+      dispatch(getAdmin());
+    };
+    window.addEventListener('account-summary-refresh', onRefresh);
+    return () =>
+      window.removeEventListener('account-summary-refresh', onRefresh);
+  }, [dispatch, type]);
+
   const openSettleModal = (user) => {
     setSelectedUser(user);
     setSettleAmount(Math.abs(user.clientPL).toString());
@@ -167,6 +177,11 @@ const UserSettlement = ({ type = 'user' }) => {
           <h1 className='mb-2 text-[16px] font-bold text-gray-800'>
             {type === 'master' ? 'Master Settlement' : 'User Settlement'}
           </h1>
+          <p className='mb-3 text-[13px] text-gray-600'>
+            {type === 'master'
+              ? 'Settle cash with your direct admins/agents only. Clearing upline here does not clear end-users — use User Settlement for clients.'
+              : 'Settle cash with your direct client accounts only. Header Down Line is the sum of all downline users; this page lists direct users with open P/L.'}
+          </p>
 
           {loading ? (
             <div className='flex justify-center p-8'>

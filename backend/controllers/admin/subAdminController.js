@@ -33,14 +33,19 @@ import {
   getSettlementCashTotalsByUserInRange,
   getUplineLenDenaLabel,
   resolveAccountSummaryWeekPL,
+  isAccountLinesFullyCleared,
   normalizePLByUserIds,
   getWeekPLRangeForAdmin,
   setWeekPLResetNow,
+  getSelfWeekSettlementCashNet,
   getDownlineUserIds,
   getSettlementCashTotals,
   isAccountInAdminDownline,
 } from '../../utils/accountSummaryUtils.js';
-import { refreshUserAndDownlines } from '../../utils/userRefreshNotify.js';
+import {
+  notifyUplineChainRefresh,
+  refreshUserAndDownlines,
+} from '../../utils/userRefreshNotify.js';
 import { sendUserRefresh } from '../../socket/bettingSocket.js';
 import {
   adjustUserUpdatesForCommission,
@@ -407,6 +412,10 @@ export const updateAllUplines = async (userIdOrArray) => {
           break;
         }
       }
+    }
+
+    for (const userId of userIds) {
+      await notifyUplineChainRefresh(userId);
     }
 
     console.log(` [UPDATE UPLINES] Completed all upline updates\n`);
@@ -1287,9 +1296,8 @@ const loadAccountSummaryForAdmin = async (adminId) => {
       weekDownlinePL,
     },
     myPLTillDate,
-    tillViewerOutstandingPL,
     tillDownlinePL,
-    downlineClientPL,
+    downlineClientResult,
     tillDownlinePLHistory,
   ] = await Promise.all([
     aggregateViewerWeekPL(
@@ -1307,14 +1315,6 @@ const loadAccountSummaryForAdmin = async (adminId) => {
       CasinoBetHistory,
       updatedAdmin,
       null
-    ),
-    // Outstanding len-den with downline (bet history + cash settlements).
-    aggregateViewerOutstandingPL(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      TransactionHistory,
-      updatedAdmin
     ),
     aggregateDownlineOutstandingGross(
       SubAdmin,
@@ -1338,6 +1338,20 @@ const loadAccountSummaryForAdmin = async (adminId) => {
       null
     ),
   ]);
+  const directDownlines = await SubAdmin.find({
+    invite: updatedAdmin.code,
+    status: { $ne: 'delete' },
+  }).lean();
+
+  let tillViewerOutstandingPL = 0;
+  for (const downline of directDownlines) {
+    const { clientPL } = await getDirectSettlementPL(updatedAdmin, downline);
+    tillViewerOutstandingPL += roundMoney(-clientPL);
+  }
+  tillViewerOutstandingPL = roundMoney(tillViewerOutstandingPL);
+
+  const downlineClientPL = downlineClientResult.total;
+  const hasDownlineOutstanding = downlineClientResult.hasOutstanding;
 
   const weekSelfCashByUser = await getSettlementCashTotalsByUserInRange(
     TransactionHistory,
@@ -1369,19 +1383,52 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     TransactionHistory,
     updatedAdmin._id
   );
-  const uplineHistoryShare = accountSummary.uplineSharePL;
-  const uplineOutstanding = applySettlementCashToUplineShare(
-    uplineHistoryShare,
-    selfSettlementCash
-  );
 
-  const weekViewerPL = resolveAccountSummaryWeekPL({
-    weekViewerBettingPL,
-    weekDownlineSettlementNet,
-    weekSelfSettlementCash: weekSelfCash,
-    downlineClientPL,
-    uplineOutstanding,
-  });
+  // Same P/L as User Settlement row with direct upline (includes settlement cash).
+  let uplineOutstanding = 0;
+  let otherAdminSharePL = accountSummary.otherAdminSharePL;
+  if (uplineParent) {
+    const { clientPL } = await getDirectSettlementPL(
+      uplineParent,
+      updatedAdmin
+    );
+    // clientPL < 0 means updatedAdmin owes uplineParent. uplineOutstanding should be positive (dena).
+    uplineOutstanding = roundMoney(-clientPL);
+    otherAdminSharePL = 0;
+  } else {
+    uplineOutstanding = applySettlementCashToUplineShare(
+      accountSummary.uplineSharePL,
+      selfSettlementCash
+    );
+  }
+
+  // Update account summary with post-settlement upline values so frontend shows correct outstanding
+  accountSummary.uplineSharePL = uplineOutstanding;
+  accountSummary.uplineDena = uplineOutstanding;
+  accountSummary.otherAdminSharePL = otherAdminSharePL;
+  accountSummary.uplineLenDena =
+    uplineOutstanding > 0.005
+      ? 'dena'
+      : uplineOutstanding < -0.005
+        ? 'lena'
+        : 'clear';
+
+  const linesFullyCleared = isAccountLinesFullyCleared(
+    hasDownlineOutstanding,
+    uplineOutstanding
+  );
+  if (linesFullyCleared) {
+    const rawWeekTotal = roundMoney(
+      weekViewerBettingPL +
+        weekDownlineSettlementNet -
+        getSelfWeekSettlementCashNet(weekSelfCash)
+    );
+    if (!updatedAdmin.weekPLResetAt || Math.abs(rawWeekTotal) > 0.01) {
+      await setWeekPLResetNow(SubAdmin, adminId, new Date());
+    }
+  }
+
+  const weekViewerPL = roundMoney(uplineOutstanding + downlineClientPL);
 
   accountSummary = {
     ...accountSummary,
@@ -1391,11 +1438,12 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
     uplineSharePL: uplineOutstanding,
     uplineDena: uplineOutstanding,
+    otherAdminSharePL,
     uplineLenDena: getUplineLenDenaLabel(uplineOutstanding),
     uplineTooltip:
       Math.abs(uplineOutstanding) < 0.01
         ? 'Up line settled — koi outstanding upline partnership due nahi.'
-        : 'Up Line: upline partnership due minus cash settlement on this account (dena = pay upline, lena = collect).',
+        : 'Up Line: wahi amount jo User Settlement mein aapke upline ke saath dikhegi.',
   };
 
   return { admin: updatedAdmin, accountSummary };
@@ -1414,6 +1462,9 @@ const refreshSettlementHierarchy = async (settlerId, settledUserId) => {
     await updateAdmin(parent._id);
     node = parent;
   }
+
+  await notifyUplineChainRefresh(settledUserId);
+  await notifyUplineChainRefresh(settlerId);
 };
 
 export const getSubAdmin = async (req, res) => {
@@ -1836,6 +1887,7 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
     myPartnershipPercent: rootMySharePercent,
     mySharePercent: parentSharePercent,
     myPercent,
+    partnership: (rootViewer.role === 'supperadmin' || rootViewer.role === 'superadmin') ? parentSharePercent : row.partnership,
     rawBettingPL,
     myPLShare: plSplit.myPL,
     uplinePLShare: plSplit.uplinePL,
@@ -3806,9 +3858,11 @@ const sumEndUserBettingPLUnderCode = async (rootCode) => {
 };
 
 /**
- * Direct settlement P/L between parent and downline.
- * End-users: outstanding P/L after cash settlements.
- * Agents/admins: parent's partnership % of branch gross (not the child's keep %).
+ * Direct settlement P/L between parent and one direct downline (single source for
+ * User/Master Settlement lists and header Up Line with upline).
+ * - End-user: bet history − cash settlements on that user only.
+ * - Admin/agent: parent's partnership % of each user's outstanding P/L, then
+ *   cash settlements on that admin/agent account only (does not auto-clear users).
  */
 const getDirectSettlementPL = async (parentAdmin, downline) => {
   if (downline.role === 'user') {
@@ -3899,7 +3953,7 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     .select('_id userName role invite code')
     .lean();
 
-  const [{ users, expectedPLByUserId }, accountByCode] = await Promise.all([
+  const [{ expectedPLByUserId, historyPLByUserId }, accountByCode] = await Promise.all([
     getDownlineOutstandingPLMaps(
       SubAdmin,
       betHistoryModel,
@@ -3911,38 +3965,22 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   ]);
   accountByCode.set(downline.code, downline);
 
-  const sumGrossClientPL = (plByUserId) => {
-    let total = 0;
-    for (const user of endUsers) {
-      total += roundMoney(plByUserId.get(user._id.toString()) ?? 0);
-    }
-    return roundMoney(total);
-  };
-
-  const clientPLFromMap = (plByUserId) =>
-    roundMoney(
-      -computeViewerPeriodPL(parentAdmin, endUsers, plByUserId, accountByCode)
+  let grossClientPL = 0;
+  for (const user of endUsers) {
+    grossClientPL += roundMoney(
+      expectedPLByUserId.get(user._id.toString()) ?? 0
     );
-
-  let grossClientPL = sumGrossClientPL(expectedPLByUserId);
-  let clientPL = clientPLFromMap(expectedPLByUserId);
-
-  // Users may be cash-settled to 0 while parent–admin cash settlement is still open.
-  if (Math.abs(clientPL) < 0.01) {
-    const historyRaw = await aggregateSettledPLByUser(
-      betHistoryModel,
-      CasinoBetHistory,
-      downlineUserIds,
-      null
-    );
-    const historyPLByUserId = normalizePLByUserIds(endUsers, historyRaw);
-    const historyClientPL = clientPLFromMap(historyPLByUserId);
-    if (Math.abs(historyClientPL) >= 0.01) {
-      clientPL = historyClientPL;
-      grossClientPL = sumGrossClientPL(historyPLByUserId);
-    }
   }
+  grossClientPL = roundMoney(grossClientPL);
 
+  let clientPL = roundMoney(
+    -computeViewerPeriodPL(
+      parentAdmin,
+      endUsers,
+      historyPLByUserId,
+      accountByCode
+    )
+  );
   clientPL = expectedBettingPLFromHistory(clientPL, adminSettlementCash);
 
   return {
@@ -3950,65 +3988,6 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     grossClientPL,
     sharePercent: parentSharePercent,
   };
-};
-
-/** After settling with an agent, scale end-users' bettingProfitLoss so your share outstanding clears. */
-const applyBranchSettlementToEndUsers = async (
-  agentCode,
-  settleAmount,
-  agentSharePL,
-  settlerAdmin,
-  settleRemark
-) => {
-  const shareOutstanding = Math.abs(agentSharePL);
-  if (!agentCode || shareOutstanding < 0.01) return;
-
-  // settleAmount is cash against the agent's *share* P/L, not gross client P/L.
-  const ratio = Math.min(1, settleAmount / shareOutstanding);
-  const branch = await SubAdmin.aggregate([
-    { $match: { code: agentCode, status: { $ne: 'delete' } } },
-    {
-      $graphLookup: {
-        from: 'subadmins',
-        startWith: '$code',
-        connectFromField: 'code',
-        connectToField: 'invite',
-        as: 'branch',
-        restrictSearchWithMatch: { status: { $ne: 'delete' }, role: 'user' },
-      },
-    },
-    { $unwind: '$branch' },
-    {
-      $project: {
-        _id: '$branch._id',
-        userName: '$branch.userName',
-        bettingProfitLoss: '$branch.bettingProfitLoss',
-      },
-    },
-  ]);
-
-  for (const row of branch) {
-    const adjustment = roundMoney((row.bettingProfitLoss || 0) * ratio);
-    const newPL = roundMoney((row.bettingProfitLoss || 0) - adjustment);
-    await SubAdmin.findByIdAndUpdate(row._id, {
-      bettingProfitLoss: newPL,
-    });
-
-    if (Math.abs(adjustment) < 0.01) continue;
-
-    const cashAmount = Math.abs(adjustment);
-    await TransactionHistory.create({
-      userId: String(row._id),
-      userName: row.userName || '',
-      withdrawl: adjustment > 0 ? cashAmount : 0,
-      deposite: adjustment < 0 ? cashAmount : 0,
-      amount: newPL,
-      from: settlerAdmin?.userName || '',
-      to: row.userName || '',
-      remark: settleRemark || 'Settlement: branch',
-      invite: settlerAdmin?.code || '',
-    });
-  }
 };
 
 export const getSettlementUsers = async (req, res) => {
@@ -4177,15 +4156,6 @@ export const settleUser = async (req, res) => {
         invite: admin.code,
       });
 
-      if (editUser.role !== 'user') {
-        await applyBranchSettlementToEndUsers(
-          editUser.code,
-          parsedAmount,
-          pl,
-          admin,
-          settleRemark
-        );
-      }
     } else if (pl < 0) {
       // User is Debtor (user owes admin).
       const absPl = Math.abs(pl);
@@ -4231,25 +4201,14 @@ export const settleUser = async (req, res) => {
         invite: admin.code,
       });
 
-      if (editUser.role !== 'user') {
-        await applyBranchSettlementToEndUsers(
-          editUser.code,
-          parsedAmount,
-          pl,
-          admin,
-          settleRemark
-        );
-      }
     }
 
     await refreshSettlementHierarchy(id, userId);
 
     let summaryPayload = await loadAccountSummaryForAdmin(id);
     const settledAt = new Date();
-    const outstanding = Math.abs(
-      summaryPayload?.accountSummary?.downlineDena ?? 0
-    );
-    if (outstanding < 0.01) {
+
+    if (summaryPayload?.linesFullyCleared) {
       await setWeekPLResetNow(SubAdmin, id, settledAt);
     } else {
       await SubAdmin.findByIdAndUpdate(id, {
@@ -4257,20 +4216,6 @@ export const settleUser = async (req, res) => {
       });
     }
     summaryPayload = await loadAccountSummaryForAdmin(id);
-
-    const { sendUserRefresh } = await import('../../socket/bettingSocket.js');
-    sendUserRefresh(String(id));
-    sendUserRefresh(String(userId));
-
-    let uplineNode = await SubAdmin.findById(id).select('invite').lean();
-    while (uplineNode?.invite) {
-      const parent = await SubAdmin.findOne({ code: uplineNode.invite })
-        .select('_id invite')
-        .lean();
-      if (!parent) break;
-      sendUserRefresh(String(parent._id));
-      uplineNode = parent;
-    }
 
     return res.status(200).json({
       success: true,

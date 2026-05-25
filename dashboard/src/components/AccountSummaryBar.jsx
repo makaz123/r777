@@ -68,9 +68,6 @@ const AccountSummaryBar = () => {
       0
   );
   const weekPLAmount = Number(summary?.currentWeekPL ?? 0);
-  const otherAdminAmount = Number(
-    userInfo?.accountSummary?.otherAdminSharePL ?? 0
-  );
 
   const downlineLenDena =
     userInfo?.accountSummary?.downlineClientLenDena ??
@@ -194,16 +191,6 @@ const AccountSummaryBar = () => {
                       {formatMoney(uplineAmount)}
                     </span>
                   </MetricTooltipRow>
-                  {otherAdminAmount !== 0 && (
-                    <MetricTooltipRow
-                      label={`Other Admin : `}
-                      tooltip="Shows ONLY other admin percentage"
-                    >
-                      <span className={plColorClass(otherAdminAmount)}>
-                        {formatMoney(otherAdminAmount)}
-                      </span>
-                    </MetricTooltipRow>
-                  )}
                 </>
               )}
               <MetricTooltipRow
@@ -249,7 +236,7 @@ const AccountSummaryBar = () => {
               <div className='space-y-1'>
                 <MetricTooltipRow
                   label='Week P&L : '
-                  tooltip='My share (bets) + downline settlement is week − upline settlement on you is week. Down Line clear ho to Up Line dikhega.'
+                  tooltip='Is week ka P/L. Jab Up Line aur Down Line dono clear hon, Week P&L bhi 0.'
                 >
                   <span className={plColorClass(weekPLAmount)}>
                     {formatMoney(weekPLAmount)}

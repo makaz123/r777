@@ -116,16 +116,30 @@ describe('buildAccountSummary upline vs downline settlement', () => {
   const admin = { role: 'agent', userName: 'agent1', partnership: 15 };
 
   it('upline share uses bet history; downline client PL uses settlement-adjusted values', () => {
+    const parent = { code: 'SUPER', role: 'supperadmin', partnership: 100 };
     const summary = buildAccountSummary(admin, {
       myPLTillDate: 150,
       tillDownlinePLHistory: 1000,
       tillDownlinePL: 600,
       tillViewerOutstandingPL: 90,
       downlineClientPL: -400,
+      uplineSharePercent: 85,
+      uplineParent: parent,
     });
 
     expect(summary.uplineSharePL).toBe(850);
     expect(summary.downlineClientPL).toBe(-400);
+  });
+
+  it('upline share percent is parent take on this row, not parent global keep', () => {
+    const parent = { code: 'SUPER', role: 'supperadmin', partnership: 100 };
+    const summary = buildAccountSummary(admin, {
+      myPLTillDate: 150,
+      tillDownlinePLHistory: 1000,
+      uplineParent: parent,
+    });
+    expect(summary.uplineSharePL).toBe(850);
+    expect(summary.otherAdminSharePL).toBe(0);
   });
 
   it('downline cash settlement does not change upline share', () => {

@@ -1208,13 +1208,18 @@ const loadAccountSummaryForAdmin = async (adminId) => {
   const updatedAdmin = await SubAdmin.findById(adminId).lean();
   if (!updatedAdmin) return null;
 
-  let uplineKeepPercent = 0;
+  let uplineSharePercent = 0;
+  let uplineParent = null;
   if (updatedAdmin.invite) {
-    const parentAdmin = await SubAdmin.findOne({ code: updatedAdmin.invite }).lean();
-    if (parentAdmin) {
-      // Import and calculate the parent's keep percentage
-      const { getAccountMyKeepPercent } = await import('../../utils/partnershipCommissionUtils.js');
-      uplineKeepPercent = getAccountMyKeepPercent(parentAdmin);
+    uplineParent = await SubAdmin.findOne({ code: updatedAdmin.invite }).lean();
+    if (uplineParent) {
+      const { getParentShareOnDownlineRow } = await import(
+        '../../utils/partnershipCommissionUtils.js'
+      );
+      uplineSharePercent = getParentShareOnDownlineRow(
+        updatedAdmin,
+        uplineParent
+      );
     }
   }
 
@@ -1282,7 +1287,9 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     tillDownlinePL,
     downlineClientPL,
     tillDownlinePLHistory,
-    uplineKeepPercent,
+    uplineSharePercent,
+    uplineKeepPercent: uplineSharePercent,
+    uplineParent,
     weekRange,
   });
 

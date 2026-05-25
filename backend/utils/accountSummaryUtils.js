@@ -4,6 +4,7 @@
 
 import {
   getAccountMyKeepPercent,
+  getParentShareOnDownlineRow,
   getViewerShareOfUserClientPL,
   roundMoney,
   splitProfitLossByMyShare,
@@ -807,6 +808,34 @@ export function getViewerClientScaledPL(
   );
 }
 
+/**
+ * Immediate upline's partnership % on this account's downline gross P/L
+ * (parent keep − this account's downline keep), not the parent's global keep %.
+ */
+export function resolveUplineSharePercent(admin, plTotals = {}) {
+  const explicit = Number(
+    plTotals.uplineSharePercent ?? plTotals.uplineKeepPercent
+  );
+  if (Number.isFinite(explicit) && explicit > 0) {
+    return roundMoney(explicit);
+  }
+  const parent = plTotals.uplineParent;
+  if (admin && parent) {
+    return getParentShareOnDownlineRow(admin, parent);
+  }
+  return 0;
+}
+
+/** Upline share amount from gross downline bet-history P/L (parent view). */
+export function computeUplineSharePL(admin, plTotals = {}) {
+  const tillDownlinePLHistory = roundMoney(
+    plTotals.tillDownlinePLHistory ?? plTotals.tillDownlinePL ?? 0
+  );
+  const uplinePct = resolveUplineSharePercent(admin, plTotals);
+  if (uplinePct <= 0 || Math.abs(tillDownlinePLHistory) < 0.01) return 0;
+  return roundMoney((tillDownlinePLHistory * uplinePct) / 100);
+}
+
 export function buildAccountSummary(admin, plTotals = {}) {
   const myKeepPct = getAccountMyKeepPercent(admin);
   const isEndUserRole = admin.role === 'user';
@@ -832,14 +861,14 @@ export function buildAccountSummary(admin, plTotals = {}) {
   const downlineClientPL = roundMoney(
     plTotals.downlineClientPL ?? -tillDownlinePL
   );
-  
-  // Calculate Upline and Other Admin Shares
-  const uplinePct = Number(plTotals.uplineKeepPercent) || 0;
-  const uplineSharePL = uplinePct > 0 
-    ? roundMoney((tillDownlinePLHistory * uplinePct) / 100) 
-    : 0;
-  // Other Admin is whatever remains after My Share and Upline Share
-  const otherAdminSharePL = roundMoney(tillDownlinePLHistory - myPLTillDate - uplineSharePL);
+
+  const uplineSharePL = computeUplineSharePL(admin, {
+    ...plTotals,
+    tillDownlinePLHistory,
+  });
+  const otherAdminSharePL = roundMoney(
+    tillDownlinePLHistory - myPLTillDate - uplineSharePL
+  );
 
   const roleLabel =
     admin.role === 'supperadmin'

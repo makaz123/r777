@@ -47,6 +47,25 @@ export default function Tennisbet() {
   const [amountFilter, setAmountFilter] = useState('');
   const [marketNameFilter, setMarketNameFilter] = useState('');
   const [showlivetv, setshowlivetv] = useState(false);
+
+  const formatDashboardDate = (dateString) => {
+    if (!dateString) return '—';
+    const parts = String(dateString).split(' ');
+    if (parts.length === 3) {
+      const [datePart, timePart, ampm] = parts;
+      const dateSplit = datePart.split('/');
+      const timeSplit = timePart.split(':');
+      if (dateSplit.length === 3 && timeSplit.length >= 2) {
+        const [month, day, year] = dateSplit;
+        const [hours, minutes] = timeSplit;
+        const secs = timeSplit[2] || '00';
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}, ${hours}:${minutes}:${secs} ${ampm.toLowerCase()}`;
+      }
+    }
+    const d = new Date(dateString);
+    if (isNaN(d)) return dateString;
+    return d.toLocaleString('en-IN');
+  };
   const {
     loading,
     pendingBet,

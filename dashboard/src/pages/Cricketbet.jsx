@@ -103,6 +103,25 @@ export default function Cricketbet() {
   const [marketNameFilter, setMarketNameFilter] = useState('');
   const [showlivetv, setshowlivetv] = useState(false);
 
+  const formatDashboardDate = (dateString) => {
+    if (!dateString) return '—';
+    const parts = String(dateString).split(' ');
+    if (parts.length === 3) {
+      const [datePart, timePart, ampm] = parts;
+      const dateSplit = datePart.split('/');
+      const timeSplit = timePart.split(':');
+      if (dateSplit.length === 3 && timeSplit.length >= 2) {
+        const [month, day, year] = dateSplit;
+        const [hours, minutes] = timeSplit;
+        const secs = timeSplit[2] || '00';
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}, ${hours}:${minutes}:${secs} ${ampm.toLowerCase()}`;
+      }
+    }
+    const d = new Date(dateString);
+    if (isNaN(d)) return dateString;
+    return d.toLocaleString('en-IN');
+  };
+
   const filteredBetsData = Array.isArray(betsData) ? betsData.filter((item) => {
     let matchesAmount = true;
     if (amountFilter) {
@@ -522,7 +541,7 @@ export default function Cricketbet() {
                   </span>
                   <span>
                     {lastUpdateddate
-                      ? new Date(lastUpdateddate).toLocaleString('en-IN')
+                      ? formatDashboardDate(lastUpdateddate)
                       : '—'}
                   </span>
                 </div>
@@ -1054,7 +1073,7 @@ export default function Cricketbet() {
                               <div className='flex items-center justify-between'>
                                 <div className='font-bold'>{item.gameType}</div>
                                 <div className='text-[10px] text-gray-600 uppercase'>
-                                  {new Date(item.date).toLocaleString('en-IN')}
+                                  {formatDashboardDate(item.date)}
                                 </div>
                               </div>
                               <div
@@ -1376,14 +1395,10 @@ export default function Cricketbet() {
                                         {item.xValue}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {new Date(
-                                          item.createdAt
-                                        ).toLocaleString('en-IN')}
+                                        {formatDashboardDate(item.createdAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {new Date(
-                                          item.updatedAt
-                                        ).toLocaleString('en-IN')}
+                                        {formatDashboardDate(item.updatedAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
                                         {item.gameType}

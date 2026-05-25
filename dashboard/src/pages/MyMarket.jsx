@@ -228,10 +228,10 @@ const MyMarket = () => {
                                           Max Profit
                                         </th>
                                         <th className='border border-gray-300 px-3 py-1 text-right'>
-                                          {markets[0]?.team1 ?? item.team1}
+                                          {item.team1}
                                         </th>
                                         <th className='border border-gray-300 px-3 py-1 text-right'>
-                                          {markets[0]?.team2 ?? item.team2}
+                                          {item.team2}
                                         </th>
                                       </tr>
                                     </thead>

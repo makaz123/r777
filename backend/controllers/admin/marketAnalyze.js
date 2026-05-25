@@ -3,6 +3,8 @@ import SubAdmin from '../../models/subAdminModel.js';
 import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
 import {
   calculateOutcomeScenarios,
+  mapScenariosToMatchSides,
+  parseMatchSides,
 } from '../../utils/marketCalculationUtils.js';
 import { getViewerShareOfUserClientPL } from '../../utils/partnershipCommissionUtils.js';
 
@@ -31,16 +33,9 @@ const splitEventName = (eventName) => {
   return { title: name, match: name };
 };
 
-const buildMarketRow = (marketName, bets) => {
+const buildMarketRow = (marketName, bets, eventSides = null) => {
   const scenarios = calculateOutcomeScenarios(bets);
-  const teams = Object.keys(scenarios).filter((t) => t !== '__OTHER__');
-  const team1 = teams[0] || 'Team 1';
-  const team2 =
-    teams[1] || (scenarios['__OTHER__'] !== undefined ? 'Team 2' : 'Team 2');
-  const team1Value = round2(scenarios[team1] ?? 0);
-  const team2Value = round2(
-    scenarios[team2] ?? scenarios['__OTHER__'] ?? 0
-  );
+  const mapped = mapScenariosToMatchSides(scenarios, eventSides);
   const outcomeVals = Object.values(scenarios);
   const exposureVal = outcomeVals.length ? round2(Math.min(...outcomeVals)) : 0;
   const maxProfit = outcomeVals.length ? round2(Math.max(...outcomeVals)) : 0;
@@ -50,10 +45,10 @@ const buildMarketRow = (marketName, bets) => {
     bets: bets.length,
     exposure: exposureVal,
     maxProfit,
-    team1,
-    team2,
-    team1Value,
-    team2Value,
+    team1: mapped.team1,
+    team2: mapped.team2,
+    team1Value: round2(mapped.team1Value),
+    team2Value: round2(mapped.team2Value),
   };
 };
 
@@ -88,6 +83,10 @@ export const buildSportAnalysisFromBets = (bets) => {
   }
 
   for (const event of eventMap.values()) {
+    const eventSides =
+      parseMatchSides(event.eventName, event.title) ||
+      parseMatchSides(event.eventName, event.match);
+
     const marketsMap = new Map();
     for (const bet of event.bets) {
       const mKey = bet.gameType || bet.marketName || 'Market';
@@ -100,7 +99,7 @@ export const buildSportAnalysisFromBets = (bets) => {
     let totalAmount = 0;
 
     for (const [name, mBets] of marketsMap) {
-      const row = buildMarketRow(name, mBets);
+      const row = buildMarketRow(name, mBets, eventSides);
       markets.push(row);
       totalBets += row.bets;
       totalAmount += mBets.reduce(
@@ -122,8 +121,8 @@ export const buildSportAnalysisFromBets = (bets) => {
       exposure: primary?.exposure ?? 0,
       totalAmount: round2(totalAmount),
       maxProfit: primary?.maxProfit ?? 0,
-      team1: primary?.team1 ?? 'Team 1',
-      team2: primary?.team2 ?? 'Team 2',
+      team1: eventSides?.team1 ?? primary?.team1 ?? 'Team 1',
+      team2: eventSides?.team2 ?? primary?.team2 ?? 'Team 2',
       market: primary,
       markets,
     });

@@ -322,7 +322,7 @@ export default function Userlist() {
     try {
       setIsFetchingExposure(true);
       setExposurePopup(true);
-      const res = await api.get(`/bet/user/exposure-details?userId=${userId}`);
+      const res = await api.get(`/admin/exposure-details?userId=${userId}`);
       if (res?.data?.status || res?.data?.meta?.status) {
         setExposureData(res.data.data);
       } else {

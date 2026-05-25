@@ -464,8 +464,26 @@ export default function Userlist() {
       const avbal = Number(row.avbalance || 0);
       const totBal = Number(row.totalBalance || 0);
       const dbBal = Number(row.dbBalance ?? getRowBalance(row));
-      const current = avbal + totBal - dbBal;
-      return Math.round(current * 100) / 100;
+      
+      // This accurately isolates the agent's own P/L 
+      // (Deposits/Withdrawals cancel out between avbalance, totalBalance, and dbBalance)
+      const agentPL = avbal + totBal - dbBal;
+      
+      const agentKeepPct = Number(row.downlineKeepPercent || 0);
+      const viewerPct = Number(row.parentSharePercent ?? row.mySharePercent ?? 100);
+      
+      if (agentKeepPct > 0) {
+        // Reverse engineer total branch P/L from agent's P/L
+        const totalBranchPL = agentPL / (agentKeepPct / 100);
+        const viewerPL = totalBranchPL * (viewerPct / 100);
+        return Math.round(viewerPL * 100) / 100;
+      }
+      
+      // Fallback if agentKeepPct is 0 (we cannot divide by 0)
+      const rawBettingPL = Number(row.bettingProfitLoss || 0);
+      const fallbackTotalPL = -rawBettingPL;
+      const fallbackViewerPL = fallbackTotalPL * (viewerPct / 100);
+      return Math.round(fallbackViewerPL * 100) / 100;
     }
     
     // For users, we use the standard calculation

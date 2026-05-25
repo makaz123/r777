@@ -52,8 +52,12 @@ const AccountSummaryBar = () => {
   const plColorClass = (v) =>
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
+  const summary = userInfo?.accountSummary;
+
+  /** Down Line = 100% client P/L (whole downline), not partnership %. */
   const downlineAmount = Number(
-    userInfo?.accountSummary?.downlineDenaGross ??
+    userInfo?.accountSummary?.downlineClientPL ??
+      userInfo?.accountSummary?.downlineDenaGross ??
       downlineViewer?.totalPL ??
       0
   );
@@ -63,11 +67,10 @@ const AccountSummaryBar = () => {
       downlineViewer?.uplinePL ??
       0
   );
+  const weekPLAmount = Number(summary?.currentWeekPL ?? 0);
   const otherAdminAmount = Number(
     userInfo?.accountSummary?.otherAdminSharePL ?? 0
   );
-
-  const summary = userInfo?.accountSummary;
 
   const downlineLenDena =
     userInfo?.accountSummary?.downlineClientLenDena ??
@@ -85,11 +88,12 @@ const AccountSummaryBar = () => {
         : 'clear');
 
   const downlineTooltip =
-    downlineLenDena === 'lena'
-      ? 'Downline users ka total client P/L (100%): users ne haara — aapko lena hai (Positive value).'
+    summary?.downlineTooltip ??
+    (downlineLenDena === 'lena'
+      ? 'Down Line (100%): downline users ne haara — aapko lena hai (cash settlement ke baad).'
       : downlineLenDena === 'dena'
-        ? 'Downline users ka total client P/L (100%): users ne jeeta — aapko dena hai.'
-        : 'Down line settled — koi outstanding client P/L nahi.';
+        ? 'Down Line (100%): downline users ne jeeta — aapko dena hai (cash settlement ke baad).'
+        : 'Down line settled — koi outstanding client P/L nahi.');
 
   const uplineTooltip =
     summary?.uplineTooltip ??
@@ -245,12 +249,10 @@ const AccountSummaryBar = () => {
               <div className='space-y-1'>
                 <MetricTooltipRow
                   label='Week P&L : '
-                  tooltip='Your share of downline P/L this period (bets minus cash settled in the same period). Partial settlement reduces this amount; it only resets when fully cleared.'
+                  tooltip='My share (bets) + downline settlement is week − upline settlement on you is week. Down Line clear ho to Up Line dikhega.'
                 >
-                  <span
-                    className={plColorClass(downlineAmount - uplineAmount)}
-                  >
-                    {formatMoney(downlineAmount - uplineAmount)}
+                  <span className={plColorClass(weekPLAmount)}>
+                    {formatMoney(weekPLAmount)}
                   </span>
                 </MetricTooltipRow>
                 {/* <MetricTooltipRow

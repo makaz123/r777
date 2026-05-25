@@ -32,6 +32,7 @@ import {
   getDownlineOutstandingPLMaps,
   getSettlementCashTotalsByUserInRange,
   getUplineLenDenaLabel,
+  resolveAccountSummaryWeekPL,
   normalizePLByUserIds,
   getWeekPLRangeForAdmin,
   setWeekPLResetNow,
@@ -1279,7 +1280,12 @@ const loadAccountSummaryForAdmin = async (adminId) => {
 
   const weekRange = await getWeekPLRangeForAdmin(updatedAdmin);
   const [
-    { weekViewerPL: rawWeekViewerPL, weekDownlinePL },
+    {
+      weekViewerBettingPL,
+      weekDownlineSettlementNet,
+      weekViewerPL: rawWeekViewerPL,
+      weekDownlinePL,
+    },
     myPLTillDate,
     tillViewerOutstandingPL,
     tillDownlinePL,
@@ -1345,6 +1351,8 @@ const loadAccountSummaryForAdmin = async (adminId) => {
 
   let accountSummary = buildAccountSummary(updatedAdmin, {
     weekViewerPL: rawWeekViewerPL,
+    weekViewerBettingPL,
+    weekDownlineSettlementNet,
     weekDownlinePL,
     myPLTillDate,
     tillViewerOutstandingPL,
@@ -1367,14 +1375,13 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     selfSettlementCash
   );
 
-  // Week P/L: when upline partnership is cleared in this period, move week toward 0 (same as user settle effect)
-  const uplineWeekAfter = applySettlementCashToUplineShare(
-    uplineHistoryShare,
-    weekSelfCash
-  );
-  const weekViewerPL = roundMoney(
-    rawWeekViewerPL + roundMoney(uplineHistoryShare - uplineWeekAfter)
-  );
+  const weekViewerPL = resolveAccountSummaryWeekPL({
+    weekViewerBettingPL,
+    weekDownlineSettlementNet,
+    weekSelfSettlementCash: weekSelfCash,
+    downlineClientPL,
+    uplineOutstanding,
+  });
 
   accountSummary = {
     ...accountSummary,

@@ -8,6 +8,9 @@ import {
   getViewerPLSharePercentOnUser,
   getViewerShareRatioForUser,
   getWeekPLRangeForAdmin,
+  getSelfWeekSettlementCashNet,
+  resolveAccountSummaryWeekPL,
+  sumDownlineWeekSettlementCashNet,
   scaleClientPLForViewer,
 } from '../utils/accountSummaryUtils.js';
 import { getViewerShareOfUserClientPL } from '../utils/partnershipCommissionUtils.js';
@@ -136,6 +139,53 @@ describe('applySettlementCashToUplineShare', () => {
     expect(
       applySettlementCashToUplineShare(-16.48, { withdrawl: 0, deposite: 10 })
     ).toBe(-6.48);
+  });
+});
+
+describe('resolveAccountSummaryWeekPL', () => {
+  it('when downline client P/L is cleared, week P/L matches upline outstanding', () => {
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: -31,
+        weekDownlineSettlementNet: 50,
+        weekSelfSettlementCash: { withdrawl: 0, deposite: 0 },
+        downlineClientPL: 0,
+        uplineOutstanding: 9,
+      })
+    ).toBe(9);
+  });
+
+  it('satyam flow: betting share + downline settle − upline settle on self', () => {
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: -31,
+        weekDownlineSettlementNet: 50,
+        weekSelfSettlementCash: { withdrawl: 0, deposite: 0 },
+        downlineClientPL: -260,
+        uplineOutstanding: 279,
+      })
+    ).toBe(19);
+
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: -31,
+        weekDownlineSettlementNet: 50,
+        weekSelfSettlementCash: { withdrawl: 100, deposite: 0 },
+        downlineClientPL: -260,
+        uplineOutstanding: 179,
+      })
+    ).toBe(-81);
+  });
+
+  it('sumDownlineWeekSettlementCashNet and getSelfWeekSettlementCashNet', () => {
+    const users = [{ _id: 'u1', role: 'user' }];
+    const map = new Map([
+      ['u1', { withdrawl: 0, deposite: 50 }],
+    ]);
+    expect(sumDownlineWeekSettlementCashNet(users, map)).toBe(50);
+    expect(
+      getSelfWeekSettlementCashNet({ withdrawl: 100, deposite: 0 })
+    ).toBe(100);
   });
 });
 

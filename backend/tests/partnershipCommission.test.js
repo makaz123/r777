@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  BET_STATUS_LOSS,
+  BET_STATUS_WIN,
   calculateWinCommission,
   clampDownlineSharingPercent,
   getAccountMyKeepPercent,
@@ -15,7 +17,9 @@ import {
   getViewerMySharePercent,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
+  isSettledClientWinPL,
   parseCommissionPercent,
+  resolveMatchOddsWinCommission,
   splitProfitLossByMyShare,
   toStoredDownlineKeepPercent,
 } from '../utils/partnershipCommissionUtils.js';
@@ -45,6 +49,26 @@ describe('partnershipCommissionUtils', () => {
 
   test('getMatchOddsCommissionAmount handles gross stored wins', () => {
     expect(getMatchOddsCommissionAmount(100, 2)).toBe(2.04);
+  });
+
+  test('match-odds commission is zero on losses even if P/L sign is wrong in status', () => {
+    expect(isSettledClientWinPL(-100, BET_STATUS_WIN)).toBe(false);
+    expect(isSettledClientWinPL(100, BET_STATUS_LOSS)).toBe(false);
+    expect(getMatchOddsCommissionAmount(100, 2, BET_STATUS_LOSS)).toBe(0);
+    expect(getMatchOddsCommissionAmount(-50, 2, BET_STATUS_WIN)).toBe(0);
+    expect(
+      resolveMatchOddsWinCommission(100, 2, BET_STATUS_LOSS).commission
+    ).toBe(0);
+  });
+
+  test('resolveMatchOddsWinCommission deducts from gross win at settlement', () => {
+    const { netProfit, commission } = resolveMatchOddsWinCommission(
+      100,
+      2,
+      BET_STATUS_WIN
+    );
+    expect(commission).toBe(2);
+    expect(netProfit).toBe(98);
   });
 
   test('partnership upline share applies to full P/L', () => {

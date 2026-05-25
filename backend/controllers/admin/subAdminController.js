@@ -19,12 +19,20 @@ import {
   aggregateDownlineOutstandingGross,
   aggregateDownlineClientPLSum,
   aggregateDownlineParentViewPL,
+  aggregateSettledPLByUser,
   aggregateViewerWeekPL,
   aggregateViewerOutstandingPL,
   aggregateViewerProfitLoss,
+  applySettlementCashToUplineShare,
   buildAccountSummary,
+  computeViewerPeriodPL,
   expectedBettingPLFromHistory,
+  getAccountByCodeMap,
   getCurrentWeekRange,
+  getDownlineOutstandingPLMaps,
+  getSettlementCashTotalsByUserInRange,
+  getUplineLenDenaLabel,
+  normalizePLByUserIds,
   getWeekPLRangeForAdmin,
   setWeekPLResetNow,
   getDownlineUserIds,
@@ -35,7 +43,9 @@ import { refreshUserAndDownlines } from '../../utils/userRefreshNotify.js';
 import { sendUserRefresh } from '../../socket/bettingSocket.js';
 import {
   adjustUserUpdatesForCommission,
-  calculateWinCommission,
+  BET_STATUS_WIN,
+  isSettledClientWinPL,
+  resolveMatchOddsWinCommission,
   getDownlineUplineBettingContribution,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
@@ -310,6 +320,9 @@ export const distributeCommissionUpChain = async (user, initialCommissionAmount)
   return firstAgent;
 };
 
+/** Credits match-odds win commission up the agent chain (partnership split per level). */
+export const creditAgentCommissionEarned = distributeCommissionUpChain;
+
 /**
  * Match odds only: deduct commission from user win, credit agent commissionEarned.
  * Partnership is not applied here (handled in updateAdmin for all markets).
@@ -327,12 +340,17 @@ export const applyMatchOddsWinCommissionOnSettlement = async (
   }
 
   const profit = Number(settlementResult.userUpdates.profitLossChange) || 0;
-  if (profit <= 0) {
+  const betStatus = bet?.status ?? BET_STATUS_WIN;
+  if (!isSettledClientWinPL(profit, betStatus)) {
     return { settlementResult, commission: 0 };
   }
 
   const rate = parseCommissionPercent(user.commition);
-  const { netProfit, commission } = calculateWinCommission(profit, rate);
+  const { netProfit, commission } = resolveMatchOddsWinCommission(
+    profit,
+    rate,
+    betStatus
+  );
   if (commission <= 0) {
     return { settlementResult, commission: 0 };
   }
@@ -1265,7 +1283,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
 
   const weekRange = await getWeekPLRangeForAdmin(updatedAdmin);
   const [
-    { weekViewerPL, weekDownlinePL },
+    { weekViewerPL: rawWeekViewerPL, weekDownlinePL },
     myPLTillDate,
     tillViewerOutstandingPL,
     tillDownlinePL,
@@ -1319,8 +1337,18 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     ),
   ]);
 
-  const accountSummary = buildAccountSummary(updatedAdmin, {
-    weekViewerPL,
+  const weekSelfCashByUser = await getSettlementCashTotalsByUserInRange(
+    TransactionHistory,
+    [String(updatedAdmin._id)],
+    weekRange
+  );
+  const weekSelfCash = weekSelfCashByUser.get(String(updatedAdmin._id)) ?? {
+    withdrawl: 0,
+    deposite: 0,
+  };
+
+  let accountSummary = buildAccountSummary(updatedAdmin, {
+    weekViewerPL: rawWeekViewerPL,
     weekDownlinePL,
     myPLTillDate,
     tillViewerOutstandingPL,
@@ -1332,6 +1360,40 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     uplineParent,
     weekRange,
   });
+
+  const selfSettlementCash = await getSettlementCashTotals(
+    TransactionHistory,
+    updatedAdmin._id
+  );
+  const uplineHistoryShare = accountSummary.uplineSharePL;
+  const uplineOutstanding = applySettlementCashToUplineShare(
+    uplineHistoryShare,
+    selfSettlementCash
+  );
+
+  // Week P/L: when upline partnership is cleared in this period, move week toward 0 (same as user settle effect)
+  const uplineWeekAfter = applySettlementCashToUplineShare(
+    uplineHistoryShare,
+    weekSelfCash
+  );
+  const weekViewerPL = roundMoney(
+    rawWeekViewerPL + roundMoney(uplineHistoryShare - uplineWeekAfter)
+  );
+
+  accountSummary = {
+    ...accountSummary,
+    weekViewerPL,
+    currentWeekPL: weekViewerPL,
+    clientWeekPLTotal: roundMoney(-weekDownlinePL),
+    currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
+    uplineSharePL: uplineOutstanding,
+    uplineDena: uplineOutstanding,
+    uplineLenDena: getUplineLenDenaLabel(uplineOutstanding),
+    uplineTooltip:
+      Math.abs(uplineOutstanding) < 0.01
+        ? 'Up line settled — koi outstanding upline partnership due nahi.'
+        : 'Up Line: upline partnership due minus cash settlement on this account (dena = pay upline, lena = collect).',
+  };
 
   return { admin: updatedAdmin, accountSummary };
 };
@@ -1755,6 +1817,7 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
 
   return {
     ...row,
+    dbBalance: row.balance,
     exposure: totalExposure,
     totalExposure,
     shareExposure,
@@ -3741,25 +3804,148 @@ const sumEndUserBettingPLUnderCode = async (rootCode) => {
 
 /**
  * Direct settlement P/L between parent and downline.
- * End-users: full bettingProfitLoss. Agents: only downline's partnership % of branch gross.
+ * End-users: outstanding P/L after cash settlements.
+ * Agents/admins: parent's partnership % of branch gross (not the child's keep %).
  */
 const getDirectSettlementPL = async (parentAdmin, downline) => {
   if (downline.role === 'user') {
+    const plResult = await betHistoryModel.aggregate([
+      {
+        $match: {
+          userId: downline._id.toString(),
+          status: { $in: [1, 2] },
+        },
+      },
+      { $group: { _id: null, totalPL: { $sum: '$profitLossChange' } } },
+    ]);
+    const sportsPL = plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+
+    let casinoPL = 0;
+    const casinoAgg = await CasinoBetHistory.aggregate([
+      {
+        $match: {
+          userId: downline._id.toString(),
+          $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPL: {
+            $sum: {
+              $subtract: [
+                { $ifNull: ['$win_amount', 0] },
+                { $ifNull: ['$bet_amount', 0] },
+              ],
+            },
+          },
+        },
+      },
+    ]);
+    casinoPL = casinoAgg.length > 0 ? roundMoney(casinoAgg[0].totalPL) : 0;
+
+    const historyPL = roundMoney(sportsPL + casinoPL);
+    const settlementCash = await getSettlementCashTotals(
+      TransactionHistory,
+      downline._id
+    );
+    const clientPL = expectedBettingPLFromHistory(historyPL, settlementCash);
+
     return {
-      clientPL: roundMoney(downline.bettingProfitLoss || 0),
-      grossClientPL: roundMoney(downline.bettingProfitLoss || 0),
+      clientPL,
+      grossClientPL: clientPL,
       sharePercent: 100,
     };
   }
 
-  const grossClientPL = await sumEndUserBettingPLUnderCode(downline.code);
-  const sharePercent = getDownlineKeepPercentOnRow(downline, parentAdmin);
-  const clientPL = splitProfitLossByMyShare(grossClientPL, sharePercent).myPL;
+  const parentSharePercent = getParentShareOnDownlineRow(
+    downline,
+    parentAdmin
+  );
+
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, downline.code);
+  const adminSettlementCash = await getSettlementCashTotals(
+    TransactionHistory,
+    downline._id
+  );
+
+  if (!downlineUserIds.length) {
+    const historyGross = await aggregateDownlineParentViewPL(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      downline.code,
+      null
+    );
+    const clientPL = expectedBettingPLFromHistory(
+      splitProfitLossByMyShare(historyGross, parentSharePercent).myPL,
+      adminSettlementCash
+    );
+    return {
+      clientPL,
+      grossClientPL: roundMoney(-historyGross),
+      sharePercent: parentSharePercent,
+    };
+  }
+
+  const endUsers = await SubAdmin.find({
+    _id: { $in: downlineUserIds },
+    role: 'user',
+    status: { $ne: 'delete' },
+  })
+    .select('_id userName role invite code')
+    .lean();
+
+  const [{ users, expectedPLByUserId }, accountByCode] = await Promise.all([
+    getDownlineOutstandingPLMaps(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      downline.code
+    ),
+    getAccountByCodeMap(SubAdmin, parentAdmin),
+  ]);
+  accountByCode.set(downline.code, downline);
+
+  const sumGrossClientPL = (plByUserId) => {
+    let total = 0;
+    for (const user of endUsers) {
+      total += roundMoney(plByUserId.get(user._id.toString()) ?? 0);
+    }
+    return roundMoney(total);
+  };
+
+  const clientPLFromMap = (plByUserId) =>
+    roundMoney(
+      -computeViewerPeriodPL(parentAdmin, endUsers, plByUserId, accountByCode)
+    );
+
+  let grossClientPL = sumGrossClientPL(expectedPLByUserId);
+  let clientPL = clientPLFromMap(expectedPLByUserId);
+
+  // Users may be cash-settled to 0 while parent–admin cash settlement is still open.
+  if (Math.abs(clientPL) < 0.01) {
+    const historyRaw = await aggregateSettledPLByUser(
+      betHistoryModel,
+      CasinoBetHistory,
+      downlineUserIds,
+      null
+    );
+    const historyPLByUserId = normalizePLByUserIds(endUsers, historyRaw);
+    const historyClientPL = clientPLFromMap(historyPLByUserId);
+    if (Math.abs(historyClientPL) >= 0.01) {
+      clientPL = historyClientPL;
+      grossClientPL = sumGrossClientPL(historyPLByUserId);
+    }
+  }
+
+  clientPL = expectedBettingPLFromHistory(clientPL, adminSettlementCash);
 
   return {
     clientPL,
     grossClientPL,
-    sharePercent,
+    sharePercent: parentSharePercent,
   };
 };
 
@@ -3833,14 +4019,16 @@ export const getSettlementUsers = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
+    await updateAdmin(id);
+
     // Only fetch direct downlines (since settlement is direct)
     let filter = { status: { $ne: 'delete' }, invite: admin.code };
 
     if (roleType === 'user') {
       filter.role = 'user';
     } else if (roleType === 'master') {
-      // Master settles direct agent/admin downlines only — not end users.
-      filter.role = { $in: ['agent', 'master', 'super', 'white', 'admin'] };
+      // Master settles all direct non-user downlines (admin, agent, etc.)
+      filter.role = { $nin: ['user', 'supperadmin'] };
     } else {
       // Default non-user settlement: any direct downline except end users.
       filter.role = { $nin: ['user', 'supperadmin', 'superadmin'] };

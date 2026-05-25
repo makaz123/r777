@@ -457,11 +457,18 @@ export default function Userlist() {
 
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
 
-  /** Current P&L (settled matches from Client perspective): avbalance - balance + exposure */
   const getRowCurrentPL = (row) => {
-    if (row.role !== 'user') return 0;
-    // Exposure in the database is a positive number, but it reduces avbalance.
-    // So we add it back to find the actual settled P/L.
+    if (row.role !== 'user') {
+      // The admin's exact immediate P/L is derived from:
+      // (Admin's Available Balance + Balance given to downline) - Admin's Base Balance
+      const avbal = Number(row.avbalance || 0);
+      const totBal = Number(row.totalBalance || 0);
+      const dbBal = Number(row.dbBalance ?? getRowBalance(row));
+      const current = avbal + totBal - dbBal;
+      return Math.round(current * 100) / 100;
+    }
+    
+    // For users, we use the standard calculation
     const current = getRowAvbalance(row) - getRowBalance(row) + Math.abs(getRowTotalExposure(row));
     return Math.round(current * 100) / 100;
   };

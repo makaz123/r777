@@ -152,8 +152,8 @@ const UserSettlement = ({ type = 'user' }) => {
     if (successCount > 0) {
       toast.success(`Successfully settled ${successCount} account(s).`);
       handleClearAll();
-      fetchSettlementUsers();
-      dispatch(getAdmin());
+      await fetchSettlementUsers();
+      await dispatch(getAdmin());
     } else if (failCount > 0) {
       toast.error('No accounts were settled. Check amounts and master password.');
     }

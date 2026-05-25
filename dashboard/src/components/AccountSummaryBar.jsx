@@ -67,6 +67,8 @@ const AccountSummaryBar = () => {
     userInfo?.accountSummary?.otherAdminSharePL ?? 0
   );
 
+  const summary = userInfo?.accountSummary;
+
   const downlineLenDena =
     userInfo?.accountSummary?.downlineClientLenDena ??
     (downlineAmount > 0.005
@@ -90,13 +92,13 @@ const AccountSummaryBar = () => {
         : 'Down line settled — koi outstanding client P/L nahi.';
 
   const uplineTooltip =
-    uplineLenDena === 'dena'
-      ? 'Upline ka partnership share (bet history) — ONLY UPLINE percentage.'
-      : uplineLenDena === 'lena'
-        ? 'Upline se partnership share (bet history) — ONLY UPLINE percentage.'
-        : 'Up line settled — koi outstanding upline share nahi.';
+    summary?.uplineTooltip ??
+    (uplineLenDena === 'clear'
+      ? 'Up line settled — koi outstanding upline partnership due nahi.'
+      : uplineLenDena === 'dena'
+        ? 'Upline partnership due (dena) — cash settlement reduces this amount.'
+        : 'Upline partnership collectable (lena) — cash settlement reduces this amount.');
 
-  const summary = userInfo?.accountSummary;
   const isClientRole = userInfo?.role === 'user';
   const roleDisplay =
     summary?.userType ||
@@ -176,9 +178,15 @@ const AccountSummaryBar = () => {
                 <>
                   <MetricTooltipRow
                     label={`Up Line (${uplineLenDena}) : `}
-                    tooltip={summary?.uplineTooltip ?? uplineTooltip}
+                    tooltip={uplineTooltip}
                   >
-                    <span className={plColorClass(uplineAmount)}>
+                    <span
+                      className={
+                        uplineLenDena === 'clear'
+                          ? 'text-green-400'
+                          : plColorClass(uplineAmount)
+                      }
+                    >
                       {formatMoney(uplineAmount)}
                     </span>
                   </MetricTooltipRow>
@@ -240,9 +248,9 @@ const AccountSummaryBar = () => {
                   tooltip='Your share of downline P/L this period (bets minus cash settled in the same period). Partial settlement reduces this amount; it only resets when fully cleared.'
                 >
                   <span
-                    className={plColorClass(summary?.currentWeekPL ?? 0)}
+                    className={plColorClass(downlineAmount - uplineAmount)}
                   >
-                    {formatMoney(summary?.currentWeekPL ?? 0)}
+                    {formatMoney(downlineAmount - uplineAmount)}
                   </span>
                 </MetricTooltipRow>
                 {/* <MetricTooltipRow

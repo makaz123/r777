@@ -27,7 +27,8 @@ import {
   updateAllUplines,
 } from './subAdminController.js';
 import {
-  calculateWinCommission,
+  isSettledClientWinPL,
+  resolveMatchOddsWinCommission,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
@@ -508,17 +509,17 @@ export const settleManualResult = async (req, res) => {
             }
           }
 
-          if (
-            isMatchOddsBetRecord(historyRecord) &&
-            historyProfitLossChange > 0
-          ) {
+          if (isMatchOddsBetRecord(historyRecord)) {
             const rate = parseCommissionPercent(user?.commition);
-            const { netProfit, commission } = calculateWinCommission(
+            const { netProfit, commission } = resolveMatchOddsWinCommission(
               historyProfitLossChange,
-              rate
+              rate,
+              historyStatus
             );
-            historyProfitLossChange = netProfit;
-            totalMatchOddsCommission += commission;
+            if (commission > 0) {
+              historyProfitLossChange = netProfit;
+              totalMatchOddsCommission += commission;
+            }
           }
 
           betHistoryTotalPL += historyProfitLossChange;

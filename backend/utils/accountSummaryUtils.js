@@ -962,6 +962,26 @@ export function expectedBettingPLFromHistory(trueTotalPL, settlementCash) {
   return roundMoney(truePL - (cash.withdrawl || 0) + (cash.deposite || 0));
 }
 
+/**
+ * Upline bar (dena/lena): cash settlement on this account clears partnership due
+ * (same idea as end-user outstanding: move balance toward zero).
+ */
+export function applySettlementCashToUplineShare(uplineSharePL, settlementCash) {
+  const pl = roundMoney(uplineSharePL);
+  const withdrawl = roundMoney(settlementCash?.withdrawl || 0);
+  const deposite = roundMoney(settlementCash?.deposite || 0);
+
+  if (pl > 0.005) {
+    // Dena — owe upline: cash paid/settled reduces positive due
+    return roundMoney(pl - deposite + withdrawl);
+  }
+  if (pl < -0.005) {
+    // Lena — collect from upline: same rule as user P/L (deposite pulls negative toward 0)
+    return expectedBettingPLFromHistory(pl, settlementCash);
+  }
+  return roundMoney(pl - withdrawl + deposite);
+}
+
 /** Positive downline share = collect from downline (lena); negative = pay downline (dena). */
 export function getDownlineLenDenaLabel(amount) {
   const n = Number(amount) || 0;

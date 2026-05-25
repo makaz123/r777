@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyDebtorSettlementNetAddback,
+  applySettlementCashToUplineShare,
   buildAccountSummary,
   buildViewerShareRatioByUserId,
   expectedBettingPLFromHistory,
@@ -109,6 +110,32 @@ describe('applyDebtorSettlementNetAddback', () => {
         base
       )
     ).toBe(-200);
+  });
+});
+
+describe('applySettlementCashToUplineShare', () => {
+  it('dena (+): deposite on account clears upline due (does not double it)', () => {
+    expect(
+      applySettlementCashToUplineShare(26, { withdrawl: 0, deposite: 26 })
+    ).toBe(0);
+  });
+
+  it('dena (+): partial deposite reduces outstanding', () => {
+    expect(
+      applySettlementCashToUplineShare(26, { withdrawl: 0, deposite: 10 })
+    ).toBe(16);
+  });
+
+  it('lena (−): deposite clears upline collectable (same as user P/L rule)', () => {
+    expect(
+      applySettlementCashToUplineShare(-16.48, { withdrawl: 0, deposite: 16.48 })
+    ).toBe(0);
+  });
+
+  it('lena (−): partial deposite reduces outstanding', () => {
+    expect(
+      applySettlementCashToUplineShare(-16.48, { withdrawl: 0, deposite: 10 })
+    ).toBe(-6.48);
   });
 });
 

@@ -137,10 +137,36 @@ const BookMaker = ({ BookmakerList }) => {
       );
     })();
 
+    let ratio = null;
+    let oppositeTeam = null;
+
+    if (netOutcome !== 0 && bookmakerData && bookmakerData.length >= 2) {
+      for (const other of bookmakerData) {
+        if (other.team !== team) {
+          const otherDetails = getBetDetails(pendingBet, matchData, other.team);
+          if (
+            (netOutcome > 0 && otherDetails.netOutcome < 0) ||
+            (netOutcome < 0 && otherDetails.netOutcome > 0)
+          ) {
+            ratio = Math.abs(netOutcome / otherDetails.netOutcome);
+            oppositeTeam = other.team;
+            break;
+          }
+        }
+      }
+    }
+
     return (
       <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
-        <div className='flex justify-between'>
-          <p>{team}</p>
+        <div className='flex justify-between items-center'>
+          <p>
+            {team}
+            {ratio !== null && (
+              <span className='text-[11px] text-[#4d6a8a] ml-1 font-normal tracking-tight'>
+                [{oppositeTeam} : {ratio.toFixed(2)}]
+              </span>
+            )}
+          </p>
           <p style={{ color: betColor }}>{displayValue}</p>
         </div>
       </div>

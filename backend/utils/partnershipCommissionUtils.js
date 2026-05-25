@@ -1,6 +1,6 @@
 /**
- * Partnership: upline share applies to ALL settled P/L (sports, casino, etc.).
- * Commission on winning: match odds only (user commition % → agent commissionEarned).
+ * PARTNERSHIP (`partnership` %): upline share on ALL settled P/L (wins and losses).
+ * COMMISSION (`commition` %): match-odds client WINS only — never on losses.
  *
  * Stored on each agent row: `partnership` = % that account KEEPS from its downline
  * (e.g. 15 means agent keeps 15%, parent keeps 85%). Legacy rows may still store
@@ -37,6 +37,20 @@ export const isMatchOddsBetRecord = (bet) => {
   return [bet.gameType, bet.marketName, bet.market_type, bet.fancyType].some(
     fieldIsMatchOdds
   );
+};
+
+/** Settled bet history status: 1 = win, 2 = loss, 3 = void. */
+export const BET_STATUS_WIN = 1;
+export const BET_STATUS_LOSS = 2;
+export const BET_STATUS_VOID = 3;
+
+/** Client win P/L only (commission never applies to zero or negative P/L). */
+export const isSettledClientWinPL = (profitLossChange, status) => {
+  const pl = Number(profitLossChange) || 0;
+  if (pl <= 0) return false;
+  const s = Number(status);
+  if (s === BET_STATUS_LOSS || s === BET_STATUS_VOID) return false;
+  return true;
 };
 
 export const getMatchOddsCommissionFromNetWin = (netProfit, commissionPercent) => {
@@ -238,17 +252,44 @@ export const calculateWinCommission = (winProfit, commissionPercent) => {
   return { netProfit, commission };
 };
 
-export const getMatchOddsCommissionAmount = (
+/**
+ * Match-odds commission from a settled win row (gross or net profit in DB).
+ * Returns zeros when P/L is not a client win.
+ */
+export const resolveMatchOddsWinCommission = (
   profitLossChange,
-  commissionPercent
+  commissionPercent,
+  status
 ) => {
   const pl = Number(profitLossChange) || 0;
+  if (!isSettledClientWinPL(pl, status)) {
+    return { grossWin: 0, netProfit: roundMoney(pl), commission: 0 };
+  }
   const rate = Number(commissionPercent) || 0;
-  if (pl <= 0 || rate <= 0) return 0;
+  if (rate <= 0) {
+    return { grossWin: roundMoney(pl), netProfit: roundMoney(pl), commission: 0 };
+  }
   const fromNet = getMatchOddsCommissionFromNetWin(pl, rate);
-  const fromGross = calculateWinCommission(pl, rate).commission;
-  return roundMoney(Math.max(fromNet, fromGross));
+  const fromGross = calculateWinCommission(pl, rate);
+  const commission = roundMoney(Math.max(fromNet, fromGross.commission));
+  const useGrossStored = fromGross.commission >= fromNet;
+  const netProfit = useGrossStored ? fromGross.netProfit : roundMoney(pl);
+  const grossWin = useGrossStored
+    ? roundMoney(pl)
+    : roundMoney(pl + commission);
+  return { grossWin, netProfit, commission };
 };
+
+export const getMatchOddsCommissionAmount = (
+  profitLossChange,
+  commissionPercent,
+  status
+) =>
+  resolveMatchOddsWinCommission(
+    profitLossChange,
+    commissionPercent,
+    status
+  ).commission;
 
 export const getPartnershipUplineShare = (totalPL, partnershipPercent) => {
   const pl = Number(totalPL) || 0;

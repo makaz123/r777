@@ -664,6 +664,29 @@ export async function aggregateViewerProfitLoss(
   return computeViewerPeriodPL(viewer, users, normalizedPL, accountByCode);
 }
 
+/** Viewer's true share of outstanding downline exposure (parent view). */
+export async function aggregateViewerExposure(SubAdmin, viewer) {
+  const downlineUserIds = await getDownlineUserIds(SubAdmin, viewer.code);
+  if (!downlineUserIds.length) return 0;
+
+  const [users, accountByCode] = await Promise.all([
+    SubAdmin.find({ _id: { $in: downlineUserIds } }).lean(),
+    getAccountByCodeMap(SubAdmin, viewer),
+  ]);
+
+  let viewerExposure = 0;
+  for (const user of users) {
+    if (user.role !== 'user') continue;
+    const exp = Number(user.totalExposure || user.exposure || 0);
+    if (Math.abs(exp) > 0.001) {
+      const ratio = getViewerShareRatioForUser(viewer, user, accountByCode);
+      viewerExposure += exp * ratio;
+    }
+  }
+
+  return roundMoney(viewerExposure);
+}
+
 /** Gross downline settled P/L in parent view (full branch, before your keep %). */
 export async function aggregateDownlineParentViewPL(
   SubAdmin,
@@ -861,7 +884,8 @@ export function resolveUplineSharePercent(admin, plTotals = {}) {
  */
 export function computeUplineSharePL(admin, plTotals = {}) {
   const branchGross = roundMoney(plTotals.tillDownlinePLHistory ?? 0);
-  const uplinePct = resolveUplineSharePercent(admin, plTotals);
+  // The amount passed up is everything the admin does not keep
+  const uplinePct = roundMoney(Math.max(0, 100 - getAccountMyKeepPercent(admin)));
   if (uplinePct <= 0 || Math.abs(branchGross) < 0.01) return 0;
   return roundMoney((branchGross * uplinePct) / 100);
 }
@@ -869,10 +893,13 @@ export function computeUplineSharePL(admin, plTotals = {}) {
 export function buildAccountSummary(admin, plTotals = {}) {
   const myKeepPct = getAccountMyKeepPercent(admin);
   const isEndUserRole = admin.role === 'user';
-  const totalExposure = isEndUserRole
-    ? roundMoney(Number(admin.totalExposure ?? admin.exposure) || 0)
-    : 0;
-  const myShareExposureRaw = roundMoney(totalExposure * (myKeepPct / 100));
+  const totalExposure = roundMoney(Number(admin.totalExposure ?? admin.exposure) || 0);
+  let myShareExposureRaw = roundMoney(totalExposure * (myKeepPct / 100));
+  
+  if (!isEndUserRole && plTotals.viewerExposure !== undefined) {
+    myShareExposureRaw = roundMoney(plTotals.viewerExposure);
+  }
+
   const myShareExposure =
     myShareExposureRaw > 0 ? -myShareExposureRaw : myShareExposureRaw;
 
@@ -915,10 +942,10 @@ export function buildAccountSummary(admin, plTotals = {}) {
         ),
     available: roundMoney(admin.avbalance ?? 0),
     totalExposure,
-    myShareExposure: isEndUserRole ? myShareExposure : 0,
+    myShareExposure,
     mySharePercent: myKeepPct,
-    exposureDisplay: isEndUserRole ? myShareExposure : 0,
-    myShareExposureRaw: isEndUserRole ? myShareExposureRaw : 0,
+    exposureDisplay: myShareExposure,
+    myShareExposureRaw,
     currentWeekPLTotal: weekDownlinePL,
     clientWeekPLTotal: roundMoney(-weekDownlinePL),
     currentWeekPL: roundMoney(uplineSharePL + downlineClientPL),

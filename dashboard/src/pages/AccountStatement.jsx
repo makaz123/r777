@@ -15,9 +15,40 @@ const AccountStatement = () => {
   const [sportsList, setSportsList] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserName, setSelectedUserName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const getFormattedDateTime = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    let hours = '' + d.getHours();
+    let minutes = '' + d.getMinutes();
+    
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    if (hours.length < 2) hours = '0' + hours;
+    if (minutes.length < 2) minutes = '0' + minutes;
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return getFormattedDateTime(d);
+  });
   const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [openingBalance, setOpeningBalance] = useState(0);
+  const [closingBalance, setClosingBalance] = useState(0);
   const [loading, setLoading] = useState(false);
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -37,34 +68,30 @@ const AccountStatement = () => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  useEffect(() => {
-    if (!hasClientSearchAccess) return;
-
-    if (searchQuery.trim().length < 3) {
+  const handleSearch = async (query) => {
+    setSearchQuery(query);
+    setSelectedUserName('');
+    if (!query) {
       setUserSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
-    const timer = setTimeout(async () => {
-      try {
-        const res = await api.get(
-          `/get/all-only-user?page=1&limit=10&searchQuery=${encodeURIComponent(searchQuery.trim())}`,
-          { withCredentials: true }
-        );
-        const suggestions = (res.data?.data || [])
-          .map((u) => u?.userName)
-          .filter(Boolean);
-        setUserSuggestions([...new Set(suggestions)]);
-        setShowSuggestions(true);
-      } catch (error) {
-        setUserSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, hasClientSearchAccess]);
+    try {
+      const res = await api.get('/get/all-only-user', {
+        params: { searchQuery: query, page: 1, limit: 10 },
+        withCredentials: true,
+      });
+      const suggestions = (res.data?.data || [])
+        .map((u) => u?.userName)
+        .filter(Boolean);
+      setUserSuggestions([...new Set(suggestions)]);
+      setShowSuggestions(true);
+    } catch (error) {
+      setUserSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
 
   const resetFilters = () => {
     setAccountType('all');
@@ -73,11 +100,22 @@ const AccountStatement = () => {
     setSportsList('');
     setSearchQuery('');
     setSelectedUserName('');
-    setStartDate('');
-    setEndDate('');
+    const dEnd = new Date();
+    dEnd.setHours(23, 59, 59, 999);
+    setEndDate(getFormattedDateTime(dEnd));
+    const dStart = new Date();
+    dStart.setDate(dStart.getDate() - 1);
+    dStart.setHours(0, 0, 0, 0);
+    setStartDate(getFormattedDateTime(dStart));
     setUserSuggestions([]);
     setShowSuggestions(false);
     setRows([]);
+    setPage(1);
+    setLimit(25);
+    setTotal(0);
+    setTotalPages(1);
+    setOpeningBalance(0);
+    setClosingBalance(0);
   };
 
   const loadReport = async () => {
@@ -86,6 +124,8 @@ const AccountStatement = () => {
       const query = new URLSearchParams();
       if (startDate) query.append('startDate', startDate);
       if (endDate) query.append('endDate', endDate);
+      query.append('page', page);
+      query.append('limit', limit);
 
       if (accountType === 'casino' || accountType === 'sports') {
         query.append('gameType', accountType);
@@ -108,49 +148,56 @@ const AccountStatement = () => {
       );
 
       setRows(res.data?.data || []);
+      setTotal(res.data?.pagination?.total || 0);
+      setTotalPages(res.data?.pagination?.pages || 1);
+      setOpeningBalance(res.data?.openingBalance || 0);
+      setClosingBalance(res.data?.closingBalance || 0);
     } catch (error) {
       setRows([]);
+      setTotal(0);
+      setTotalPages(1);
+      setOpeningBalance(0);
+      setClosingBalance(0);
       toast.error(error?.response?.data?.message || 'Failed to load report');
     } finally {
       setLoading(false);
     }
   };
 
+  // Trigger load on component mount or filter changes
+  useEffect(() => {
+    loadReport();
+  }, [page, limit]);
+
   const renderClientSearch = () =>
     hasClientSearchAccess ? (
       <div className='relative grid' ref={searchRef}>
         <input
-          type='type'
+          type='text'
           className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 outline-0'
           placeholder='Search by client'
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setSelectedUserName('');
+          onChange={(e) => handleSearch(e.target.value)}
+          onFocus={() => {
+            if (userSuggestions.length > 0) setShowSuggestions(true);
           }}
-          onFocus={() =>
-            searchQuery.trim().length >= 3 &&
-            userSuggestions.length > 0 &&
-            setShowSuggestions(true)
-          }
         />
         {showSuggestions && userSuggestions.length > 0 && (
-          <div className='absolute top-full z-20 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg'>
+          <ul className='absolute top-full z-20 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg'>
             {userSuggestions.map((name) => (
-              <button
+              <li
                 key={name}
-                type='button'
+                className='cursor-pointer px-2 py-1.5 text-left text-sm hover:bg-black hover:text-white'
                 onClick={() => {
                   setSearchQuery(name);
                   setSelectedUserName(name);
                   setShowSuggestions(false);
                 }}
-                className='block w-full cursor-pointer px-2 py-1.5 text-left text-sm hover:bg-gray-100'
               >
                 {name}
-              </button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     ) : null;
@@ -237,14 +284,14 @@ const AccountStatement = () => {
             )}
 
             <input
-              type='date'
+              type='datetime-local'
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
             />
 
             <input
-              type='date'
+              type='datetime-local'
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
@@ -286,7 +333,7 @@ const AccountStatement = () => {
                       Opening Balance
                     </td>
                     <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      1234567890
+                      {openingBalance.toFixed(2)}
                     </td>
                   </tr>
                   <tr>
@@ -294,7 +341,7 @@ const AccountStatement = () => {
                       Closing Balance
                     </td>
                     <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      1234567890
+                      {closingBalance.toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
@@ -304,13 +351,18 @@ const AccountStatement = () => {
             <div>
               <span>Show</span>
               <select
-                name=''
-                id=''
+                name='limit'
+                id='limit'
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
                 className='mx-2 rounded-sm border border-gray-300 px-2 py-1 text-gray-500 outline-0'
               >
-                <option value=''>25</option>
-                <option value=''>50</option>
-                <option value=''>100</option>
+                <option value='25'>25</option>
+                <option value='50'>50</option>
+                <option value='100'>100</option>
               </select>
               <span>entries</span>
             </div>
@@ -343,51 +395,91 @@ const AccountStatement = () => {
               </tr>
             </thead>
             <tbody>
-              <tr className='border border-gray-300 odd:bg-gray-100'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25-05-2026
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  1000000000000.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  -
-                </td>
-
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  2500000.00
-                </td>
-
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Settlement
-                </td>
-
-                <td className='px-2 py-1.5'>Admin → User</td>
-              </tr>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className='p-4 text-center'>
+                    Loading...
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className='p-4 text-center'>
+                    No data available in table
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, index) => (
+                  <tr
+                    key={index}
+                    className='border border-gray-300 odd:bg-gray-100'
+                  >
+                    <td className='border border-gray-300 px-2 py-1.5'>
+                      {new Date(row.date).toLocaleString()}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right font-medium text-green-600'>
+                      {row.credit > 0 ? row.credit.toFixed(2) : '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right font-medium text-red-600'>
+                      {row.debit > 0 ? row.debit.toFixed(2) : '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-green-700'>
+                      {row.closing.toFixed(2)}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5'>
+                      {row.description}
+                    </td>
+                    <td className='px-2 py-1.5'>{row.fromto}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
 
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
-            <div>Showing 1 to 2 of 20 entries</div>
+            <div>
+              Showing {rows.length > 0 ? (page - 1) * limit + 1 : 0} to{' '}
+              {rows.length > 0 ? (page - 1) * limit + rows.length : 0} of{' '}
+              {total} entries
+            </div>
             <div className='flex flex-wrap'>
-              {/* First Button */}
-              <button className='pgBtn rounded-l-sm px-[13px] py-[6.5px]'>
+              <button
+                type='button'
+                disabled={page === 1}
+                onClick={() => setPage(1)}
+                className='pgBtn rounded-l-sm px-[13px] py-[6.5px] disabled:opacity-50'
+              >
                 First
               </button>
 
-              {/* Previous Button */}
-              <button className='pgBtn px-[12px] py-[6px]'>Prev</button>
-              {/* Page Numbers */}
-              <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
-                1
+              <button
+                type='button'
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className='pgBtn px-[12px] py-[6px] disabled:opacity-50'
+              >
+                Prev
               </button>
 
-              {/* Next Button */}
-              <button className='pgBtn px-[13px] py-[6.5px]'>Next</button>
+              <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
+                {page}
+              </button>
 
-              {/* Last Button */}
-              <button className='pgBtn rounded-r-sm px-[13px] py-[6.5px]'>
+              <button
+                type='button'
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className='pgBtn px-[13px] py-[6.5px] disabled:opacity-50'
+              >
+                Next
+              </button>
+
+              <button
+                type='button'
+                disabled={page === totalPages}
+                onClick={() => setPage(totalPages)}
+                className='pgBtn rounded-r-sm px-[13px] py-[6.5px] disabled:opacity-50'
+              >
                 Last
               </button>
             </div>

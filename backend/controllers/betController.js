@@ -4740,12 +4740,7 @@ export const getAccountStatementHistory = async (req, res) => {
       limit = 100,
     } = req.query;
 
-    const allowedProfileRoles = [
-      'admin',
-      'master',
-      'superadmin',
-      'supperadmin',
-    ];
+    const allowedProfileRoles = ['admin', 'master', 'superadmin', 'supperadmin'];
     const isPrivileged = allowedProfileRoles.includes(role);
     let targetUserId = null;
 
@@ -4764,88 +4759,191 @@ export const getAccountStatementHistory = async (req, res) => {
     const pageNum = Math.max(parseInt(page), 1);
     const limitNum = Math.max(parseInt(limit), 1);
     const skip = (pageNum - 1) * limitNum;
-    const dateFilter =
-      startDate && endDate ? getDateRangeUTC(startDate, endDate) : null;
-
-    const statementRows = [];
-
-    if (accountType === 'all' || accountType === 'deposit') {
-      const transactionQuery = {};
-      if (targetUserId) transactionQuery.userId = targetUserId;
-      if (dateFilter) transactionQuery.createdAt = dateFilter;
-
-      const transactions =
-        await TransactionHistory.find(transactionQuery).lean();
-      for (const txn of transactions) {
-        statementRows.push({
-          date: txn.createdAt || txn.date,
-          credit: Number(txn.deposite || 0),
-          debit: Number(txn.withdrawl || 0),
-          closing: Number(txn.amount || 0),
-          description: txn.remark || 'Transaction',
-          fromto: `${txn.from || '-'} / ${txn.to || '-'}`,
-          userName: txn.userName || '',
-        });
-      }
+    
+    // Parse Dates
+    let dateFilter = null;
+    let endOfDateRange = new Date();
+    
+    if (startDate && endDate) {
+      dateFilter = getDateRangeUTC(startDate, endDate);
+      endOfDateRange = new Date(dateFilter.$lte || dateFilter.$lt || endDate);
     }
 
-    if (
-      accountType === 'all' ||
-      accountType === 'sports' ||
-      accountType === 'casino'
-    ) {
-      const betQuery = {
-        status: { $in: [1, 2] },
-      };
-      if (targetUserId) betQuery.userId = targetUserId;
-      if (dateFilter) betQuery.date = dateFilter;
+    // 1. Get Target User's Current Balance
+    let currentBalance = 0;
+    if (targetUserId) {
+       const u = await SubAdmin.findById(targetUserId, { avbalance: 1, balance: 1, role: 1 }).lean();
+       if (u) {
+          currentBalance = Number(u.role === 'user' ? (u.avbalance || 0) : (u.balance || 0));
+       }
+    }
 
-      if (accountType === 'casino') {
-        betQuery.betType = 'casino';
-      } else if (accountType === 'sports') {
-        betQuery.betType = { $ne: 'casino' };
-      } else if (gameType === 'casino') {
-        betQuery.betType = 'casino';
-      } else if (gameType === 'sports') {
-        betQuery.betType = { $ne: 'casino' };
-      }
+    const transactionQuery = {};
+    if (targetUserId) transactionQuery.userId = targetUserId;
+    if (dateFilter) transactionQuery.createdAt = dateFilter;
 
-      if (marketName) {
-        betQuery.marketName = { $regex: marketName, $options: 'i' };
-      }
-      if (sportsName) {
-        betQuery.gameName = { $regex: sportsName, $options: 'i' };
-      }
-      if (sportsGameType) {
-        if (sportsGameType === 'matchOdds') {
-          betQuery.gameType = { $regex: '^Match\\s*Odds$', $options: 'i' };
-        } else if (sportsGameType === 'fancy') {
-          betQuery.gameType = { $regex: 'fancy', $options: 'i' };
+    const betQuery = { status: { $in: [1, 2] } };
+    if (targetUserId) betQuery.userId = targetUserId;
+    if (dateFilter) betQuery.createdAt = dateFilter;
+
+    if (accountType === 'casino') betQuery.betType = 'casino';
+    else if (accountType === 'sports') betQuery.betType = { $ne: 'casino' };
+    else if (gameType === 'casino') betQuery.betType = 'casino';
+    else if (gameType === 'sports') betQuery.betType = { $ne: 'casino' };
+
+    if (marketName) betQuery.marketName = { $regex: marketName, $options: 'i' };
+    if (sportsName) betQuery.gameName = { $regex: sportsName, $options: 'i' };
+    if (sportsGameType) {
+      if (sportsGameType === 'matchOdds') betQuery.gameType = { $regex: '^Match\\s*Odds$', $options: 'i' };
+      else if (sportsGameType === 'fancy') betQuery.gameType = { $regex: 'fancy', $options: 'i' };
+    }
+
+    const transactionPipeline = [
+      { $match: transactionQuery },
+      {
+        $project: {
+          date: { $ifNull: ["$createdAt", "$date"] },
+          credit: { $toDouble: { $ifNull: ["$deposite", 0] } },
+          debit: { $toDouble: { $ifNull: ["$withdrawl", 0] } },
+          description: { $ifNull: ["$remark", "Transaction"] },
+          fromto: { $concat: [{ $ifNull: ["$from", "-"] }, " / ", { $ifNull: ["$to", "-"] }] },
+          userName: { $ifNull: ["$userName", ""] },
+          type: { $literal: "txn" }
         }
       }
+    ];
 
-      const bets = await betHistoryModel.find(betQuery).lean();
-      for (const bet of bets) {
-        const pl = Number(bet.profitLossChange || 0);
-        statementRows.push({
-          date: bet.date || bet.createdAt,
-          credit: pl > 0 ? pl : 0,
-          debit: pl < 0 ? Math.abs(pl) : 0,
-          closing: 0,
-          description: `${bet.gameName || '-'} / ${bet.marketName || '-'} / ${bet.betResult || '-'}`,
-          fromto: bet.userName || '',
-          userName: bet.userName || '',
-        });
+    const betPipeline = [
+      { $match: betQuery },
+      {
+        $project: {
+          date: { $ifNull: ["$date", "$createdAt"] },
+          pl: { $toDouble: { $ifNull: ["$profitLossChange", 0] } },
+          description: {
+            $concat: [
+              { $ifNull: ["$gameName", "-"] }, " / ",
+              { $ifNull: ["$marketName", "-"] }, " / ",
+              { $ifNull: ["$betResult", "-"] }
+            ]
+          },
+          fromto: { $ifNull: ["$userName", ""] },
+          userName: { $ifNull: ["$userName", ""] },
+          type: { $literal: "bet" }
+        }
+      },
+      {
+        $project: {
+          date: 1,
+          credit: { $cond: [{ $gt: ["$pl", 0] }, "$pl", 0] },
+          debit: { $cond: [{ $lt: ["$pl", 0] }, { $abs: "$pl" }, 0] },
+          description: 1,
+          fromto: 1,
+          userName: 1,
+          type: 1
+        }
       }
+    ];
+
+    let mainColl;
+    let pipeline = [];
+    
+    if (accountType === 'all') {
+      mainColl = TransactionHistory;
+      pipeline = [
+        ...transactionPipeline,
+        { $unionWith: { coll: betHistoryModel.collection.name, pipeline: betPipeline } },
+        { $sort: { date: -1 } }
+      ];
+    } else if (accountType === 'deposit' || accountType === 'settlement') {
+      mainColl = TransactionHistory;
+      pipeline = [ ...transactionPipeline, { $sort: { date: -1 } } ];
+    } else {
+      mainColl = betHistoryModel;
+      pipeline = [ ...betPipeline, { $sort: { date: -1 } } ];
     }
 
-    statementRows.sort((a, b) => new Date(b.date) - new Date(a.date));
-    const total = statementRows.length;
-    const paginatedRows = statementRows.slice(skip, skip + limitNum);
+    const facetPipeline = [
+      ...pipeline,
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limitNum }]
+        }
+      }
+    ];
+
+    const result = await mainColl.aggregate(facetPipeline);
+    const total = result[0]?.metadata[0]?.total || 0;
+    let paginatedRows = result[0]?.data || [];
+
+    // Base Balance calculation helpers
+    const getSums = async (dateCond) => {
+      if (!targetUserId) return { credit: 0, debit: 0 };
+      
+      const matchTxn = { ...transactionQuery, ...dateCond };
+      let tCredit = 0, tDebit = 0;
+      if (accountType === 'all' || accountType === 'deposit' || accountType === 'settlement') {
+         const txnAgg = await TransactionHistory.aggregate([
+           { $match: matchTxn },
+           { $group: { _id: null, credit: { $sum: "$deposite" }, debit: { $sum: "$withdrawl" } } }
+         ]);
+         tCredit = txnAgg[0]?.credit || 0;
+         tDebit = txnAgg[0]?.debit || 0;
+      }
+
+      const matchBet = { ...betQuery, ...dateCond };
+      let bCredit = 0, bDebit = 0;
+      if (accountType === 'all' || accountType === 'sports' || accountType === 'casino') {
+         const betAgg = await betHistoryModel.aggregate([
+           { $match: matchBet },
+           {
+             $group: {
+               _id: null,
+               credit: { $sum: { $cond: [{ $gt: ["$profitLossChange", 0] }, "$profitLossChange", 0] } },
+               debit: { $sum: { $cond: [{ $lt: ["$profitLossChange", 0] }, { $abs: "$profitLossChange" }, 0] } }
+             }
+           }
+         ]);
+         bCredit = betAgg[0]?.credit || 0;
+         bDebit = betAgg[0]?.debit || 0;
+      }
+      return { credit: tCredit + bCredit, debit: tDebit + bDebit };
+    };
+
+    let closingBalance = currentBalance;
+    if (dateFilter) {
+      const futureSums = await getSums({ createdAt: { $gt: endOfDateRange } });
+      closingBalance = currentBalance + futureSums.debit - futureSums.credit;
+    }
+
+    let openingBalance = closingBalance;
+    if (dateFilter) {
+      const rangeSums = await getSums({ createdAt: dateFilter });
+      openingBalance = closingBalance + rangeSums.debit - rangeSums.credit;
+    }
+
+    let runningBalance = closingBalance;
+    if (skip > 0) {
+      const skipAgg = await mainColl.aggregate([
+        ...pipeline,
+        { $limit: skip },
+        { $group: { _id: null, credit: { $sum: "$credit" }, debit: { $sum: "$debit" } } }
+      ]);
+      const skippedCredit = skipAgg[0]?.credit || 0;
+      const skippedDebit = skipAgg[0]?.debit || 0;
+      runningBalance = runningBalance + skippedDebit - skippedCredit;
+    }
+
+    for (const row of paginatedRows) {
+       runningBalance = runningBalance + row.debit - row.credit;
+       row.closing = Number(runningBalance.toFixed(2));
+    }
 
     return res.status(200).json({
       success: true,
       data: paginatedRows,
+      openingBalance: Number(openingBalance.toFixed(2)),
+      closingBalance: Number(closingBalance.toFixed(2)),
       pagination: {
         total,
         page: pageNum,

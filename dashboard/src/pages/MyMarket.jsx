@@ -100,22 +100,26 @@ const MyMarket = () => {
                 {SPORT_TABS.map((sport, index) => {
                   const isActive = activeSport === sport;
                   const count = tabCounts[index];
+
                   return (
-                    <button
-                      key={sport}
-                      type='button'
-                      onClick={() => setActiveSport(sport)}
-                      className={`relative rounded-t-sm px-4 py-1 text-[14px] ${
-                        isActive
-                          ? 'bg-[#007082] text-white'
-                          : 'border border-[#007082] text-[#007082]'
-                      }`}
-                    >
-                      {sport}
-                      <span className='absolute -top-3 right-0 flex h-[18px] min-w-[22px] items-center justify-center rounded-sm bg-[#16a5bd] px-1 text-[10px] text-white'>
-                        ({count})
-                      </span>
-                    </button>
+                    count > 0 && (
+                      <button
+                        key={sport}
+                        type='button'
+                        onClick={() => setActiveSport(sport)}
+                        className={`relative rounded-t-sm px-4 py-1 text-[14px] ${
+                          isActive
+                            ? 'bg-[#007082] text-white'
+                            : 'border border-[#007082] text-[#007082]'
+                        }`}
+                      >
+                        {sport}
+
+                        <span className='absolute -top-3 right-0 flex h-[18px] min-w-[22px] items-center justify-center rounded-sm bg-[#16a5bd] px-1 text-[10px] text-white'>
+                          ({count})
+                        </span>
+                      </button>
+                    )
                   );
                 })}
               </div>

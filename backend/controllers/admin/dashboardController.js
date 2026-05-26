@@ -17,7 +17,9 @@ import {
   roundMoney,
 } from '../../utils/partnershipCommissionUtils.js';
 import {
-  computeViewerPeriodPL,
+  mergeDownlineIntoAccountByCode,
+  resolveBetEndUser,
+  scaleClientPLForViewer,
   getAccountByCodeMap,
 } from '../../utils/accountSummaryUtils.js';
 
@@ -25,36 +27,6 @@ import {
 const round2 = (val) => {
   if (typeof val !== 'number') return 0;
   return parseFloat(val.toFixed(2));
-};
-
-/** Client-side settled P/L per user from bets already loaded for the period. */
-const buildClientPLByUserId = (sportsBets, casinoBets, downlineUsers) => {
-  const nameToId = new Map(
-    downlineUsers
-      .filter((u) => u.role === 'user')
-      .map((u) => [String(u.userName || '').toLowerCase(), u._id.toString()])
-  );
-
-  const resolveUserId = (bet) => {
-    const byName = nameToId.get(String(bet.userName || '').toLowerCase());
-    if (byName) return byName;
-    return bet.userId ? String(bet.userId) : null;
-  };
-
-  const byUser = new Map();
-  const addPL = (bet, delta) => {
-    const id = resolveUserId(bet);
-    if (!id) return;
-    byUser.set(id, roundMoney((byUser.get(id) || 0) + (delta || 0)));
-  };
-
-  for (const bet of sportsBets) {
-    addPL(bet, bet.profitLossChange || 0);
-  }
-  for (const bet of casinoBets) {
-    addPL(bet, getCasinoNetPL(bet));
-  }
-  return byUser;
 };
 
 /**
@@ -194,10 +166,13 @@ export const getDashboardStats = async (req, res) => {
       }).lean(),
     ]);
 
-    let totalSportsPL = 0;
-    let totalSportsBetAmount = 0;
     const totalSportsBets = sportsBets.length;
     let totalCommission = 0;
+    let totalSportsBetAmount = 0;
+    let totalCasinoBetAmount = 0;
+
+    const activeCasinoBets = casinoBets.filter(hasCasinoRoundActivity);
+    const totalCasinoBets = activeCasinoBets.length;
 
     const userCommitionMap = new Map(
       downlineUsers
@@ -222,43 +197,41 @@ export const getDashboardStats = async (req, res) => {
       return userCommitionMap.get(id) || 0;
     };
 
+    // Viewer partnership share on each bet (same My % rules as Userlist).
+    // This perfectly matches the "Dashboard P&L (My Share Only) = P x My % / 100" logic.
+    const accountByCode = await getAccountByCodeMap(SubAdmin, admin);
+    mergeDownlineIntoAccountByCode(accountByCode, downlineUsers);
+
+    const scaleBetClientPL = (bet, clientPL) => {
+      const endUser = resolveBetEndUser(bet, downlineUsers);
+      if (!endUser) return { clientScaled: 0, parentPL: 0, sharePct: 0 };
+      return scaleClientPLForViewer(admin, endUser, clientPL, accountByCode);
+    };
+
+    let headerPL = 0;
     sportsBets.forEach((bet) => {
-      totalSportsPL += bet.profitLossChange || 0;
+      const clientPL = bet.profitLossChange || 0;
+      const { parentPL, sharePct } = scaleBetClientPL(bet, clientPL);
+      headerPL += parentPL;
       totalSportsBetAmount += bet.betAmount || 0;
 
       if (isMatchOddsBetRecord(bet) && bet.profitLossChange > 0) {
         const rate = resolveCommissionRate(bet);
-        if (rate > 0) {
-          totalCommission += getMatchOddsCommissionAmount(
-            bet.profitLossChange,
-            rate
-          );
+        if (rate > 0 && sharePct > 0) {
+          totalCommission +=
+            getMatchOddsCommissionAmount(bet.profitLossChange, rate) *
+            (sharePct / 100);
         }
       }
     });
 
-    let totalCasinoPL = 0;
-    let totalCasinoBetAmount = 0;
-    const activeCasinoBets = casinoBets.filter(hasCasinoRoundActivity);
-    const totalCasinoBets = activeCasinoBets.length;
-
     activeCasinoBets.forEach((bet) => {
-      totalCasinoPL += getCasinoNetPL(bet);
+      const clientPL = getCasinoNetPL(bet);
+      const { parentPL } = scaleBetClientPL(bet, clientPL);
+      headerPL += parentPL;
       totalCasinoBetAmount += bet.bet_amount || 0;
     });
 
-    const accountByCode = await getAccountByCodeMap(SubAdmin, admin);
-    const clientPLByUser = buildClientPLByUserId(
-      sportsBets,
-      activeCasinoBets,
-      downlineUsers
-    );
-    const headerPL = computeViewerPeriodPL(
-      admin,
-      downlineUsers,
-      clientPLByUser,
-      accountByCode
-    );
     const totalBetsCount = totalSportsBets + totalCasinoBets;
 
     const totalDeposit =
@@ -281,12 +254,17 @@ export const getDashboardStats = async (req, res) => {
     };
 
     sportsBets.forEach((bet) => {
-      addPlayerPL(bet.userName, bet.profitLossChange || 0);
+      const { clientScaled } = scaleBetClientPL(
+        bet,
+        bet.profitLossChange || 0
+      );
+      addPlayerPL(bet.userName, clientScaled);
     });
 
     activeCasinoBets.forEach((bet) => {
+      const { clientScaled } = scaleBetClientPL(bet, getCasinoNetPL(bet));
       const uName = bet.userName || userIdToName[bet.userId];
-      addPlayerPL(uName, getCasinoNetPL(bet));
+      addPlayerPL(uName, clientScaled);
     });
 
     const playerList = Object.entries(playerPLMap).map(
@@ -318,17 +296,22 @@ export const getDashboardStats = async (req, res) => {
     const marketPLMap = {};
 
     sportsBets.forEach((bet) => {
+      const { parentPL, clientScaled } = scaleBetClientPL(
+        bet,
+        bet.profitLossChange || 0
+      );
       const sport = bet.gameName || 'Sports';
       const market = bet.marketName || bet.eventName || 'Unknown';
       const key = `${sport}||${market}`;
-      marketPLMap[key] = (marketPLMap[key] || 0) + (bet.profitLossChange || 0);
+      marketPLMap[key] = (marketPLMap[key] || 0) + parentPL;
     });
 
     activeCasinoBets.forEach((bet) => {
+      const { parentPL, clientScaled } = scaleBetClientPL(bet, getCasinoNetPL(bet));
       const sport = 'Casino';
       const market = bet.game_name || 'Casino Game';
       const key = `${sport}||${market}`;
-      marketPLMap[key] = (marketPLMap[key] || 0) + getCasinoNetPL(bet);
+      marketPLMap[key] = (marketPLMap[key] || 0) + parentPL;
     });
 
     const marketList = Object.entries(marketPLMap).map(([key, amount]) => {
@@ -403,28 +386,32 @@ export const getDashboardStats = async (req, res) => {
     sportsBets.forEach((bet) => {
       const sport = bet.gameName || 'Unknown';
       const sportLower = sport.toLowerCase();
+      const { parentPL } = scaleBetClientPL(
+        bet,
+        bet.profitLossChange || 0
+      );
 
       // Track Cricket, Tennis, Soccer in standard sports details using case-insensitive substring checks
       if (sportLower.includes('cricket')) {
         sportsBreakdown['Cricket'].totalBets += 1;
         sportsBreakdown['Cricket'].totalBetAmount += bet.betAmount || 0;
-        sportsBreakdown['Cricket'].totalPL += bet.profitLossChange || 0;
+        sportsBreakdown['Cricket'].totalPL += parentPL;
       } else if (sportLower.includes('tennis')) {
         sportsBreakdown['Tennis'].totalBets += 1;
         sportsBreakdown['Tennis'].totalBetAmount += bet.betAmount || 0;
-        sportsBreakdown['Tennis'].totalPL += bet.profitLossChange || 0;
+        sportsBreakdown['Tennis'].totalPL += parentPL;
       } else if (
         sportLower.includes('soccer') ||
         sportLower.includes('football')
       ) {
         sportsBreakdown['Soccer'].totalBets += 1;
         sportsBreakdown['Soccer'].totalBetAmount += bet.betAmount || 0;
-        sportsBreakdown['Soccer'].totalPL += bet.profitLossChange || 0;
+        sportsBreakdown['Soccer'].totalPL += parentPL;
       } else {
         // Any other minor sports/horse/greyhound go under Others
         otherBetsCount += 1;
         otherBetAmount += bet.betAmount || 0;
-        otherPL += bet.profitLossChange || 0;
+        otherPL += parentPL;
       }
     });
 
@@ -497,10 +484,11 @@ export const getDashboardStats = async (req, res) => {
 
     let casinoTotalPL = 0;
     activeCasinoBets.forEach((bet) => {
+      const { parentPL } = scaleBetClientPL(bet, getCasinoNetPL(bet));
       const cat = getCasinoCategory(bet.game_name, bet.game_uid);
-      const net = getCasinoNetPL(bet);
-      casinoGameplayBreakdown[cat] = (casinoGameplayBreakdown[cat] || 0) + net;
-      casinoTotalPL += net;
+      casinoGameplayBreakdown[cat] =
+        (casinoGameplayBreakdown[cat] || 0) + parentPL;
+      casinoTotalPL += parentPL;
     });
 
     // Apply decimal rounding to casino gameplay details
@@ -514,7 +502,7 @@ export const getDashboardStats = async (req, res) => {
       success: true,
       data: {
         header: {
-          pl: round2(headerPL),
+          pl: round2(roundMoney(headerPL)),
           commission: round2(totalCommission),
           deposit: round2(totalDeposit),
           depositCount: deposits.length + openingBalanceDeposits.length,

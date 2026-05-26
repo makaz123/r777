@@ -306,6 +306,45 @@ function Bookmaker({
     const oddsNum = parseFloat(odds);
     if (isNaN(stakeNum) || isNaN(oddsNum) || stakeNum === 0) return null;
 
+    // Hedge calculation check to ensure perfect match
+    const teams = bookmakerData.map((item) => item.team);
+    if (teams.length >= 2) {
+      const teamA = teams[0];
+      const teamB = teams[1];
+      const detailsA = getBetDetails(teamA);
+      const detailsB = getBetDetails(teamB);
+
+      let plA = detailsA.netOutcome !== null ? detailsA.netOutcome : 0;
+      let plB = detailsB.netOutcome !== null ? detailsB.netOutcome : 0;
+
+      if (selectedType === 'back') {
+        if (selectedTeam?.toLowerCase() === teamA.toLowerCase()) {
+          plA += stakeNum * (oddsNum / 100);
+          plB -= stakeNum;
+        } else {
+          plA -= stakeNum;
+          plB += stakeNum * (oddsNum / 100);
+        }
+      } else if (selectedType === 'lay') {
+        if (selectedTeam?.toLowerCase() === teamA.toLowerCase()) {
+          plA -= stakeNum * (oddsNum / 100);
+          plB += stakeNum;
+        } else {
+          plA += stakeNum;
+          plB -= stakeNum * (oddsNum / 100);
+        }
+      }
+
+      // If the resulting PL is very close (e.g. within 0.1), average them to avoid precision differences
+      if (Math.abs(plA - plB) < 0.1) {
+        const avgPL = (plA + plB) / 2;
+        return {
+          value: avgPL,
+          color: avgPL >= 0 ? 'green' : 'red',
+        };
+      }
+    }
+
     const { netOutcome } = getBetDetails(team);
     let newPL = netOutcome !== null ? netOutcome : 0;
 

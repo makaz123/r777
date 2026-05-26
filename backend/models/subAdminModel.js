@@ -56,6 +56,8 @@ const subAdminSchema = new mongoose.Schema(
     uLock: { type: Boolean, default: false },
     betLock: { type: Boolean, default: false },
     remark: { type: String },
+    /** Week P/L on account summary starts after this time; updated on cash settlement. */
+    weekPLResetAt: { type: Date, default: null },
     role: {
       type: String,
       enum: [

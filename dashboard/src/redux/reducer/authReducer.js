@@ -1033,9 +1033,8 @@ const userSlice = createSlice({
       .addCase(fetchSubAdminByLevel.fulfilled, (state, action) => {
         state.loading = false;
         state.users = action.payload.data;
-        // state.totalUsers = action.payload.totalUsers;
+        state.downlineViewer = action.payload.viewer || null;
         state.totalPages = action.payload.totalPages;
-        // state.currentPage = action.payload.currentPage;
       })
       .addCase(fetchSubAdminByLevel.rejected, (state, action) => {
         state.loading = false;

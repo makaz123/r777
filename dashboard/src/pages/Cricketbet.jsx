@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchCricketData } from '../redux/reducer/cricketSlice';
+import { formatApiMatchDateTime } from '../utils/formatMatchDateTime';
 import { BsGraphUpArrow } from 'react-icons/bs';
 import { TfiMenuAlt } from 'react-icons/tfi';
 import {
@@ -23,6 +25,7 @@ import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { getAdmin } from '../redux/reducer/authReducer';
 import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
+import { FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { FaArrowRight, FaFilter, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../components/OddsGridCells';
 
@@ -58,8 +61,10 @@ export default function Cricketbet() {
   const { gameTitle } = useParams() || {};
   const { match } = useParams() || {};
   const dispatch = useDispatch();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isFromMarket = searchParams.get('from') === 'market';
+  const { matches: cricketMatches } = useSelector((state) => state.cricket);
 
   const { userInfo } = useSelector((state) => state.auth);
   // const { pendingBetAmounts } = useSelector((state) => state.bet);
@@ -77,11 +82,12 @@ export default function Cricketbet() {
     betPerantsData,
     masterData,
     masterDataDownline,
-    lastUpdateddate,
+    comboBookData,
   } = useSelector((state) => state.market);
 
   const [activeTab, setActiveTab] = useState('fancy');
   const [activeSubTab, setActiveSubTab] = useState('Normal');
+  const [isComboBookOpen, setIsComboBookOpen] = useState(true);
   const [scoreUrl, setScoreUrl] = useState(false);
   const [url, setUrl] = useState('');
   const [masterpopup, setMasterpopup] = useState(false);
@@ -96,14 +102,45 @@ export default function Cricketbet() {
   const [masterDownline, setMasterDownline] = useState([]);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [amountFilter, setAmountFilter] = useState('');
+  const [marketNameFilter, setMarketNameFilter] = useState('');
   const [showlivetv, setshowlivetv] = useState(false);
-  const subTabs = [{ id: 'Normal', name: 'All' }];
+
+  const matchStartTime = useMemo(() => {
+    if (location.state?.time) return location.state.time;
+    const listed = cricketMatches?.find(
+      (m) => String(m.id) === String(gameid)
+    );
+    if (listed?.time) return listed.time;
+    if (listed?.date) return formatApiMatchDateTime(listed.date);
+    return null;
+  }, [location.state?.time, cricketMatches, gameid]);
+
+  const filteredBetsData = Array.isArray(betsData) ? betsData.filter((item) => {
+    let matchesAmount = true;
+    if (amountFilter) {
+      const amount = item.otype === 'lay' ? parseFloat(item.betAmount) : parseFloat(item.price);
+      matchesAmount = amount >= parseFloat(amountFilter);
+    }
+    let matchesMarket = true;
+    if (marketNameFilter) {
+      matchesMarket = item.gameType?.toLowerCase().includes(marketNameFilter.toLowerCase());
+    }
+    return matchesAmount && matchesMarket;
+  }) : [];
+  const subTabs = [
+    { id: 'Normal', name: 'All' },
+  ];
 
   console.log('pendingBet', pendingBet);
   console.log('betPerantsData', betPerantsData);
   console.log('masterData', masterData);
   console.log('betsData', betsData);
   //  Fetch once before using socket (optional)
+  useEffect(() => {
+    dispatch(fetchCricketData());
+  }, [dispatch]);
+
   useEffect(() => {
     if (gameid) {
       setLoader(true);
@@ -448,6 +485,42 @@ export default function Cricketbet() {
         : true
     )
     .slice(0, entriesPerPage);
+
+  const calculatedComboBookData = (() => {
+    const teams = matchOddsList?.[0]?.section?.map((sec) => sec.nat) || [];
+    if (!teams.length || !pendingBet || pendingBet.length === 0) return [];
+
+    const comboBets = pendingBet.filter(
+      (b) => b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
+    );
+    
+    return teams.map((team) => {
+      let netOutcome = 0;
+      comboBets.forEach((bet) => {
+        const isBetOnThisTeam = bet.teamName?.toLowerCase() === team.toLowerCase();
+        const betAmount = parseFloat(bet.totalBetAmount) || 0;
+        const stake = parseFloat(bet.totalPrice) || 0;
+
+        if (bet.otype === 'back') {
+          if (isBetOnThisTeam) {
+            netOutcome += betAmount;
+          } else {
+            netOutcome -= stake;
+          }
+        } else if (bet.otype === 'lay') {
+          if (isBetOnThisTeam) {
+            netOutcome -= stake;
+          } else {
+            netOutcome += betAmount;
+          }
+        }
+      });
+      return {
+        teamName: team,
+        netOutcome: Math.round(netOutcome * 100) / 100
+      };
+    });
+  })();
   return (
     <div className='relative'>
       <Navbar />
@@ -465,44 +538,43 @@ export default function Cricketbet() {
                     {gameTitle} - {gameName}
                   </span>
                   <span>
-                    {lastUpdateddate
-                      ? new Date(lastUpdateddate).toLocaleString('en-IN')
-                      : '—'}
+                    {matchStartTime || '—'}
                   </span>
                 </div>
                 <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
                   <div className='flex items-center gap-1'>
                     <span className='font-bold'>Combo Book</span>
                   </div>
-                  <div>-</div>
+                  <div className='cursor-pointer' onClick={() => setIsComboBookOpen(!isComboBookOpen)}>
+                    {isComboBookOpen ? <FaMinusCircle className='text-[18px]' /> : <FaPlusCircle className='text-[18px]' />}
+                  </div>
                 </div>
-                <table className='w-full'>
-                  <tbody>
-                    <tr className='border-y border-gray-200 text-[14px] leading-[22px]'>
-                      <td className='py-0.5 pl-3 font-bold'>
-                        Lucknow Super Giants
-                      </td>
-                      <td className='px-1 py-0.5 text-right'>
-                        [<span className='text-[12px]'>Punjab Kings</span> :
-                        <span className='text-[12px] text-red-500'>0.98</span>]{' '}
-                        <span className='inline-block w-[155px] max-w-[240px] font-bold text-red-500'>
-                          -15.00
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className='border-y border-gray-200 text-[14px] leading-[22px]'>
-                      <td className='py-0.5 pl-3 font-bold'>Punjab Kings</td>
-                      <td className='px-1 py-0.5 text-right'>
-                        [<span className='text-[12px]'>Punjab Kings</span> :
-                        <span className='text-[12px] text-green-500'>0.98</span>
-                        ]{' '}
-                        <span className='inline-block w-[155px] max-w-[240px] font-bold text-green-500'>
-                          -15.00
-                        </span>
-                      </td>
-                    </tr>
+                {isComboBookOpen && (
+                  <table className='w-full'>
+                    <tbody>
+                    {calculatedComboBookData && calculatedComboBookData.length > 0 ? (
+                      calculatedComboBookData.map((item, index) => {
+                        const isPositive = item.netOutcome >= 0;
+                        const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
+                        return (
+                          <tr key={index} className='leading-[22px] text-[14px] border-y border-gray-200'>
+                            <td className='py-0.5 pl-3 font-bold'>{item.teamName}</td>
+                            <td className='text-right py-0.5 px-1'>
+                              <span className={`font-bold w-[155px] max-w-[240px] inline-block ${colorClass}`}>
+                                {item.netOutcome}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
+                        <td colSpan={2} className='py-0.5 px-3 text-center text-gray-500'>No Combo Book Data Available</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
+                )}
 
                 {/* odds match data */}
                 <MatchOdd
@@ -523,26 +595,29 @@ export default function Cricketbet() {
 
                 {/* which team will win the toss — only the two toss teams */}
                 {tossTeamsData.length > 0 && (
-                  <>
-                    <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
-                      <div className='flex items-center gap-1'>
-                        <span className='font-bold'>To Win The Toss</span>
-                        <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                          Book
-                        </span>
-                        <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                          BL <FaLock size={9} />
-                        </span>
-                        <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                          BetPlace
-                        </span>
-                        <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                          0
-                        </span>
-                      </div>
-                      <div>
-                        Min: {tossTeamsData[0]?.min} | Max:{' '}
-                        {formatToK(tossTeamsData[0]?.max)}
+                    <>
+                      <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+                        <div className='flex items-center gap-1'>
+                          <span className='font-bold'>
+                            To Win The Toss
+                          </span>
+                          <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                            Book
+                          </span>
+                          <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                            BL <FaLock size={9} />
+                          </span>
+                          <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                            BetPlace
+                          </span>
+                          <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                            {Array.isArray(betsData) ? betsData.filter(item => item?.gameType === 'To Win the Toss' || item?.marketName === 'To Win The Toss' || item?.gameType === tossTeamsData[0]?.mname || item?.marketName === tossTeamsData[0]?.mname).length : 0}
+                          </span>
+                        </div>
+                        <div>
+                          Min: {tossTeamsData[0]?.min} | Max:{' '}
+                          {formatToK(tossTeamsData[0]?.max)}
+                        </div>
                       </div>
                     </div>
 
@@ -643,7 +718,7 @@ export default function Cricketbet() {
                           BetPlace
                         </span>
                         <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                          0
+                          {Array.isArray(betsData) ? betsData.filter(item => item?.gameType === 'Highest Score In 1st 6 Over' || item?.marketName === 'Highest Score In 1st 6 Over' || item?.gameType === over6TeamsData[0]?.mname || item?.marketName === over6TeamsData[0]?.mname).length : 0}
                         </span>
                       </div>
                       <div>
@@ -885,19 +960,19 @@ export default function Cricketbet() {
                       <div className='flex items-center gap-1 text-[12px] text-white'>
                         Odds{' '}
                         <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
-                          0
+                          {matchOdd?.length || 0}
                         </span>
                       </div>
                       <div className='flex items-center gap-1 text-[12px] text-white'>
                         BM{' '}
                         <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
-                          0
+                          {(Bookmaker?.length || 0) + (tiedMatch?.length || 0)}
                         </span>
                       </div>
                       <div className='flex items-center gap-1 text-[12px] text-white'>
                         Fancy{' '}
                         <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
-                          0
+                          {(Array.isArray(betsData) ? betsData.length - (matchOdd?.length || 0) - (Bookmaker?.length || 0) - (tiedMatch?.length || 0) : 0)}
                         </span>
                       </div>
                       <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white'>
@@ -918,11 +993,15 @@ export default function Cricketbet() {
                       type='text'
                       className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
                       placeholder='Filter by Amount from'
+                      value={amountFilter}
+                      onChange={(e) => setAmountFilter(e.target.value)}
                     />
                     <input
                       type='text'
                       className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
                       placeholder='Filter by Market Name'
+                      value={marketNameFilter}
+                      onChange={(e) => setMarketNameFilter(e.target.value)}
                     />
                   </div>
                 </div>
@@ -948,7 +1027,7 @@ export default function Cricketbet() {
                     </tr>
                   </thead>
                   <tbody>
-                    {betsData.map((item, index) => (
+                    {filteredBetsData.map((item, index) => (
                       <tr
                         key={index}
                         className={`border-y border-white text-[12px] ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
@@ -999,8 +1078,7 @@ export default function Cricketbet() {
                             <div className='col-span-1'>Rate</div>
                             <div className='col-span-1 text-right'>Amount</div>
                           </div>
-
-                          {betsData.map((item, index) => (
+                          {filteredBetsData.map((item, index) => (
                             <div
                               key={index}
                               className={`${item.otype === 'back' ? 'border-[#89c9f8] bg-[#b6defa]' : 'border-[#f8e8eb] bg-[#f8e8eb]'} border px-2 py-1 text-sm`}
@@ -1008,7 +1086,7 @@ export default function Cricketbet() {
                               <div className='flex items-center justify-between'>
                                 <div className='font-bold'>{item.gameType}</div>
                                 <div className='text-[10px] text-gray-600 uppercase'>
-                                  {new Date(item.date).toLocaleString('en-IN')}
+                                  {formatApiMatchDateTime(item.date)}
                                 </div>
                               </div>
                               <div
@@ -1330,14 +1408,10 @@ export default function Cricketbet() {
                                         {item.xValue}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {new Date(
-                                          item.createdAt
-                                        ).toLocaleString('en-IN')}
+                                        {formatApiMatchDateTime(item.createdAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                        {new Date(
-                                          item.updatedAt
-                                        ).toLocaleString('en-IN')}
+                                        {formatApiMatchDateTime(item.updatedAt)}
                                       </td>
                                       <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
                                         {item.gameType}

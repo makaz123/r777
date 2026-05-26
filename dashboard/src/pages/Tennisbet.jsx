@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchTennisData } from '../redux/reducer/tennisSlice';
+import { formatApiMatchDateTime } from '../utils/formatMatchDateTime';
 
 import {
   getPendingBetAmo,
@@ -17,13 +19,14 @@ import { host } from '../redux/api';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
-import { FaFilter } from 'react-icons/fa';
+import { FaFilter, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { BsGraphUpArrow } from 'react-icons/bs';
 import { TfiMenuAlt } from 'react-icons/tfi';
 export default function Tennisbet() {
   const [bettingData, setBettingData] = useState(null);
   const hasCheckedRef = useRef(false);
   const dispatch = useDispatch();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isFromMarket = searchParams.get('from') === 'market';
   const navigate = useNavigate();
@@ -44,7 +47,21 @@ export default function Tennisbet() {
   const [viewMoreDetail, setViewMoreDetail] = useState(false);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
+  const [amountFilter, setAmountFilter] = useState('');
+  const [marketNameFilter, setMarketNameFilter] = useState('');
   const [showlivetv, setshowlivetv] = useState(false);
+  const { matches: tennisMatches } = useSelector((state) => state.tennis);
+
+  const matchStartTime = useMemo(() => {
+    if (location.state?.time) return location.state.time;
+    const listed = tennisMatches?.find(
+      (m) => String(m.id) === String(gameid)
+    );
+    if (listed?.time) return listed.time;
+    if (listed?.date) return formatApiMatchDateTime(listed.date);
+    return null;
+  }, [location.state?.time, tennisMatches, gameid]);
+
   const {
     loading,
     pendingBet,
@@ -53,9 +70,27 @@ export default function Tennisbet() {
     betPerantsData,
     masterData,
     masterDataDownline,
-    lastUpdateddate,
   } = useSelector((state) => state.market);
   const { userInfo } = useSelector((state) => state.auth);
+
+  const [isComboBookOpen, setIsComboBookOpen] = useState(true);
+
+  const filteredBetsData = Array.isArray(betsData) ? betsData.filter((item) => {
+    let matchesAmount = true;
+    if (amountFilter) {
+      const amount = item.otype === 'lay' ? parseFloat(item.betAmount) : parseFloat(item.price);
+      matchesAmount = amount >= parseFloat(amountFilter);
+    }
+    let matchesMarket = true;
+    if (marketNameFilter) {
+      matchesMarket = item.gameType?.toLowerCase().includes(marketNameFilter.toLowerCase());
+    }
+    return matchesAmount && matchesMarket;
+  }) : [];
+
+  useEffect(() => {
+    dispatch(fetchTennisData());
+  }, [dispatch]);
 
   // Initial fetch
   useEffect(() => {
@@ -400,6 +435,43 @@ export default function Tennisbet() {
         : true
     )
     .slice(0, entriesPerPage);
+
+  const calculatedComboBookData = (() => {
+    const teams = matchOddsList?.[0]?.section?.map((sec) => sec.nat) || [];
+    if (!teams.length || !pendingBet || pendingBet.length === 0) return [];
+
+    const comboBets = pendingBet.filter(
+      (b) => b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
+    );
+    
+    return teams.map((team) => {
+      let netOutcome = 0;
+      comboBets.forEach((bet) => {
+        const isBetOnThisTeam = bet.teamName?.toLowerCase() === team.toLowerCase();
+        const betAmount = parseFloat(bet.totalBetAmount) || 0;
+        const stake = parseFloat(bet.totalPrice) || 0;
+
+        if (bet.otype === 'back') {
+          if (isBetOnThisTeam) {
+            netOutcome += betAmount;
+          } else {
+            netOutcome -= stake;
+          }
+        } else if (bet.otype === 'lay') {
+          if (isBetOnThisTeam) {
+            netOutcome -= stake;
+          } else {
+            netOutcome += betAmount;
+          }
+        }
+      });
+      return {
+        teamName: team,
+        netOutcome: Math.round(netOutcome * 100) / 100
+      };
+    });
+  })();
+
   return (
     <div className='relative'>
       <Navbar />
@@ -415,12 +487,44 @@ export default function Tennisbet() {
               <span className='flex items-center'>
                 {gameTitle} - {gameName}
               </span>
-              <span>
-                {lastUpdateddate
-                  ? new Date(lastUpdateddate).toLocaleString('en-IN')
-                  : '—'}
-              </span>
+              <span>{matchStartTime || '—'}</span>
             </div>
+            
+            <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+              <div className='flex items-center gap-1'>
+                <span className='font-bold'>Combo Book</span>
+              </div>
+              <div className='cursor-pointer' onClick={() => setIsComboBookOpen(!isComboBookOpen)}>
+                {isComboBookOpen ? <FaMinusCircle className='text-[18px]' /> : <FaPlusCircle className='text-[18px]' />}
+              </div>
+            </div>
+            {isComboBookOpen && (
+              <table className='w-full'>
+                <tbody>
+                {calculatedComboBookData && calculatedComboBookData.length > 0 ? (
+                  calculatedComboBookData.map((item, index) => {
+                    const isPositive = item.netOutcome >= 0;
+                    const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
+                    return (
+                      <tr key={index} className='leading-[22px] text-[14px] border-y border-gray-200'>
+                        <td className='py-0.5 pl-3 font-bold'>{item.teamName}</td>
+                        <td className='text-right py-0.5 px-1'>
+                          <span className={`font-bold w-[155px] max-w-[240px] inline-block ${colorClass}`}>
+                            {item.netOutcome}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
+                    <td colSpan={2} className='py-0.5 px-3 text-center text-gray-500'>No Combo Book Data Available</td>
+                  </tr>
+                )}
+                </tbody>
+              </table>
+            )}
+
             <div>
               {oddsData.length > 0 && (
                 <>
@@ -437,7 +541,7 @@ export default function Tennisbet() {
                         BetPlace
                       </span>
                       <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                        0
+                        {matchOdd.length}
                       </span>
                     </div>
                     <div>
@@ -551,7 +655,7 @@ export default function Tennisbet() {
                   <div className='flex items-center gap-1 text-[12px] text-white'>
                     Odds{' '}
                     <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
-                      0
+                      {matchOdd?.length || 0}
                     </span>
                   </div>
                   <div className='flex items-center gap-1 text-[12px] text-white'>
@@ -584,11 +688,15 @@ export default function Tennisbet() {
                   type='text'
                   className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
                   placeholder='Filter by Amount from'
+                  value={amountFilter}
+                  onChange={(e) => setAmountFilter(e.target.value)}
                 />
                 <input
                   type='text'
                   className='col-span-1 w-full rounded border border-[#ced4da] bg-white px-2 py-1 text-[#495057] outline-none'
                   placeholder='Filter by Market Name'
+                  value={marketNameFilter}
+                  onChange={(e) => setMarketNameFilter(e.target.value)}
                 />
               </div>
             </div>
@@ -614,7 +722,7 @@ export default function Tennisbet() {
                 </tr>
               </thead>
               <tbody>
-                {betsData.map((item, index) => (
+                {filteredBetsData.map((item, index) => (
                   <tr
                     key={index}
                     className={`border-y border-white text-[12px] ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
@@ -656,15 +764,15 @@ export default function Tennisbet() {
                           <div className='col-span-1 text-right'>Amount</div>
                         </div>
 
-                        {betsData.map((item, index) => (
-                          <div
+                          {filteredBetsData.map((item, index) => (
+                            <div
                             key={index}
                             className={`${item.otype === 'back' ? 'border-[#89c9f8] bg-[#b6defa]' : 'border-[#f8e8eb] bg-[#f8e8eb]'} border px-2 py-1 text-sm`}
                           >
                             <div className='flex items-center justify-between'>
                               <div className='font-bold'>{item.gameType}</div>
                               <div className='text-[10px] text-gray-600 uppercase'>
-                                {new Date(item.date).toLocaleString('en-IN')}
+                                {formatApiMatchDateTime(item.date)}
                               </div>
                             </div>
                             <div
@@ -903,6 +1011,150 @@ export default function Tennisbet() {
                         <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'>
                           Loading...
                         </div>
+                      ) : (
+                        <>
+                          <div className='mb-4 flex flex-col justify-between text-[13px] md:flex-row'>
+                            <div className='mb-2 flex items-center justify-center text-[#333] md:mb-0'>
+                              <span className='mr-2'>Show</span>
+                              <select
+                                className='rounded border border-gray-300 px-2 py-1'
+                                value={entriesPerPage}
+                                onChange={(e) =>
+                                  setEntriesPerPage(Number(e.target.value))
+                                }
+                              >
+                                <option value='2'>2</option>
+                                <option value='5'>5</option>
+                                <option value='10'>10</option>
+                              </select>
+                              <span className='ml-2'>entries</span>
+                            </div>
+                            <div className='flex items-center justify-center'>
+                              <span className='mr-2'>Search</span>
+                              <input
+                                type='text'
+                                className='rounded border border-gray-300 px-2 py-1'
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          <table className='block w-full border-collapse overflow-x-auto border border-gray-300 md:table'>
+                            <thead className='bg-gray-200'>
+                              <tr>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  UserName
+                                </th>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  Nation
+                                </th>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  Amount
+                                </th>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  User Rate
+                                </th>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  Place Date
+                                </th>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  Match Date
+                                </th>
+                                <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                  Game Type
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredBetOdd?.length > 0 ? (
+                                filteredBetOdd.map((item, index) => (
+                                  <tr
+                                    key={index}
+                                    className={`text-center ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
+                                  >
+                                    <td
+                                      className='border border-gray-300 p-2 text-blue-500 uppercase underline'
+                                      onClick={() => handelpopup(item.userId)}
+                                    >
+                                      {item.userName}
+                                    </td>
+                                    <td className='border border-gray-300 px-[10px] py-[9px]'>
+                                      {item.teamName}
+                                    </td>
+                                    <td className='border border-gray-300 p-2'>
+                                      {item.price}
+                                    </td>
+                                    <td className='border border-gray-300 px-[10px] py-[9px]'>
+                                      {item.xValue}
+                                    </td>
+                                    <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
+                                      {formatApiMatchDateTime(item.createdAt)}
+                                    </td>
+                                    <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
+                                      {formatApiMatchDateTime(item.updatedAt)}
+                                    </td>
+                                    <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
+                                      {item.gameType}
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td
+                                    colSpan='7'
+                                    className='border border-gray-300 px-[10px] py-[9px] text-center'
+                                  >
+                                    No Detail found
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* master list popup */}
+
+              {masterpopup && (
+                <div className='modal-overlay fixed top-10 left-[25%] h-full'>
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.4 }}
+                    className='modal-content h-fit w-[95%] md:w-[50%]'
+                  >
+                    <div className='modal-header bg-color flex justify-between'>
+                      <span> Market List</span>
+                      <span
+                        className='text-lg'
+                        onClick={() => setMasterpopup(false)}
+                      >
+                        {' '}
+                        X
+                      </span>
+                    </div>
+                    <div className='modal-body p-4'>
+                      <div className='border border-gray-300'>
+                        {matchOdd?.length > 0 && (
+                          <h2
+                            className='cursor-pointer border-b border-gray-300 p-2 text-sm hover:bg-gray-200'
+                            onClick={() =>
+                              hemdelMasterBook(
+                                '',
+                                matchOdd[0]?.gameType,
+                                matchOddsList
+                              )
+                            }
+                          >
+                            {matchOdd[0]?.gameType}
+                          </h2>
+                        )}
                       </div>
                     ) : (
                       <>

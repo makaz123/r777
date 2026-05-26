@@ -24,6 +24,7 @@ router.post('/user/place-bet', authMiddleware, placeBetUnified);
 router.get('/user/pending-bet', authMiddleware, getPendingBets);
 router.get('/user/pending-bet/amounts', authMiddleware, getPendingBetsAmounts);
 router.get('/user/exposure-details', authMiddleware, getExposureDetails);
+router.get('/admin/exposure-details', adminAuthMiddleware, getExposureDetails);
 router.get('/user/fancy-master-book', authMiddleware, getFancyMasterBook);
 
 router.get('/user/bet/history', authMiddleware, getBetHistory);

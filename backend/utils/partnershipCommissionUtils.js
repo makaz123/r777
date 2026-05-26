@@ -151,30 +151,26 @@ export const getViewerShareOfUserClientPL = (
   if (parentViewPL === 0) return 0;
 
   let node = user;
+  let childOfViewer = null;
+
   while (node?.invite && node.invite !== viewerCode) {
-    parentViewPL = applyParentTakeFromChild(parentViewPL, node, accountByCode);
     const parent = accountByCode.get(node.invite);
     if (!parent) return 0;
     node = parent;
   }
 
-  if (!node) return 0;
-
-  if (node.role === 'user' && node.invite === viewerCode) {
-    const viewer = accountByCode.get(viewerCode);
-    const myKeep = viewer ? getAccountMyKeepPercent(viewer) : 100;
-    return splitProfitLossByMyShare(parentViewPL, myKeep).myPL;
-  }
-
-  if (node.invite === viewerCode) {
-    return applyParentTakeFromChild(parentViewPL, node, accountByCode);
-  }
-
-  if (node.code === viewerCode) {
+  if (node && node.invite === viewerCode) {
+    childOfViewer = node;
+  } else if (node && node.code === viewerCode) {
+    // viewer is the user themselves (rare, but theoretically possible)
     return parentViewPL;
+  } else {
+    return 0; // Not in upline
   }
 
-  return 0;
+  const viewer = accountByCode.get(viewerCode);
+  const parentTake = getParentShareOnDownlineRow(childOfViewer, viewer);
+  return splitProfitLossByMyShare(parentViewPL, parentTake).myPL;
 };
 
 export const getViewerReceivedFromDownlineOfUserClientPL = (
@@ -189,18 +185,32 @@ export const getViewerReceivedFromDownlineOfUserClientPL = (
   if (parentViewPL === 0) return 0;
 
   let node = user;
+  let childOfViewer = null;
+
   while (node?.invite && node.invite !== viewerCode) {
-    parentViewPL = applyParentTakeFromChild(parentViewPL, node, accountByCode);
     const parent = accountByCode.get(node.invite);
     if (!parent) return 0;
     node = parent;
   }
 
   if (node && node.invite === viewerCode) {
-    return parentViewPL;
+    childOfViewer = node;
+  } else {
+    return 0;
   }
 
-  return 0;
+  const viewer = accountByCode.get(viewerCode);
+  const downlineKeep = getDownlineKeepPercentOnRow(childOfViewer, viewer);
+  
+  // What the viewer receives is the total parentViewPL MINUS what the downlines took.
+  // Wait, if downlineKeep is the absolute percentage that the downline keeps,
+  // then the remainder (100 - downlineKeep) flows UP to the viewer.
+  // So the viewer receives (100 - downlineKeep)% of parentViewPL.
+  // But wait, getParentShareOnDownlineRow already handles `parentKeep - downKeep`.
+  // What flows UP from the child to the viewer is everything NOT kept by the child.
+  // The amount NOT kept by the child is parentViewPL * (100 - downlineKeep)/100.
+  // Because downlineKeep is an absolute percentage.
+  return splitProfitLossByMyShare(parentViewPL, roundMoney(100 - downlineKeep)).myPL;
 };
 
 export const clampDownlineSharingPercent = (raw, maxMyShare) => {

@@ -787,22 +787,22 @@ export default function Userlist() {
     <>
       <Navbar />
 
-      <div className='h-fit bg-gray-200 p-4'>
+      <div className='h-fit bg-gray-200 md:px-[15px] md:py-[13px]'>
         <div className='rounded-md bg-white px-4 py-1'>
-          <div className='mb-2 flex items-center justify-between'>
+          <div className='mb-2 md:flex items-center justify-between'>
             <div className='grid'>
               <div className='text-[14px] font-bold'>Client List</div>
               <div className='flex items-center gap-1'>
                 <input
                   type='text'
-                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  className='h-fit w-full rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
                   placeholder='Search'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <input
                   type='text'
-                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  className='h-fit w-full rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
                   placeholder='Search by client'
                 />
                 <img
@@ -820,8 +820,8 @@ export default function Userlist() {
               </div>
             </div>
 
-            <div className='flex gap-2'>
-              <div className='mb-2 flex items-center justify-center font-semibold text-black md:mb-0'>
+            <div className='flex gap-1 mt-1 md:mt-0'>
+              <div className='mb-2 flex items-center justify-center font-semibold text-black md:mb-0 text-[12px] md:text-[12px]'>
                 <span className='mr-2'>Show</span>
                 <select
                   className='rounded border border-gray-300 px-2 py-1'
@@ -838,14 +838,14 @@ export default function Userlist() {
               </div>
 
               <button
-                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
+                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] md:px-3 px-1 py-1 text-[12px] md:text-[14px] text-white h-fit'
                 onClick={() => navigate('/agent-download-list/insertagent')}
               >
                 Add Client Account
               </button>
 
               <button
-                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
+                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] md:px-3 px-1 py-1 text-[12px] md:text-[14px] text-white h-fit'
                 onClick={() =>
                   setActiveTab((tab) =>
                     tab === 'active' ? 'deactive' : 'active'

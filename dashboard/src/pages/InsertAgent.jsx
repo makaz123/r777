@@ -158,7 +158,7 @@ export default function InsertAgent() {
   return (
     <>
       <Navbar />
-      <div className='h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
+      <div className='h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <span className='text-[16px] font-bold'>Add/Edit Client Account</span>
 

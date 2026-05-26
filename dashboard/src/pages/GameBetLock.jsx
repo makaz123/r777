@@ -398,7 +398,7 @@ const GameBetLock = () => {
   return (
     <>
       <Navbar />
-      <div className="scrollbar-hide pt-[15px]' bg-[#f0f0f5] px-[15px] py-[13px]">
+      <div className="scrollbar-hide pt-[15px]' bg-[#f0f0f5] md:px-[15px] md:py-[13px]">
         <div className='grid grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='col-span-2'>
             <div className='mb-2 flex justify-between text-[15px] font-bold'>

@@ -82,7 +82,7 @@ const MyMarket = () => {
     <div>
       <Navbar />
 
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
+      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           {loading ? (
             <div className='flex items-center justify-center py-20'>
@@ -139,10 +139,10 @@ const MyMarket = () => {
                         : [];
 
                   return (
-                    <div key={rowKey} className='mb-3 bg-white px-2'>
+                    <div key={rowKey} className='mb-3 bg-white px-2 overflow-y-scroll scrollbar-hide'>
                       <div className='flex items-center gap-2 pt-2 pb-1 text-[16px] font-bold'>
-                        <FaArrowRight className='text-black' />
-                        <span>{item.title}</span>
+                        <span><FaArrowRight className='text-black' /></span>
+                        <span className='whitespace-nowrap'>{item.title}</span>
                       </div>
 
                       <table className='w-full border-collapse text-[14px] font-light'>
@@ -151,16 +151,16 @@ const MyMarket = () => {
                             <th className='border border-gray-300 px-3 py-1 text-left'>
                               Event Name
                             </th>
-                            <th className='border border-gray-300 px-3 py-1 text-right'>
+                            <th className='border border-gray-300 px-3 py-1 text-right whitespace-nowrap'>
                               Total Bets
                             </th>
                             <th className='border border-gray-300 px-3 py-1 text-right'>
                               Exposure
                             </th>
-                            <th className='border border-gray-300 px-3 py-1 text-right'>
+                            <th className='border border-gray-300 px-3 py-1 text-right whitespace-nowrap'>
                               Total Amount
                             </th>
-                            <th className='border border-gray-300 px-3 py-1 text-right'>
+                            <th className='border border-gray-300 px-3 py-1 text-right whitespace-nowrap'>
                               Max Profit
                             </th>
                             <th className='w-[50px] border border-gray-300 px-3 py-1 text-center'>
@@ -174,7 +174,7 @@ const MyMarket = () => {
                             <td className='border border-gray-300 px-3 py-1'>
                               <button
                                 type='button'
-                                className='text-left underline'
+                                className='text-left underline whitespace-nowrap'
                                 onClick={() => goToEvent(item)}
                               >
                                 {item.match}
@@ -228,13 +228,13 @@ const MyMarket = () => {
                                         <th className='border border-gray-300 px-3 py-1 text-right'>
                                           Exposure
                                         </th>
-                                        <th className='border border-gray-300 px-3 py-1 text-right'>
+                                        <th className='border border-gray-300 px-3 py-1 text-right whitespace-nowrap'>
                                           Max Profit
                                         </th>
-                                        <th className='border border-gray-300 px-3 py-1 text-right'>
+                                        <th className='border border-gray-300 px-3 py-1 text-right whitespace-nowrap'>
                                           {item.team1}
                                         </th>
-                                        <th className='border border-gray-300 px-3 py-1 text-right'>
+                                        <th className='border border-gray-300 px-3 py-1 text-right whitespace-nowrap'>
                                           {item.team2}
                                         </th>
                                       </tr>
@@ -242,7 +242,7 @@ const MyMarket = () => {
                                     <tbody>
                                       {markets.map((mkt) => (
                                         <tr key={mkt.name} className='bg-white'>
-                                          <td className='border border-gray-300 px-3 py-1 font-semibold'>
+                                          <td className='border border-gray-300 px-3 py-1 font-semibold whitespace-nowrap'>
                                             {mkt.name}
                                           </td>
                                           <td className='border border-gray-300 px-3 py-1 text-right'>

@@ -172,7 +172,7 @@ const UserSettlement = ({ type = 'user' }) => {
   return (
     <>
       <Navbar />
-      <div className='h-[calc(100vh-52px)] bg-[#f0f0f5] px-[15px] py-[13px]'>
+      <div className='h-[calc(100vh-52px)] bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <h1 className='mb-2 text-[16px] font-bold text-gray-800'>
             {type === 'master' ? 'Master Settlement' : 'User Settlement'}
@@ -190,103 +190,105 @@ const UserSettlement = ({ type = 'user' }) => {
           ) : (
             <div className='grid gap-[30px] md:grid-cols-2'>
               {/* Creditors Account (dena hai) */}
-              <table className='h-fit w-full border border-[#dee2e6] text-left text-[14px]'>
-                <thead className=''>
-                  <tr className='bg-[#28a745] font-bold text-white'>
-                    <th colSpan={5} className='p-2 leading-[16px]'>
-                      Creditors Account (dena hai)
-                    </th>
-                  </tr>
-                  <tr className='bg-[#ccc] text-[#393933]'>
-                    <th className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'>
-                      Account
-                    </th>
-                    <th className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'>
-                      Client(P/L)
-                    </th>
-                    <th
-                      colSpan={2}
-                      className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'
-                    >
-                      Settle Amount
-                    </th>
-                    <th className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'>
-                      Remarks
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className='divide-y divide-gray-200'>
-                  {creditors.length > 0 ? (
-                    creditors.map((user) => (
-                      <tr
-                        key={user._id}
-                        className='divide-x divide-gray-200 hover:bg-gray-50'
+              <div className='overflow-x-scroll scrollbar-hide'>
+                <table className='h-fit w-[700px] border border-[#dee2e6] text-left text-[14px]'>
+                  <thead className=''>
+                    <tr className='bg-[#28a745] font-bold text-white'>
+                      <th colSpan={5} className='p-2 leading-[16px]'>
+                        Creditors Account (dena hai)
+                      </th>
+                    </tr>
+                    <tr className='bg-[#ccc] text-[#393933]'>
+                      <th className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'>
+                        Account
+                      </th>
+                      <th className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'>
+                        Client(P/L)
+                      </th>
+                      <th
+                        colSpan={2}
+                        className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'
                       >
-                        <td className='w-[20%] p-2 leading-[16px] font-bold text-gray-800'>
-                          <div className='flex items-center gap-1'>
-                            <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
-                              {roleBadge(user.role)}
-                            </span>
-                            {user.userName}
-                          </div>
-                        </td>
-                        <td className='w-[12%] p-2 leading-[16px] font-bold text-green-600'>
-                          {Number(user.clientPL).toFixed(2)}
-                          {/* {user.role !== 'user' &&
-                            user.grossClientPL != null &&
-                            Math.abs(user.grossClientPL - user.clientPL) >
-                              0.01 && (
-                              <span className='mt-0.5 block text-[10px] font-normal text-gray-600'>
-                                {user.sharePercent}% of gross{' '}
-                                {Number(user.grossClientPL).toFixed(2)}
+                        Settle Amount
+                      </th>
+                      <th className='border-[2px] border-[#dee2e6] p-2 leading-[16px] font-semibold'>
+                        Remarks
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className='divide-y divide-gray-200'>
+                    {creditors.length > 0 ? (
+                      creditors.map((user) => (
+                        <tr
+                          key={user._id}
+                          className='divide-x divide-gray-200 hover:bg-gray-50'
+                        >
+                          <td className='w-[20%] p-2 leading-[16px] font-bold text-gray-800'>
+                            <div className='flex items-center gap-1'>
+                              <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
+                                {roleBadge(user.role)}
                               </span>
-                            )} */}
-                        </td>
-                        <td className='w-[16%] p-2 leading-[16px]'>
-                          <input
-                            type='text'
-                            value={settleAmounts[user._id] ?? ''}
-                            onChange={(e) =>
-                              handleAmountChange(user._id, e.target.value)
-                            }
-                            className='h-[30px] w-full rounded-sm border border-[#ced4da] px-3 outline-none'
-                            placeholder='0'
-                          />
-                        </td>
-                        <td className='w-[15%] p-2 text-end leading-[16px]'>
-                          <button
-                            type='button'
-                            onClick={() => handleFullSettle(user)}
-                            className='h-[30px] rounded border border-[#28a745] bg-[#dc3545] bg-gradient-to-b from-[#4ce870] to-[#0a8125] px-2 py-1 text-[14px] text-white hover:bg-gradient-to-t'
-                          >
-                            Full Settle
-                          </button>
-                        </td>
-                        <td className='w-[37%] p-2 leading-[16px]'>
-                          <input
-                            type='text'
-                            value={rowRemarks[user._id] ?? ''}
-                            onChange={(e) =>
-                              handleRowRemarkChange(user._id, e.target.value)
-                            }
-                            className='h-[30px] w-full rounded-sm border border-[#ced4da] px-2 outline-none'
-                            placeholder='Remarks'
-                          />
+                              {user.userName}
+                            </div>
+                          </td>
+                          <td className='w-[12%] p-2 leading-[16px] font-bold text-green-600'>
+                            {Number(user.clientPL).toFixed(2)}
+                            {/* {user.role !== 'user' &&
+                              user.grossClientPL != null &&
+                              Math.abs(user.grossClientPL - user.clientPL) >
+                                0.01 && (
+                                <span className='mt-0.5 block text-[10px] font-normal text-gray-600'>
+                                  {user.sharePercent}% of gross{' '}
+                                  {Number(user.grossClientPL).toFixed(2)}
+                                </span>
+                              )} */}
+                          </td>
+                          <td className='w-[16%] p-2 leading-[16px]'>
+                            <input
+                              type='text'
+                              value={settleAmounts[user._id] ?? ''}
+                              onChange={(e) =>
+                                handleAmountChange(user._id, e.target.value)
+                              }
+                              className='h-[30px] w-full rounded-sm border border-[#ced4da] px-3 outline-none'
+                              placeholder='0'
+                            />
+                          </td>
+                          <td className='w-[15%] p-2 text-end leading-[16px]'>
+                            <button
+                              type='button'
+                              onClick={() => handleFullSettle(user)}
+                              className='h-[30px] rounded border border-[#28a745] bg-[#dc3545] bg-gradient-to-b from-[#4ce870] to-[#0a8125] px-2 py-1 text-[14px] text-white hover:bg-gradient-to-t whitespace-nowrap'
+                            >
+                              Full Settle
+                            </button>
+                          </td>
+                          <td className='w-[37%] p-2 leading-[16px]'>
+                            <input
+                              type='text'
+                              value={rowRemarks[user._id] ?? ''}
+                              onChange={(e) =>
+                                handleRowRemarkChange(user._id, e.target.value)
+                              }
+                              className='h-[30px] w-full rounded-sm border border-[#ced4da] px-2 outline-none'
+                              placeholder='Remarks'
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan='5' className='p-2 text-center text-gray-500'>
+                          No creditors found
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan='5' className='p-2 text-center text-gray-500'>
-                        No creditors found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-
+                    )}
+                  </tbody>
+                </table>
+              </div>
               {/* Debtors Account (lena hai) */}
-              <table className='w-full border border-[#dee2e6] text-left text-[14px]'>
+              <div className='overflow-x-scroll scrollbar-hide'>
+              <table className='h-fit w-[700px] border border-[#dee2e6] text-left text-[14px]'>
                 <thead className=''>
                   <tr className='bg-[#cb0707] font-bold text-white'>
                     <th colSpan={5} className='p-2 leading-[16px]'>
@@ -353,7 +355,7 @@ const UserSettlement = ({ type = 'user' }) => {
                           <button
                             type='button'
                             onClick={() => handleFullSettle(user)}
-                            className='h-[30px] rounded border border-[#cb0707] bg-[#dc3545] bg-gradient-to-b from-[#960a0a] to-[#e44] px-2 py-1 text-[14px] text-white hover:bg-gradient-to-t'
+                            className='h-[30px] rounded border border-[#cb0707] bg-[#dc3545] bg-gradient-to-b from-[#960a0a] to-[#e44] px-2 py-1 text-[14px] text-white hover:bg-gradient-to-t whitespace-nowrap'
                           >
                             Full Settle
                           </button>
@@ -380,48 +382,53 @@ const UserSettlement = ({ type = 'user' }) => {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
       </div>
       <div className='fixed bottom-0 left-0 w-full bg-[#045662] py-2'>
-        <div className='flex justify-center gap-1'>
-          <input
-            type='text'
-            placeholder='Remarks'
-            value={globalRemarks}
-            onChange={(e) => setGlobalRemarks(e.target.value)}
-            className='h-[30px] w-[250px] rounded-sm bg-white px-2'
-          />
-          <button
-            type='button'
-            onClick={handleFillAll}
-            className='cursor-pointer rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white hover:opacity-90'
-          >
-            Fill All
-          </button>
-          <input
-            type='text'
-            placeholder='Password'
-            value={footerPassword}
-            onChange={(e) => setFooterPassword(e.target.value)}
-            className='h-[30px] w-[150px] rounded-sm bg-white px-2'
-          />
-          <button
-            type='button'
-            onClick={handleBulkSubmit}
-            disabled={settleLoading}
-            className={`rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white ${settleLoading ? 'opacity-50' : 'cursor-pointer hover:opacity-90'}`}
-          >
-            {settleLoading ? 'Processing...' : 'Submit'}
-          </button>
-          <button
-            type='button'
-            onClick={handleClearAll}
-            className='cursor-pointer rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white hover:opacity-90'
-          >
-            Clear All
-          </button>
+        <div className='flex flex-wrap justify-center gap-1'>
+          <div className='flex gap-1 w-full md:w-fit px-4 md:px-0'>
+            <input
+              type='text'
+              placeholder='Remarks'
+              value={globalRemarks}
+              onChange={(e) => setGlobalRemarks(e.target.value)}
+              className='h-[30px] md:w-[250px] flex-1 rounded-sm bg-white px-2'
+            />
+            <button
+              type='button'
+              onClick={handleFillAll}
+              className='cursor-pointer rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white hover:opacity-90'
+            >
+              Fill All
+            </button>
+          </div>
+          <div className='flex gap-1 w-full md:w-fit px-4 md:px-0'>
+            <input
+              type='text'
+              placeholder='Password'
+              value={footerPassword}
+              onChange={(e) => setFooterPassword(e.target.value)}
+              className='h-[30px] md:w-[150px] rounded-sm bg-white px-2 flex-1'
+            />
+            <button
+              type='button'
+              onClick={handleBulkSubmit}
+              disabled={settleLoading}
+              className={`rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white ${settleLoading ? 'opacity-50' : 'cursor-pointer hover:opacity-90'}`}
+            >
+              {settleLoading ? 'Processing...' : 'Submit'}
+            </button>
+            <button
+              type='button'
+              onClick={handleClearAll}
+              className='cursor-pointer rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white hover:opacity-90'
+            >
+              Clear All
+            </button>
+          </div>
         </div>
       </div>
       {/* Settlement Modal */}

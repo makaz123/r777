@@ -427,7 +427,7 @@ const UserDetails = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide px-[15px] py-[13px]'>
+      <div className='scrollbar-hide md:px-[15px] md:py-[13px]'>
         {/* Search Section */}
 
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
@@ -473,107 +473,102 @@ const UserDetails = () => {
             <div className='mt-4 space-y-5'>
               {/* Top Row: User Details & Settings */}
 
-              <div className='flex gap-[30px]'>
-                <fieldset className='w-1/2 rounded-sm border border-gray-300 bg-gray-50 px-[15px] pt-1 pb-6'>
-                  <legend className='text-[19px] font-semibold'>
+              <div className='md:flex gap-[30px]'>
+                <fieldset className='md:w-1/2 rounded-sm border border-gray-300 bg-gray-50 px-[15px] pt-1 pb-6 h-fit'>
+                  <legend className='text-[16px] md:text-[20px] font-semibold'>
                     User Details:
                   </legend>
-                  <div className='grid grid-cols-3 text-[14px] font-bold'>
-                    <div className='col-span-1 space-y-3'>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                    <div className='grid grid-cols-2 md:grid-cols-3 text-[12px] md:text-[14px] font-bold space-y-4'>
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
                           User Name:
                         </span>
                         {userDetails.userInfo.userName}
                       </div>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
+                          Role:
+                        </span>
+                        {userDetails.userInfo.role}
+                      </div>
+                      
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
+                          Client Name:
+                        </span>
+                        {userDetails.userInfo.clientName}
+                      </div>
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
                           Reference Name:
                         </span>
                         {userDetails.userInfo.referenceName}
                       </div>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
+                          Email:
+                        </span>
+                        {userDetails.userInfo.email}
+                      </div>
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
+                          Mobile:
+                        </span>
+                        {userDetails.userInfo.mobile}
+                      </div>
+                      <div className='col-span-1 flex flex-wrap'>
+                        <span className='pr-2.5 text-gray-500'>
                           Parents:
                         </span>
                         {userDetails.userInfo.parents}
                       </div>
                     </div>
-                    <div className='col-span-1 space-y-3'>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
-                          Role:
-                        </span>
-                        {userDetails.userInfo.role}
-                      </div>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
-                          Email:
-                        </span>
-                        {userDetails.userInfo.email}
-                      </div>
-                    </div>
-                    <div className='col-span-1 space-y-3'>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
-                          Client Name:
-                        </span>
-                        {userDetails.userInfo.clientName}
-                      </div>
-                      <div>
-                        <span className='pr-2.5 text-[13px] text-gray-500'>
-                          Mobile:
-                        </span>
-                        {userDetails.userInfo.mobile}
-                      </div>
-                    </div>
-                  </div>
                 </fieldset>
-                <fieldset className='w-1/2 rounded-sm border border-gray-300 px-[15px] pt-1'>
-                  <legend className='text-[20px] font-semibold'>
+                <fieldset className='md:w-1/2 rounded-sm border border-gray-300 px-[10px] md:px-[15px] pt-1 mt-4 md:mt-0'>
+                  <legend className='text-[16px] md:text-[20px] font-semibold'>
                     Setting:
                   </legend>
-                  <div className='flex flex-wrap gap-2'>
-                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                  <div className='grid grid-cols-3 md:flex flex-wrap gap-2 w-full'>
+                    <div className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'>
                       User Update
                     </div>
                     <div
-                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'
                       onClick={openDepositModal}
                     >
                       Deposit / Credit
                     </div>
-                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                    <div className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'>
                       Settlement
                     </div>
                     <div
-                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'
                       onClick={fetchLoginHistoryData}
                     >
                       Last Login
                     </div>
                     <div
-                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'
                       onClick={openPasswordModal}
                     >
                       Change Password
                     </div>
                     <div
-                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'
                       onClick={openWithdrawModal}
                     >
                       Withdrawal
                     </div>
-                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                    <div className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'>
                       Game Control
                     </div>
-                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                    <div className='col-span-1 flex md:w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[10px] md:text-[12px] font-bold text-white'>
                       Casino Control
                     </div>
                   </div>
 
                   <div className='flex gap-2 py-3.5 text-[12px] font-bold'>
-                    <div className='flex w-[140px] items-center gap-1 pl-6'>
+                    <div className='flex md:w-[140px] items-center gap-1 pl-6'>
                       <input
                         type='checkbox'
                         checked={userDetails.settings.userLock}
@@ -581,7 +576,7 @@ const UserDetails = () => {
                       />
                       User Lock
                     </div>
-                    <div className='flex w-[140px] items-center gap-1 pl-6'>
+                    <div className='flex md:w-[140px] items-center gap-1 pl-6'>
                       <input
                         type='checkbox'
                         checked={userDetails.settings.betLock}
@@ -589,7 +584,7 @@ const UserDetails = () => {
                       />
                       Bet Lock
                     </div>
-                    <div className='flex w-[140px] items-center gap-1 pl-6'>
+                    <div className='flex md:w-[140px] items-center gap-1 pl-6'>
                       <input
                         type='checkbox'
                         checked={userDetails.settings.checkLimit}
@@ -602,19 +597,18 @@ const UserDetails = () => {
               </div>
 
               <fieldset className='w-full rounded-sm border border-gray-300 bg-gray-50 px-[15px] pt-1 pb-6'>
-                <legend className='text-[19px] font-semibold'>
+                <legend className='text-[16px] md:text-[20px] font-semibold'>
                   Account Details:
                 </legend>
-                <div className='grid grid-cols-4 text-[14px] font-bold'>
-                  <div className='col-span-1 space-y-3'>
+                <div className='grid grid-cols-2 md:grid-cols-4 text-[10px] md:text-[14px] font-bold space-y-5'>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Credit Ref:
                       </span>
                       {userDetails.accountDetails.creditRef}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         UpLine Balance:
                       </span>
                       {Number(userDetails.accountDetails.uplineBalance).toFixed(
@@ -622,35 +616,31 @@ const UserDetails = () => {
                       )}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Max Bet:
                       </span>
                       {userDetails.accountDetails.maxBet}
                     </div>
-                  </div>
-                  <div className='col-span-1 space-y-3'>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Balance:
                       </span>
                       {userDetails.accountDetails.balance}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         DownLine Balance:
                       </span>
                       {userDetails.accountDetails.downlineBalance}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Bet Lock:
                       </span>
                       {userDetails.accountDetails.betLock}
                     </div>
-                  </div>
-                  <div className='col-span-1 space-y-3'>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Available Balance:
                       </span>
                       {Number(
@@ -658,22 +648,20 @@ const UserDetails = () => {
                       ).toFixed(2)}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Exposure:
                       </span>
                       {userDetails.accountDetails.exposure}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Active:
                       </span>
                       {userDetails.accountDetails.active}
                     </div>
-                  </div>
-                  <div className='col-span-1 space-y-3'>
                     <div>
                       <span
-                        className='pr-2.5 text-[13px] text-gray-500'
+                        className='pr-2.5 text-gray-500'
                         // onClick={openSettleModal}
                       >
                         P/L:
@@ -690,23 +678,22 @@ const UserDetails = () => {
                       )} */}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Max Profit:
                       </span>
                       {userDetails.accountDetails.maxProfit}
                     </div>
                     <div>
-                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                      <span className='pr-2.5 text-gray-500'>
                         Created On:
                       </span>
                       {formatDate(userDetails.accountDetails.createdOn)}
                     </div>
-                  </div>
                 </div>
               </fieldset>
 
               <fieldset className='w-full rounded-sm border border-gray-300 px-[15px] pt-1 pb-6'>
-                <legend className='text-[19px] font-semibold'>
+                <legend className='text-[16px] md:text-[20px] font-semibold'>
                   Game Play:
                 </legend>
 
@@ -741,9 +728,9 @@ const UserDetails = () => {
                   </div>
                 </div>
 
-                <div className='mt-2.5 flex gap-8'>
+                <div className='mt-2.5 flex flex-wrap gap-4 md:gap-8'>
                   {/* Sports Table */}
-                  <div className='w-[40%] overflow-x-auto'>
+                  <div className='w-full md:w-[40%] overflow-x-auto text-[10px] md:text-[14px]'>
                     <table className='w-full border-collapse border border-gray-200 text-left'>
                       <thead>
                         <tr className='border-b-2 border-gray-200 bg-white text-black'>
@@ -815,7 +802,7 @@ const UserDetails = () => {
                   </div>
 
                   {/* Casino Table */}
-                  <div className='w-[25%] overflow-x-auto'>
+                  <div className='w-full md:w-[25%] overflow-x-auto text-[10px] md:text-[14px]'>
                     <table className='w-full border-collapse border border-gray-200 text-left'>
                       <thead>
                         <tr className='border-b-2 border-gray-200 bg-white text-black'>
@@ -873,7 +860,7 @@ const UserDetails = () => {
                   </div>
 
                   {/* Market Table */}
-                  <div className='w-[35%] overflow-x-auto'>
+                  <div className='w-full md:w-[35%] overflow-x-auto text-[10px] md:text-[14px]'>
                     <table className='w-full border-collapse border border-gray-200 text-left'>
                       <thead>
                         <tr className='border-b-2 border-gray-200 bg-white text-black'>

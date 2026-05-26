@@ -51,8 +51,8 @@ const VirtualTable = ({
     : 'odd:bg-[#0000000d]';
 
   return (
-    <div className='overflow-x-auto rounded-md'>
-      <table className='w-full border-collapse text-[13px]'>
+    <div className='overflow-x-auto scrollbar-hide rounded-md'>
+      <table className='w-[1500px] border-collapse text-[13px]'>
         <thead className={headerClass}>
           <tr>
             {columns.map((col, i) => (

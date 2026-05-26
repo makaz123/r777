@@ -205,11 +205,11 @@ const AccountStatement = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
+      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Account Statement Report</div>
 
-          <div className='mt-2 mb-6 grid grid-cols-6 gap-6'>
+          <div className='mt-2 mb-2 md:mb-6 grid md:grid-cols-6 gap-4 md:gap-6'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
@@ -315,7 +315,7 @@ const AccountStatement = () => {
             </div>
           </div>
 
-          <div className='mb-5 flex items-end justify-between'>
+          <div className='mb-5 flex flex-wrap gap-5 items-end justify-between'>
             <div className='flex items-end'>
               <input
                 type='text'
@@ -325,29 +325,27 @@ const AccountStatement = () => {
               <img src={excelIcon} alt='' className='w-[35px]' />
               <img src={pdfIcon} alt='' className='w-[35px]' />
             </div>
-            <div>
-              <table className='w-[500px]'>
-                <tbody>
-                  <tr>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
-                      Opening Balance
-                    </td>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      {openingBalance.toFixed(2)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
-                      Closing Balance
-                    </td>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      {closingBalance.toFixed(2)}
-                    </td>
-                  </tr>
-                </tbody>
-                <tr></tr>
-              </table>
-            </div>
+            <table className='w-full md:w-[500px]'>
+              <tbody>
+                <tr>
+                  <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
+                    Opening Balance
+                  </td>
+                  <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
+                    1234567890
+                  </td>
+                </tr>
+                <tr>
+                  <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
+                    Closing Balance
+                  </td>
+                  <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
+                    1234567890
+                  </td>
+                </tr>
+              </tbody>
+              <tr></tr>
+            </table>
             <div>
               <span>Show</span>
               <select
@@ -367,74 +365,58 @@ const AccountStatement = () => {
               <span>entries</span>
             </div>
           </div>
+          <div className=' overflow-x-scroll scrollbar-hide'>
+            <table className='w-full table-auto border-collapse border border-gray-300'>
+              <thead>
+                <tr className='bg-[#016a82] text-white'>
+                  <th className='border-r border-white px-2 py-1 text-left'>
+                    Date & Time
+                  </th>
 
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Date & Time
-                </th>
+                  <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                    Credit
+                  </th>
 
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Credit
-                </th>
+                  <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                    Debit
+                  </th>
 
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Debit
-                </th>
+                  <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                    Closing
+                  </th>
 
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Closing
-                </th>
+                  <th className='border-r border-white px-2 py-1 text-left'>
+                    Description
+                  </th>
 
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Description
-                </th>
-
-                <th className='px-2 py-1 text-left'>From → to</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className='p-4 text-center'>
-                    Loading...
-                  </td>
+                  <th className='px-2 py-1 text-left'>From → to</th>
                 </tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className='p-4 text-center'>
-                    No data available in table
+              </thead>
+              <tbody>
+                <tr className='border border-gray-300 odd:bg-gray-100'>
+                  <td className='border border-gray-300 px-2 py-1.5'>
+                    25-05-2026
                   </td>
-                </tr>
-              ) : (
-                rows.map((row, index) => (
-                  <tr
-                    key={index}
-                    className='border border-gray-300 odd:bg-gray-100'
-                  >
-                    <td className='border border-gray-300 px-2 py-1.5'>
-                      {new Date(row.date).toLocaleString()}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right font-medium text-green-600'>
-                      {row.credit > 0 ? row.credit.toFixed(2) : '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right font-medium text-red-600'>
-                      {row.debit > 0 ? row.debit.toFixed(2) : '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-green-700'>
-                      {row.closing.toFixed(2)}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5'>
-                      {row.description}
-                    </td>
-                    <td className='px-2 py-1.5'>{row.fromto}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                    1000000000000.00
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                    -
+                  </td>
 
+                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                    2500000.00
+                  </td>
+
+                  <td className='border border-gray-300 px-2 py-1.5'>
+                    Settlement
+                  </td>
+
+                  <td className='px-2 py-1.5'>Admin → User</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
             <div>

@@ -619,85 +619,86 @@ export default function Cricketbet() {
                           {formatToK(tossTeamsData[0]?.max)}
                         </div>
                       </div>
+                    </div>
 
-                      <div className='relative'>
-                        {tossTeamsData[0]?.status === 'SUSPENDED' && (
-                          <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
-                            <p className='text-3xl font-bold text-red-700'>
-                              SUSPENDED
-                            </p>
-                          </div>
-                        )}
+                    <div className='relative'>
+                      {tossTeamsData[0]?.status === 'SUSPENDED' && (
+                        <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
+                          <p className='text-3xl font-bold text-red-700'>
+                            SUSPENDED
+                          </p>
+                        </div>
+                      )}
 
-                        <div className='flex border-b border-gray-300 bg-white text-center'>
-                          <div className='w-1/2 p-1'>
-                            <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                              <span className='text-[#315195]'>Min/Max </span>
-                              {tossTeamsData[0]?.status === 'SUSPENDED'
-                                ? '100-100000'
-                                : `${tossTeamsData[0]?.min}-${formatToK(tossTeamsData[0]?.max)}`}
-                            </div>
-                          </div>
-
-                          <div className='grid w-1/2 grid-cols-6'>
-                            <div className='col-span-1'></div>
-                            <div className='col-span-1'></div>
-                            <div className='col-span-1 mx-0.5 mt-0.5 rounded-tl-2xl bg-[#72bbef] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
-                              Back
-                            </div>
-                            <div className='col-span-1 mx-0.5 mt-0.5 rounded-tr-2xl bg-[#faa9ba] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
-                              Lay
-                            </div>
-                            <div className='col-span-1'></div>
-                            <div className='col-span-1'></div>
+                      <div className='flex border-b border-gray-300 bg-white text-center'>
+                        <div className='w-1/2 p-1'>
+                          <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
+                            <span className='text-[#315195]'>Min/Max </span>
+                            {tossTeamsData[0]?.status === 'SUSPENDED'
+                              ? '100-100000'
+                              : `${tossTeamsData[0]?.min}-${formatToK(tossTeamsData[0]?.max)}`}
                           </div>
                         </div>
 
-                        {tossTeamsData.map(({ team, odds }, index) => {
-                          const teamName = team?.split('(')[0]?.trim();
-                          const isSuspended =
-                            tossTeamsData[0]?.status === 'SUSPENDED';
-                          const { netOutcome, hasExistingBet } =
-                            getTossBetDetails(pendingBet, 'Toss', teamName);
-                          const betColor =
-                            hasExistingBet && netOutcome !== null
-                              ? netOutcome >= 0
-                                ? 'green'
-                                : 'red'
-                              : 'green';
-                          const displayValue =
-                            hasExistingBet && netOutcome !== null ? (
-                              <span className='flex items-center gap-0.5'>
-                                <FaArrowRight />
-                                {netOutcome}
-                              </span>
-                            ) : null;
+                        <div className='grid w-1/2 grid-cols-6'>
+                          <div className='col-span-1'></div>
+                          <div className='col-span-1'></div>
+                          <div className='col-span-1 mx-0.5 mt-0.5 rounded-tl-2xl bg-[#72bbef] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
+                            Back
+                          </div>
+                          <div className='col-span-1 mx-0.5 mt-0.5 rounded-tr-2xl bg-[#faa9ba] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
+                            Lay
+                          </div>
+                          <div className='col-span-1'></div>
+                          <div className='col-span-1'></div>
+                        </div>
+                      </div>
 
-                          return (
-                            <div
-                              key={team || index}
-                              className={`flex border-b border-gray-300 bg-white text-center text-[10px] font-semibold ${
-                                isSuspended ? 'opacity-30' : ''
-                              }`}
-                            >
-                              <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
-                                <div className='flex justify-between'>
-                                  <p>{teamName}</p>
-                                  <p style={{ color: betColor }}>
-                                    {displayValue}
-                                  </p>
-                                </div>
-                              </div>
+                      {tossTeamsData.map(({ team, odds }, index) => {
+                        const teamName = team?.split('(')[0]?.trim();
+                        const isSuspended =
+                          tossTeamsData[0]?.status === 'SUSPENDED';
+                        const { netOutcome, hasExistingBet } =
+                          getTossBetDetails(pendingBet, 'Toss', teamName);
+                        const betColor =
+                          hasExistingBet && netOutcome !== null
+                            ? netOutcome >= 0
+                              ? 'green'
+                              : 'red'
+                            : 'green';
+                        const displayValue =
+                          hasExistingBet && netOutcome !== null ? (
+                            <span className='flex items-center gap-0.5'>
+                              <FaArrowRight />
+                              {netOutcome}
+                            </span>
+                          ) : null;
 
-                              <div className='grid w-1/2 grid-cols-6'>
-                                <OddsGridCells odds={odds} />
+                        return (
+                          <div
+                            key={team || index}
+                            className={`flex border-b border-gray-300 bg-white text-center text-[10px] font-semibold ${
+                              isSuspended ? 'opacity-30' : ''
+                            }`}
+                          >
+                            <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
+                              <div className='flex justify-between'>
+                                <p>{teamName}</p>
+                                <p style={{ color: betColor }}>
+                                  {displayValue}
+                                </p>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
+
+                            <div className='grid w-1/2 grid-cols-6'>
+                              <OddsGridCells odds={odds} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
 
                 {/* 1st 6 over — only the two team rows */}
                 {over6TeamsData.length > 0 && (
@@ -766,11 +767,8 @@ export default function Cricketbet() {
                       {over6TeamsData.map(({ team, odds, status }, index) => {
                         const teamName = team?.split('(')[0]?.trim();
                         const isSuspended = status === 'SUSPENDED';
-                        const { netOutcome, hasExistingBet } = getTossBetDetails(
-                          pendingBet,
-                          '1st 6 over',
-                          team
-                        );
+                        const { netOutcome, hasExistingBet } =
+                          getTossBetDetails(pendingBet, '1st 6 over', team);
                         const betColor =
                           hasExistingBet && netOutcome !== null
                             ? netOutcome >= 0
@@ -813,16 +811,16 @@ export default function Cricketbet() {
 
                 {/*fancy  */}
                 <div className='mt-2'>
-                  <button className='flex items-center pl-[10px] pr-[15px] py-[5px] bg-[#007082] text-white rounded-t-[5px]'>
+                  <button className='flex items-center rounded-t-[5px] bg-[#007082] py-[5px] pr-[15px] pl-[10px] text-white'>
                     <span className='font-bold'>Fancy</span>
                   </button>
                   {activeTab === 'fancy' && (
                     <>
-                      <div className='bg-[#007082] flex justify-start gap-1 overflow-x-auto scroll-smooth whitespace-nowrap text-white px-0.5'>
+                      <div className='flex justify-start gap-1 overflow-x-auto scroll-smooth bg-[#007082] px-0.5 whitespace-nowrap text-white'>
                         {subTabs.map((tab) => (
                           <button
-                              key={tab.id}
-                            className='rounded-[5px] bg-[#18b0c8] text-[13px] text-white font-bold text-black py-[5px] px-[9px] mr-0.5'
+                            key={tab.id}
+                            className='mr-0.5 rounded-[5px] bg-[#18b0c8] px-[9px] py-[5px] text-[13px] font-bold text-black text-white'
                             onClick={() => setActiveSubTab(tab.id)}
                           >
                             {tab.name}
@@ -843,55 +841,74 @@ export default function Cricketbet() {
                           </tr>
                         </thead>
                         <tbody>
-                          {fancy2Data.length > 0 ? (fancy2Data.map(({ team, odds, min, max, status },index ) => (
-                            <tr key={index} className='border-y border-gray-200'>
-                              <td className='w-[64%] pl-2 pr-0.5 font-bold align-top'>
-                                {team}
-                                <span>
-                                  {
-                                    pendingBet
-                                      ?.filter(
-                                        (item) =>
-                                          item.gameType ===
-                                            activeSubTab &&
-                                          item.teamName?.toLowerCase() ===
-                                            team?.toLowerCase()
-                                      )
-                                      .reduce(
-                                        (sum, item) =>
-                                          sum +
-                                          (item.totalPrice ||
-                                            '0.00'),
-                                        ''
-                                      ) 
-                                  }
-                                </span>
-                              </td>
-                              <td className='w-[16%] px-[3px] relative'>
-                                  <div className='flex font-bold'>
-                                    {odds.map((odd, i) => odd?.tno === 0 && (
-                                      <div key={i} className={`w-1/2 py-1 ${
-                                            odd?.otype === 'back'
-                                              ? 'bg-[#72bbef]'
-                                              : 'bg-[#faa9ba]'
-                                          } grid justify-items-center m-0.5`}>
-                                        <span className='leading-[18px]'>{odd?.odds}</span>
-                                        <span className='text-[10px] text-[#43444a] leading-none'>{odd?.size}</span>
+                          {fancy2Data.length > 0 ? (
+                            fancy2Data.map(
+                              ({ team, odds, min, max, status }, index) => (
+                                <tr
+                                  key={index}
+                                  className='border-y border-gray-200'
+                                >
+                                  <td className='w-[64%] pr-0.5 pl-2 align-top font-bold'>
+                                    {team}
+                                    <span>
+                                      {pendingBet
+                                        ?.filter(
+                                          (item) =>
+                                            item.gameType === activeSubTab &&
+                                            item.teamName?.toLowerCase() ===
+                                              team?.toLowerCase()
+                                        )
+                                        .reduce(
+                                          (sum, item) =>
+                                            sum + (item.totalPrice || '0.00'),
+                                          ''
+                                        )}
+                                    </span>
+                                  </td>
+                                  <td className='relative w-[16%] px-[3px]'>
+                                    <div className='flex font-bold'>
+                                      {odds.map(
+                                        (odd, i) =>
+                                          odd?.tno === 0 && (
+                                            <div
+                                              key={i}
+                                              className={`w-1/2 py-1 ${
+                                                odd?.otype === 'back'
+                                                  ? 'bg-[#72bbef]'
+                                                  : 'bg-[#faa9ba]'
+                                              } m-0.5 grid justify-items-center`}
+                                            >
+                                              <span className='leading-[18px]'>
+                                                {odd?.odds}
+                                              </span>
+                                              <span className='text-[10px] leading-none text-[#43444a]'>
+                                                {odd?.size}
+                                              </span>
+                                            </div>
+                                          )
+                                      )}
+                                    </div>
+                                    {status === 'SUSPENDED' && (
+                                      <div className='absolute inset-0 mx-1 my-0.5 flex items-center justify-center bg-black/70 text-gray-300'>
+                                        SUSPENDED
                                       </div>
-                                    ))}
-                                  </div>
-                                  {status === 'SUSPENDED' && (
-                                    <div className='absolute inset-0 bg-black/70 text-gray-300 flex justify-center items-center mx-1 my-0.5'>SUSPENDED</div>
-                                  )}
-                              </td>
-                              <td className='w-[16%] pl-0.5 pr-2 text-[11px] text-right'>
-                                <span className='block'>Max:{min}</span>
-                                <span className='block'>MKT:{formatToK(max)}</span>
-                              </td>
-                            </tr>
-                          ))) : (
+                                    )}
+                                  </td>
+                                  <td className='w-[16%] pr-2 pl-0.5 text-right text-[11px]'>
+                                    <span className='block'>Max:{min}</span>
+                                    <span className='block'>
+                                      MKT:{formatToK(max)}
+                                    </span>
+                                  </td>
+                                </tr>
+                              )
+                            )
+                          ) : (
                             <tr>
-                              <td colSpan={3} className='px-1 text-center text-gray-500'>
+                              <td
+                                colSpan={3}
+                                className='px-1 text-center text-gray-500'
+                              >
                                 No betting options available for this category
                               </td>
                             </tr>

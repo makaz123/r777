@@ -20,7 +20,17 @@ import CasinoResultReport from './pages/CasinoResultReport';
 import RegisterDetail from './pages/RegisterDetail';
 import UserDetails from './pages/UserDetails';
 import AccountStatement from './pages/AccountStatement';
-import ProfitLoss from './pages/ProfitLoss';
+import SettlementReport from './pages/SettlementReport';
+import TransactionReport from './pages/TransactionReport ';
+import CurrentBets from './pages/CurrentBets';
+import ProfitLossReport from './pages/ProfitLossReport';
+import EventLossReport from './pages/EventLossReport';
+import BetHistoryReport from './pages/BetHistoryReport';
+import LiveBetsReport from './pages/LiveBetsReport';
+import IpLookupReport from './pages/IpLookupReport';
+import SportRevenue from './pages/SportRevenue';
+
+import ProfitLoss from './pages/ProfitLossCopy';
 import GeneralReport from './pages/GeneralReport';
 import MyMarket from './pages/MyMarket';
 import Banking from './pages/Banking';
@@ -132,6 +142,30 @@ function App() {
                   <Route
                     path='/AccountStatement'
                     element={<AccountStatement />}
+                  />
+                  <Route
+                    path='/TransactionReport'
+                    element={<TransactionReport />}
+                  />
+                  <Route
+                    path='/EventLossReport'
+                    element={<EventLossReport />}
+                  />
+                  <Route path='/SportRevenue' element={<SportRevenue />} />
+                  <Route path='/IpLookupReport' element={<IpLookupReport />} />
+                  <Route path='/LiveBetsReport' element={<LiveBetsReport />} />
+                  <Route
+                    path='/BetHistoryReport'
+                    element={<BetHistoryReport />}
+                  />
+                  <Route
+                    path='/SettlementReport'
+                    element={<SettlementReport />}
+                  />
+                  <Route path='/CurrentBets' element={<CurrentBets />} />
+                  <Route
+                    path='/ProfitLossReport'
+                    element={<ProfitLossReport />}
                   />
                   <Route path='/RegisterDetail' element={<RegisterDetail />} />
                   <Route path='/user-details' element={<UserDetails />} />

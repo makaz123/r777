@@ -32,7 +32,9 @@ export default function Cricket({
   // const { user } = useSelector((state) => state.user);
   // console.log(user)
   const { matches, loader, error } = useSelector((state) => state.cricket);
-  const deactivatedMatches = useSelector((state) => state.auth?.deactivatedMatches || []);
+  const deactivatedMatches = useSelector(
+    (state) => state.auth?.deactivatedMatches || []
+  );
 
   console.log('matches', matches);
   useEffect(() => {
@@ -42,7 +44,12 @@ export default function Cricket({
   useEffect(() => {
     if (!onInplayCountChange) return;
     const count = Array.isArray(matches)
-      ? matches.filter((m) => m.inplay && !deactivatedMatches.includes(String(m.id)) && !deactivatedMatches.includes(String(m.title))).length
+      ? matches.filter(
+          (m) =>
+            m.inplay &&
+            !deactivatedMatches.includes(String(m.id)) &&
+            !deactivatedMatches.includes(String(m.title))
+        ).length
       : 0;
     onInplayCountChange(count);
   }, [matches, deactivatedMatches, onInplayCountChange]);

@@ -20,14 +20,18 @@ export const getBetLockTree = async (req, res) => {
   try {
     const { date, sport } = req.query;
     if (!sport) {
-      return res.status(400).json({ success: false, message: 'Sport is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Sport is required' });
     }
 
     const sportId = getSportIdFromName(sport);
     const data = await fetchMatchList(sportId);
 
     if (!data.success) {
-      return res.status(500).json({ success: false, message: 'Failed to fetch match list' });
+      return res
+        .status(500)
+        .json({ success: false, message: 'Failed to fetch match list' });
     }
 
     const t1 = data.data?.t1 || [];
@@ -45,7 +49,16 @@ export const getBetLockTree = async (req, res) => {
       const matchDate = new Date(match.stime);
       matchDate.setHours(0, 0, 0, 0);
 
-      console.log('Match stime:', match.stime, 'matchDate:', matchDate.getTime(), 'targetTime:', targetTime, 'match.iplay:', match.iplay);
+      console.log(
+        'Match stime:',
+        match.stime,
+        'matchDate:',
+        matchDate.getTime(),
+        'targetTime:',
+        targetTime,
+        'match.iplay:',
+        match.iplay
+      );
 
       // If the match is inplay, or matches the target date
       if (matchDate.getTime() === targetTime || match.iplay) {
@@ -97,7 +110,9 @@ export const getUserBetLocks = async (req, res) => {
     const { userId } = req.params; // this is the _id of the user
     const user = await SubAdmin.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
     }
 
     return res.status(200).json({
@@ -118,7 +133,9 @@ export const updateUserBetLocks = async (req, res) => {
 
     const user = await SubAdmin.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
     }
 
     if (advancedBetLocks) {

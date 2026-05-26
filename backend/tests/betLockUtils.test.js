@@ -41,7 +41,13 @@ describe('betLockUtils', () => {
       {
         gamelock: [{ game: 'cricket', lock: true }],
         advancedBetLocks: {
-          cricket: { types: [], marketTypes: [], tournaments: [], matches: [], markets: ['f_901470276'] },
+          cricket: {
+            types: [],
+            marketTypes: [],
+            tournaments: [],
+            matches: [],
+            markets: ['f_901470276'],
+          },
         },
       },
     ];

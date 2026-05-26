@@ -39,7 +39,10 @@ export const isMatchOddsBetRecord = (bet) => {
   );
 };
 
-export const getMatchOddsCommissionFromNetWin = (netProfit, commissionPercent) => {
+export const getMatchOddsCommissionFromNetWin = (
+  netProfit,
+  commissionPercent
+) => {
   const net = Number(netProfit) || 0;
   const rate = Number(commissionPercent) || 0;
   if (net <= 0 || rate <= 0 || rate >= 100) return 0;

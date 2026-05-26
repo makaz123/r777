@@ -5,10 +5,9 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import pdfIcon from '../assets/icons/pdf-icon.svg';
 import excelIcon from '../assets/icons/csv-icon.svg';
-
 /* ============ Main Page ============ */
 
-const AccountStatement = () => {
+const TransactionReport = () => {
   const [accountType, setAccountType] = useState('all');
   const [gameType, setGameType] = useState('all');
   const [sportsGameType, setSportsGameType] = useState('');
@@ -160,81 +159,10 @@ const AccountStatement = () => {
       <Navbar />
       <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
-          <div className='text-[15px] font-bold'>Account Statement Report</div>
+          <div className='text-[15px] font-bold'>Transaction Report</div>
 
-          <div className='mt-2 mb-6 grid grid-cols-6 gap-6'>
-            <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value)}
-            >
-              <option value='all'>ALL</option>
-              <option value='deposit'>BALANCE REPORT</option>
-              <option value='sports'>GAME REPORT</option>
-              <option value='settlement'>SETTLEMENT REPORT</option>
-              <option value='bonus'>BONUS REPORT</option>
-            </select>
-
-            {accountType === 'all' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
-
-            {accountType === 'deposit' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
-
-            {accountType === 'sports' && (
-              <>
-                <select
-                  className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
-                  value={sportsList}
-                  onChange={(e) => setSportsList(e.target.value)}
-                >
-                  <option value='all'>ALL</option>
-                  <option value='cricket'>Cricket</option>
-                  <option value='tennis'>Tennis</option>
-                  <option value='soccer'>Soccer</option>
-                  <option value='soccer'>Indian Poker / Live Casino</option>
-                  <option value='soccer'>Indian Poker II</option>
-                  <option value='soccer'>Pragmatic</option>
-                  <option value='soccer'>Evolution</option>
-                  <option value='soccer'>Casino II</option>
-                  <option value='soccer'>Vivo</option>
-                  <option value='soccer'>Bet Games</option>
-                  <option value='soccer'>Casino III</option>
-                  <option value='soccer'>Spribe</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
-
-            {accountType === 'settlement' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
-
-            {accountType === 'bonus' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
+          <div className='mt-2 mb-5 grid grid-cols-6 gap-6'>
+            {renderClientSearch()}
 
             <input
               type='date'
@@ -278,30 +206,8 @@ const AccountStatement = () => {
               <img src={excelIcon} alt='' className='w-[35px]' />
               <img src={pdfIcon} alt='' className='w-[35px]' />
             </div>
-            <div>
-              <table className='w-[500px]'>
-                <tbody>
-                  <tr>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
-                      Opening Balance
-                    </td>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      1234567890
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
-                      Closing Balance
-                    </td>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      1234567890
-                    </td>
-                  </tr>
-                </tbody>
-                <tr></tr>
-              </table>
-            </div>
-            <div>
+
+            <div className='mr-10'>
               <span>Show</span>
               <select
                 name=''
@@ -322,23 +228,15 @@ const AccountStatement = () => {
                 <th className='border-r border-white px-2 py-1 text-left'>
                   Date & Time
                 </th>
-
                 <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
                   Credit
                 </th>
-
                 <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
                   Debit
                 </th>
-
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Closing
-                </th>
-
                 <th className='border-r border-white px-2 py-1 text-left'>
                   Description
                 </th>
-
                 <th className='px-2 py-1 text-left'>From → to</th>
               </tr>
             </thead>
@@ -348,16 +246,11 @@ const AccountStatement = () => {
                   25-05-2026
                 </td>
                 <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  1000000000000.00
+                  325000.00
                 </td>
                 <td className='border border-gray-300 px-2 py-1.5 text-right'>
                   -
                 </td>
-
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  2500000.00
-                </td>
-
                 <td className='border border-gray-300 px-2 py-1.5'>
                   Settlement
                 </td>
@@ -398,4 +291,4 @@ const AccountStatement = () => {
   );
 };
 
-export default AccountStatement;
+export default TransactionReport;

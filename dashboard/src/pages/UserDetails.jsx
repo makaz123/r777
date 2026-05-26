@@ -167,14 +167,18 @@ const UserDetails = () => {
     }
 
     const value = userDetails?.accountDetails?.profitLoss || 0;
-    
+
     setSettlePopup(true);
     setSettleAmount('');
 
     if (value > 0) {
-      setSettleRemarks(`${userDetails?.userInfo?.userName} received cash from ${userInfo?.userName || ''}`);
+      setSettleRemarks(
+        `${userDetails?.userInfo?.userName} received cash from ${userInfo?.userName || ''}`
+      );
     } else {
-      setSettleRemarks(`${userInfo?.userName || ''} received cash from ${userDetails?.userInfo?.userName}`);
+      setSettleRemarks(
+        `${userInfo?.userName || ''} received cash from ${userDetails?.userInfo?.userName}`
+      );
     }
 
     setSettlePassword('');
@@ -186,7 +190,7 @@ const UserDetails = () => {
       toast.error('Please fill all required fields.');
       return;
     }
-    
+
     setIsSettling(true);
     try {
       const payload = {
@@ -207,7 +211,9 @@ const UserDetails = () => {
         toast.error(res.data.message || 'Settlement failed');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Settlement failed');
+      toast.error(
+        err.response?.data?.message || err.message || 'Settlement failed'
+      );
     } finally {
       setIsSettling(false);
     }
@@ -415,25 +421,29 @@ const UserDetails = () => {
       (c.betCount && c.betCount > 0)
   );
 
+  const value =
+    userDetails?.gamePlay.overallPL ?? userDetails?.accountDetails.profitLoss;
+
   return (
-    <div className='min-h-screen bg-[#f5f7f9]'>
+    <>
       <Navbar />
-      <div className='mx-auto max-w-[1400px] p-4 text-[13px] text-[#333] md:p-6'>
+      <div className='scrollbar-hide px-[15px] py-[13px]'>
         {/* Search Section */}
-        <div className='mb-4 w-full rounded border border-gray-200 bg-white p-4 shadow-sm md:w-1/3'>
-          <h2 className='mb-2 text-[16px] font-bold text-black'>
+
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+          <h2 className='mb-2 text-[15px] font-bold text-black'>
             User Details
           </h2>
-          <p className='mb-2 text-[11px] text-gray-500'>
+          {/* <p className='mb-2 text-[11px] text-gray-500'>
             {userInfo?.role === 'supperadmin' || userInfo?.role === 'superadmin'
               ? 'Search all clients on the platform'
               : 'Search clients in your downline (all levels)'}
-          </p>
+          </p> */}
           <div className='relative' ref={dropdownRef}>
             <input
               type='text'
               placeholder='Search by client'
-              className='w-full rounded border border-gray-300 px-3 py-1.5 focus:border-blue-400 focus:outline-none'
+              className='w-[230px] rounded border border-gray-300 px-2 py-1 focus:border-blue-400 focus:outline-none'
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               onFocus={() => {
@@ -441,11 +451,11 @@ const UserDetails = () => {
               }}
             />
             {showDropdown && searchResults.length > 0 && (
-              <ul className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded border border-gray-200 bg-white shadow-lg'>
+              <ul className='absolute z-10 max-h-60 w-[230px] overflow-auto border border-t-0 border-gray-200 bg-white shadow-lg'>
                 {searchResults.map((user, index) => (
                   <li
                     key={user._id}
-                    className={`cursor-pointer px-3 py-2 hover:bg-gray-100 ${index % 2 === 1 ? 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]' : 'text-gray-700'}`}
+                    className={`cursor-pointer px-2 py-1.5 hover:bg-black hover:text-white`}
                     onClick={() => handleSelectUser(user)}
                   >
                     {user.userName}
@@ -454,459 +464,465 @@ const UserDetails = () => {
               </ul>
             )}
           </div>
+
+          {loadingDetails && (
+            <div className='p-4 text-center'>Loading user details...</div>
+          )}
+
+          {userDetails && !loadingDetails && (
+            <div className='mt-4 space-y-5'>
+              {/* Top Row: User Details & Settings */}
+
+              <div className='flex gap-[30px]'>
+                <fieldset className='w-1/2 rounded-sm border border-gray-300 bg-gray-50 px-[15px] pt-1 pb-6'>
+                  <legend className='text-[19px] font-semibold'>
+                    User Details:
+                  </legend>
+                  <div className='grid grid-cols-3 text-[14px] font-bold'>
+                    <div className='col-span-1 space-y-3'>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          User Name:
+                        </span>
+                        {userDetails.userInfo.userName}
+                      </div>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          Reference Name:
+                        </span>
+                        {userDetails.userInfo.referenceName}
+                      </div>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          Parents:
+                        </span>
+                        {userDetails.userInfo.parents}
+                      </div>
+                    </div>
+                    <div className='col-span-1 space-y-3'>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          Role:
+                        </span>
+                        {userDetails.userInfo.role}
+                      </div>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          Email:
+                        </span>
+                        {userDetails.userInfo.email}
+                      </div>
+                    </div>
+                    <div className='col-span-1 space-y-3'>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          Client Name:
+                        </span>
+                        {userDetails.userInfo.clientName}
+                      </div>
+                      <div>
+                        <span className='pr-2.5 text-[13px] text-gray-500'>
+                          Mobile:
+                        </span>
+                        {userDetails.userInfo.mobile}
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
+                <fieldset className='w-1/2 rounded-sm border border-gray-300 px-[15px] pt-1'>
+                  <legend className='text-[20px] font-semibold'>
+                    Setting:
+                  </legend>
+                  <div className='flex flex-wrap gap-2'>
+                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                      User Update
+                    </div>
+                    <div
+                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      onClick={openDepositModal}
+                    >
+                      Deposit / Credit
+                    </div>
+                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                      Settlement
+                    </div>
+                    <div
+                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      onClick={fetchLoginHistoryData}
+                    >
+                      Last Login
+                    </div>
+                    <div
+                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      onClick={openPasswordModal}
+                    >
+                      Change Password
+                    </div>
+                    <div
+                      className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'
+                      onClick={openWithdrawModal}
+                    >
+                      Withdrawal
+                    </div>
+                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                      Game Control
+                    </div>
+                    <div className='flex w-[140px] justify-center rounded-full border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] py-2 text-[12px] font-bold text-white'>
+                      Casino Control
+                    </div>
+                  </div>
+
+                  <div className='flex gap-2 py-3.5 text-[12px] font-bold'>
+                    <div className='flex w-[140px] items-center gap-1 pl-6'>
+                      <input
+                        type='checkbox'
+                        checked={userDetails.settings.userLock}
+                        readOnly
+                      />
+                      User Lock
+                    </div>
+                    <div className='flex w-[140px] items-center gap-1 pl-6'>
+                      <input
+                        type='checkbox'
+                        checked={userDetails.settings.betLock}
+                        readOnly
+                      />
+                      Bet Lock
+                    </div>
+                    <div className='flex w-[140px] items-center gap-1 pl-6'>
+                      <input
+                        type='checkbox'
+                        checked={userDetails.settings.checkLimit}
+                        readOnly
+                      />
+                      Check Limit
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+
+              <fieldset className='w-full rounded-sm border border-gray-300 bg-gray-50 px-[15px] pt-1 pb-6'>
+                <legend className='text-[19px] font-semibold'>
+                  Account Details:
+                </legend>
+                <div className='grid grid-cols-4 text-[14px] font-bold'>
+                  <div className='col-span-1 space-y-3'>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Credit Ref:
+                      </span>
+                      {userDetails.accountDetails.creditRef}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        UpLine Balance:
+                      </span>
+                      {Number(userDetails.accountDetails.uplineBalance).toFixed(
+                        2
+                      )}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Max Bet:
+                      </span>
+                      {userDetails.accountDetails.maxBet}
+                    </div>
+                  </div>
+                  <div className='col-span-1 space-y-3'>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Balance:
+                      </span>
+                      {userDetails.accountDetails.balance}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        DownLine Balance:
+                      </span>
+                      {userDetails.accountDetails.downlineBalance}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Bet Lock:
+                      </span>
+                      {userDetails.accountDetails.betLock}
+                    </div>
+                  </div>
+                  <div className='col-span-1 space-y-3'>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Available Balance:
+                      </span>
+                      {Number(
+                        userDetails.accountDetails.availableBalance
+                      ).toFixed(2)}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Exposure:
+                      </span>
+                      {userDetails.accountDetails.exposure}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Active:
+                      </span>
+                      {userDetails.accountDetails.active}
+                    </div>
+                  </div>
+                  <div className='col-span-1 space-y-3'>
+                    <div>
+                      <span
+                        className='pr-2.5 text-[13px] text-gray-500'
+                        // onClick={openSettleModal}
+                      >
+                        P/L:
+                      </span>
+                      {formatPL(userDetails.accountDetails.profitLoss)}
+                      {/* {userDetails.accountDetails.sportsPL != null && (
+                        <span className='ml-1 text-[10px] text-gray-400'>
+                          (Sports {formatPL(userDetails.accountDetails.sportsPL)}
+                          {activeCasinoRows.length > 0
+                            ? ` + Casino ${formatPL(userDetails.accountDetails.casinoPL)}`
+                            : ''}
+                          )
+                        </span>
+                      )} */}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Max Profit:
+                      </span>
+                      {userDetails.accountDetails.maxProfit}
+                    </div>
+                    <div>
+                      <span className='pr-2.5 text-[13px] text-gray-500'>
+                        Created On:
+                      </span>
+                      {formatDate(userDetails.accountDetails.createdOn)}
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset className='w-full rounded-sm border border-gray-300 px-[15px] pt-1 pb-6'>
+                <legend className='text-[19px] font-semibold'>
+                  Game Play:
+                </legend>
+
+                <div className='rounded-sm border border-gray-200 p-1'>
+                  <div className='grid grid-cols-3 rounded-md border border-gray-200 bg-gray-100 py-0.5'>
+                    <div>
+                      <span className='block text-center text-gray-500'>
+                        P&L
+                      </span>
+                      <span
+                        className={`block text-center font-bold ${value > 0 ? 'text-green-700' : 'text-red-700'}`}
+                      >
+                        {formatPL(value)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className='block text-center text-gray-500'>
+                        Commission
+                      </span>
+                      <span className='block text-center font-bold'>
+                        {Number(userDetails.gamePlay.commission).toFixed(2)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className='block text-center text-gray-500'>
+                        Total Bet
+                      </span>
+                      <span className='block text-center font-bold'>
+                        {userDetails.gamePlay.totalBet}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className='mt-2.5 flex gap-8'>
+                  {/* Sports Table */}
+                  <div className='w-[40%] overflow-x-auto'>
+                    <table className='w-full border-collapse border border-gray-200 text-left'>
+                      <thead>
+                        <tr className='border-b-2 border-gray-200 bg-white text-black'>
+                          <th className='w-1/4 border-r border-gray-200 px-2 py-1.5 font-bold'>
+                            Sport
+                          </th>
+                          <th className='w-1/4 border-r border-gray-200 px-2 py-1.5 font-bold'>
+                            Bet
+                          </th>
+                          <th className='w-1/4 border-r border-gray-200 px-2 py-1.5 font-bold'>
+                            Bet Amount
+                          </th>
+                          <th className='w-1/4 px-2 py-1.5 font-bold'>P & L</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userDetails.gamePlay.sports.map((sport, i) => (
+                          <tr
+                            key={i}
+                            className='border-t border-gray-200 odd:bg-[#f2f2f2]'
+                          >
+                            <td className='w-1/4 border-r border-gray-200 px-2 py-1.5 text-gray-500'>
+                              {sport.sport}
+                            </td>
+                            <td className='w-1/4 border-r border-gray-200 px-2 py-1.5 text-gray-500'>
+                              {sport.betCount}
+                            </td>
+                            <td className='w-1/4 border-r border-gray-200 px-2 py-1.5 text-gray-500'>
+                              {Number(sport.betAmount).toFixed(2)}
+                            </td>
+                            <td
+                              className={`w-1/4 px-2 py-1.5 ${plColorClass(sport.profitLoss)}`}
+                            >
+                              {formatPL(sport.profitLoss)}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className='border-t border-gray-300 bg-[#f2f2f2]'>
+                          <td className='w-1/4 border-r border-gray-200 px-2 py-1.5 font-bold text-gray-600'>
+                            Total
+                          </td>
+                          <td className='w-1/4 border-r border-gray-200 px-2 py-1.5 font-bold text-gray-600'>
+                            {userDetails.gamePlay.sports.reduce(
+                              (sum, s) => sum + s.betCount,
+                              0
+                            )}
+                          </td>
+                          <td className='w-1/4 border-r border-gray-200 px-2 py-1.5 font-bold text-gray-600'>
+                            {Number(
+                              userDetails.gamePlay.sports.reduce(
+                                (sum, s) => sum + s.betAmount,
+                                0
+                              )
+                            ).toFixed(2)}
+                          </td>
+                          <td
+                            className={`w-1/4 px-2 py-1.5 font-semibold ${plColorClass(userDetails.gamePlay.sports.reduce((sum, s) => sum + s.profitLoss, 0))}`}
+                          >
+                            {formatPL(
+                              userDetails.gamePlay.sports.reduce(
+                                (sum, s) => sum + s.profitLoss,
+                                0
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Casino Table */}
+                  <div className='w-[25%] overflow-x-auto'>
+                    <table className='w-full border-collapse border border-gray-200 text-left'>
+                      <thead>
+                        <tr className='border-b-2 border-gray-200 bg-white text-black'>
+                          <th className='w-1/2 border-r border-gray-200 px-2 py-1.5 font-bold'>
+                            Casino
+                          </th>
+                          <th className='w-1/2 px-2 py-1.5 font-bold'>
+                            Total P & L
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeCasinoRows.map((casino, i) => (
+                          <tr
+                            key={i}
+                            className='border-t border-gray-200 odd:bg-[#f2f2f2]'
+                          >
+                            <td className='w-1/2 border-r border-gray-200 px-2 py-1.5 text-gray-500'>
+                              {casino.casino}
+                            </td>
+                            <td
+                              className={`w-1/2 border-r border-gray-200 px-2 py-1.5 text-gray-500 ${plColorClass(casino.profitLoss)}`}
+                            >
+                              {formatPL(casino.profitLoss)}
+                            </td>
+                          </tr>
+                        ))}
+                        {activeCasinoRows.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan='2'
+                              className='p-2 text-center text-gray-400'
+                            >
+                              No Casino bets
+                            </td>
+                          </tr>
+                        )}
+                        <tr className='border-t border-gray-300 bg-[#f2f2f2]'>
+                          <td className='w-1/2 border-r border-gray-200 px-2 py-1.5 font-bold text-gray-600'>
+                            Total
+                          </td>
+                          <td
+                            className={`w-1/2 px-2 py-1.5 font-bold text-gray-600 ${plColorClass(activeCasinoRows.reduce((sum, c) => sum + c.profitLoss, 0))}`}
+                          >
+                            {formatPL(
+                              activeCasinoRows.reduce(
+                                (sum, c) => sum + c.profitLoss,
+                                0
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Market Table */}
+                  <div className='w-[35%] overflow-x-auto'>
+                    <table className='w-full border-collapse border border-gray-200 text-left'>
+                      <thead>
+                        <tr className='border-b-2 border-gray-200 bg-white text-black'>
+                          <th className='w-1/3 border-r border-gray-200 px-2 py-1.5 font-bold'>
+                            Sport
+                          </th>
+                          <th className='w-1/3 border-r border-gray-200 px-2 py-1.5 font-bold'>
+                            Market
+                          </th>
+                          <th className='w-1/3 px-2 py-1.5 font-bold'>P & L</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userDetails.gamePlay.markets.map((market, i) => (
+                          <tr
+                            key={i}
+                            className='border-t border-gray-200 odd:bg-[#f2f2f2]'
+                          >
+                            <td className='w-1/3 border-r border-gray-200 px-2 py-1.5 text-gray-600'>
+                              {market.sport}
+                            </td>
+                            <td className='w-1/3 border-r border-gray-200 px-2 py-1.5 text-[11px] text-gray-600'>
+                              {market.market}
+                            </td>
+                            <td
+                              className={`w-1/3 px-2 py-1.5 ${plColorClass(market.profitLoss)}`}
+                            >
+                              {formatPL(market.profitLoss)}
+                            </td>
+                          </tr>
+                        ))}
+                        {userDetails.gamePlay.markets.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan='3'
+                              className='p-2 text-center text-gray-400'
+                            >
+                              No Market bets
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          )}
         </div>
-
-        {loadingDetails && (
-          <div className='p-4 text-center'>Loading user details...</div>
-        )}
-
-        {userDetails && !loadingDetails && (
-          <div className='space-y-4'>
-            {/* Top Row: User Details & Settings */}
-            <div className='flex flex-col gap-4 lg:flex-row'>
-              {/* User Details */}
-              <div className='flex-1 rounded border border-gray-200 bg-white p-4 shadow-sm'>
-                <h2 className='mb-3 text-[15px] font-bold text-black'>
-                  User Details:
-                </h2>
-                <div className='grid grid-cols-1 gap-y-4 text-[13px] md:grid-cols-3'>
-                  <div>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      User Name :
-                    </span>{' '}
-                    {userDetails.userInfo.userName}
-                  </div>
-                  <div>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      Role :
-                    </span>{' '}
-                    <span className='font-bold'>
-                      {userDetails.userInfo.role}
-                    </span>
-                  </div>
-                  <div>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      Client Name :
-                    </span>{' '}
-                    <span className='font-bold'>
-                      {userDetails.userInfo.clientName}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      Reference Name :
-                    </span>{' '}
-                    {userDetails.userInfo.referenceName}
-                  </div>
-                  <div>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      Email :
-                    </span>{' '}
-                    {userDetails.userInfo.email}
-                  </div>
-                  <div>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      Mobile :
-                    </span>{' '}
-                    {userDetails.userInfo.mobile}
-                  </div>
-
-                  <div className='col-span-3'>
-                    <span className='mr-1 font-semibold text-gray-500'>
-                      Parents :
-                    </span>{' '}
-                    {userDetails.userInfo.parents}
-                  </div>
-                </div>
-              </div>
-
-              {/* Setting */}
-              <div className='rounded border border-gray-200 bg-white p-4 shadow-sm lg:w-[500px]'>
-                <h2 className='mb-3 text-[15px] font-bold text-black'>
-                  Setting:
-                </h2>
-                <div className='mb-4 grid grid-cols-4 gap-2'>
-                  <button className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    User Update
-                  </button>
-                  <button
-                    onClick={openDepositModal}
-                    className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'
-                  >
-                    Deposit / Credit
-                  </button>
-                  <button className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Settlement
-                  </button>
-                  <button
-                    onClick={fetchLoginHistoryData}
-                    className='rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'
-                  >
-                    Last Login
-                  </button>
-
-                  <button
-                    onClick={openPasswordModal}
-                    className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'
-                  >
-                    Change Password
-                  </button>
-                  <button
-                    onClick={openWithdrawModal}
-                    className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'
-                  >
-                    Withdrawal
-                  </button>
-                  <button className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Game Control
-                  </button>
-                  <button className='mt-1 rounded-full bg-gradient-to-b from-[#359db1] to-[#247c8f] px-2 py-1 text-center text-[11px] text-white shadow-sm'>
-                    Casino Control
-                  </button>
-                </div>
-                <div className='mt-2 flex justify-center gap-6'>
-                  <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
-                    <input
-                      type='checkbox'
-                      checked={userDetails.settings.userLock}
-                      readOnly
-                    />{' '}
-                    User Lock
-                  </label>
-                  <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
-                    <input
-                      type='checkbox'
-                      checked={userDetails.settings.betLock}
-                      readOnly
-                    />{' '}
-                    Bet Lock
-                  </label>
-                  <label className='flex cursor-pointer items-center gap-1 text-[12px] font-semibold'>
-                    <input
-                      type='checkbox'
-                      checked={userDetails.settings.checkLimit}
-                      readOnly
-                    />{' '}
-                    Check Limit
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Account Details */}
-            <div className='rounded border border-gray-200 bg-white p-4 shadow-sm'>
-              <h2 className='mb-3 text-[15px] font-bold text-black'>
-                Account Details:
-              </h2>
-              <div className='grid grid-cols-1 gap-x-2 gap-y-4 text-[12px] md:grid-cols-4'>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Credit Ref:
-                  </span>{' '}
-                  {userDetails.accountDetails.creditRef}
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Balance:
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {userDetails.accountDetails.balance}
-                  </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Available Balance:
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {Number(
-                      userDetails.accountDetails.availableBalance
-                    ).toFixed(2)}
-                  </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Ref. P/L :
-                  </span>
-                  <span
-                    onClick={openSettleModal}
-                    className={`cursor-pointer underline font-bold ${plColorClass(userDetails.accountDetails.profitLoss)}`}
-                  >
-                    {formatPL(userDetails.accountDetails.profitLoss)}
-                  </span>
-                  {userDetails.accountDetails.sportsPL != null && (
-                    <span className='ml-1 text-[10px] text-gray-400'>
-                      (Sports {formatPL(userDetails.accountDetails.sportsPL)}
-                      {activeCasinoRows.length > 0
-                        ? ` + Casino ${formatPL(userDetails.accountDetails.casinoPL)}`
-                        : ''}
-                      )
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    UpLine Balance:
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {Number(userDetails.accountDetails.uplineBalance).toFixed(
-                      2
-                    )}
-                  </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    DownLine Balance:
-                  </span>{' '}
-                  {userDetails.accountDetails.downlineBalance}
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Exposure :
-                  </span>{' '}
-                  {userDetails.accountDetails.exposure}
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Max Profit:
-                  </span>{' '}
-                  {userDetails.accountDetails.maxProfit}
-                </div>
-
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Max Bet:
-                  </span>{' '}
-                  {userDetails.accountDetails.maxBet}
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Bet Lock:
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {userDetails.accountDetails.betLock}
-                  </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Active :
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {userDetails.accountDetails.active}
-                  </span>
-                </div>
-                <div>
-                  <span className='mr-1 font-semibold text-gray-500'>
-                    Created On :
-                  </span>{' '}
-                  <span className='font-bold'>
-                    {formatDate(userDetails.accountDetails.createdOn)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Game Play */}
-            <div className='rounded border border-gray-200 bg-white p-4 shadow-sm'>
-              <h2 className='mb-3 text-[15px] font-bold text-black'>
-                Game Play:
-              </h2>
-
-              <div className='mb-4 grid grid-cols-3 rounded border border-gray-300 bg-[#f0f4f8] py-2 text-center text-[13px] font-semibold shadow-sm'>
-                <div>
-                  <div className='mb-1 text-gray-500'>P&L</div>
-                  <div
-                    onClick={openSettleModal}
-                    className={`cursor-pointer underline ${plColorClass(userDetails.gamePlay.overallPL)}`}
-                  >
-                    {formatPL(
-                      userDetails.gamePlay.overallPL ??
-                        userDetails.accountDetails.profitLoss
-                    )}
-                  </div>
-                </div>
-                <div className='border-r border-l border-gray-300'>
-                  <div className='mb-1 text-gray-500'>Commission</div>
-                  <div className='text-red-500'>
-                    {Number(userDetails.gamePlay.commission).toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div className='mb-1 text-gray-500'>Total Bet</div>
-                  <div className='text-black'>
-                    {userDetails.gamePlay.totalBet}
-                  </div>
-                </div>
-              </div>
-
-              <div className='grid grid-cols-1 gap-4 align-top lg:grid-cols-3'>
-                {/* Sports Table */}
-                <div className='overflow-x-auto'>
-                  <table className='w-full border-collapse border border-gray-200 text-left'>
-                    <thead>
-                      <tr className='border-b border-gray-200 bg-white text-black'>
-                        <th className='w-1/4 p-2 font-bold'>Sport</th>
-                        <th className='w-1/4 p-2 text-center font-bold'>Bet</th>
-                        <th className='w-1/4 p-2 text-right font-bold'>
-                          Bet Amount
-                        </th>
-                        <th className='w-1/4 p-2 text-right font-bold'>
-                          P & L
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {userDetails.gamePlay.sports.map((sport, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-100 last:border-b-0'
-                        >
-                          <td className='p-2 text-gray-500'>{sport.sport}</td>
-                          <td className='p-2 text-center text-black'>
-                            {sport.betCount}
-                          </td>
-                          <td className='p-2 text-right text-black'>
-                            {Number(sport.betAmount).toFixed(2)}
-                          </td>
-                          <td
-                            className={`p-2 text-right ${plColorClass(sport.profitLoss)}`}
-                          >
-                            {formatPL(sport.profitLoss)}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className='border-t-2 border-gray-300 bg-[#f2f2f2]'>
-                        <td className='p-2 font-semibold text-black'>Total</td>
-                        <td className='p-2 text-center text-black'>
-                          {userDetails.gamePlay.sports.reduce(
-                            (sum, s) => sum + s.betCount,
-                            0
-                          )}
-                        </td>
-                        <td className='p-2 text-right text-black'>
-                          {Number(
-                            userDetails.gamePlay.sports.reduce(
-                              (sum, s) => sum + s.betAmount,
-                              0
-                            )
-                          ).toFixed(2)}
-                        </td>
-                        <td
-                          className={`p-2 text-right font-semibold ${plColorClass(userDetails.gamePlay.sports.reduce((sum, s) => sum + s.profitLoss, 0))}`}
-                        >
-                          {formatPL(
-                            userDetails.gamePlay.sports.reduce(
-                              (sum, s) => sum + s.profitLoss,
-                              0
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Casino Table */}
-                <div className='overflow-x-auto'>
-                  <table className='w-full border-collapse border border-gray-200 text-left'>
-                    <thead>
-                      <tr className='border-b border-gray-200 bg-white text-black'>
-                        <th className='w-1/2 p-2 font-bold'>Casino</th>
-                        <th className='w-1/2 p-2 text-right font-bold'>
-                          Total P & L
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeCasinoRows.map((casino, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-100 last:border-b-0'
-                        >
-                          <td className='p-2 text-gray-500'>{casino.casino}</td>
-                          <td
-                            className={`p-2 text-right ${plColorClass(casino.profitLoss)}`}
-                          >
-                            {formatPL(casino.profitLoss)}
-                          </td>
-                        </tr>
-                      ))}
-                      {activeCasinoRows.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan='2'
-                            className='p-2 text-center text-gray-400'
-                          >
-                            No Casino bets
-                          </td>
-                        </tr>
-                      )}
-                      <tr className='border-t-2 border-gray-300 bg-[#f2f2f2]'>
-                        <td className='p-2 font-semibold text-black'>Total</td>
-                        <td
-                          className={`p-2 text-right font-semibold ${plColorClass(activeCasinoRows.reduce((sum, c) => sum + c.profitLoss, 0))}`}
-                        >
-                          {formatPL(
-                            activeCasinoRows.reduce(
-                              (sum, c) => sum + c.profitLoss,
-                              0
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Market Table */}
-                <div className='overflow-x-auto'>
-                  <table className='w-full border-collapse border border-gray-200 text-left'>
-                    <thead>
-                      <tr className='border-b border-gray-200 bg-white text-black'>
-                        <th className='w-1/3 p-2 font-bold'>Sport</th>
-                        <th className='w-1/3 p-2 text-center font-bold'>
-                          Market
-                        </th>
-                        <th className='w-1/3 p-2 text-right font-bold'>
-                          P & L
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {userDetails.gamePlay.markets.map((market, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-100 last:border-b-0'
-                        >
-                          <td className='p-2 text-gray-500'>{market.sport}</td>
-                          <td className='p-2 text-center text-gray-500'>
-                            {market.market}
-                          </td>
-                          <td
-                            className={`p-2 text-right ${plColorClass(market.profitLoss)}`}
-                          >
-                            {formatPL(market.profitLoss)}
-                          </td>
-                        </tr>
-                      ))}
-                      {userDetails.gamePlay.markets.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan='3'
-                            className='p-2 text-center text-gray-400'
-                          >
-                            No Market bets
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Credit / Deposit popup */}
@@ -1313,214 +1329,240 @@ const UserDetails = () => {
       )}
 
       {/* Last Login Modal */}
-      <AnimatePresence>
-        {lastLoginPopup && (
-          <div className='fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4'>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className='flex max-h-[80vh] w-full max-w-3xl flex-col overflow-hidden bg-[#f0f4f8] shadow-xl'
-            >
-              <div className='flex items-center justify-between bg-gradient-to-b from-[#359db1] to-[#247c8f] px-4 py-2 text-white'>
-                <h3 className='text-[15px] font-bold'>
-                  Last Logins of {userDetails.userInfo.userName}
-                </h3>
-                <button
-                  onClick={() => setLastLoginPopup(false)}
-                  className='text-xl leading-none font-bold text-gray-200'
-                >
-                  &times;
-                </button>
-              </div>
-              <div className='flex items-center gap-4 bg-[#f0f4f8] p-4'>
-                <input
-                  type='datetime-local'
-                  className='rounded border border-gray-400 px-2 py-1 text-[13px] outline-none'
-                  value={loginStartDate}
-                  onChange={(e) => setLoginStartDate(e.target.value)}
-                />
-                <input
-                  type='datetime-local'
-                  className='rounded border border-gray-400 px-2 py-1 text-[13px] outline-none'
-                  value={loginEndDate}
-                  onChange={(e) => setLoginEndDate(e.target.value)}
-                />
+      {lastLoginPopup && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[700px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#359db1] to-[#247c8f] px-4 py-1 text-white'>
+              <h3 className='text-[15px] font-bold'>
+                Last Logins of {userDetails.userInfo.userName}
+              </h3>
+              <button
+                onClick={() => setLastLoginPopup(false)}
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                &times;
+              </button>
+            </div>
+            <div className='flex items-center gap-8 bg-[#f0f4f8] p-4'>
+              <input
+                type='datetime-local'
+                className='rounded border border-gray-400 bg-white px-2 py-1 text-[13px] outline-none'
+                value={loginStartDate}
+                onChange={(e) => setLoginStartDate(e.target.value)}
+              />
+              <input
+                type='datetime-local'
+                className='rounded border border-gray-400 bg-white px-2 py-1 text-[13px] outline-none'
+                value={loginEndDate}
+                onChange={(e) => setLoginEndDate(e.target.value)}
+              />
+              <div className='flex gap-1'>
                 <button
                   onClick={fetchLoginHistoryData}
-                  className='rounded border border-[#247c8f] bg-gradient-to-b from-[#359db1] to-[#247c8f] px-4 py-1 text-[13px] font-semibold text-white'
+                  className='rounded-l border border-[#247c8f] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-[13px] font-semibold text-white'
                 >
                   Go
                 </button>
                 <button
                   onClick={handleResetLoginHistory}
-                  className='rounded border border-[#247c8f] bg-gradient-to-b from-[#359db1] to-[#247c8f] px-4 py-1 text-[13px] font-semibold text-white'
+                  className='rounded-r border border-[#247c8f] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-1 text-[13px] font-semibold text-white'
                 >
                   Reset
                 </button>
               </div>
-              <div className='flex-1 overflow-auto bg-[#f0f4f8] p-2 pt-0'>
-                <table className='w-full border-collapse border border-gray-300 bg-[#f0f4f8] text-left text-[13px]'>
-                  <thead>
-                    <tr className='bg-[#146578] text-white'>
-                      <th className='p-2 font-semibold'>Date & Time</th>
-                      <th className='border-l border-white/20 p-2 font-semibold'>
-                        IP
-                      </th>
-                      <th className='border-l border-white/20 p-2 font-semibold'>
-                        Device
-                      </th>
+            </div>
+            <div className='flex-1 overflow-auto bg-[#f0f4f8] p-2 pt-0'>
+              <table className='w-full border-collapse border border-gray-300 bg-[#f0f4f8] text-left text-[13px]'>
+                <thead>
+                  <tr className='bg-[#146578] text-white'>
+                    <th className='p-2 font-semibold'>Date & Time</th>
+                    <th className='border-l border-white/20 p-2 font-semibold'>
+                      IP
+                    </th>
+                    <th className='border-l border-white/20 p-2 font-semibold'>
+                      Device
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingHistory ? (
+                    <tr>
+                      <td
+                        colSpan='3'
+                        className='bg-gray-200 p-2 text-center text-gray-500'
+                      >
+                        Loading...
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {loadingHistory ? (
-                      <tr>
-                        <td
-                          colSpan='3'
-                          className='bg-gray-200 p-2 text-center text-gray-500'
-                        >
-                          Loading...
+                  ) : loginHistoryData.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan='3'
+                        className='bg-gray-200 p-2 text-center text-gray-500'
+                      >
+                        No Data Found.
+                      </td>
+                    </tr>
+                  ) : (
+                    loginHistoryData.map((log, i) => (
+                      <tr
+                        key={i}
+                        className='border-b border-gray-300 bg-gray-100'
+                      >
+                        <td className='p-2'>
+                          {log.dateTime ||
+                            new Date(log.createdAt).toLocaleString('en-GB')}
+                        </td>
+                        <td className='border-l border-gray-300 p-2'>
+                          {log.ip || '-'}
+                        </td>
+                        <td className='border-l border-gray-300 p-2'>
+                          {log.isp || log.device || '-'}
                         </td>
                       </tr>
-                    ) : loginHistoryData.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan='3'
-                          className='bg-gray-200 p-2 text-center text-gray-500'
-                        >
-                          No Data Found.
-                        </td>
-                      </tr>
-                    ) : (
-                      loginHistoryData.map((log, i) => (
-                        <tr
-                          key={i}
-                          className='border-b border-gray-300 bg-gray-100'
-                        >
-                          <td className='p-2'>
-                            {log.dateTime ||
-                              new Date(log.createdAt).toLocaleString('en-GB')}
-                          </td>
-                          <td className='border-l border-gray-300 p-2'>
-                            {log.ip || '-'}
-                          </td>
-                          <td className='border-l border-gray-300 p-2'>
-                            {log.isp || log.device || '-'}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          </div>
-        )}
-        {/* Settlement Modal */}
-        {settlePopup && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      {/* Settlement Modal */}
+      {settlePopup && (
+        <div className='fixed inset-0 z-20 flex h-full w-full items-center justify-center bg-[#00000074] text-[13px]'>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4 }}
+            className='absolute top-8 left-1/2 w-full max-w-[500px] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg'
+          >
+            <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white'>
+              <span className='text-[16px] font-bold'>Settlement</span>
+              <button
+                type='button'
+                onClick={() => setSettlePopup(false)}
+                className='text-xl leading-none font-bold text-gray-200'
+              >
+                ×
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleSettleSubmit}
+              className='space-y-4 px-6 py-4 text-[14px]'
             >
-              <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white'>
-                <span className='text-[16px] font-bold'>Settlement</span>
+              <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
+                <div className='font-bold text-gray-800'>User Name:</div>
+                <div className='text-black'>
+                  {userDetails?.userInfo?.userName}
+                </div>
+
+                <div className='font-bold text-gray-800'>My Available Bal</div>
+                <div className='font-bold text-gray-800'>P&L</div>
+
+                <div className='font-bold text-green-600'>
+                  {Number(userInfo?.avbalance || 0).toFixed(2)}
+                </div>
+                <div
+                  className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}
+                >
+                  {formatPL(userDetails?.accountDetails?.profitLoss)}
+                </div>
+
+                <div className='font-bold text-gray-800'>Exposure</div>
+                <div className='font-bold text-gray-800'>Amount To Settle</div>
+
+                <div className='text-black'>
+                  {formatPL(userDetails?.accountDetails?.exposure)}
+                </div>
+                <div
+                  className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}
+                >
+                  {formatPL(userDetails?.accountDetails?.profitLoss)}
+                </div>
+              </div>
+
+              <div className='mt-4 flex items-center gap-2'>
+                <label className='w-[140px] font-bold text-gray-800'>
+                  Settle Amount
+                </label>
+                <input
+                  type='number'
+                  step='0.01'
+                  className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                  value={settleAmount}
+                  onChange={(e) => setSettleAmount(e.target.value)}
+                  required
+                />
                 <button
                   type='button'
-                  onClick={() => setSettlePopup(false)}
-                  className='text-xl leading-none font-bold text-gray-200'
+                  onClick={() =>
+                    setSettleAmount(
+                      Math.abs(
+                        userDetails?.accountDetails?.profitLoss || 0
+                      ).toFixed(2)
+                    )
+                  }
+                  className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
                 >
-                  ×
+                  Full Settle
                 </button>
               </div>
 
-              <form onSubmit={handleSettleSubmit} className='space-y-4 px-6 py-4 text-[14px]'>
-                <div className='grid grid-cols-2 gap-y-4 gap-x-2'>
-                  <div className='font-bold text-gray-800'>User Name:</div>
-                  <div className='text-black'>{userDetails?.userInfo?.userName}</div>
+              <div className='flex items-start gap-2'>
+                <label className='w-[140px] font-bold text-gray-800'>
+                  Remarks
+                </label>
+                <textarea
+                  rows={3}
+                  className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
+                  value={settleRemarks}
+                  onChange={(e) => setSettleRemarks(e.target.value)}
+                />
+              </div>
 
-                  <div className='font-bold text-gray-800'>My Available Bal</div>
-                  <div className='font-bold text-gray-800'>P&L</div>
-                  
-                  <div className='font-bold text-green-600'>{Number(userInfo?.avbalance || 0).toFixed(2)}</div>
-                  <div className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}>
-                    {formatPL(userDetails?.accountDetails?.profitLoss)}
-                  </div>
+              <div className='flex items-center gap-2'>
+                <label className='w-[140px] font-bold text-gray-800'>
+                  Master Password
+                </label>
+                <input
+                  type='password'
+                  className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                  value={settlePassword}
+                  onChange={(e) => setSettlePassword(e.target.value)}
+                  required
+                />
+              </div>
 
-                  <div className='font-bold text-gray-800'>Exposure</div>
-                  <div className='font-bold text-gray-800'>Amount To Settle</div>
-                  
-                  <div className='text-black'>{formatPL(userDetails?.accountDetails?.exposure)}</div>
-                  <div className={`font-bold ${plColorClass(userDetails?.accountDetails?.profitLoss)}`}>
-                    {formatPL(userDetails?.accountDetails?.profitLoss)}
-                  </div>
-                </div>
-
-                <div className='flex items-center gap-2 mt-4'>
-                  <label className='w-[140px] font-bold text-gray-800'>Settle Amount</label>
-                  <input
-                    type='number'
-                    step='0.01'
-                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
-                    value={settleAmount}
-                    onChange={(e) => setSettleAmount(e.target.value)}
-                    required
-                  />
-                  <button
-                    type='button'
-                    onClick={() => setSettleAmount(Math.abs(userDetails?.accountDetails?.profitLoss || 0).toFixed(2))}
-                    className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
-                  >
-                    Full Settle
-                  </button>
-                </div>
-
-                <div className='flex items-start gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>Remarks</label>
-                  <textarea
-                    rows={3}
-                    className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
-                    value={settleRemarks}
-                    onChange={(e) => setSettleRemarks(e.target.value)}
-                  />
-                </div>
-
-                <div className='flex items-center gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>Master Password</label>
-                  <input
-                    type='password'
-                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
-                    value={settlePassword}
-                    onChange={(e) => setSettlePassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className='flex justify-end gap-2 pt-2'>
-                  <button
-                    type='submit'
-                    disabled={isSettling}
-                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
-                  >
-                    {isSettling ? 'Processing...' : 'Submit'}
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => setSettlePopup(false)}
-                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
+              <div className='flex justify-end gap-2 pt-2'>
+                <button
+                  type='submit'
+                  disabled={isSettling}
+                  className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
+                >
+                  {isSettling ? 'Processing...' : 'Submit'}
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setSettlePopup(false)}
+                  className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </>
   );
 };
 

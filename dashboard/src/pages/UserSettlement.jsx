@@ -190,7 +190,7 @@ const UserSettlement = ({ type = 'user' }) => {
           ) : (
             <div className='grid gap-[30px] md:grid-cols-2'>
               {/* Creditors Account (dena hai) */}
-              <table className='w-full border border-[#dee2e6] text-left text-[14px] h-fit'>
+              <table className='h-fit w-full border border-[#dee2e6] text-left text-[14px]'>
                 <thead className=''>
                   <tr className='bg-[#28a745] font-bold text-white'>
                     <th colSpan={5} className='p-2 leading-[16px]'>

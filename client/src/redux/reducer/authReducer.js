@@ -206,7 +206,9 @@ export const fetchDeactivatedMatches = createAsyncThunk(
       return [];
     } catch (error) {
       return rejectWithValue(
-        error.response?.data || { message: 'Failed to fetch deactivated matches' }
+        error.response?.data || {
+          message: 'Failed to fetch deactivated matches',
+        }
       );
     }
   }

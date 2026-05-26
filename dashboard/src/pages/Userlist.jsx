@@ -157,7 +157,7 @@ export default function Userlist() {
   const [lockForm, setLockForm] = useState({ remark: '', masterPassword: '' });
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Settlement state
   const [settlePopup, setSettlePopup] = useState(false);
   const [settleSelectedUser, setSettleSelectedUser] = useState(null);
@@ -458,36 +458,13 @@ export default function Userlist() {
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
 
   const getRowCurrentPL = (row) => {
-    if (row.role !== 'user') {
-      // The admin's exact immediate P/L is derived from:
-      // (Admin's Available Balance + Balance given to downline) - Admin's Base Balance
-      const avbal = Number(row.avbalance || 0);
-      const totBal = Number(row.totalBalance || 0);
-      const dbBal = Number(row.dbBalance ?? getRowBalance(row));
-      
-      // This accurately isolates the agent's own P/L 
-      // (Deposits/Withdrawals cancel out between avbalance, totalBalance, and dbBalance)
-      const agentPL = avbal + totBal - dbBal;
-      
-      const agentKeepPct = Number(row.downlineKeepPercent || 0);
-      const viewerPct = Number(row.parentSharePercent ?? row.mySharePercent ?? 100);
-      
-      if (agentKeepPct > 0) {
-        // Reverse engineer total branch P/L from agent's P/L
-        const totalBranchPL = agentPL / (agentKeepPct / 100);
-        const viewerPL = totalBranchPL * (viewerPct / 100);
-        return Math.round(viewerPL * 100) / 100;
-      }
-      
-      // Fallback if agentKeepPct is 0 (we cannot divide by 0)
-      const rawBettingPL = Number(row.bettingProfitLoss || 0);
-      const fallbackTotalPL = -rawBettingPL;
-      const fallbackViewerPL = fallbackTotalPL * (viewerPct / 100);
-      return Math.round(fallbackViewerPL * 100) / 100;
-    }
-    
-    // For users, we use the standard calculation
-    const current = getRowAvbalance(row) - getRowBalance(row) + Math.abs(getRowTotalExposure(row));
+    if (row.role !== 'user') return 0;
+    // Exposure in the database is a positive number, but it reduces avbalance.
+    // So we add it back to find the actual settled P/L.
+    const current =
+      getRowAvbalance(row) -
+      getRowBalance(row) +
+      Math.abs(getRowTotalExposure(row));
     return Math.round(current * 100) / 100;
   };
 
@@ -534,13 +511,17 @@ export default function Userlist() {
     setSettleSelectedUser(row);
     setSettleUserPL(value);
     setSettleAmount('');
-    
+
     if (value > 0) {
-      setSettleRemarks(`${row.userName} received cash from ${userInfo?.userName || ''}`);
+      setSettleRemarks(
+        `${row.userName} received cash from ${userInfo?.userName || ''}`
+      );
     } else {
-      setSettleRemarks(`${userInfo?.userName || ''} received cash from ${row.userName}`);
+      setSettleRemarks(
+        `${userInfo?.userName || ''} received cash from ${row.userName}`
+      );
     }
-    
+
     setSettlePassword('');
     setSettlePopup(true);
   };
@@ -551,7 +532,7 @@ export default function Userlist() {
       toast.error('Please fill all required fields.');
       return;
     }
-    
+
     setIsSettling(true);
     try {
       const payload = {
@@ -572,7 +553,9 @@ export default function Userlist() {
         toast.error(res.data.message || 'Settlement failed');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Settlement failed');
+      toast.error(
+        err.response?.data?.message || err.message || 'Settlement failed'
+      );
     } finally {
       setIsSettling(false);
     }
@@ -585,18 +568,18 @@ export default function Userlist() {
     }
     if (n < 0) {
       return (
-        <span 
+        <span
           onClick={() => openSettleModal(row, n)}
-          className='inline-block rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white cursor-pointer hover:bg-red-700'
+          className='inline-block cursor-pointer rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white hover:bg-red-700'
         >
           {formatTableMoney(n)}
         </span>
       );
     }
     return (
-      <span 
+      <span
         onClick={() => openSettleModal(row, n)}
-        className='inline-block rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white cursor-pointer hover:bg-green-700'
+        className='inline-block cursor-pointer rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white hover:bg-green-700'
       >
         {formatTableMoney(n)}
       </span>
@@ -938,7 +921,9 @@ export default function Userlist() {
                 sortKey: 'currentPL',
                 sortValue: (row) => getRowCurrentPL(row),
                 align: 'right',
-                cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} row={row} />,
+                cell: (row) => (
+                  <CurrentPLCell value={getRowCurrentPL(row)} row={row} />
+                ),
               },
               {
                 header: 'Exposure',
@@ -1866,54 +1851,51 @@ export default function Userlist() {
                   />
                   <button
                     type='button'
-                    onClick={() => setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))}
-                    className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
-                  >
-                    Full Settle
-                  </button>
-                </div>
-
-                <div className='flex items-start gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>Remarks</label>
-                  <textarea
-                    rows={3}
-                    className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
-                    value={settleRemarks}
-                    onChange={(e) => setSettleRemarks(e.target.value)}
-                  />
-                </div>
-
-                <div className='flex items-center gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>Master Password</label>
-                  <input
-                    type='password'
-                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
-                    value={settlePassword}
-                    onChange={(e) => setSettlePassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className='flex justify-end gap-2 pt-2'>
-                  <button
-                    type='submit'
-                    disabled={isSettling}
-                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
-                  >
-                    {isSettling ? 'Processing...' : 'Submit'}
-                  </button>
-                  <button
-                    type='button'
                     onClick={() => setSettlePopup(false)}
-                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
-                    Cancel
+                    ×
                   </button>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
+
+                <form
+                  onSubmit={handleSettleSubmit}
+                  className='space-y-4 px-6 py-4 text-[14px]'
+                >
+                  <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
+                    <div className='font-bold text-gray-800'>User Name:</div>
+                    <div className='text-black'>
+                      {settleSelectedUser.userName}
+                    </div>
+
+                    <div className='font-bold text-gray-800'>
+                      My Available Bal
+                    </div>
+                    <div className='font-bold text-gray-800'>P&L</div>
+
+                    <div className='font-bold text-green-600'>
+                      {Number(userInfo?.avbalance || 0).toFixed(2)}
+                    </div>
+                    <div
+                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {Number(settleUserPL || 0).toFixed(2)}
+                    </div>
+
+                    <div className='font-bold text-gray-800'>Exposure</div>
+                    <div className='font-bold text-gray-800'>
+                      Amount To Settle
+                    </div>
+
+                    <div className='text-black'>
+                      {Number(settleSelectedUser.exposure || 0).toFixed(2)}
+                    </div>
+                    <div
+                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {Number(settleUserPL || 0).toFixed(2)}
+                    </div>
+                  </div>
 
         {/* Exposure Modal */}
         {exposurePopup && (

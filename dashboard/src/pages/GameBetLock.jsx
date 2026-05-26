@@ -191,7 +191,8 @@ const GameBetLock = () => {
     } catch (error) {
       console.error('Error saving locks:', error);
       toast.error(
-        'Error saving locks: ' + (error.response?.data?.message || error.message)
+        'Error saving locks: ' +
+          (error.response?.data?.message || error.message)
       );
       return false;
     } finally {
@@ -483,7 +484,7 @@ const GameBetLock = () => {
               </select>
             </div>
 
-            <div className='mb-3 flex items-center overflow-x-auto border-b border-gray-300 scrollbar-hide'>
+            <div className='scrollbar-hide mb-3 flex items-center overflow-x-auto border-b border-gray-300'>
               {SPORTS_TABS.map((tab, index) => (
                 <button
                   key={index}
@@ -515,7 +516,9 @@ const GameBetLock = () => {
                     <div key={competition.id}>
                       <div className='flex items-center justify-between bg-[#169bb3] px-2 py-1 font-semibold text-white'>
                         <div className='flex items-center gap-2'>
-                          <span className='text-[14px]'>{competition.title}</span>
+                          <span className='text-[14px]'>
+                            {competition.title}
+                          </span>
 
                           <input
                             type='checkbox'
@@ -533,7 +536,11 @@ const GameBetLock = () => {
                         </div>
 
                         <button onClick={() => toggleOpen(competition.id)}>
-                          {isOpen ? <ImMinus size={12} /> : <ImPlus size={12} />}
+                          {isOpen ? (
+                            <ImMinus size={12} />
+                          ) : (
+                            <ImPlus size={12} />
+                          )}
                         </button>
                       </div>
 
@@ -543,7 +550,9 @@ const GameBetLock = () => {
                           return (
                             <div key={event.id} className='mt-2 ml-12'>
                               <div className='flex items-center gap-2 bg-[#066f88] px-4 py-1 font-semibold text-white'>
-                                <span className='text-[14px]'>{event.title}</span>
+                                <span className='text-[14px]'>
+                                  {event.title}
+                                </span>
 
                                 <input
                                   type='checkbox'
@@ -602,14 +611,17 @@ const GameBetLock = () => {
           </div>
           <div className='col-span-1 pr-[15px] pl-[30px]'>
             <p className='mb-2 text-[11px] text-gray-600'>
-              Uncheck a lock or click Del, then Save Changes. Del saves immediately.
+              Uncheck a lock or click Del, then Save Changes. Del saves
+              immediately.
             </p>
             <table className='w-full border-collapse'>
               <thead>
                 <tr className='bg-[#066f88] text-[12px] text-white'>
                   <th className='px-2 py-1.5 text-left font-normal'>Sport</th>
                   <th className='px-2 py-1.5 text-left font-normal'>Type</th>
-                  <th className='px-2 py-1.5 text-left font-normal'>Description</th>
+                  <th className='px-2 py-1.5 text-left font-normal'>
+                    Description
+                  </th>
                   <th className='px-2 py-1.5 text-left font-normal'>Action</th>
                 </tr>
               </thead>
@@ -625,7 +637,10 @@ const GameBetLock = () => {
                   </tr>
                 ) : (
                   savedLocks.map((lock, idx) => (
-                    <tr key={idx} className='border-b border-gray-200 text-[12px]'>
+                    <tr
+                      key={idx}
+                      className='border-b border-gray-200 text-[12px]'
+                    >
                       <td className='px-2 py-1.5'>{lock.sport}</td>
                       <td className='px-2 py-1.5'>{lock.type}</td>
                       <td

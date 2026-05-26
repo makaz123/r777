@@ -78,11 +78,7 @@ const AccountSummaryBar = () => {
         : 'clear');
   const uplineLenDena =
     userInfo?.accountSummary?.uplineLenDena ??
-    (uplineAmount > 0.005
-      ? 'dena'
-      : uplineAmount < -0.005
-        ? 'lena'
-        : 'clear');
+    (uplineAmount > 0.005 ? 'dena' : uplineAmount < -0.005 ? 'lena' : 'clear');
 
   const downlineTooltip =
     summary?.downlineTooltip ??

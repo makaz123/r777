@@ -35,10 +35,16 @@ describe('partnershipCommissionUtils', () => {
 
   test('isMatchOddsBetRecord checks gameType and marketName', () => {
     expect(
-      isMatchOddsBetRecord({ gameType: 'Soccer Game', marketName: 'MATCH_ODDS' })
+      isMatchOddsBetRecord({
+        gameType: 'Soccer Game',
+        marketName: 'MATCH_ODDS',
+      })
     ).toBe(true);
     expect(
-      isMatchOddsBetRecord({ gameType: 'fancy1', marketName: '1.3 over run SRH' })
+      isMatchOddsBetRecord({
+        gameType: 'fancy1',
+        marketName: '1.3 over run SRH',
+      })
     ).toBe(false);
   });
 

@@ -39,7 +39,9 @@ function Navbar() {
 
   const { matches: soccerMatches } = useSelector((state) => state.soccer);
   const { matches: tennisMatches } = useSelector((state) => state.tennis);
-  const deactivatedMatches = useSelector((state) => state.auth?.deactivatedMatches || []);
+  const deactivatedMatches = useSelector(
+    (state) => state.auth?.deactivatedMatches || []
+  );
 
   const getFilteredInplayCount = (matches) => {
     if (!Array.isArray(matches)) return 0;

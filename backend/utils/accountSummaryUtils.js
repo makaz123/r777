@@ -910,7 +910,9 @@ export function buildAccountSummary(admin, plTotals = {}) {
     userType: roleLabel,
     givenBal: isEndUserRole
       ? roundMoney(admin.creditReference ?? admin.baseBalance ?? 0)
-      : roundMoney((admin.totalBalance || 0) - (admin.uplineBettingProfitLoss || 0)),
+      : roundMoney(
+          (admin.totalBalance || 0) - (admin.uplineBettingProfitLoss || 0)
+        ),
     available: roundMoney(admin.avbalance ?? 0),
     totalExposure,
     myShareExposure: isEndUserRole ? myShareExposure : 0,

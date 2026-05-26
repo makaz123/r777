@@ -79,10 +79,10 @@ const PrivateRoute = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsUrl = `${protocol}//${window.location.host}`;
     }
-    
+
     try {
       ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         ws.send(
           JSON.stringify({ type: 'register', userId: String(userInfo._id) })
@@ -93,7 +93,12 @@ const PrivateRoute = () => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'balance_update') {
-            dispatch(updateReduxUserBalance({ userId: data.userId, newBalance: data.newBalance }));
+            dispatch(
+              updateReduxUserBalance({
+                userId: data.userId,
+                newBalance: data.newBalance,
+              })
+            );
           } else if (data.type === 'exposure_update') {
             dispatch(updateReduxUserBalance({ userId: data.userId, newExposure: data.newExposure }));
           } else if (

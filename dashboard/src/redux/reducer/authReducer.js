@@ -1207,7 +1207,8 @@ const userSlice = createSlice({
             if (newBalance !== undefined) updated.avbalance = newBalance;
             if (newExposure !== undefined) {
               updated.exposure = newExposure;
-              if (updated.totalExposure !== undefined) updated.totalExposure = newExposure;
+              if (updated.totalExposure !== undefined)
+                updated.totalExposure = newExposure;
             }
             return updated;
           }
@@ -1220,6 +1221,12 @@ const userSlice = createSlice({
   },
 });
 
-export const { messageClear, clearError, user_reset, setCurrentPage, updateReduxUserBalance } = userSlice.actions;
+export const {
+  messageClear,
+  clearError,
+  user_reset,
+  setCurrentPage,
+  updateReduxUserBalance,
+} = userSlice.actions;
 
 export default userSlice.reducer;

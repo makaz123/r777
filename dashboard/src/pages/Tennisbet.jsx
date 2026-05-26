@@ -14,6 +14,8 @@ import {
 } from '../redux/reducer/marketAnalyzeReducer';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../components/OddsGridCells';
+import MasterBookModal from '../components/MasterBookModal';
+import { buildMasterBookBreadcrumbRoot } from '../utils/masterBookUtils';
 import Spinner2 from '../components/Spinner2';
 import { host } from '../redux/api';
 import Navbar from '../components/Navbar';
@@ -44,6 +46,7 @@ export default function Tennisbet() {
   const [storedMatchOddsList, setStoredMatchOddsList] = useState([]);
   const [teamHeaders, setTeamHeaders] = useState([]);
   const [masterDownline, setMasterDownline] = useState([]);
+  const [masterBookBreadcrumb, setMasterBookBreadcrumb] = useState([]);
   const [viewMoreDetail, setViewMoreDetail] = useState(false);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
@@ -192,62 +195,82 @@ export default function Tennisbet() {
     setUserBet(userBet);
   };
 
+  const fetchMasterBookAtLevel = async (userId) => {
+    const finalGameType = storedGameType;
+    const finalMatchOddsList = storedMatchOddsList;
+
+    const teams = Array.isArray(finalMatchOddsList[0]?.section)
+      ? finalMatchOddsList[0].section.map((sec) => sec.nat)
+      : [];
+    setTeamHeaders(teams);
+
+    if (!userId) {
+      dispatch({ type: 'RESET_MASTER_BOOK' });
+      await dispatch(
+        masterBookReducer({ userId: '', gameid, gameType: finalGameType })
+      );
+      return;
+    }
+
+    await dispatch(
+      masterBookReducerDownline({ userId, gameid, gameType: finalGameType })
+    );
+  };
+
   const hemdelMasterBook = async (userId, gameType, matchOddsList) => {
     try {
-      // Reset UI
       setMasterDownline([]);
-      setTeamHeaders([]);
       setShowMasterDownline(true);
+      setMasterBookBreadcrumb(buildMasterBookBreadcrumbRoot(userInfo));
 
-      // Use stored values if not passed (for downline use)
       const finalGameType = gameType || storedGameType;
       const finalMatchOddsList = matchOddsList?.length
         ? matchOddsList
         : storedMatchOddsList;
 
-      // Save for future
       if (gameType && matchOddsList) {
         setStoredGameType(gameType);
         setStoredMatchOddsList(matchOddsList);
       }
 
-      // Dispatch reset action if needed
-      dispatch({ type: 'RESET_MASTER_BOOK' });
-
-      // Fetch new data
-      await dispatch(
-        masterBookReducer({ userId, gameid, gameType: finalGameType })
-      );
-
-      // Update headers
       const teams = Array.isArray(finalMatchOddsList[0]?.section)
         ? finalMatchOddsList[0].section.map((sec) => sec.nat)
         : [];
       setTeamHeaders(teams);
+
+      dispatch({ type: 'RESET_MASTER_BOOK' });
+
+      await dispatch(
+        masterBookReducer({ userId, gameid, gameType: finalGameType })
+      );
     } catch (error) {
       console.log(error);
     }
   };
 
-  const hemdelMasterBookDownline = async (userId) => {
+  const hemdelMasterBookDownline = async (userId, userName) => {
     try {
-      // Reset UI
       setMasterDownline([]);
-      setTeamHeaders([]);
+      setMasterBookBreadcrumb((prev) => [
+        ...prev,
+        { id: userId, userName: userName || 'User' },
+      ]);
+      await fetchMasterBookAtLevel(userId);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-      const finalGameType = storedGameType;
-      const finalMatchOddsList = storedMatchOddsList;
-
-      // Dispatch new downline request
-      await dispatch(
-        masterBookReducerDownline({ userId, gameid, gameType: finalGameType })
-      );
-
-      // Update headers
-      const teams = Array.isArray(finalMatchOddsList[0]?.section)
-        ? finalMatchOddsList[0].section.map((sec) => sec.nat)
-        : [];
-      setTeamHeaders(teams);
+  const handleMasterBookBreadcrumbClick = async (index) => {
+    try {
+      setMasterDownline([]);
+      let targetUserId = '';
+      setMasterBookBreadcrumb((prev) => {
+        const next = prev.slice(0, index + 1);
+        targetUserId = index === 0 ? '' : next[index]?.id ?? '';
+        return next;
+      });
+      await fetchMasterBookAtLevel(targetUserId);
     } catch (error) {
       console.log(error);
     }
@@ -553,7 +576,16 @@ export default function Tennisbet() {
                   <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
                     <div className='flex items-center gap-1'>
                       <span className='font-bold'>{oddsData[0]?.mname}</span>
-                      <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                      <span
+                        className='cursor-pointer rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'
+                        onClick={() =>
+                          hemdelMasterBook(
+                            '',
+                            matchOdd[0]?.gameType,
+                            matchOddsList
+                          )
+                        }
+                      >
                         Book
                       </span>
                       <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
@@ -1184,119 +1216,6 @@ export default function Tennisbet() {
               </div>
             )}
 
-            {/* master Book popup */}
-            {showMasterDownline && masterDownline?.length > 0 && (
-              <div className='modal-overlay1 fixed top-10 left-[25%] z-[9999] h-full'>
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.4 }}
-                  className='modal-content h-fit w-[95%] rounded-lg bg-white shadow-lg md:w-[30%]'
-                >
-                  <div className='modal-header bg-color flex justify-between border-b p-3'>
-                    <span className='font-semibold'>Master Book</span>
-                    <span
-                      className='cursor-pointer text-2xl'
-                      onClick={() => {
-                        setMasterDownline([]);
-                        setShowMasterDownline(false);
-                      }}
-                    >
-                      ×
-                    </span>
-                  </div>
-                  <div className='modal-body p-4'>
-                    <div className='overflow-x-auto'>
-                      <table className='w-full border-collapse'>
-                        <thead>
-                          <tr className='bg-gray-200 text-center text-sm'>
-                            <th className='border p-2'>Username</th>
-                            <th className='border p-2'>Role</th>
-                            {teamHeaders.map((team, idx) => (
-                              <th key={idx} className='border p-2'>
-                                {team}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {loading && (
-                            <tr>
-                              <td colSpan={6} className='p-4 text-center'>
-                                Loading...
-                              </td>
-                            </tr>
-                          )}
-
-                          {!loading && masterDownline?.length > 0 ? (
-                            masterDownline.map((item, index) => (
-                              <tr
-                                key={index}
-                                className='text-center text-sm hover:bg-gray-100'
-                              >
-                                <td
-                                  className='cursor-pointer border p-2 text-blue-500'
-                                  onClick={() =>
-                                    hemdelMasterBookDownline(item.id)
-                                  }
-                                >
-                                  {item.userName}
-                                </td>
-                                <td className='border p-2'>{item.userRole}</td>
-                                {teamHeaders.map((team, i) => {
-                                  // Calculate the value to display
-                                  let displayValue;
-                                  if (item.otype === 'back') {
-                                    displayValue =
-                                      item.teamName === team
-                                        ? item.totalBetAmount // Profit if this team wins
-                                        : -item.totalPrice; // Loss if other team wins
-                                  } else {
-                                    // lay
-                                    displayValue =
-                                      item.teamName === team
-                                        ? -item.totalPrice // Liability if this team wins
-                                        : item.totalBetAmount; // Profit if other team wins
-                                  }
-
-                                  const roundedValue = pratnerShip(
-                                    item.userRole,
-                                    displayValue,
-                                    item.partnership
-                                  );
-                                  const numericValue =
-                                    parseFloat(roundedValue) || 0;
-                                  const colorClass =
-                                    numericValue >= 0
-                                      ? 'text-green-600'
-                                      : 'text-red-500';
-
-                                  return (
-                                    <td key={i} className='border p-2'>
-                                      <span className={colorClass}>
-                                        {roundedValue}
-                                      </span>
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={6} className='py-4 text-center'>
-                                No data available
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            )}
-
             {/* user master list popup */}
             {userMasterpopup && (
               <div className='modal-overlay fixed top-10 left-[25%] h-full'>
@@ -1530,6 +1449,22 @@ export default function Tennisbet() {
           </div>
         </div>
       )}
+
+      <MasterBookModal
+        open={showMasterDownline}
+        marketName={storedGameType}
+        teamHeaders={teamHeaders}
+        rows={masterDownline}
+        loading={loading}
+        breadcrumbPath={masterBookBreadcrumb}
+        onBreadcrumbClick={handleMasterBookBreadcrumbClick}
+        onClose={() => {
+          setMasterDownline([]);
+          setMasterBookBreadcrumb([]);
+          setShowMasterDownline(false);
+        }}
+        onUsernameClick={hemdelMasterBookDownline}
+      />
     </div>
   );
 }

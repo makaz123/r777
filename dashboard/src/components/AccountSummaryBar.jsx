@@ -269,8 +269,8 @@ const AccountSummaryBar = () => {
             ) : (
               <div className='space-y-1'>
                 <MetricTooltipRow
-                  label='Week P&L : '
-                  tooltip='Is week ka P/L. Jab Up Line aur Down Line dono clear hon, Week P&L bhi 0.'
+                  label='Net Outstanding : '
+                  tooltip='Aapka total unsettled cash profit/loss. Jab Up Line aur Down Line dono clear hon, toh yeh 0 ho jayega.'
                 >
                   <span className={plColorClass(weekPLAmount)}>
                     {formatMoney(weekPLAmount)}

@@ -1432,7 +1432,11 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     }
   }
 
-  const weekViewerPL = roundMoney(uplineOutstanding + downlineClientPL);
+  // The net outstanding P/L is the cash inflow from downlines minus the cash outflow to upline.
+  // downlineClientPL < 0 means downline lost, so agent collects (cash inflow).
+  // uplineOutstanding > 0 means agent owes upline (cash outflow).
+  // Net cash profit = (-downlineClientPL) - uplineOutstanding = -(uplineOutstanding + downlineClientPL)
+  const weekViewerPL = roundMoney(-(uplineOutstanding + downlineClientPL));
 
   accountSummary = {
     ...accountSummary,
@@ -1443,6 +1447,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     uplineSharePL: uplineOutstanding,
     uplineDena: uplineOutstanding,
     otherAdminSharePL,
+    mySharePercent: getAccountMyKeepPercent(updatedAdmin),
     uplineLenDena: getUplineLenDenaLabel(uplineOutstanding),
     uplineTooltip:
       Math.abs(uplineOutstanding) < 0.01

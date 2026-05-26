@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
 import OddsGridCells from '../../components/OddsGridCells';
 
-const BookMaker = ({ BookmakerList }) => {
+const BookMaker = ({ BookmakerList, onBookClick }) => {
   const { pendingBet, betsData } = useSelector((state) => state.market);
 
   const bookmakerData =
@@ -189,7 +189,10 @@ const BookMaker = ({ BookmakerList }) => {
             <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
               <div className='flex items-center gap-1'>
                 <span className='font-bold'>{bookmakerData[0]?.mname}</span>
-                <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                <span
+                  className='cursor-pointer rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'
+                  onClick={onBookClick}
+                >
                   Book
                 </span>
                 <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>

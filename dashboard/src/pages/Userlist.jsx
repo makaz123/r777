@@ -1811,22 +1811,31 @@ export default function Userlist() {
                 </button>
               </div>
 
-              <form onSubmit={handleSettleSubmit} className='space-y-4 px-6 py-4 text-[14px]'>
-                <div className='grid grid-cols-2 gap-y-4 gap-x-2'>
+              <form
+                onSubmit={handleSettleSubmit}
+                className='space-y-4 px-6 py-4 text-[14px]'
+              >
+                <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
                   <div className='font-bold text-gray-800'>User Name:</div>
-                  <div className='text-black'>{settleSelectedUser.userName}</div>
+                  <div className='text-black'>
+                    {settleSelectedUser.userName}
+                  </div>
 
                   <div className='font-bold text-gray-800'>My Available Bal</div>
                   <div className='font-bold text-gray-800'>P&L</div>
-                  
-                  <div className='font-bold text-green-600'>{Number(userInfo?.avbalance || 0).toFixed(2)}</div>
-                  <div className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+
+                  <div className='font-bold text-green-600'>
+                    {Number(userInfo?.avbalance || 0).toFixed(2)}
+                  </div>
+                  <div
+                    className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {Number(settleUserPL || 0).toFixed(2)}
                   </div>
 
                   <div className='font-bold text-gray-800'>Exposure</div>
                   <div className='font-bold text-gray-800'>Amount To Settle</div>
-                  
+
                   <div className='text-black'>
                     {Number(
                       settleSelectedUser.shareExposure ??
@@ -1834,13 +1843,17 @@ export default function Userlist() {
                         0
                     ).toFixed(2)}
                   </div>
-                  <div className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div
+                    className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {Number(settleUserPL || 0).toFixed(2)}
                   </div>
                 </div>
 
-                <div className='flex items-center gap-2 mt-4'>
-                  <label className='w-[140px] font-bold text-gray-800'>Settle Amount</label>
+                <div className='mt-4 flex items-center gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>
+                    Settle Amount
+                  </label>
                   <input
                     type='number'
                     step='0.01'
@@ -1851,51 +1864,62 @@ export default function Userlist() {
                   />
                   <button
                     type='button'
-                    onClick={() => setSettlePopup(false)}
-                    className='text-xl leading-none font-bold text-gray-200'
+                    onClick={() =>
+                      setSettleAmount(
+                        Math.abs(settleUserPL || 0).toFixed(2)
+                      )
+                    }
+                    className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
                   >
-                    ×
+                    Full Settle
                   </button>
                 </div>
 
-                <form
-                  onSubmit={handleSettleSubmit}
-                  className='space-y-4 px-6 py-4 text-[14px]'
-                >
-                  <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
-                    <div className='font-bold text-gray-800'>User Name:</div>
-                    <div className='text-black'>
-                      {settleSelectedUser.userName}
-                    </div>
+                <div className='flex items-start gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>
+                    Remarks
+                  </label>
+                  <textarea
+                    rows={3}
+                    className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
+                    value={settleRemarks}
+                    onChange={(e) => setSettleRemarks(e.target.value)}
+                  />
+                </div>
 
-                    <div className='font-bold text-gray-800'>
-                      My Available Bal
-                    </div>
-                    <div className='font-bold text-gray-800'>P&L</div>
+                <div className='flex items-center gap-2'>
+                  <label className='w-[140px] font-bold text-gray-800'>
+                    Master Password
+                  </label>
+                  <input
+                    type='password'
+                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                    value={settlePassword}
+                    onChange={(e) => setSettlePassword(e.target.value)}
+                    required
+                  />
+                </div>
 
-                    <div className='font-bold text-green-600'>
-                      {Number(userInfo?.avbalance || 0).toFixed(2)}
-                    </div>
-                    <div
-                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {Number(settleUserPL || 0).toFixed(2)}
-                    </div>
-
-                    <div className='font-bold text-gray-800'>Exposure</div>
-                    <div className='font-bold text-gray-800'>
-                      Amount To Settle
-                    </div>
-
-                    <div className='text-black'>
-                      {Number(settleSelectedUser.exposure || 0).toFixed(2)}
-                    </div>
-                    <div
-                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {Number(settleUserPL || 0).toFixed(2)}
-                    </div>
-                  </div>
+                <div className='flex justify-end gap-2 pt-2'>
+                  <button
+                    type='submit'
+                    disabled={isSettling}
+                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
+                  >
+                    {isSettling ? 'Processing...' : 'Submit'}
+                  </button>
+                  <button
+                    type='button'
+                    onClick={() => setSettlePopup(false)}
+                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
 
         {/* Exposure Modal */}
         {exposurePopup && (

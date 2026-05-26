@@ -190,9 +190,11 @@ export default function InsertAgent() {
                         {allowedRoles.map((roleOption) => (
                           <option key={roleOption} value={roleOption}>
                             {roleOption === 'white'
-                              ? 'White_level'
-                              : roleOption.charAt(0).toUpperCase() +
-                                roleOption.slice(1)}
+                              ? 'Admin'
+                              : roleOption === 'admin'
+                                ? 'Main Admin'
+                                : roleOption.charAt(0).toUpperCase() +
+                                  roleOption.slice(1)}
                           </option>
                         ))}
                       </select>

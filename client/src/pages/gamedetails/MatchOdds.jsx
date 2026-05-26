@@ -306,10 +306,7 @@ function MatchOdds({
     const oddsNum = parseFloat(odds);
     if (isNaN(stakeNum) || isNaN(oddsNum) || stakeNum === 0) return null;
 
-    const { netOutcome } = getBetDetails(
-      team,
-      matchOddsList?.[0]?.mname
-    );
+    const { netOutcome } = getBetDetails(team, matchOddsList?.[0]?.mname);
     let newPL = netOutcome !== null ? netOutcome : 0;
 
     const isMatchedTeam = team?.toLowerCase() === selectedTeam?.toLowerCase();
@@ -522,7 +519,10 @@ function MatchOdds({
                         }
 
                         return (
-                          <div className='flex gap-1' style={{ color: betColor }}>
+                          <div
+                            className='flex gap-1'
+                            style={{ color: betColor }}
+                          >
                             {displayValue !== '' &&
                               displayValue !== null &&
                               displayValue !== undefined && (

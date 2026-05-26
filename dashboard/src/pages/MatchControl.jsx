@@ -42,15 +42,20 @@ const MatchList = ({
   }, {});
 
   return (
-    <div className="flex flex-col gap-2 mt-2">
+    <div className='mt-2 flex flex-col gap-2'>
       {Object.entries(grouped).map(([tournamentName, tourMatches]) => {
-        const isTournamentActive = !deactivatedMatches.has(String(tournamentName));
+        const isTournamentActive = !deactivatedMatches.has(
+          String(tournamentName)
+        );
         const isTournamentToggling = togglingMatchId === tournamentName;
-        
+
         return (
-          <div key={tournamentName} className="border border-gray-200 rounded-lg overflow-hidden mb-2">
-            <div className="bg-gray-100 px-3 py-2 flex justify-between items-center border-b border-gray-200">
-              <span className="font-bold text-gray-700">{tournamentName}</span>
+          <div
+            key={tournamentName}
+            className='mb-2 overflow-hidden rounded-lg border border-gray-200'
+          >
+            <div className='flex items-center justify-between border-b border-gray-200 bg-gray-100 px-3 py-2'>
+              <span className='font-bold text-gray-700'>{tournamentName}</span>
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -65,7 +70,7 @@ const MatchList = ({
             </div>
 
             {isTournamentActive && (
-              <div className="px-2 pb-1 bg-white">
+              <div className='bg-white px-2 pb-1'>
                 {tourMatches.map((match) => {
                   const isActive = !deactivatedMatches.has(String(match.id));
                   const isToggling = togglingMatchId === match.id;
@@ -73,9 +78,9 @@ const MatchList = ({
                   return (
                     <div
                       key={match.id}
-                      className='flex items-center justify-between border-b border-gray-100 py-2 px-2 last:border-0 hover:bg-gray-50'
+                      className='flex items-center justify-between border-b border-gray-100 px-2 py-2 last:border-0 hover:bg-gray-50'
                     >
-                      <span className='text-sm font-medium text-gray-600 ml-2'>
+                      <span className='ml-2 text-sm font-medium text-gray-600'>
                         {match.match}
                         {(match.inplay || match.iplay) && (
                           <span className='ml-2 text-xs font-bold text-green-600'>
@@ -212,7 +217,12 @@ const MatchControl = () => {
     fetchHorseRacing();
   }, []);
 
-  const handleToggleMatch = async (matchId, matchName, sport, isTournament = false) => {
+  const handleToggleMatch = async (
+    matchId,
+    matchName,
+    sport,
+    isTournament = false
+  ) => {
     if (togglingMatchId === matchId) return;
     setTogglingMatchId(matchId);
 
@@ -254,7 +264,7 @@ const MatchControl = () => {
         <div className='rounded-sm border border-gray-200 bg-white px-5 py-3'>
           <div
             onClick={() => toggleTab('cricket')}
-            className='section-header bg-[#016a82] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header mb-2 flex items-center justify-between bg-[#016a82] px-2 py-1 font-bold text-white'
           >
             Cricket
             <IoIosArrowDown
@@ -276,7 +286,7 @@ const MatchControl = () => {
 
           <div
             onClick={() => toggleTab('tennis')}
-            className='section-header bg-[#016a82] mb-2 flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header mb-2 flex items-center justify-between bg-[#016a82] px-2 py-1 font-bold text-white'
           >
             Tennis
             <IoIosArrowDown
@@ -298,7 +308,7 @@ const MatchControl = () => {
 
           <div
             onClick={() => toggleTab('soccer')}
-            className='section-header bg-[#016a82] flex items-center justify-between px-2 py-1 font-bold text-white'
+            className='section-header flex items-center justify-between bg-[#016a82] px-2 py-1 font-bold text-white'
           >
             Soccer
             <IoIosArrowDown

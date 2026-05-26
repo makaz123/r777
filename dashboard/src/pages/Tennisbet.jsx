@@ -448,7 +448,9 @@ export default function Tennisbet() {
                   <div className='relative'>
                     {isSuspended && (
                       <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
-                        <p className='text-3xl font-bold text-red-700'>SUSPENDED</p>
+                        <p className='text-3xl font-bold text-red-700'>
+                          SUSPENDED
+                        </p>
                       </div>
                     )}
 
@@ -621,9 +623,7 @@ export default function Tennisbet() {
                     <td className='px-[3px] py-[2px]'>{item.gameType}</td>
                     <td className='px-[3px] py-[2px]'>{item.teamName}</td>
                     <td className='px-[3px] py-[2px] font-semibold'>
-                      {item.gameType === 'Normal'
-                        ? `${item.fancyScore}/`
-                        : ''}
+                      {item.gameType === 'Normal' ? `${item.fancyScore}/` : ''}
                       {item.xValue}
                     </td>
                     <td className='px-[3px] py-[2px] font-semibold'>
@@ -634,7 +634,7 @@ export default function Tennisbet() {
               </tbody>
             </table>
 
-              {/* {!isFromMarket && (
+            {/* {!isFromMarket && (
                 <>
                   <div className='mt-4 flex min-h-[42px] cursor-pointer items-center justify-between rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                     <span>My Bets</span>
@@ -700,7 +700,7 @@ export default function Tennisbet() {
                 </>
               )} */}
 
-              {/* {isFromMarket && (
+            {/* {isFromMarket && (
                 <div className='mt-4 bg-white'>
                   <div className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                     Book
@@ -722,7 +722,7 @@ export default function Tennisbet() {
                 </div>
               )} */}
 
-              {/* {isFromMarket && (
+            {/* {isFromMarket && (
                 <div className='mt-4 bg-white'>
                   <div className='flex min-h-[42px] cursor-pointer items-center rounded-t-md bg-[#2c3e50b3] px-3 py-1 text-white uppercase'>
                     <div className='flex w-2/3 justify-between p-0 md:w-[60%] md:p-4'>
@@ -873,506 +873,495 @@ export default function Tennisbet() {
                 </div>
               )} */}
 
-              {/* view more popup */}
+            {/* view more popup */}
 
-              {viewMoreDetail && (
-                <div className='modal-overlay fixed h-full'>
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.4 }}
-                    className='absolute top-7 left-1/2 max-w-[96%] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg md:w-full md:max-w-6xl'
-                  >
-                    {/* Header */}
-                    <div className='bg-color flex items-center justify-between px-2 py-2.5 text-white'>
-                      <h4 className='text-[15px] font-semibold'>
-                        View More Bet
-                      </h4>
-                      <button
-                        className='text-md font-bold text-white'
-                        onClick={() => setViewMoreDetail(false)}
-                      >
-                        ×
-                      </button>
-                    </div>
+            {viewMoreDetail && (
+              <div className='modal-overlay fixed h-full'>
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.4 }}
+                  className='absolute top-7 left-1/2 max-w-[96%] -translate-x-1/2 overflow-hidden rounded-lg bg-white shadow-lg md:w-full md:max-w-6xl'
+                >
+                  {/* Header */}
+                  <div className='bg-color flex items-center justify-between px-2 py-2.5 text-white'>
+                    <h4 className='text-[15px] font-semibold'>View More Bet</h4>
+                    <button
+                      className='text-md font-bold text-white'
+                      onClick={() => setViewMoreDetail(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
 
-                    {/* Body */}
+                  {/* Body */}
 
-                    <div className='p-4'>
-                      {loading ? (
-                        <div className='flex items-center justify-center py-10'>
-                          <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'>
-                            Loading...
+                  <div className='p-4'>
+                    {loading ? (
+                      <div className='flex items-center justify-center py-10'>
+                        <div className='h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'>
+                          Loading...
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className='mb-4 flex flex-col justify-between text-[13px] md:flex-row'>
+                          <div className='mb-2 flex items-center justify-center text-[#333] md:mb-0'>
+                            <span className='mr-2'>Show</span>
+                            <select
+                              className='rounded border border-gray-300 px-2 py-1'
+                              value={entriesPerPage}
+                              onChange={(e) =>
+                                setEntriesPerPage(Number(e.target.value))
+                              }
+                            >
+                              <option value='2'>2</option>
+                              <option value='5'>5</option>
+                              <option value='10'>10</option>
+                            </select>
+                            <span className='ml-2'>entries</span>
+                          </div>
+                          <div className='flex items-center justify-center'>
+                            <span className='mr-2'>Search</span>
+                            <input
+                              type='text'
+                              className='rounded border border-gray-300 px-2 py-1'
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                           </div>
                         </div>
-                      ) : (
-                        <>
-                          <div className='mb-4 flex flex-col justify-between text-[13px] md:flex-row'>
-                            <div className='mb-2 flex items-center justify-center text-[#333] md:mb-0'>
-                              <span className='mr-2'>Show</span>
-                              <select
-                                className='rounded border border-gray-300 px-2 py-1'
-                                value={entriesPerPage}
-                                onChange={(e) =>
-                                  setEntriesPerPage(Number(e.target.value))
-                                }
-                              >
-                                <option value='2'>2</option>
-                                <option value='5'>5</option>
-                                <option value='10'>10</option>
-                              </select>
-                              <span className='ml-2'>entries</span>
-                            </div>
-                            <div className='flex items-center justify-center'>
-                              <span className='mr-2'>Search</span>
-                              <input
-                                type='text'
-                                className='rounded border border-gray-300 px-2 py-1'
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                              />
-                            </div>
-                          </div>
 
-                          <table className='block w-full border-collapse overflow-x-auto border border-gray-300 md:table'>
-                            <thead className='bg-gray-200'>
-                              <tr>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  UserName
-                                </th>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  Nation
-                                </th>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  Amount
-                                </th>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  User Rate
-                                </th>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  Place Date
-                                </th>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  Match Date
-                                </th>
-                                <th className='border border-gray-300 px-[10px] py-[9px]'>
-                                  Game Type
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredBetOdd?.length > 0 ? (
-                                filteredBetOdd.map((item, index) => (
-                                  <tr
-                                    key={index}
-                                    className={`text-center ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
-                                  >
-                                    <td
-                                      className='border border-gray-300 p-2 text-blue-500 uppercase underline'
-                                      onClick={() => handelpopup(item.userId)}
-                                    >
-                                      {item.userName}
-                                    </td>
-                                    <td className='border border-gray-300 px-[10px] py-[9px]'>
-                                      {item.teamName}
-                                    </td>
-                                    <td className='border border-gray-300 p-2'>
-                                      {item.price}
-                                    </td>
-                                    <td className='border border-gray-300 px-[10px] py-[9px]'>
-                                      {item.xValue}
-                                    </td>
-                                    <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                      {new Date(item.createdAt).toLocaleString(
-                                        'en-IN'
-                                      )}
-                                    </td>
-                                    <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                      {new Date(item.updatedAt).toLocaleString(
-                                        'en-IN'
-                                      )}
-                                    </td>
-                                    <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
-                                      {item.gameType}
-                                    </td>
-                                  </tr>
-                                ))
-                              ) : (
-                                <tr>
-                                  <td
-                                    colSpan='7'
-                                    className='border border-gray-300 px-[10px] py-[9px] text-center'
-                                  >
-                                    No Detail found
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </>
-                      )}
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-
-              {/* master list popup */}
-
-              {masterpopup && (
-                <div className='modal-overlay fixed top-10 left-[25%] h-full'>
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.4 }}
-                    className='modal-content h-fit w-[95%] md:w-[50%]'
-                  >
-                    <div className='modal-header bg-color flex justify-between'>
-                      <span> Market List</span>
-                      <span
-                        className='text-lg'
-                        onClick={() => setMasterpopup(false)}
-                      >
-                        {' '}
-                        X
-                      </span>
-                    </div>
-                    <div className='modal-body p-4'>
-                      <div className='border border-gray-300'>
-                        {matchOdd?.length > 0 && (
-                          <h2
-                            className='cursor-pointer border-b border-gray-300 p-2 text-sm hover:bg-gray-200'
-                            onClick={() =>
-                              hemdelMasterBook(
-                                '',
-                                matchOdd[0]?.gameType,
-                                matchOddsList
-                              )
-                            }
-                          >
-                            {matchOdd[0]?.gameType}
-                          </h2>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-
-              {/* master Book popup */}
-              {showMasterDownline && masterDownline?.length > 0 && (
-                <div className='modal-overlay1 fixed top-10 left-[25%] z-[9999] h-full'>
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.4 }}
-                    className='modal-content h-fit w-[95%] rounded-lg bg-white shadow-lg md:w-[30%]'
-                  >
-                    <div className='modal-header bg-color flex justify-between border-b p-3'>
-                      <span className='font-semibold'>Master Book</span>
-                      <span
-                        className='cursor-pointer text-2xl'
-                        onClick={() => {
-                          setMasterDownline([]);
-                          setShowMasterDownline(false);
-                        }}
-                      >
-                        ×
-                      </span>
-                    </div>
-                    <div className='modal-body p-4'>
-                      <div className='overflow-x-auto'>
-                        <table className='w-full border-collapse'>
-                          <thead>
-                            <tr className='bg-gray-200 text-center text-sm'>
-                              <th className='border p-2'>Username</th>
-                              <th className='border p-2'>Role</th>
-                              {teamHeaders.map((team, idx) => (
-                                <th key={idx} className='border p-2'>
-                                  {team}
-                                </th>
-                              ))}
+                        <table className='block w-full border-collapse overflow-x-auto border border-gray-300 md:table'>
+                          <thead className='bg-gray-200'>
+                            <tr>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                UserName
+                              </th>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                Nation
+                              </th>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                Amount
+                              </th>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                User Rate
+                              </th>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                Place Date
+                              </th>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                Match Date
+                              </th>
+                              <th className='border border-gray-300 px-[10px] py-[9px]'>
+                                Game Type
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
-                            {loading && (
-                              <tr>
-                                <td colSpan={6} className='p-4 text-center'>
-                                  Loading...
-                                </td>
-                              </tr>
-                            )}
-
-                            {!loading && masterDownline?.length > 0 ? (
-                              masterDownline.map((item, index) => (
+                            {filteredBetOdd?.length > 0 ? (
+                              filteredBetOdd.map((item, index) => (
                                 <tr
                                   key={index}
-                                  className='text-center text-sm hover:bg-gray-100'
+                                  className={`text-center ${item.otype === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
                                 >
                                   <td
-                                    className='cursor-pointer border p-2 text-blue-500'
-                                    onClick={() =>
-                                      hemdelMasterBookDownline(item.id)
-                                    }
+                                    className='border border-gray-300 p-2 text-blue-500 uppercase underline'
+                                    onClick={() => handelpopup(item.userId)}
                                   >
                                     {item.userName}
                                   </td>
-                                  <td className='border p-2'>
-                                    {item.userRole}
+                                  <td className='border border-gray-300 px-[10px] py-[9px]'>
+                                    {item.teamName}
                                   </td>
-                                  {teamHeaders.map((team, i) => {
-                                    // Calculate the value to display
-                                    let displayValue;
-                                    if (item.otype === 'back') {
-                                      displayValue =
-                                        item.teamName === team
-                                          ? item.totalBetAmount // Profit if this team wins
-                                          : -item.totalPrice; // Loss if other team wins
-                                    } else {
-                                      // lay
-                                      displayValue =
-                                        item.teamName === team
-                                          ? -item.totalPrice // Liability if this team wins
-                                          : item.totalBetAmount; // Profit if other team wins
-                                    }
-
-                                    const roundedValue = pratnerShip(
-                                      item.userRole,
-                                      displayValue,
-                                      item.partnership
-                                    );
-                                    const numericValue =
-                                      parseFloat(roundedValue) || 0;
-                                    const colorClass =
-                                      numericValue >= 0
-                                        ? 'text-green-600'
-                                        : 'text-red-500';
-
-                                    return (
-                                      <td key={i} className='border p-2'>
-                                        <span className={colorClass}>
-                                          {roundedValue}
-                                        </span>
-                                      </td>
-                                    );
-                                  })}
+                                  <td className='border border-gray-300 p-2'>
+                                    {item.price}
+                                  </td>
+                                  <td className='border border-gray-300 px-[10px] py-[9px]'>
+                                    {item.xValue}
+                                  </td>
+                                  <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
+                                    {new Date(item.createdAt).toLocaleString(
+                                      'en-IN'
+                                    )}
+                                  </td>
+                                  <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
+                                    {new Date(item.updatedAt).toLocaleString(
+                                      'en-IN'
+                                    )}
+                                  </td>
+                                  <td className='border border-gray-300 px-[10px] py-[9px] uppercase'>
+                                    {item.gameType}
+                                  </td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={6} className='py-4 text-center'>
-                                  No data available
+                                <td
+                                  colSpan='7'
+                                  className='border border-gray-300 px-[10px] py-[9px] text-center'
+                                >
+                                  No Detail found
                                 </td>
                               </tr>
                             )}
                           </tbody>
                         </table>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              )}
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+            )}
 
-              {/* user master list popup */}
-              {userMasterpopup && (
-                <div className='modal-overlay fixed top-10 left-[25%] h-full'>
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.4 }}
-                    className='modal-content h-fit w-[95%] md:w-[50%]'
-                  >
-                    <div className='modal-header bg-color flex justify-between'>
-                      <span> Market List</span>
-                      <span
-                        className='text-2xl'
-                        onClick={() => setUserMasterpopup(false)}
-                      >
-                        {' '}
-                        X
-                      </span>
-                    </div>
-                    <div className='modal-body p-4'>
-                      <div className='border border-gray-300'>
-                        {matchOdd?.length > 0 && (
-                          <h2
-                            className='cursor-pointer border-b border-gray-300 p-2 text-sm hover:bg-gray-200'
-                            onClick={() =>
-                              hendalUserBetsData(
-                                matchOdd[0]?.gameType,
-                                userInfo.code,
-                                matchOddsList
-                              )
-                            }
-                          >
-                            {matchOdd[0]?.gameType}
-                          </h2>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              )}
+            {/* master list popup */}
 
-              {/* user Book popup */}
-              {userBet?.length > 0 && (
-                <div className='modal-overlay1 fixed top-10 left-[25%] h-full'>
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.4 }}
-                    className='modal-content h-fit w-[95%] md:w-[30%]'
-                  >
-                    <div className='modal-header bg-color flex justify-between'>
-                      <span> User Book</span>
-                      <span
-                        className='text-2xl'
-                        onClick={() => setUserBet(null)}
-                      >
-                        {' '}
-                        X
-                      </span>
+            {masterpopup && (
+              <div className='modal-overlay fixed top-10 left-[25%] h-full'>
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.4 }}
+                  className='modal-content h-fit w-[95%] md:w-[50%]'
+                >
+                  <div className='modal-header bg-color flex justify-between'>
+                    <span> Market List</span>
+                    <span
+                      className='text-lg'
+                      onClick={() => setMasterpopup(false)}
+                    >
+                      {' '}
+                      X
+                    </span>
+                  </div>
+                  <div className='modal-body p-4'>
+                    <div className='border border-gray-300'>
+                      {matchOdd?.length > 0 && (
+                        <h2
+                          className='cursor-pointer border-b border-gray-300 p-2 text-sm hover:bg-gray-200'
+                          onClick={() =>
+                            hemdelMasterBook(
+                              '',
+                              matchOdd[0]?.gameType,
+                              matchOddsList
+                            )
+                          }
+                        >
+                          {matchOdd[0]?.gameType}
+                        </h2>
+                      )}
                     </div>
-                    <div className='modal-body p-4'>
-                      <div className='overflow-x-auto'>
-                        <table className='w-full border-collapse'>
-                          <thead>
-                            <tr className='bg-gray-200 text-center'>
-                              <th className='border border-gray-300 p-2 text-left'>
-                                <div className='flex items-center justify-center text-[13px]'>
-                                  Username
-                                </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* master Book popup */}
+            {showMasterDownline && masterDownline?.length > 0 && (
+              <div className='modal-overlay1 fixed top-10 left-[25%] z-[9999] h-full'>
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.4 }}
+                  className='modal-content h-fit w-[95%] rounded-lg bg-white shadow-lg md:w-[30%]'
+                >
+                  <div className='modal-header bg-color flex justify-between border-b p-3'>
+                    <span className='font-semibold'>Master Book</span>
+                    <span
+                      className='cursor-pointer text-2xl'
+                      onClick={() => {
+                        setMasterDownline([]);
+                        setShowMasterDownline(false);
+                      }}
+                    >
+                      ×
+                    </span>
+                  </div>
+                  <div className='modal-body p-4'>
+                    <div className='overflow-x-auto'>
+                      <table className='w-full border-collapse'>
+                        <thead>
+                          <tr className='bg-gray-200 text-center text-sm'>
+                            <th className='border p-2'>Username</th>
+                            <th className='border p-2'>Role</th>
+                            {teamHeaders.map((team, idx) => (
+                              <th key={idx} className='border p-2'>
+                                {team}
                               </th>
-                              <th className='border border-gray-300 p-2 text-left'>
-                                <div className='flex items-center justify-center text-[13px]'>
-                                  Role
-                                </div>
-                              </th>
-                              {teamHeaders.map((team, index) => (
-                                <th
-                                  key={index}
-                                  className='border border-gray-300 p-2 text-left'
-                                >
-                                  <div className='flex items-center justify-center text-[13px]'>
-                                    {team}
-                                  </div>
-                                </th>
-                              ))}
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loading && (
+                            <tr>
+                              <td colSpan={6} className='p-4 text-center'>
+                                Loading...
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {loading && (
-                              <tr>
+                          )}
+
+                          {!loading && masterDownline?.length > 0 ? (
+                            masterDownline.map((item, index) => (
+                              <tr
+                                key={index}
+                                className='text-center text-sm hover:bg-gray-100'
+                              >
                                 <td
-                                  colSpan={6}
-                                  className='border border-gray-300 p-4 text-center'
+                                  className='cursor-pointer border p-2 text-blue-500'
+                                  onClick={() =>
+                                    hemdelMasterBookDownline(item.id)
+                                  }
                                 >
-                                  Loading...
+                                  {item.userName}
                                 </td>
+                                <td className='border p-2'>{item.userRole}</td>
+                                {teamHeaders.map((team, i) => {
+                                  // Calculate the value to display
+                                  let displayValue;
+                                  if (item.otype === 'back') {
+                                    displayValue =
+                                      item.teamName === team
+                                        ? item.totalBetAmount // Profit if this team wins
+                                        : -item.totalPrice; // Loss if other team wins
+                                  } else {
+                                    // lay
+                                    displayValue =
+                                      item.teamName === team
+                                        ? -item.totalPrice // Liability if this team wins
+                                        : item.totalBetAmount; // Profit if other team wins
+                                  }
+
+                                  const roundedValue = pratnerShip(
+                                    item.userRole,
+                                    displayValue,
+                                    item.partnership
+                                  );
+                                  const numericValue =
+                                    parseFloat(roundedValue) || 0;
+                                  const colorClass =
+                                    numericValue >= 0
+                                      ? 'text-green-600'
+                                      : 'text-red-500';
+
+                                  return (
+                                    <td key={i} className='border p-2'>
+                                      <span className={colorClass}>
+                                        {roundedValue}
+                                      </span>
+                                    </td>
+                                  );
+                                })}
                               </tr>
-                            )}
-                            {!loading && userBet?.length > 0 ? (
-                              userBet.map((item, index) => (
-                                <tr
-                                  key={index}
-                                  className='text-center text-sm font-semibold hover:bg-gray-100'
-                                >
-                                  <td className='cursor-pointer border border-gray-300 p-2 text-[#2789ce]'>
-                                    {item.userName}
-                                  </td>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className='py-4 text-center'>
+                                No data available
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
 
-                                  <td className='border border-gray-300 p-2'>
-                                    {item.userRole}
-                                  </td>
+            {/* user master list popup */}
+            {userMasterpopup && (
+              <div className='modal-overlay fixed top-10 left-[25%] h-full'>
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.4 }}
+                  className='modal-content h-fit w-[95%] md:w-[50%]'
+                >
+                  <div className='modal-header bg-color flex justify-between'>
+                    <span> Market List</span>
+                    <span
+                      className='text-2xl'
+                      onClick={() => setUserMasterpopup(false)}
+                    >
+                      {' '}
+                      X
+                    </span>
+                  </div>
+                  <div className='modal-body p-4'>
+                    <div className='border border-gray-300'>
+                      {matchOdd?.length > 0 && (
+                        <h2
+                          className='cursor-pointer border-b border-gray-300 p-2 text-sm hover:bg-gray-200'
+                          onClick={() =>
+                            hendalUserBetsData(
+                              matchOdd[0]?.gameType,
+                              userInfo.code,
+                              matchOddsList
+                            )
+                          }
+                        >
+                          {matchOdd[0]?.gameType}
+                        </h2>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
 
-                                  {/* Loop through team headers for dynamic columns */}
-                                  {teamHeaders.map((team, i) => {
-                                    // Check if bet matches any team in the current match
-                                    const isMatchedTeam =
+            {/* user Book popup */}
+            {userBet?.length > 0 && (
+              <div className='modal-overlay1 fixed top-10 left-[25%] h-full'>
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.4 }}
+                  className='modal-content h-fit w-[95%] md:w-[30%]'
+                >
+                  <div className='modal-header bg-color flex justify-between'>
+                    <span> User Book</span>
+                    <span className='text-2xl' onClick={() => setUserBet(null)}>
+                      {' '}
+                      X
+                    </span>
+                  </div>
+                  <div className='modal-body p-4'>
+                    <div className='overflow-x-auto'>
+                      <table className='w-full border-collapse'>
+                        <thead>
+                          <tr className='bg-gray-200 text-center'>
+                            <th className='border border-gray-300 p-2 text-left'>
+                              <div className='flex items-center justify-center text-[13px]'>
+                                Username
+                              </div>
+                            </th>
+                            <th className='border border-gray-300 p-2 text-left'>
+                              <div className='flex items-center justify-center text-[13px]'>
+                                Role
+                              </div>
+                            </th>
+                            {teamHeaders.map((team, index) => (
+                              <th
+                                key={index}
+                                className='border border-gray-300 p-2 text-left'
+                              >
+                                <div className='flex items-center justify-center text-[13px]'>
+                                  {team}
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loading && (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className='border border-gray-300 p-4 text-center'
+                              >
+                                Loading...
+                              </td>
+                            </tr>
+                          )}
+                          {!loading && userBet?.length > 0 ? (
+                            userBet.map((item, index) => (
+                              <tr
+                                key={index}
+                                className='text-center text-sm font-semibold hover:bg-gray-100'
+                              >
+                                <td className='cursor-pointer border border-gray-300 p-2 text-[#2789ce]'>
+                                  {item.userName}
+                                </td>
+
+                                <td className='border border-gray-300 p-2'>
+                                  {item.userRole}
+                                </td>
+
+                                {/* Loop through team headers for dynamic columns */}
+                                {teamHeaders.map((team, i) => {
+                                  // Check if bet matches any team in the current match
+                                  const isMatchedTeam =
+                                    item.teamName?.toLowerCase() ===
+                                    team?.toLowerCase();
+                                  const betMatchesAnyTeam = teamHeaders.some(
+                                    (t) =>
                                       item.teamName?.toLowerCase() ===
-                                      team?.toLowerCase();
-                                    const betMatchesAnyTeam = teamHeaders.some(
-                                      (t) =>
-                                        item.teamName?.toLowerCase() ===
-                                        t?.toLowerCase()
-                                    );
+                                      t?.toLowerCase()
+                                  );
 
-                                    // If bet doesn't belong to this match, show 0
-                                    if (!betMatchesAnyTeam) {
-                                      return (
-                                        <td
-                                          key={i}
-                                          className='border border-gray-300 p-2'
-                                        >
-                                          <span className='text-gray-400'>
-                                            0
-                                          </span>
-                                        </td>
-                                      );
-                                    }
-
-                                    // Calculate display value
-                                    let displayValue;
-                                    if (item.otype === 'back') {
-                                      displayValue = isMatchedTeam
-                                        ? item.betAmount || 0 // Profit if this team wins
-                                        : -(item.price || 0); // Loss if other team wins
-                                    } else {
-                                      // lay
-                                      displayValue = isMatchedTeam
-                                        ? -(item.price || 0) // Liability if this team wins
-                                        : item.betAmount || 0; // Profit if other team wins
-                                    }
-
-                                    // Round to 2 decimal places
-                                    const roundedValue =
-                                      Math.round(displayValue * 100) / 100;
-
-                                    // Color based on actual value (positive = green, negative = red)
-                                    const colorClass =
-                                      roundedValue >= 0
-                                        ? 'text-green-500'
-                                        : 'text-red-500';
-
+                                  // If bet doesn't belong to this match, show 0
+                                  if (!betMatchesAnyTeam) {
                                     return (
                                       <td
                                         key={i}
                                         className='border border-gray-300 p-2'
                                       >
-                                        <span className={colorClass}>
-                                          {roundedValue}
-                                        </span>
+                                        <span className='text-gray-400'>0</span>
                                       </td>
                                     );
-                                  })}
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td
-                                  colSpan={6}
-                                  className='border border-gray-300 p-4 text-center'
-                                >
-                                  No data available in table
-                                </td>
+                                  }
+
+                                  // Calculate display value
+                                  let displayValue;
+                                  if (item.otype === 'back') {
+                                    displayValue = isMatchedTeam
+                                      ? item.betAmount || 0 // Profit if this team wins
+                                      : -(item.price || 0); // Loss if other team wins
+                                  } else {
+                                    // lay
+                                    displayValue = isMatchedTeam
+                                      ? -(item.price || 0) // Liability if this team wins
+                                      : item.betAmount || 0; // Profit if other team wins
+                                  }
+
+                                  // Round to 2 decimal places
+                                  const roundedValue =
+                                    Math.round(displayValue * 100) / 100;
+
+                                  // Color based on actual value (positive = green, negative = red)
+                                  const colorClass =
+                                    roundedValue >= 0
+                                      ? 'text-green-500'
+                                      : 'text-red-500';
+
+                                  return (
+                                    <td
+                                      key={i}
+                                      className='border border-gray-300 p-2'
+                                    >
+                                      <span className={colorClass}>
+                                        {roundedValue}
+                                      </span>
+                                    </td>
+                                  );
+                                })}
                               </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
+                            ))
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className='border border-gray-300 p-4 text-center'
+                              >
+                                No data available in table
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-                  </motion.div>
-                </div>
-              )}
+                  </div>
+                </motion.div>
+              </div>
+            )}
 
             {/* user bet presents popup */}
           </div>
-
-
 
           <div>
             {popup && (

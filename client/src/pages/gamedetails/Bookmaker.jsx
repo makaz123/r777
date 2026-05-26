@@ -513,7 +513,10 @@ function Bookmaker({
                         }
 
                         return (
-                          <div className='flex gap-1' style={{ color: betColor }}>
+                          <div
+                            className='flex gap-1'
+                            style={{ color: betColor }}
+                          >
                             {displayValue !== '' &&
                               displayValue !== null &&
                               displayValue !== undefined && (

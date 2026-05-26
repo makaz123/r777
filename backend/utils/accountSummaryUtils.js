@@ -378,7 +378,9 @@ export function buildAccountSummary(admin, plTotals = {}) {
     userType: roleLabel,
     givenBal: isEndUserRole
       ? roundMoney(admin.creditReference ?? admin.baseBalance ?? 0)
-      : roundMoney((admin.totalBalance || 0) - (admin.uplineBettingProfitLoss || 0)),
+      : roundMoney(
+          (admin.totalBalance || 0) - (admin.uplineBettingProfitLoss || 0)
+        ),
     available: roundMoney(admin.avbalance ?? 0),
     totalExposure,
     myShareExposure: isEndUserRole ? myShareExposure : 0,
@@ -399,11 +401,7 @@ export function buildAccountSummary(admin, plTotals = {}) {
     uplineTooltip: 'Upper Level Ke Saath Hisab Ka Len-Den.',
     downlineTooltip: 'Down Line Ke Saath Hisab Ka Len-Den.',
     downlineLenDena:
-      tillViewerPL > 0.005
-        ? 'lena'
-        : tillViewerPL < -0.005
-          ? 'dena'
-          : 'clear',
+      tillViewerPL > 0.005 ? 'lena' : tillViewerPL < -0.005 ? 'dena' : 'clear',
     uplineLenDena:
       roundMoney(tillDownlinePL - tillViewerPL) > 0.005
         ? 'dena'

@@ -71,11 +71,7 @@ const AccountSummaryBar = () => {
         : 'clear');
   const uplineLenDena =
     userInfo?.accountSummary?.uplineLenDena ??
-    (uplineAmount > 0.005
-      ? 'dena'
-      : uplineAmount < -0.005
-        ? 'lena'
-        : 'clear');
+    (uplineAmount > 0.005 ? 'dena' : uplineAmount < -0.005 ? 'lena' : 'clear');
 
   const downlineTooltip =
     downlineLenDena === 'lena'
@@ -165,9 +161,7 @@ const AccountSummaryBar = () => {
             </div>
 
             <div className='space-y-1'>
-              {!['supperadmin'].includes(
-                userInfo?.role
-              ) && (
+              {!['supperadmin'].includes(userInfo?.role) && (
                 <MetricTooltipRow
                   label={`Up Line (${uplineLenDena}) : `}
                   tooltip={summary?.uplineTooltip ?? uplineTooltip}
@@ -222,9 +216,7 @@ const AccountSummaryBar = () => {
                   label='Week P&L : '
                   tooltip='Your share of settled downline P/L for the current week.'
                 >
-                  <span
-                    className={plColorClass(summary?.currentWeekPL ?? 0)}
-                  >
+                  <span className={plColorClass(summary?.currentWeekPL ?? 0)}>
                     {formatMoney(summary?.currentWeekPL ?? 0)}
                   </span>
                 </MetricTooltipRow>

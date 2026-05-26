@@ -5,10 +5,9 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import pdfIcon from '../assets/icons/pdf-icon.svg';
 import excelIcon from '../assets/icons/csv-icon.svg';
-
 /* ============ Main Page ============ */
 
-const AccountStatement = () => {
+const LiveBetsReport = () => {
   const [accountType, setAccountType] = useState('all');
   const [gameType, setGameType] = useState('all');
   const [sportsGameType, setSportsGameType] = useState('');
@@ -160,159 +159,56 @@ const AccountStatement = () => {
       <Navbar />
       <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
-          <div className='text-[15px] font-bold'>Account Statement Report</div>
+          <div className='text-[15px] font-bold'>Live Bets</div>
 
-          <div className='mt-2 mb-6 grid grid-cols-6 gap-6'>
+          <div className='mt-2 mb-5 grid grid-cols-6 gap-x-6 gap-y-4'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
               onChange={(e) => setAccountType(e.target.value)}
             >
-              <option value='all'>ALL</option>
-              <option value='deposit'>BALANCE REPORT</option>
-              <option value='sports'>GAME REPORT</option>
-              <option value='settlement'>SETTLEMENT REPORT</option>
-              <option value='bonus'>BONUS REPORT</option>
+              <option value=''>Select Sport</option>
+              <option value=''>Cricket</option>
+              <option value=''>Soccer</option>
+              <option value=''>Tennis</option>
             </select>
 
-            {accountType === 'all' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
+            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+              <option value=''>Select Event</option>
+            </select>
 
-            {accountType === 'deposit' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
+            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+              <option value=''>Select Market Type</option>
+            </select>
 
-            {accountType === 'sports' && (
-              <>
-                <select
-                  className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
-                  value={sportsList}
-                  onChange={(e) => setSportsList(e.target.value)}
-                >
-                  <option value='all'>ALL</option>
-                  <option value='cricket'>Cricket</option>
-                  <option value='tennis'>Tennis</option>
-                  <option value='soccer'>Soccer</option>
-                  <option value='soccer'>Indian Poker / Live Casino</option>
-                  <option value='soccer'>Indian Poker II</option>
-                  <option value='soccer'>Pragmatic</option>
-                  <option value='soccer'>Evolution</option>
-                  <option value='soccer'>Casino II</option>
-                  <option value='soccer'>Vivo</option>
-                  <option value='soccer'>Bet Games</option>
-                  <option value='soccer'>Casino III</option>
-                  <option value='soccer'>Spribe</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
-
-            {accountType === 'settlement' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
-
-            {accountType === 'bonus' && (
-              <>
-                <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
-                  <option value=''>ALL</option>
-                </select>
-                {renderClientSearch()}
-              </>
-            )}
+            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+              <option value=''>Select Market</option>
+            </select>
 
             <input
-              type='date'
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              type='text'
+              placeholder='Amount From'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 outline-0'
             />
 
             <input
-              type='date'
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              type='text'
+              placeholder='Amount To'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 outline-0'
             />
 
-            <div className='col-span-1 flex gap-1 outline-0'>
-              <button
-                type='button'
-                onClick={loadReport}
-                className='cursor-pointer rounded-l border border-[#247c8f] bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-white'
-              >
-                Go
-              </button>
-              <button
-                type='button'
-                onClick={resetFilters}
-                className='cursor-pointer rounded-r border border-[#247c8f] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-white hover:bg-gradient-to-t'
-              >
+            {renderClientSearch()}
+
+            <div className='flex gap-1'>
+              <div className='flex items-center justify-center rounded-l bg-green-400 px-3.5 py-2 text-[15px] text-white'>
+                Start
+              </div>
+              <div className='flex items-center justify-center bg-red-600 px-3.5 py-2 text-[15px] text-white'>
+                Stop
+              </div>
+              <div className='flex items-center justify-center rounded-r border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3.5 py-2 text-[15px] text-white hover:bg-gradient-to-t'>
                 Reset
-              </button>
-            </div>
-          </div>
-
-          <div className='mb-5 flex items-end justify-between'>
-            <div className='flex items-end'>
-              <input
-                type='text'
-                placeholder='Search'
-                className='h-fit rounded-sm border border-gray-300 px-2 py-1 outline-0'
-              />
-              <img src={excelIcon} alt='' className='w-[35px]' />
-              <img src={pdfIcon} alt='' className='w-[35px]' />
-            </div>
-            <div>
-              <table className='w-[500px]'>
-                <tbody>
-                  <tr>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
-                      Opening Balance
-                    </td>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      1234567890
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-center text-[12px]'>
-                      Closing Balance
-                    </td>
-                    <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                      1234567890
-                    </td>
-                  </tr>
-                </tbody>
-                <tr></tr>
-              </table>
-            </div>
-            <div>
-              <span>Show</span>
-              <select
-                name=''
-                id=''
-                className='mx-2 rounded-sm border border-gray-300 px-2 py-1 text-gray-500 outline-0'
-              >
-                <option value=''>25</option>
-                <option value=''>50</option>
-                <option value=''>100</option>
-              </select>
-              <span>entries</span>
+              </div>
             </div>
           </div>
 
@@ -320,49 +216,94 @@ const AccountStatement = () => {
             <thead>
               <tr className='bg-[#016a82] text-white'>
                 <th className='border-r border-white px-2 py-1 text-left'>
-                  Date & Time
+                  Time
                 </th>
-
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Credit
-                </th>
-
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Debit
-                </th>
-
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Closing
-                </th>
-
                 <th className='border-r border-white px-2 py-1 text-left'>
-                  Description
+                  User
                 </th>
-
-                <th className='px-2 py-1 text-left'>From → to</th>
+                <th className='border-r border-white px-2 py-1 text-left'>
+                  Competition
+                </th>
+                <th className='border-r border-white px-2 py-1 text-left'>
+                  Event
+                </th>
+                <th className='border-r border-white px-2 py-1 text-left'>
+                  Market
+                </th>
+                <th className='border-r border-white px-2 py-1 text-left'>
+                  Runner
+                </th>
+                <th className='border-r border-white px-2 py-1 text-left'>
+                  Side
+                </th>
+                <th className='border-r border-white px-2 py-1 text-right'>
+                  Line
+                </th>
+                <th className='border-r border-white px-2 py-1 text-right'>
+                  Rate
+                </th>
+                <th className='border-r border-white px-2 py-1 text-right'>
+                  Amount
+                </th>
               </tr>
             </thead>
+
             <tbody>
-              <tr className='border border-gray-300 odd:bg-gray-100'>
+              <tr className='border border-gray-300 bg-[#faa9ba] text-gray-800'>
                 <td className='border border-gray-300 px-2 py-1.5'>
-                  25-05-2026
+                  25/5/2026, 4:10:55 pm
                 </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  1000000000000.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  -
-                </td>
-
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  2500000.00
-                </td>
-
+                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
                 <td className='border border-gray-300 px-2 py-1.5'>
-                  Settlement
+                  Women's T20 Blast Div 2
                 </td>
-
-                <td className='px-2 py-1.5'>Admin → User</td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Kent W v Sussex Sharks W - 25 May 26
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Bookmaker 0 Commission
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Sussex Sharks W
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>Lay</td>
+                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
+                  120
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
+                  84
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
+                  100.00
+                </td>
+              </tr>
+              <tr className='border border-gray-300 bg-[#72bbef] text-gray-800'>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  25/5/2026, 4:10:55 pm
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Women's T20 Blast Div 2
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Kent W v Sussex Sharks W - 25 May 26
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Bookmaker 0 Commission
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>
+                  Sussex Sharks W
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5'>Back</td>
+                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
+                  120
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
+                  84
+                </td>
+                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
+                  100.00
+                </td>
               </tr>
             </tbody>
           </table>
@@ -398,4 +339,4 @@ const AccountStatement = () => {
   );
 };
 
-export default AccountStatement;
+export default LiveBetsReport;

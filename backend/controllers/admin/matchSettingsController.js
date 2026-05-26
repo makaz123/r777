@@ -35,7 +35,9 @@ export const toggleMatchStatus = async (req, res) => {
       await DeactivatedMatch.deleteOne({ matchId });
       return res.status(200).json({
         success: true,
-        message: isTournament ? 'Tournament activated successfully' : 'Match activated successfully',
+        message: isTournament
+          ? 'Tournament activated successfully'
+          : 'Match activated successfully',
         data: {
           matchId,
           isActive: true,
@@ -44,10 +46,17 @@ export const toggleMatchStatus = async (req, res) => {
       });
     } else {
       //Match/Tournament is active -> Deactivate it
-      await DeactivatedMatch.create({ matchId, sport, matchName, isTournament: !!isTournament });
+      await DeactivatedMatch.create({
+        matchId,
+        sport,
+        matchName,
+        isTournament: !!isTournament,
+      });
       return res.status(200).json({
         success: true,
-        message: isTournament ? 'Tournament deactivated successfully' : 'Match deactivated successfully',
+        message: isTournament
+          ? 'Tournament deactivated successfully'
+          : 'Match deactivated successfully',
         data: {
           matchId,
           isActive: false,

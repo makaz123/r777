@@ -18,8 +18,7 @@ const SPORT_FIELDS = [
   'markets',
 ];
 
-const safeIncludes = (arr, val) =>
-  arr && arr.map(String).includes(String(val));
+const safeIncludes = (arr, val) => arr && arr.map(String).includes(String(val));
 
 export const mapGameNameToSport = (gameName, sid) => {
   const sidMap = { 4: 'cricket', 1: 'soccer', 2: 'tennis', 52: 'kabaddi' };
@@ -48,7 +47,13 @@ export const isSportGameBettingLocked = (gamelock, sportKey) => {
   return Boolean(entry && entry.lock === false);
 };
 
-const FANCY_SESSION_TYPES = new Set(['Normal', 'meter', 'line', 'ball', 'khado']);
+const FANCY_SESSION_TYPES = new Set([
+  'Normal',
+  'meter',
+  'line',
+  'ball',
+  'khado',
+]);
 
 export const buildMarketLockKeys = ({
   gameId,
@@ -73,9 +78,7 @@ export const buildMarketLockKeys = ({
     gt === 'Winner';
 
   const isBookmaker =
-    mn === 'Bookmaker' ||
-    mn.includes('Bookmaker') ||
-    gt === 'Bookmaker';
+    mn === 'Bookmaker' || mn.includes('Bookmaker') || gt === 'Bookmaker';
 
   const isFancySession =
     FANCY_SESSION_TYPES.has(gt) ||
@@ -111,9 +114,7 @@ export const isMarketLockedByKeys = (lockedMarkets, keys) => {
     if (wholeFancy) {
       const base = wholeFancy[1];
       if (
-        keyList.some(
-          (k) => k === `f_${base}` || k.startsWith(`f_${base}_`)
-        )
+        keyList.some((k) => k === `f_${base}` || k.startsWith(`f_${base}_`))
       ) {
         return true;
       }

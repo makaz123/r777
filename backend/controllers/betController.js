@@ -19,6 +19,8 @@ import {
   isSportGameBettingLocked,
 } from '../utils/betLockUtils.js';
 
+import { getDownlineUserIds } from '../utils/accountSummaryUtils.js';
+
 const rejectIfBetLocked = (user, res) => {
   if (user?.uLock) {
     res.status(403).json({ message: 'Your account is locked.' });
@@ -178,7 +180,19 @@ export const getExposureDetails = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const activeBets = await betModel.find({ userId: targetId, status: 0 });
+    let userIdsToFetch = [targetId];
+    if (user.role !== 'user') {
+      const downlineUserIds = await getDownlineUserIds(SubAdmin, user.code);
+      if (downlineUserIds.length > 0) {
+        userIdsToFetch = downlineUserIds.map((id) => id.toString());
+      } else {
+        userIdsToFetch = [];
+      }
+    }
+
+    const activeBets = userIdsToFetch.length > 0 
+      ? await betModel.find({ userId: { $in: userIdsToFetch }, status: 0 })
+      : [];
 
     const groupedBets = {};
     activeBets.forEach((bet) => {

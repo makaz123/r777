@@ -437,13 +437,11 @@ export default function Userlist() {
   const getRowBalance = (row) => Number(row.baseBalance || 0);
 
   const getRowTotalExposure = (row) => {
-    if (row.role !== 'user') return 0;
     return Number(row.totalExposure ?? row.exposure ?? 0);
   };
 
-  /** Client exposure at viewer's partnership % (My % on the row). */
+  /** Client/Agent exposure at viewer's partnership % (My % on the row). */
   const getRowShareExposure = (row) => {
-    if (row.role !== 'user') return 0;
     if (row.shareExposure != null && !Number.isNaN(Number(row.shareExposure))) {
       return Number(row.shareExposure);
     }
@@ -452,8 +450,7 @@ export default function Userlist() {
     return Math.round(gross * (pct / 100) * 100) / 100;
   };
 
-  const getRowDisplayExposure = (row) =>
-    row.role === 'user' ? getRowShareExposure(row) : getRowTotalExposure(row);
+  const getRowDisplayExposure = (row) => getRowShareExposure(row);
 
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
 
@@ -594,13 +591,12 @@ export default function Userlist() {
     const display = exp > 0 ? -exp : exp;
     const n = Number(display) || 0;
     const title =
-      row.role === 'user' && Math.abs(gross - exp) > 0.01
-        ? `Client exposure: ${formatTableMoney(gross)}`
+      Math.abs(gross - exp) > 0.01
+        ? `Gross exposure: ${formatTableMoney(gross)}`
         : undefined;
     
-    // Disable click for non-users or if exposure is 0? The request didn't specify.
-    // Let's allow clicking for anyone if they have exposure.
-    const isClickable = row.role === 'user'; // Or maybe everyone
+    // Allow clicking for everyone so admins/agents can see their downline's exposure details
+    const isClickable = true;
 
     if (n === 0) {
       return (

@@ -1779,11 +1779,23 @@ export const getAllOnlyUser = async (req, res) => {
   }
 };
 
-const buildDownlineViewerPayload = (admin) => {
+const buildDownlineViewerPayload = async (admin) => {
   const viewerMySharePercent = getAccountMyKeepPercent(admin);
   const viewerUplineSharePercent = roundMoney(
     Math.max(0, 100 - viewerMySharePercent)
   );
+
+  const rawGross = await aggregateDownlineOutstandingGross(
+    SubAdmin,
+    betHistoryModel,
+    CasinoBetHistory,
+    TransactionHistory,
+    admin.code
+  );
+
+  const totalPL = roundMoney(-rawGross);
+  const { myPL, uplinePL } = splitProfitLossByMyShare(totalPL, viewerMySharePercent);
+
   return {
     partnership: Number(admin.partnership) || 0,
     mySharePercent: viewerMySharePercent,
@@ -1793,10 +1805,9 @@ const buildDownlineViewerPayload = (admin) => {
     role: admin.role,
     userName: admin.userName,
     code: admin.code,
-    ...splitProfitLossByMyShare(
-      roundMoney(-(admin.uplineBettingProfitLoss || 0)),
-      viewerMySharePercent
-    ),
+    totalPL,
+    myPL,
+    uplinePL,
   };
 };
 
@@ -1836,12 +1847,15 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
   const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, rootViewer);
   const commissionPct = parseCommissionPercent(row.commition);
 
+  // Agents pass up everything they don't keep (100 - their keep).
+  const passedUpFromRow = roundMoney(Math.max(0, 100 - getAccountMyKeepPercent(row)));
+
   // End-users on a nested drill-down: show root viewer's share on the branch (e.g. 90%), not agent keep (10%).
   const parentSharePercent = isEndUser
     ? isNestedList
       ? getParentShareOnDownlineRow(listParent, rootViewer)
       : rootMySharePercent
-    : parentShareOnRow;
+    : passedUpFromRow;
   const downlineKeepPercent = isEndUser
     ? commissionPct || rootUplineSharePercent
     : downlineKeepOnRow;
@@ -1864,9 +1878,10 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
   const avbalance = roundMoney(row.avbalance || 0);
   const pendingBal = roundMoney(-balance);
   const totalExposure = isEndUser ? roundMoney(exposure) : 0;
+  // Scale agent exposure exactly like client exposure so the outside row matches the sum of nested rows inside
   const shareExposure = isEndUser
     ? roundMoney(totalExposure * (parentSharePercent / 100))
-    : roundMoney(exposure);
+    : roundMoney(exposure * (parentSharePercent / 100));
   const hasOpenExposure = Math.abs(totalExposure) > 0.001;
   let currentPL = 0;
   if (isEndUser) {
@@ -1986,7 +2001,7 @@ export const getDownlineList = async (req, res) => {
       success: true,
       message: 'Downline list retrieved successfully',
       listType: type,
-      viewer: buildDownlineViewerPayload(admin),
+      viewer: await buildDownlineViewerPayload(admin),
       data,
       totalUsers,
       totalPages: Math.ceil(totalUsers / limitNum) || 1,
@@ -3934,9 +3949,10 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     };
   }
 
-  const parentSharePercent = getParentShareOnDownlineRow(
-    downline,
-    parentAdmin
+  // The share passed up to the parent is EVERYTHING the downline does not keep.
+  // This ensures the parent collects the full liability on behalf of the whole upstream chain.
+  const parentSharePercent = roundMoney(
+    Math.max(0, 100 - getAccountMyKeepPercent(downline))
   );
 
   const downlineUserIds = await getDownlineUserIds(SubAdmin, downline.code);
@@ -3992,15 +4008,17 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   }
   grossClientPL = roundMoney(grossClientPL);
 
-  let clientPL = roundMoney(
+  const downlineShare = roundMoney(
     -computeViewerPeriodPL(
-      parentAdmin,
+      downline,
       endUsers,
       historyPLByUserId,
       accountByCode
     )
   );
-  clientPL = expectedBettingPLFromHistory(clientPL, adminSettlementCash);
+  
+  const passedUpHistory = roundMoney(grossClientPL - downlineShare);
+  const clientPL = expectedBettingPLFromHistory(passedUpHistory, adminSettlementCash);
 
   return {
     clientPL,

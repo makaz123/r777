@@ -884,7 +884,8 @@ export function resolveUplineSharePercent(admin, plTotals = {}) {
  */
 export function computeUplineSharePL(admin, plTotals = {}) {
   const branchGross = roundMoney(plTotals.tillDownlinePLHistory ?? 0);
-  const uplinePct = resolveUplineSharePercent(admin, plTotals);
+  // The amount passed up is everything the admin does not keep
+  const uplinePct = roundMoney(Math.max(0, 100 - getAccountMyKeepPercent(admin)));
   if (uplinePct <= 0 || Math.abs(branchGross) < 0.01) return 0;
   return roundMoney((branchGross * uplinePct) / 100);
 }

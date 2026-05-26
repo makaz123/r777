@@ -1864,10 +1864,25 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
     ? roundMoney(totalExposure * (parentSharePercent / 100))
     : roundMoney(exposure);
   const hasOpenExposure = Math.abs(totalExposure) > 0.001;
-  const currentPL =
-    isEndUser && !hasOpenExposure
-      ? roundMoney(avbalance - baseBalance)
-      : 0;
+  let currentPL = 0;
+  if (isEndUser) {
+    if (!hasOpenExposure) {
+      currentPL = roundMoney(avbalance - baseBalance);
+    }
+  } else {
+    // For agents, the "Current PL" column should accurately reflect the actual outstanding 
+    // settlement balance (what the agent owes the rootViewer), factoring in cash settlements.
+    const { clientPL } = await getDirectSettlementPL(rootViewer, row);
+    // clientPL > 0 means agent owes the parent (rootViewer), which implies agent lost (debtor).
+    // The "Current PL" conventionally shows negative numbers for losses.
+    // Wait, clientPL > 0 in Settlement means creditor (downline WON).
+    // Let's look at getSettlementUsers: 
+    // pl > 0: downline won their share (creditor / dena hai)
+    // pl < 0: downline lost their share (debtor / lena hai)
+    // For "Current P/L", if downline won, it should be positive. If downline lost, negative.
+    // So currentPL = clientPL!
+    currentPL = roundMoney(clientPL);
+  }
 
   return {
     ...row,

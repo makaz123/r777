@@ -54,10 +54,10 @@ const AccountSummaryBar = () => {
 
   const summary = userInfo?.accountSummary;
 
-  /** Down Line = 100% client P/L (whole downline), not partnership %. */
+  /** Down Line = Direct downlines net balance (partnership % applied). */
   const downlineAmount = Number(
-    userInfo?.accountSummary?.downlineClientPL ??
-      userInfo?.accountSummary?.downlineDenaGross ??
+    userInfo?.accountSummary?.downlineDena ??
+      userInfo?.accountSummary?.downlineClientPL ??
       downlineViewer?.totalPL ??
       0
   );
@@ -87,10 +87,10 @@ const AccountSummaryBar = () => {
   const downlineTooltip =
     summary?.downlineTooltip ??
     (downlineLenDena === 'lena'
-      ? 'Down Line (100%): downline users ne haara — aapko lena hai (cash settlement ke baad).'
+      ? 'Down Line: Direct downline accounts ka outstanding settlement balance — aapko lena hai.'
       : downlineLenDena === 'dena'
-        ? 'Down Line (100%): downline users ne jeeta — aapko dena hai (cash settlement ke baad).'
-        : 'Down line settled — koi outstanding client P/L nahi.');
+        ? 'Down Line: Direct downline accounts ka outstanding settlement balance — aapko dena hai.'
+        : 'Down line settled — koi outstanding balance nahi.');
 
   const uplineTooltip =
     summary?.uplineTooltip ??

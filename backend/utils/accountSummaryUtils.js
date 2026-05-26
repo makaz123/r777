@@ -936,7 +936,7 @@ export function buildAccountSummary(admin, plTotals = {}) {
     uplineTooltip:
       'Upline ka partnership share (bet history se) — downline cash settlement se yeh change nahi hota.',
     downlineTooltip:
-      'Down Line (100%): sab downline users ka total client P/L — partnership % nahi.',
+      'Down Line: Direct downline accounts ka outstanding settlement balance (partnership share applied).',
     /** Client-view len-den: + client jeeta = dena, − client haara = lena. */
     downlineClientLenDena:
       downlineClientPL > 0.005

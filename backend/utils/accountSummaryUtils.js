@@ -930,7 +930,10 @@ export function buildAccountSummary(admin, plTotals = {}) {
   const roleLabel =
     admin.role === 'supperadmin'
       ? 'Super Admin'
-      : admin.role?.charAt(0).toUpperCase() + admin.role?.slice(1);
+      : admin.role === 'white'
+        ? 'Admin'
+        
+        : admin.role?.charAt(0).toUpperCase() + admin.role?.slice(1);
 
   return {
     userId: admin.userName,

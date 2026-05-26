@@ -109,8 +109,9 @@ const AccountSummaryBar = () => {
 
   const roleDisplay =
     summary?.userType ||
-    (userInfo?.role === 'white'
-      ? 'White Label'
+    (userInfo?.role?.toLowerCase() === 'white'
+      ? 'Admin'
+      
       : userInfo?.role?.charAt(0).toUpperCase() + userInfo?.role?.slice(1));
 
   /** My Exposure: total exposure * my share percentage */
@@ -268,14 +269,14 @@ const AccountSummaryBar = () => {
               </div>
             ) : (
               <div className='space-y-1'>
-                <MetricTooltipRow
+                {/* <MetricTooltipRow
                   label='Net Outstanding : '
                   tooltip='Aapka total unsettled cash profit/loss. Jab Up Line aur Down Line dono clear hon, toh yeh 0 ho jayega.'
                 >
                   <span className={plColorClass(weekPLAmount)}>
                     {formatMoney(weekPLAmount)}
                   </span>
-                </MetricTooltipRow>
+                </MetricTooltipRow> */}
                 {/* <MetricTooltipRow
                   label='My Share : '
                   tooltip='Your partnership percentage share.'

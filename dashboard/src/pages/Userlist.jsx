@@ -633,7 +633,8 @@ export default function Userlist() {
 
   const roleTypeLabel = (role) => {
     if (role === 'user') return 'Client';
-    if (role === 'white') return 'White Label';
+    if (role === 'white') return 'Admin';
+    if (role === 'admin') return 'Main Admin';
     if (!role) return '—';
     return role.charAt(0).toUpperCase() + role.slice(1);
   };

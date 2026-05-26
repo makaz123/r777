@@ -53,14 +53,24 @@ const AccountSummaryBar = () => {
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
   const summary = userInfo?.accountSummary;
+  const isClientRole = userInfo?.role === 'user';
 
-  /** Down Line = Direct downlines net balance (partnership % applied). */
-  const downlineAmount = Number(
-    userInfo?.accountSummary?.downlineDena ??
-      userInfo?.accountSummary?.downlineClientPL ??
-      downlineViewer?.totalPL ??
-      0
-  );
+  /** Down Line:
+   *  - Non-client roles: full gross outstanding (my% + upline%) = downlineDenaGross
+   *  - Client role: whole 100% client P/L = downlineClientPL
+   */
+  const downlineAmount = isClientRole
+    ? Number(
+        userInfo?.accountSummary?.downlineClientPL ??
+          downlineViewer?.totalPL ??
+          0
+      )
+    : Number(
+        userInfo?.accountSummary?.downlineDenaGross ??
+          userInfo?.accountSummary?.downlineDena ??
+          downlineViewer?.totalPL ??
+          0
+      );
   const uplineAmount = Number(
     userInfo?.accountSummary?.uplineSharePL ??
       userInfo?.accountSummary?.uplineDena ??
@@ -96,12 +106,22 @@ const AccountSummaryBar = () => {
         ? 'Upline partnership due (dena) — cash settlement reduces this amount.'
         : 'Upline partnership collectable (lena) — cash settlement reduces this amount.');
 
-  const isClientRole = userInfo?.role === 'user';
+
   const roleDisplay =
     summary?.userType ||
     (userInfo?.role === 'white'
       ? 'White Label'
       : userInfo?.role?.charAt(0).toUpperCase() + userInfo?.role?.slice(1));
+
+  /** My Exposure: total exposure * my share percentage */
+  const totalExposure = Number(
+    summary?.totalExposure ?? userInfo?.totalExposure ?? userInfo?.exposure ?? 0
+  );
+  const mySharePct = Number(summary?.mySharePercent ?? 100);
+  const myExposureAmount = Number(
+    summary?.myShareExposure ??
+      Math.round(totalExposure * (mySharePct / 100) * 100) / 100
+  );
 
   return (
     <div className='relative z-20 w-full overflow-visible bg-[#016a82] text-sm text-white'>
@@ -197,6 +217,24 @@ const AccountSummaryBar = () => {
                   {formatMoney(downlineAmount)}
                 </span>
               </MetricTooltipRow>
+              {!isClientRole && (
+                <MetricTooltipRow
+                  label='My Exposure : '
+                  tooltip='Total exposure x My Share % — shows only your percentage of the total exposure.'
+                >
+                  <span
+                    className={
+                      myExposureAmount === 0
+                        ? 'text-white/90'
+                        : 'text-red-400'
+                    }
+                  >
+                    {myExposureAmount > 0
+                      ? `-${formatMoney(myExposureAmount)}`
+                      : formatMoney(myExposureAmount)}
+                  </span>
+                </MetricTooltipRow>
+              )}
             </div>
 
             {isClientRole ? (

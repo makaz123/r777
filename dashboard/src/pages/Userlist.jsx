@@ -458,9 +458,11 @@ export default function Userlist() {
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
 
   const getRowCurrentPL = (row) => {
-    if (row.role !== 'user') return 0;
-    // Exposure in the database is a positive number, but it reduces avbalance.
-    // So we add it back to find the actual settled P/L.
+    if (row.role !== 'user') {
+      // For agents/admins, use backend-enriched currentPL from getDirectSettlementPL
+      return Math.round((Number(row.currentPL) || 0) * 100) / 100;
+    }
+    // For actual users, calculate from avbalance - baseBalance + exposure
     const current =
       getRowAvbalance(row) -
       getRowBalance(row) +
@@ -960,6 +962,10 @@ export default function Userlist() {
                 header: 'My %',
                 align: 'right',
                 cell: (row) => {
+                  // For agents/admins show 'parentShare% / downlineKeep%' format from backend
+                  if (row.role !== 'user' && row.myPercent) {
+                    return row.myPercent;
+                  }
                   const pct =
                     row.parentSharePercent ??
                     row.mySharePercent ??

@@ -869,9 +869,7 @@ export function computeUplineSharePL(admin, plTotals = {}) {
 export function buildAccountSummary(admin, plTotals = {}) {
   const myKeepPct = getAccountMyKeepPercent(admin);
   const isEndUserRole = admin.role === 'user';
-  const totalExposure = isEndUserRole
-    ? roundMoney(Number(admin.totalExposure ?? admin.exposure) || 0)
-    : 0;
+  const totalExposure = roundMoney(Number(admin.totalExposure ?? admin.exposure) || 0);
   const myShareExposureRaw = roundMoney(totalExposure * (myKeepPct / 100));
   const myShareExposure =
     myShareExposureRaw > 0 ? -myShareExposureRaw : myShareExposureRaw;
@@ -915,10 +913,10 @@ export function buildAccountSummary(admin, plTotals = {}) {
         ),
     available: roundMoney(admin.avbalance ?? 0),
     totalExposure,
-    myShareExposure: isEndUserRole ? myShareExposure : 0,
+    myShareExposure,
     mySharePercent: myKeepPct,
-    exposureDisplay: isEndUserRole ? myShareExposure : 0,
-    myShareExposureRaw: isEndUserRole ? myShareExposureRaw : 0,
+    exposureDisplay: myShareExposure,
+    myShareExposureRaw,
     currentWeekPLTotal: weekDownlinePL,
     clientWeekPLTotal: roundMoney(-weekDownlinePL),
     currentWeekPL: roundMoney(uplineSharePL + downlineClientPL),

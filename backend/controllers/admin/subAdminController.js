@@ -23,6 +23,7 @@ import {
   aggregateViewerWeekPL,
   aggregateViewerOutstandingPL,
   aggregateViewerProfitLoss,
+  aggregateViewerExposure,
   applySettlementCashToUplineShare,
   buildAccountSummary,
   computeViewerPeriodPL,
@@ -1299,6 +1300,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     tillDownlinePL,
     downlineClientResult,
     tillDownlinePLHistory,
+    viewerExposure,
   ] = await Promise.all([
     aggregateViewerWeekPL(
       SubAdmin,
@@ -1337,6 +1339,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
       updatedAdmin.code,
       null
     ),
+    aggregateViewerExposure(SubAdmin, updatedAdmin),
   ]);
   const directDownlines = await SubAdmin.find({
     invite: updatedAdmin.code,
@@ -1377,6 +1380,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     uplineKeepPercent: uplineSharePercent,
     uplineParent,
     weekRange,
+    viewerExposure,
   });
 
   const selfSettlementCash = await getSettlementCashTotals(

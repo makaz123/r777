@@ -74,7 +74,7 @@ function Header({
 
   useEffect(() => {
     if (userInfo?._id) {
-      wsService.connect(dispatch, userInfo._id);
+      wsService.connect(dispatch, String(userInfo._id));
     }
   }, [dispatch, userInfo?._id]);
 

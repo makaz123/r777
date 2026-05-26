@@ -215,12 +215,15 @@ export const getDashboardStats = async (req, res) => {
       headerPL += parentPL;
       totalSportsBetAmount += bet.betAmount || 0;
 
-      if (isMatchOddsBetRecord(bet) && bet.profitLossChange > 0) {
+      if (isMatchOddsBetRecord(bet)) {
         const rate = resolveCommissionRate(bet);
-        if (rate > 0 && sharePct > 0) {
-          totalCommission +=
-            getMatchOddsCommissionAmount(bet.profitLossChange, rate) *
-            (sharePct / 100);
+        const commission = getMatchOddsCommissionAmount(
+          bet.profitLossChange,
+          rate,
+          bet.status
+        );
+        if (commission > 0 && sharePct > 0) {
+          totalCommission += commission * (sharePct / 100);
         }
       }
     });

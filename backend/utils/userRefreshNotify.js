@@ -1,6 +1,23 @@
 import SubAdmin from '../models/subAdminModel.js';
 import { sendUserRefresh } from '../socket/bettingSocket.js';
 
+/** Tell this account and every upline to refetch (account summary, settlement bar). */
+export async function notifyUplineChainRefresh(startUserId) {
+  const seen = new Set();
+  let node = await SubAdmin.findById(startUserId).select('_id invite').lean();
+  while (node) {
+    const id = String(node._id);
+    if (!seen.has(id)) {
+      seen.add(id);
+      sendUserRefresh(id);
+    }
+    if (!node.invite) break;
+    node = await SubAdmin.findOne({ code: node.invite })
+      .select('_id invite')
+      .lean();
+  }
+}
+
 /** Tell a user and all downlines to refetch profile (locks, balance, etc.). */
 export async function refreshUserAndDownlines(rootUserId) {
   const rootId = String(rootUserId);

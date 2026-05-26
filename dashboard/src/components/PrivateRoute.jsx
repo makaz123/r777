@@ -84,7 +84,9 @@ const PrivateRoute = () => {
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'register', userId: userInfo._id }));
+        ws.send(
+          JSON.stringify({ type: 'register', userId: String(userInfo._id) })
+        );
       };
 
       ws.onmessage = (event) => {
@@ -98,17 +100,13 @@ const PrivateRoute = () => {
               })
             );
           } else if (data.type === 'exposure_update') {
-            dispatch(
-              updateReduxUserBalance({
-                userId: data.userId,
-                newExposure: data.newExposure,
-              })
-            );
+            dispatch(updateReduxUserBalance({ userId: data.userId, newExposure: data.newExposure }));
           } else if (
             data.type === 'user_refresh_needed' &&
-            data.userId === userInfo._id
+            String(data.userId) === String(userInfo._id)
           ) {
             dispatch(getAdmin());
+            window.dispatchEvent(new CustomEvent('account-summary-refresh'));
           }
         } catch (e) {}
       };

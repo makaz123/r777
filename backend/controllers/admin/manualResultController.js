@@ -23,11 +23,12 @@ import {
 } from '../../socket/bettingSocket.js';
 import {
   applyMatchOddsWinCommissionOnSettlement,
-  creditAgentCommissionEarned,
+  distributeCommissionUpChain,
   updateAllUplines,
 } from './subAdminController.js';
 import {
   calculateWinCommission,
+  isSettledClientWinPL,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
@@ -510,7 +511,7 @@ export const settleManualResult = async (req, res) => {
 
           if (
             isMatchOddsBetRecord(historyRecord) &&
-            historyProfitLossChange > 0
+            isSettledClientWinPL(historyProfitLossChange, historyStatus)
           ) {
             const rate = parseCommissionPercent(user?.commition);
             const { netProfit, commission } = calculateWinCommission(
@@ -571,7 +572,8 @@ export const settleManualResult = async (req, res) => {
                 totalMatchOddsCommission,
               profitLossChange: betHistoryTotalPL,
             };
-            await creditAgentCommissionEarned(user, totalMatchOddsCommission);
+            // Distribute commission up the chain
+            await distributeCommissionUpChain(user, totalMatchOddsCommission);
           } else if (betHistoryRecords.length === 0) {
             const commissionResult =
               await applyMatchOddsWinCommissionOnSettlement(

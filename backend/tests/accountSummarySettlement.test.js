@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyDebtorSettlementNetAddback,
+  applySettlementCashToUplineShare,
   buildAccountSummary,
   buildViewerShareRatioByUserId,
   expectedBettingPLFromHistory,
   getViewerPLSharePercentOnUser,
   getViewerShareRatioForUser,
   getWeekPLRangeForAdmin,
+  getSelfWeekSettlementCashNet,
+  isAccountLinesFullyCleared,
+  resolveAccountSummaryWeekPL,
+  sumDownlineWeekSettlementCashNet,
   scaleClientPLForViewer,
 } from '../utils/accountSummaryUtils.js';
 import { getViewerShareOfUserClientPL } from '../utils/partnershipCommissionUtils.js';
@@ -112,10 +117,102 @@ describe('applyDebtorSettlementNetAddback', () => {
   });
 });
 
+describe('applySettlementCashToUplineShare', () => {
+  it('dena (+): deposite on account clears upline due (does not double it)', () => {
+    expect(
+      applySettlementCashToUplineShare(26, { withdrawl: 0, deposite: 26 })
+    ).toBe(0);
+  });
+
+  it('dena (+): partial deposite reduces outstanding', () => {
+    expect(
+      applySettlementCashToUplineShare(26, { withdrawl: 0, deposite: 10 })
+    ).toBe(16);
+  });
+
+  it('lena (−): deposite clears upline collectable (same as user P/L rule)', () => {
+    expect(
+      applySettlementCashToUplineShare(-16.48, { withdrawl: 0, deposite: 16.48 })
+    ).toBe(0);
+  });
+
+  it('lena (−): partial deposite reduces outstanding', () => {
+    expect(
+      applySettlementCashToUplineShare(-16.48, { withdrawl: 0, deposite: 10 })
+    ).toBe(-6.48);
+  });
+});
+
+describe('resolveAccountSummaryWeekPL', () => {
+  it('when Down Line is clear and no week activity, week P/L is 0', () => {
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: 0,
+        weekDownlineSettlementNet: 0,
+        weekSelfSettlementCash: { withdrawl: 0, deposite: 0 },
+        downlineClientPL: 0,
+        uplineOutstanding: 0,
+      })
+    ).toBe(0);
+  });
+
+  it('when Down Line has new bets after clear, week P/L shows only new week totals', () => {
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: 17,
+        weekDownlineSettlementNet: 0,
+        downlineClientPL: 8.3,
+        uplineOutstanding: 0,
+      })
+    ).toBe(17);
+  });
+
+  it('when Up Line and Down Line are both clear, week P/L is 0 even if period math is non-zero', () => {
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: -31,
+        weekDownlineSettlementNet: 50,
+        weekSelfSettlementCash: { withdrawl: 10, deposite: 0 },
+        downlineClientPL: 0,
+        uplineOutstanding: 0,
+      })
+    ).toBe(0);
+  });
+
+  it('satyam flow: betting share + downline settle − upline settle on self', () => {
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: -31,
+        weekDownlineSettlementNet: 50,
+        weekSelfSettlementCash: { withdrawl: 0, deposite: 0 },
+      })
+    ).toBe(19);
+
+    expect(
+      resolveAccountSummaryWeekPL({
+        weekViewerBettingPL: -31,
+        weekDownlineSettlementNet: 50,
+        weekSelfSettlementCash: { withdrawl: 100, deposite: 0 },
+      })
+    ).toBe(-81);
+  });
+
+  it('sumDownlineWeekSettlementCashNet and getSelfWeekSettlementCashNet', () => {
+    const users = [{ _id: 'u1', role: 'user' }];
+    const map = new Map([
+      ['u1', { withdrawl: 0, deposite: 50 }],
+    ]);
+    expect(sumDownlineWeekSettlementCashNet(users, map)).toBe(50);
+    expect(
+      getSelfWeekSettlementCashNet({ withdrawl: 100, deposite: 0 })
+    ).toBe(100);
+  });
+});
+
 describe('buildAccountSummary upline vs downline settlement', () => {
   const admin = { role: 'agent', userName: 'agent1', partnership: 15 };
 
-  it('upline share uses bet history; downline client PL uses settlement-adjusted values', () => {
+  it('upline share uses outstanding branch PL, not lifetime history', () => {
     const parent = { code: 'SUPER', role: 'supperadmin', partnership: 100 };
     const summary = buildAccountSummary(admin, {
       myPLTillDate: 150,
@@ -127,8 +224,21 @@ describe('buildAccountSummary upline vs downline settlement', () => {
       uplineParent: parent,
     });
 
-    expect(summary.uplineSharePL).toBe(850);
+    expect(summary.uplineSharePL).toBe(510);
     expect(summary.downlineClientPL).toBe(-400);
+  });
+
+  it('upline share is zero when superadmin cleared downline outstanding', () => {
+    const parent = { code: 'SUPER', role: 'supperadmin', partnership: 100 };
+    const summary = buildAccountSummary(admin, {
+      myPLTillDate: 150,
+      tillDownlinePLHistory: 1000,
+      tillDownlinePL: 0,
+      downlineClientPL: 0,
+      uplineSharePercent: 85,
+      uplineParent: parent,
+    });
+    expect(summary.uplineSharePL).toBe(0);
   });
 
   it('upline share percent is parent take on this row, not parent global keep', () => {
@@ -142,13 +252,16 @@ describe('buildAccountSummary upline vs downline settlement', () => {
     expect(summary.otherAdminSharePL).toBe(0);
   });
 
-  it('downline cash settlement does not change upline share', () => {
+  it('downline cash settlement reduces upline share when branch outstanding drops', () => {
+    const parent = { code: 'SUPER', role: 'supperadmin', partnership: 100 };
     const before = buildAccountSummary(admin, {
       myPLTillDate: 150,
       tillDownlinePLHistory: 1000,
       tillDownlinePL: 1000,
       tillViewerOutstandingPL: 150,
       downlineClientPL: -1000,
+      uplineSharePercent: 85,
+      uplineParent: parent,
     });
     const after = buildAccountSummary(admin, {
       myPLTillDate: 150,
@@ -156,9 +269,12 @@ describe('buildAccountSummary upline vs downline settlement', () => {
       tillDownlinePL: 500,
       tillViewerOutstandingPL: 75,
       downlineClientPL: -500,
+      uplineSharePercent: 85,
+      uplineParent: parent,
     });
 
-    expect(after.uplineSharePL).toBe(before.uplineSharePL);
+    expect(before.uplineSharePL).toBe(850);
+    expect(after.uplineSharePL).toBe(425);
     expect(after.downlineClientPL).not.toBe(before.downlineClientPL);
   });
 });

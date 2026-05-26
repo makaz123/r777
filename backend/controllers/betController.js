@@ -54,6 +54,7 @@ import {
   calculateWinCommission,
   isMatchOddsBetRecord,
   isMatchOddsGameType,
+  isSettledClientWinPL,
   parseCommissionPercent,
 } from '../utils/partnershipCommissionUtils.js';
 import {
@@ -2052,7 +2053,7 @@ export const updateResultOfBets = async (req, res) => {
 
               if (
                 isMatchOddsBetRecord(historyRecord) &&
-                historyProfitLossChange > 0
+                isSettledClientWinPL(historyProfitLossChange, historyStatus)
               ) {
                 const rate = parseCommissionPercent(user?.commition);
                 const { netProfit, commission } = calculateWinCommission(

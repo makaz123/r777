@@ -134,4 +134,27 @@ router.get(
   getUserFullDetails
 );
 
+import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import betHistoryModel from '../../models/betHistoryModel.js';
+import TransactionHistory from '../../models/transtionHistoryModel.js';
+import SubAdmin from '../../models/subAdminModel.js';
+
+router.get('/wipe-test-data', async (req, res) => {
+  try {
+    await TransactionHistory.deleteMany({});
+    await CasinoBetHistory.deleteMany({});
+    await betHistoryModel.deleteMany({});
+    await SubAdmin.updateMany({}, {
+      $set: {
+        bettingProfitLoss: 0,
+        uplineBettingProfitLoss: 0,
+      },
+      $unset: { weekPLResetAt: 1 }
+    });
+    res.send('Test data wiped successfully!');
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
 export default router;

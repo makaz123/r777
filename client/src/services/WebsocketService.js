@@ -19,6 +19,15 @@ class WebSocketService {
     this.currentUserId = null;
   }
 
+  matchesCurrentUser(messageUserId) {
+    const currentId = this.currentUserId ? String(this.currentUserId) : null;
+    const targetId =
+      messageUserId != null && messageUserId !== ''
+        ? String(messageUserId)
+        : null;
+    return !targetId || !currentId || targetId === currentId;
+  }
+
   connect(dispatch, userId = null) {
     if (this.socket) {
       console.log('WebSocket already connected');
@@ -26,7 +35,8 @@ class WebSocketService {
     }
 
     // Store userId for filtering incoming messages
-    this.currentUserId = userId || localStorage.getItem('userId');
+    const raw = userId || localStorage.getItem('userId');
+    this.currentUserId = raw ? String(raw) : null;
 
     let wsUrl = host;
     if (wsUrl === '/') {
@@ -54,25 +64,20 @@ class WebSocketService {
         const data = JSON.parse(event.data);
 
         if (data.type === 'balance_update') {
-          // Only update if this is for the current user
-          if (!data.userId || data.userId === this.currentUserId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateAvbalance(data.newBalance));
           }
         }
 
         if (data.type === 'user_refresh_needed') {
-          const targetId = data.userId ? String(data.userId) : null;
-          const currentId = this.currentUserId
-            ? String(this.currentUserId)
-            : null;
-          if (!targetId || !currentId || targetId === currentId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(getUser());
+            window.dispatchEvent(new CustomEvent('user-profile-refresh'));
           }
         }
 
         if (data.type === 'exposure_update') {
-          // Only update if this is for the current user
-          if (!data.userId || data.userId === this.currentUserId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateExposure(data.newExposure));
           }
         }
@@ -85,7 +90,7 @@ class WebSocketService {
         // }
 
         if (data.type === 'cashout_update') {
-          if (data.userId === this.currentUserId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateCashoutValues(data.bets));
           }
         }
@@ -128,10 +133,11 @@ class WebSocketService {
 
   // Update current userId (useful when user logs in)
   setUserId(userId) {
-    this.currentUserId = userId;
-    // Re-register with backend if already connected
+    this.currentUserId = userId ? String(userId) : null;
     if (this.socket && this.socket.readyState === WebSocket.OPEN && userId) {
-      this.socket.send(JSON.stringify({ type: 'register', userId }));
+      this.socket.send(
+        JSON.stringify({ type: 'register', userId: String(userId) })
+      );
     }
   }
 

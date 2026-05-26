@@ -457,7 +457,6 @@ export default function Userlist() {
 
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
 
-  /** Current P&L (settled matches from Client perspective): avbalance - balance + exposure */
   const getRowCurrentPL = (row) => {
     if (row.role !== 'user') return 0;
     // Exposure in the database is a positive number, but it reduces avbalance.

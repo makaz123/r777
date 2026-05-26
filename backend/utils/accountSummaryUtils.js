@@ -48,7 +48,7 @@ export async function getWeekPLRangeForAdmin(admin) {
   };
 }
 
-/** Mark week P/L period start (only after downline is fully cash-cleared). */
+/** Mark week P/L period start (after Up Line and Down Line are both cash-cleared). */
 export async function setWeekPLResetNow(SubAdmin, adminId, at = new Date()) {
   await SubAdmin.findByIdAndUpdate(adminId, { weekPLResetAt: at });
 }
@@ -67,7 +67,7 @@ export async function getSettlementCashTotalsByUserInRange(
     {
       $match: {
         userId: { $in: ids },
-        remark: { $regex: /^Settlement:/ },
+        remark: { $regex: /^Settlement:(?! branch)/ },
         createdAt: { $gte: dateRange.start, $lte: dateRange.end },
       },
     },
@@ -141,12 +141,33 @@ export async function getDownlineWeekPLMaps(
     );
   }
 
-  return { users, historyPLByUserId, expectedPLByUserId };
+  return { users, historyPLByUserId, expectedPLByUserId, settlementByUser };
 }
 
 /**
- * Week P/L for account summary: betting P/L in period adjusted by settlements in that period.
- * Partial settlement reduces Week P/L (e.g. settle ₹100 → Week P/L drops by ₹100 share), does not zero the window.
+ * Gross settlement cash with downline end-users in the week (admin view).
+ * Deposite (debtor paid) → +; withdrawl (creditor paid) → −.
+ */
+export function sumDownlineWeekSettlementCashNet(users, settlementByUser) {
+  let net = 0;
+  for (const user of users) {
+    if (user.role !== 'user') continue;
+    const id = user._id.toString();
+    const cash = settlementByUser?.get(id) ?? { withdrawl: 0, deposite: 0 };
+    net += roundMoney((cash.deposite || 0) - (cash.withdrawl || 0));
+  }
+  return roundMoney(net);
+}
+
+/** Cash settled on this account in the week (upline settling you): withdrawl − deposite. */
+export function getSelfWeekSettlementCashNet(weekSelfSettlementCash) {
+  const cash = weekSelfSettlementCash || { withdrawl: 0, deposite: 0 };
+  return roundMoney((cash.withdrawl || 0) - (cash.deposite || 0));
+}
+
+/**
+ * Week P/L: partnership share of bets in period (no settlement baked in),
+ * plus downline settlement cash in week, minus upline settlement on self in week.
  */
 export async function aggregateViewerWeekPL(
   SubAdmin,
@@ -156,7 +177,7 @@ export async function aggregateViewerWeekPL(
   viewer,
   weekRange
 ) {
-  const { users, historyPLByUserId, expectedPLByUserId } =
+  const { users, historyPLByUserId, expectedPLByUserId, settlementByUser } =
     await getDownlineWeekPLMaps(
       SubAdmin,
       betHistoryModel,
@@ -167,23 +188,24 @@ export async function aggregateViewerWeekPL(
     );
 
   if (!users.length) {
-    return { weekViewerPL: 0, weekDownlinePL: 0 };
+    return {
+      weekViewerBettingPL: 0,
+      weekDownlineSettlementNet: 0,
+      weekDownlinePL: 0,
+      weekViewerPL: 0,
+    };
   }
 
   const accountByCode = await getAccountByCodeMap(SubAdmin, viewer);
-  const base = computeViewerPeriodPL(
-    viewer,
-    users,
-    expectedPLByUserId,
-    accountByCode
-  );
-  const weekViewerPL = applyDebtorSettlementNetAddback(
+  const weekViewerBettingPL = computeViewerPeriodPL(
     viewer,
     users,
     historyPLByUserId,
-    expectedPLByUserId,
-    accountByCode,
-    base
+    accountByCode
+  );
+  const weekDownlineSettlementNet = sumDownlineWeekSettlementCashNet(
+    users,
+    settlementByUser
   );
 
   let weekDownlineClient = 0;
@@ -194,7 +216,9 @@ export async function aggregateViewerWeekPL(
   }
 
   return {
-    weekViewerPL,
+    weekViewerBettingPL,
+    weekDownlineSettlementNet,
+    weekViewerPL: weekViewerBettingPL,
     weekDownlinePL: roundMoney(-weekDownlineClient),
   };
 }
@@ -599,14 +623,19 @@ export async function aggregateDownlineClientPLSum(
     TransactionHistory,
     viewerCode
   );
-  if (!users.length) return 0;
+  if (!users.length) return { total: 0, hasOutstanding: false };
 
   let total = 0;
+  let hasOutstanding = false;
   for (const user of users) {
     const id = user._id.toString();
-    total += roundMoney(expectedPLByUserId.get(id) ?? 0);
+    const expectedPL = expectedPLByUserId.get(id) ?? 0;
+    if (Math.abs(expectedPL) > 0.01) {
+      hasOutstanding = true;
+    }
+    total += roundMoney(expectedPL);
   }
-  return roundMoney(total);
+  return { total: roundMoney(total), hasOutstanding };
 }
 
 /** Viewer's share of settled downline P/L (parent view: + = house profit). */
@@ -826,14 +855,15 @@ export function resolveUplineSharePercent(admin, plTotals = {}) {
   return 0;
 }
 
-/** Upline share amount from gross downline bet-history P/L (parent view). */
+/**
+ * Upline partnership due from branch outstanding (after downline cash settlements).
+ * Uses tillDownlinePL when provided; lifetime history alone must not keep Up Line open.
+ */
 export function computeUplineSharePL(admin, plTotals = {}) {
-  const tillDownlinePLHistory = roundMoney(
-    plTotals.tillDownlinePLHistory ?? plTotals.tillDownlinePL ?? 0
-  );
+  const branchGross = roundMoney(plTotals.tillDownlinePLHistory ?? 0);
   const uplinePct = resolveUplineSharePercent(admin, plTotals);
-  if (uplinePct <= 0 || Math.abs(tillDownlinePLHistory) < 0.01) return 0;
-  return roundMoney((tillDownlinePLHistory * uplinePct) / 100);
+  if (uplinePct <= 0 || Math.abs(branchGross) < 0.01) return 0;
+  return roundMoney((branchGross * uplinePct) / 100);
 }
 
 export function buildAccountSummary(admin, plTotals = {}) {
@@ -891,8 +921,8 @@ export function buildAccountSummary(admin, plTotals = {}) {
     myShareExposureRaw: isEndUserRole ? myShareExposureRaw : 0,
     currentWeekPLTotal: weekDownlinePL,
     clientWeekPLTotal: roundMoney(-weekDownlinePL),
-    currentWeekPL: weekViewerPL,
-    currentWeekUplinePL: roundMoney(weekDownlinePL - weekViewerPL),
+    currentWeekPL: roundMoney(uplineSharePL + downlineClientPL),
+    currentWeekUplinePL: roundMoney(weekDownlinePL - roundMoney(uplineSharePL + downlineClientPL)),
     /** Lifetime betting P/L (bet history); cash settlement does not change this. */
     myPLTillDate,
     myPLTillDateTotal: tillDownlinePLHistory,
@@ -908,7 +938,7 @@ export function buildAccountSummary(admin, plTotals = {}) {
     uplineTooltip:
       'Upline ka partnership share (bet history se) — downline cash settlement se yeh change nahi hota.',
     downlineTooltip:
-      'Downline users ka total client P/L (100%) — aapka partnership share nahi.',
+      'Down Line: Direct downline accounts ka outstanding settlement balance (partnership share applied).',
     /** Client-view len-den: + client jeeta = dena, − client haara = lena. */
     downlineClientLenDena:
       downlineClientPL > 0.005
@@ -939,7 +969,7 @@ export async function getSettlementCashTotals(TransactionHistory, userId) {
     {
       $match: {
         userId: { $in: [id, userId] },
-        remark: { $regex: /^Settlement:/ },
+        remark: { $regex: /^Settlement:(?! branch)/ },
       },
     },
     {
@@ -964,6 +994,26 @@ export function expectedBettingPLFromHistory(trueTotalPL, settlementCash) {
   return roundMoney(truePL - (cash.withdrawl || 0) + (cash.deposite || 0));
 }
 
+/**
+ * Upline bar (dena/lena): cash settlement on this account clears partnership due
+ * (same idea as end-user outstanding: move balance toward zero).
+ */
+export function applySettlementCashToUplineShare(uplineSharePL, settlementCash) {
+  const pl = roundMoney(uplineSharePL);
+  const withdrawl = roundMoney(settlementCash?.withdrawl || 0);
+  const deposite = roundMoney(settlementCash?.deposite || 0);
+
+  if (pl > 0.005) {
+    // Dena — owe upline: cash paid/settled reduces positive due
+    return roundMoney(pl - deposite + withdrawl);
+  }
+  if (pl < -0.005) {
+    // Lena — collect from upline: same rule as user P/L (deposite pulls negative toward 0)
+    return expectedBettingPLFromHistory(pl, settlementCash);
+  }
+  return roundMoney(pl - withdrawl + deposite);
+}
+
 /** Positive downline share = collect from downline (lena); negative = pay downline (dena). */
 export function getDownlineLenDenaLabel(amount) {
   const n = Number(amount) || 0;
@@ -976,4 +1026,51 @@ export function getUplineLenDenaLabel(amount) {
   const n = Number(amount) || 0;
   if (Math.abs(n) < 0.01) return 'clear';
   return n > 0 ? 'dena' : 'lena';
+}
+
+export function isDownlineClientPLCleared(downlineClientPL) {
+  return Math.abs(roundMoney(downlineClientPL)) < 0.01;
+}
+
+export function isUplineSharePLCleared(uplineOutstanding) {
+  return Math.abs(roundMoney(uplineOutstanding)) < 0.01;
+}
+
+export function isAccountLinesFullyCleared(hasDownlineOutstanding, uplineOutstanding) {
+  return (
+    !hasDownlineOutstanding &&
+    isUplineSharePLCleared(uplineOutstanding)
+  );
+}
+
+/**
+ * Week / Current P&L on header:
+ *   partnership share of bets in period
+ *   + downline settlement cash in week
+ *   − upline settlement cash on this account in week
+ * When Up Line and Down Line are both clear → always 0 (matches header tooltips).
+ */
+export function resolveAccountSummaryWeekPL({
+  weekViewerBettingPL = 0,
+  rawWeekViewerPL,
+  weekDownlineSettlementNet = 0,
+  weekSelfSettlementCash = { withdrawl: 0, deposite: 0 },
+  hasDownlineOutstanding,
+  uplineOutstanding,
+}) {
+  if (
+    hasDownlineOutstanding !== undefined &&
+    uplineOutstanding !== undefined &&
+    isAccountLinesFullyCleared(hasDownlineOutstanding, uplineOutstanding)
+  ) {
+    return 0;
+  }
+
+  const bettingPL = roundMoney(
+    weekViewerBettingPL ?? rawWeekViewerPL ?? 0
+  );
+  const selfSettlementNet = getSelfWeekSettlementCashNet(weekSelfSettlementCash);
+  return roundMoney(
+    bettingPL + roundMoney(weekDownlineSettlementNet) - selfSettlementNet
+  );
 }

@@ -52,8 +52,12 @@ const AccountSummaryBar = () => {
   const plColorClass = (v) =>
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
+  const summary = userInfo?.accountSummary;
+
+  /** Down Line = Direct downlines net balance (partnership % applied). */
   const downlineAmount = Number(
-    userInfo?.accountSummary?.downlineDenaGross ??
+    userInfo?.accountSummary?.downlineDena ??
+      userInfo?.accountSummary?.downlineClientPL ??
       downlineViewer?.totalPL ??
       0
   );
@@ -63,9 +67,7 @@ const AccountSummaryBar = () => {
       downlineViewer?.uplinePL ??
       0
   );
-  const otherAdminAmount = Number(
-    userInfo?.accountSummary?.otherAdminSharePL ?? 0
-  );
+  const weekPLAmount = Number(summary?.currentWeekPL ?? 0);
 
   const downlineLenDena =
     userInfo?.accountSummary?.downlineClientLenDena ??
@@ -79,20 +81,21 @@ const AccountSummaryBar = () => {
     (uplineAmount > 0.005 ? 'dena' : uplineAmount < -0.005 ? 'lena' : 'clear');
 
   const downlineTooltip =
-    downlineLenDena === 'lena'
-      ? 'Downline users ka total client P/L (100%): users ne haara — aapko lena hai (Positive value).'
+    summary?.downlineTooltip ??
+    (downlineLenDena === 'lena'
+      ? 'Down Line: Direct downline accounts ka outstanding settlement balance — aapko lena hai.'
       : downlineLenDena === 'dena'
-        ? 'Downline users ka total client P/L (100%): users ne jeeta — aapko dena hai.'
-        : 'Down line settled — koi outstanding client P/L nahi.';
+        ? 'Down Line: Direct downline accounts ka outstanding settlement balance — aapko dena hai.'
+        : 'Down line settled — koi outstanding balance nahi.');
 
   const uplineTooltip =
-    uplineLenDena === 'dena'
-      ? 'Upline ka partnership share (bet history) — ONLY UPLINE percentage.'
-      : uplineLenDena === 'lena'
-        ? 'Upline se partnership share (bet history) — ONLY UPLINE percentage.'
-        : 'Up line settled — koi outstanding upline share nahi.';
+    summary?.uplineTooltip ??
+    (uplineLenDena === 'clear'
+      ? 'Up line settled — koi outstanding upline partnership due nahi.'
+      : uplineLenDena === 'dena'
+        ? 'Upline partnership due (dena) — cash settlement reduces this amount.'
+        : 'Upline partnership collectable (lena) — cash settlement reduces this amount.');
 
-  const summary = userInfo?.accountSummary;
   const isClientRole = userInfo?.role === 'user';
   const roleDisplay =
     summary?.userType ||
@@ -172,22 +175,18 @@ const AccountSummaryBar = () => {
                 <>
                   <MetricTooltipRow
                     label={`Up Line (${uplineLenDena}) : `}
-                    tooltip={summary?.uplineTooltip ?? uplineTooltip}
+                    tooltip={uplineTooltip}
                   >
-                    <span className={plColorClass(uplineAmount)}>
+                    <span
+                      className={
+                        uplineLenDena === 'clear'
+                          ? 'text-green-400'
+                          : plColorClass(uplineAmount)
+                      }
+                    >
                       {formatMoney(uplineAmount)}
                     </span>
                   </MetricTooltipRow>
-                  {otherAdminAmount !== 0 && (
-                    <MetricTooltipRow
-                      label={`Other Admin : `}
-                      tooltip="Shows ONLY other admin percentage"
-                    >
-                      <span className={plColorClass(otherAdminAmount)}>
-                        {formatMoney(otherAdminAmount)}
-                      </span>
-                    </MetricTooltipRow>
-                  )}
                 </>
               )}
               <MetricTooltipRow
@@ -233,10 +232,10 @@ const AccountSummaryBar = () => {
               <div className='space-y-1'>
                 <MetricTooltipRow
                   label='Week P&L : '
-                  tooltip='Your share of downline P/L this period (bets minus cash settled in the same period). Partial settlement reduces this amount; it only resets when fully cleared.'
+                  tooltip='Is week ka P/L. Jab Up Line aur Down Line dono clear hon, Week P&L bhi 0.'
                 >
-                  <span className={plColorClass(summary?.currentWeekPL ?? 0)}>
-                    {formatMoney(summary?.currentWeekPL ?? 0)}
+                  <span className={plColorClass(weekPLAmount)}>
+                    {formatMoney(weekPLAmount)}
                   </span>
                 </MetricTooltipRow>
                 {/* <MetricTooltipRow

@@ -56,7 +56,7 @@ const AccountSummaryBar = () => {
   const isClientRole = userInfo?.role === 'user';
 
   /** Down Line:
-   *  - Non-client roles: full gross outstanding (my% + upline%) = downlineDenaGross
+   *  - Non-client roles: exact outstanding partnership share = downlineDena
    *  - Client role: whole 100% client P/L = downlineClientPL
    */
   const downlineAmount = isClientRole
@@ -66,8 +66,8 @@ const AccountSummaryBar = () => {
           0
       )
     : Number(
-        userInfo?.accountSummary?.downlineDenaGross ??
-          userInfo?.accountSummary?.downlineDena ??
+        userInfo?.accountSummary?.downlineDena ??
+          userInfo?.accountSummary?.downlineDenaGross ??
           downlineViewer?.totalPL ??
           0
       );

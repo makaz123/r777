@@ -889,13 +889,11 @@ const placeBet = async (req, res) => {
 
     // Only call the external API if there's no existing bet
     if (!existingExact) {
-      market_id = Math.floor(10000000 + Math.random() * 90000000);
+      market_id = req.body.market_id || marketMeta.mid || String(Math.floor(10000000 + Math.random() * 90000000));
 
-      //Here we are using the external Api
-      try {
-        if (gameType === 'fancy1') {
-          // fancy1 uses the same request format as fancy (session) bets:
-          // no runners, carries fancyId + beventId instead.
+      // Here we are using the external Api - RUN IN BACKGROUND to prevent blocking
+      (async () => {
+        try {
           let beventId = '';
           try {
             const matchListData = await apiFetchMatchList(Number(sid));
@@ -912,42 +910,47 @@ const placeBet = async (req, res) => {
             }
           } catch (err) {
             console.warn(
-              `[FANCY1 BET] Failed to fetch match list for beventId lookup:`,
+              `[SPORTS BET] Failed to fetch match list for beventId lookup:`,
               err.message
             );
           }
 
-          await apiSendBetIncoming({
-            sport_id: sid,
-            sportName: (gameName || '').replace(/\s*game\s*$/i, ''),
-            event_id: marketMeta.gmid || gameId,
-            beventId,
-            event_name: eventName,
-            fancyId: marketMeta.fancyId ? String(marketMeta.fancyId) : null,
-            market_name: toApiMarketName(marketName),
-            fancyType: gameType,
-          });
-        } else {
-          await apiSendBetIncoming({
-            event_id: gameId,
-            event_name: eventName,
-            market_id: market_id,
-            market_name: toApiMarketName(marketName),
-            market_type: gameType,
-            client_ref: null,
-            sport_id: sid,
-            fancyId: null,
-            fancymid: marketMeta.mid || null,
-            bevent_id: marketMeta.beventId || null,
-            runners: marketMeta.runners || [],
-          });
+          if (gameType === 'fancy1') {
+            // fancy1 uses the same request format as fancy (session) bets:
+            // no runners, carries fancyId + beventId instead.
+            await apiSendBetIncoming({
+              sport_id: sid,
+              sportName: (gameName || '').replace(/\s*game\s*$/i, ''),
+              event_id: marketMeta.gmid || gameId,
+              beventId,
+              event_name: eventName,
+              fancyId: marketMeta.fancyId ? String(marketMeta.fancyId) : null,
+              market_name: toApiMarketName(marketName),
+              fancyType: gameType,
+            });
+          } else {
+            await apiSendBetIncoming({
+              event_id: marketMeta.gmid || gameId,
+              event_name: eventName,
+              market_id: market_id,
+              market_name: toApiMarketName(marketName),
+              market_type: gameType,
+              client_ref: null,
+              sport_id: sid,
+              sport_name: (gameName || '').replace(/\s*game\s*$/i, ''),
+              fancyId: null,
+              fancymid: marketMeta.mid || null,
+              bevent_id: beventId || marketMeta.beventId || null,
+              runners: marketMeta.runners || [],
+            });
+          }
+        } catch (apiErr) {
+          console.error(
+            `[SPORTS BET] bet-incoming API failed for gameId=${gameId}:`,
+            apiErr.message
+          );
         }
-      } catch (apiErr) {
-        console.error(
-          `[SPORTS BET] bet-incoming API failed for gameId=${gameId}:`,
-          apiErr.message
-        );
-      }
+      })();
     }
 
     let p = parseFloat(price);
@@ -1227,13 +1230,18 @@ const placeBet = async (req, res) => {
     await Promise.all(saveOperations);
 
     // STEP 3: Calculate exposure again (AFTER placing)
-    // Now we include the new bet we just saved
-    // This becomes the user's official exposure in database
-    const updatedPendingBets = await betModel.find({
-      userId: id,
-      status: 0,
-    });
-    user.exposure = calculateAllExposure(updatedPendingBets);
+    // Update the in-memory pendingBets array instead of querying the database again
+    if (newBet) {
+      pendingBets.push(newBet);
+    } else if (existingBet) {
+      const idx = pendingBets.findIndex(b => b._id.toString() === existingBet._id.toString());
+      if (idx !== -1) {
+        pendingBets[idx] = existingBet;
+      } else {
+        pendingBets.push(existingBet);
+      }
+    }
+    user.exposure = calculateAllExposure(pendingBets);
 
     // Recalculate avbalance from the formula (fixes incremental update errors)
     user.avbalance = user.balance - user.exposure;
@@ -1262,17 +1270,10 @@ const placeBet = async (req, res) => {
     sendOpenBetsUpdates(user._id, null);
     console.timeEnd('SPORTS_BET_WEBSOCKET_UPDATES');
 
-    // Update all upline balances after bet placement
-    try {
-      console.time('SPORTS_BET_UPLINE_UPDATE');
-      await updateAllUplines(user._id);
-      console.timeEnd('SPORTS_BET_UPLINE_UPDATE');
-    } catch (err) {
-      console.error(
-        ` [SPORTS BET] Error updating upline balances:`,
-        err.message
-      );
-    }
+    // Update all upline balances after bet placement (background)
+    updateAllUplines(user._id).catch((err) => {
+      console.error(` [SPORTS BET] Error updating upline balances:`, err.message);
+    });
 
     // Record bet history regardless of new/existing
     const betHistory = new betHistoryModel({
@@ -1389,46 +1390,44 @@ export const placeFancyBet = async (req, res) => {
     if (!existingExact) {
       market_id = Math.floor(10000000 + Math.random() * 90000000);
 
-      // Look up beventId from the match list
-      let beventId = '';
-      try {
-        const matchListData = await apiFetchMatchList(Number(sid));
-        if (matchListData?.success && matchListData.data) {
-          const allMatches = [
-            ...(matchListData.data.t1 || []),
-            ...(matchListData.data.t2 || []),
-          ];
-          const matched = allMatches.find((m) => {
-            const matchId = String(m.beventId || m.oldgmid || m.gmid);
-            return matchId === String(gameId);
-          });
-          beventId = matched?.beventId ? String(matched.beventId) : '';
+      // Look up beventId and send bet-incoming in BACKGROUND to prevent blocking
+      (async () => {
+        let beventId = '';
+        try {
+          const matchListData = await apiFetchMatchList(Number(sid));
+          if (matchListData?.success && matchListData.data) {
+            const allMatches = [
+              ...(matchListData.data.t1 || []),
+              ...(matchListData.data.t2 || []),
+            ];
+            const matched = allMatches.find((m) => {
+              const matchId = String(m.beventId || m.oldgmid || m.gmid);
+              return matchId === String(gameId);
+            });
+            beventId = matched?.beventId ? String(matched.beventId) : '';
+          }
+        } catch (err) {
+          console.warn(
+            `[FANCY BET] Failed to fetch match list for beventId lookup:`,
+            err.message
+          );
         }
-      } catch (err) {
-        console.warn(
-          `[FANCY BET] Failed to fetch match list for beventId lookup:`,
-          err.message
-        );
-      }
 
-      try {
-        await apiSendBetIncoming({
-          sport_id: sid,
-          sportName: (gameName || '').replace(/\s*game\s*$/i, ''),
-          event_id: fancyMeta.gmid || gameId,
-          beventId,
-          event_name: eventName,
-          fancyId: fancyMeta.fancyId ? String(fancyMeta.fancyId) : null,
-          market_name: toApiMarketName(marketName),
-          fancyType: gameType,
-        });
-      } catch (err) {
-        console.error('Error fetching market_id:', err);
-        return res.status(502).json({
-          message: 'Could not fetch external market_id',
-          error: err.message,
-        });
-      }
+        try {
+          await apiSendBetIncoming({
+            sport_id: sid,
+            sportName: (gameName || '').replace(/\s*game\s*$/i, ''),
+            event_id: fancyMeta.gmid || gameId,
+            beventId,
+            event_name: eventName,
+            fancyId: fancyMeta.fancyId ? String(fancyMeta.fancyId) : null,
+            market_name: toApiMarketName(marketName),
+            fancyType: gameType,
+          });
+        } catch (err) {
+          console.error(`[FANCY BET] Error fetching market_id (bet-incoming):`, err.message);
+        }
+      })();
     }
 
     let p = parseFloat(price);
@@ -1530,6 +1529,7 @@ export const placeFancyBet = async (req, res) => {
     let activeBetId = null;
     let placementType = 'new';
     let parentBetSnapshot = null;
+    let finalBetObj = null;
 
     if (mergeBet) {
       // CASE 1: SAME TYPE + SAME FANCYSCORE - MERGE
@@ -1550,6 +1550,7 @@ export const placeFancyBet = async (req, res) => {
       mergeBet.mergeCount = (mergeBet.mergeCount || 1) + 1;
       await mergeBet.save();
       activeBetId = mergeBet._id; // Track the bet ID
+      finalBetObj = mergeBet;
       console.log(
         `[MERGE] Same type + same score bet merged - ${otype} + ${otype} at fancyScore=${fancyScore}`
       );
@@ -1627,6 +1628,7 @@ export const placeFancyBet = async (req, res) => {
         existingBet.placementType = 'score_offset';
         await existingBet.save();
         activeBetId = existingBet._id; // Track the bet ID
+        finalBetObj = existingBet;
         await user.save();
       } else if (oddsOffset) {
         // PRIORITY 2: Odds Offset (Secondary Priority)
@@ -1674,6 +1676,7 @@ export const placeFancyBet = async (req, res) => {
         existingBet.placementType = 'odds_offset';
         await existingBet.save();
         activeBetId = existingBet._id; // Track the bet ID
+        finalBetObj = existingBet;
         await user.save();
       } else {
         // PRIORITY 3: No Offset - Create Separate Bet
@@ -1708,6 +1711,7 @@ export const placeFancyBet = async (req, res) => {
         });
         await newBet.save();
         activeBetId = newBet._id; // Track the bet ID
+        finalBetObj = newBet;
         await user.save();
       }
     } else {
@@ -1735,6 +1739,7 @@ export const placeFancyBet = async (req, res) => {
       });
       await newBet.save();
       activeBetId = newBet._id; // Track the bet ID
+      finalBetObj = newBet;
     }
 
     // Record in bet history with tracking fields
@@ -1764,11 +1769,15 @@ export const placeFancyBet = async (req, res) => {
     await betHistory.save();
 
     // Recalculate exposure from updated bets (fancy + non-fancy)
-    const updatedPendingBets = await betModel.find({
-      userId: id,
-      status: 0,
-    });
-    user.exposure = calculateAllExposure(updatedPendingBets);
+    if (finalBetObj) {
+      const idx = pendingBets.findIndex(b => b._id.toString() === finalBetObj._id.toString());
+      if (idx !== -1) {
+        pendingBets[idx] = finalBetObj;
+      } else {
+        pendingBets.push(finalBetObj);
+      }
+    }
+    user.exposure = calculateAllExposure(pendingBets);
     user.avbalance = user.balance - user.exposure;
 
     // CRITICAL SAFETY CHECK: PTI must never be negative
@@ -1782,15 +1791,10 @@ export const placeFancyBet = async (req, res) => {
       `[FANCY EXPOSURE] User ${user.userName}: exposure=${user.exposure}`
     );
 
-    // Update all upline balances after bet placement
-    try {
-      await updateAllUplines(user._id);
-    } catch (err) {
-      console.error(
-        ' [FANCY BET] Error updating upline balances:',
-        err.message
-      );
-    }
+    // Update all upline balances after bet placement (background)
+    updateAllUplines(user._id).catch((err) => {
+      console.error(' [FANCY BET] Error updating upline balances:', err.message);
+    });
 
     // Send updates to all connected clients
     sendOpenBetsUpdates(user);
@@ -2969,7 +2973,9 @@ export const updateFancyBetResult = async (req, res) => {
           const isProviderB =
             getProviderName() === 'providerb' ||
             getProviderName() === 'provider_b';
-
+          const isProviderC =
+            getProviderName() === 'providerc' ||
+            getProviderName() === 'provider_c';
           for (const bet of groupedBets[gameId]) {
             const sid = bet.sid;
 
@@ -2979,7 +2985,7 @@ export const updateFancyBetResult = async (req, res) => {
             if (process.env.DEV_MOCK_API === '1') {
               score = '200';
               console.log(` [MOCK API] Using test score: ${score}`);
-            } else if (isProviderB && bet.fancyId) {
+            } else if ((isProviderB || isProviderC)  && bet.fancyId) {
               // Provider B: use /cricket/fancyresult with eventId + fancyId
               try {
                 const fancyResult = await apiFetchCricketFancyResult(

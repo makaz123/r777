@@ -641,7 +641,6 @@ export default function Cricketbet() {
                           {formatToK(tossTeamsData[0]?.max)}
                         </div>
                       </div>
-                    </div>
 
                     <div className='relative'>
                       {tossTeamsData[0]?.status === 'SUSPENDED' && (

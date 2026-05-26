@@ -14,6 +14,8 @@ function SportsSidebar({ isOpen, onClose }) {
   const { matches: cricketMatches } = useSelector((state) => state.cricket);
   const { matches: tennisMatches } = useSelector((state) => state.tennis);
   const { matches: soccerMatches } = useSelector((state) => state.soccer);
+  const [openSettlement, setOpenSettlement] = useState(false);
+  const [openReport, setOpenReport] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCricketData());
@@ -79,12 +81,12 @@ function SportsSidebar({ isOpen, onClose }) {
       <>
         <button
           onClick={() => toggleItem(sportKey)}
-          className='flex w-full cursor-pointer items-center justify-between gap-1.5 px-4 py-1.5 text-white hover:bg-[#18b0c8]'
+          className='flex w-full cursor-pointer items-center justify-between gap-1.5 px-4 py-1.5 text-white hover:bg-[#18b0c8] border-b border-[#18b0c8] last:border-b-0'
         >
           {sportName} <MdOutlineArrowDropDown />
         </button>
         {isExpanded(sportKey) && hasData && (
-          <div className='bg-blue-100 pr-2 pl-6'>
+          <div className='bg-blue-100 pr-2 pl-4'>
             {titles.map((title) => {
               const titleKey = createTitleKey(sportKey, title);
               const matches = groupedData[title];
@@ -92,9 +94,9 @@ function SportsSidebar({ isOpen, onClose }) {
                 <>
                   <button
                     onClick={() => toggleItem(titleKey)}
-                    className='flex w-full cursor-pointer items-center gap-1.5 py-[5px] text-black'
+                    className='flex items-start w-full cursor-pointer items-center gap-2 py-[7px] text-black text-[12px] md:text-[14px]'
                   >
-                    <ToggleIcon expanded={isExpanded(titleKey)} />
+                    <span><ToggleIcon expanded={isExpanded(titleKey)} /></span>
                     <span className='text-left'>{title}</span>{' '}
                   </button>
                   {isExpanded(titleKey) && matches && matches.length > 0 && (
@@ -102,7 +104,7 @@ function SportsSidebar({ isOpen, onClose }) {
                       {matches.map((match) => (
                         <a
                           href='#'
-                          className='flex items-center gap-1 py-1 text-black transition-colors'
+                          className='flex items-center gap-1 py-1 text-black transition-colors text-[12px] md:text-[14px]'
                           onClick={(e) => {
                             e.preventDefault();
                             navigate(
@@ -130,10 +132,118 @@ function SportsSidebar({ isOpen, onClose }) {
   return (
     <>
       <aside
-        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[250px] transform border-r border-gray-300 bg-[#007082] text-white shadow-xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[200px] md:w-[250px] transform border-r border-gray-300 md:bg-[#007082] bg-gradient-to-b from-[#007082] to-[#18b0c8] text-white shadow-xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } overflow-y-auto`}
       >
+         <ul className='block md:hidden'>
+            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/')}>
+              Dashboard
+            </li>
+
+            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/user-download-list')}>
+              Client
+            </li>
+
+            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/my-market')}>
+              Sport Analysis
+            </li>
+
+            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/casino-analysis')}>
+              Casino Analysis
+            </li>
+
+            {/* Settlement Dropdown */}
+            <li>
+              <button
+                type='button'
+                onClick={() => setOpenSettlement(!openSettlement)}
+                className='w-full px-4 py-2 flex items-center justify-between border-b border-[#18b0c8]'
+              >
+                <span>Settlement</span>
+
+                <MdOutlineArrowDropDown
+                  className={`text-xl transition-transform duration-300 ${
+                    openSettlement ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openSettlement && (
+                <ul>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/user-settlement')}>
+                    User
+                  </li>
+
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/master-settlement')}>
+                    Master
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            <li>
+              <button
+                type='button'
+                onClick={() => setOpenReport(!openReport)}
+                className='w-full px-4 py-2 flex items-center justify-between border-b border-[#18b0c8]'
+              >
+                <span>Reports</span>
+
+                <MdOutlineArrowDropDown
+                  className={`text-xl transition-transform duration-300 ${
+                    openReport ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {openReport && (
+                <ul>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/user-details')}>
+                    User Detail
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/AccountStatement')}>
+                    Account Statement
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/SettlementReport')}>
+                    Settlement/Balance Report
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/TransactionReport')}>
+                    Transaction Report
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/CurrentBets')}>
+                    Current Bets
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/ProfitLossReport')}>
+                    Profit & Loss Report
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/EventLossReport')}>
+                    Event Profit & Loss Report
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/BetHistoryReport')}>
+                    Bet History
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/LiveBetsReport')}>
+                    Live Bets
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/SportRevenue')}>
+                    Sports Revenue
+                  </li>
+                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/IpLookupReport')}>
+                    IP lookup
+                  </li>
+                </ul>
+              )}
+            </li>
+
+            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/gamebetlock')}>
+              Game Control
+            </li>
+
+            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/casinolock')}>
+              Casino Control
+            </li>
+          </ul>
         {/* Cricket */}
         {renderSportSection(
           'Cricket',

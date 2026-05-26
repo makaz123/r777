@@ -157,7 +157,7 @@ const IpLookupReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
+      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>IP Lookup Report</div>
           <div className='mt-2 mb-10 grid grid-cols-6 gap-x-6 gap-y-4'>

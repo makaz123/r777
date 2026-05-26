@@ -123,7 +123,7 @@ const AccountSummaryBar = () => {
 
       {open && (
         <div className='px-4 pt-0 pb-4'>
-          <div className='grid grid-cols-2 gap-x-8 gap-y-2 md:grid-cols-5'>
+          <div className='grid grid-cols gap-x-8 gap-y-2 md:grid-cols-5'>
             <div className='space-y-1'>
               <MetricTooltipRow label='User ID : ' tooltip='Your username.'>
                 <span className='font-medium'>

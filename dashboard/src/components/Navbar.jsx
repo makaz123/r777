@@ -235,55 +235,6 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           location.pathname == '/login' ? 'hidden' : 'block'
         }`}
       >
-        {/* Mobile Header - Split into two rows */}
-        <div className='hidden'>
-          {/* Top row - Role and Name */}
-          <header className='flex h-[52px] items-center justify-between border-b border-gray-800 bg-gradient-to-b from-[#022c43] to-[#18b0c8] p-2'>
-            <div className='flex items-center gap-2'>
-              <button
-                onClick={() => setSportsSidebarOpen((prev) => !prev)}
-                className='flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded bg-[#2a2a2a] text-white'
-                style={{ boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)' }}
-              >
-                <IoMdMenu className='text-xl' />
-              </button>
-              <img src={logo} alt='logo' className='h-[50px]' />
-            </div>
-            <div className='grid justify-items-end'>
-              <div className='flex items-center gap-2'>
-                <p
-                  className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
-                  style={{
-                    boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)',
-                  }}
-                >
-                  {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
-                </p>
-                <p className='text-sm text-white'>{userInfo?.userName}</p>
-              </div>
-              <div className='mt-1 flex items-center gap-2'>
-                <div className='text-xs font-semibold text-white'>
-                  {loading ? (
-                    <p>Loading...</p>
-                  ) : (
-                    <p>
-                      IRP (<span className=''>{userInfo?.avbalance || 0}</span>)
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={reload}
-                  className='flex h-[25px] w-[25px] cursor-pointer items-center justify-center rounded-[2px] bg-[#2a2a2a] text-[20px] leading-[20px] text-white'
-                  style={{
-                    boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)',
-                  }}
-                >
-                  <IoMdRefresh className='p-[1px]' />
-                </button>
-              </div>
-            </div>
-          </header>
-        </div>
 
         {/* Desktop Header */}
         <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
@@ -311,7 +262,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               <img src={logo} alt='logo' className='block h-full' />
             </NavLink>
 
-            <nav className='h-full text-black'>
+            <nav className='h-full text-black hidden md:flex'>
               <ul className='relative z-999 mx-auto flex h-full w-full flex-wrap items-center'>
                 {visibleNavItems.map((item, i) => (
                   <li
@@ -386,8 +337,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </nav>
           </div>
 
-          <div className='mr-4 flex items-center gap-4'>
-            <NotificationBell role={userInfo?.role} />
+          <div className='mr-4 flex items-center gap-1'>
+            
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -395,8 +346,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               >
                 {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
               </p> */}
-              <p
-                className='text-sm text-white'
+              <p className='text-sm text-white'
                 onClick={() => setShowLogoutPopup((prev) => !prev)}
               >
                 {userInfo?.name}
@@ -432,98 +382,10 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                 </motion.div>
               )}
             </div>
+            <NotificationBell role={userInfo?.role} />
           </div>
         </header>
 
-        {/* Mobile Navigation (Horizontal Scrollable) */}
-        <nav className='bg-color2 relative mb-[15px] hidden overflow-x-auto leading-[30px] whitespace-nowrap text-white'>
-          <ul className='flex'>
-            {visibleNavItems.map((item, i) => (
-              <li
-                key={i}
-                className='relative inline-block'
-                onMouseEnter={() => setHoveredItem(item.name)}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                {item.path ? (
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${
-                        isActive ? 'bg-color text-white' : 'text-black'
-                      }`
-                    }
-                    onClick={() => setActiveItem(item.name)}
-                  >
-                    {item.name}
-                  </NavLink>
-                ) : (
-                  <div className='relative'>
-                    <span
-                      className='flex cursor-pointer items-center border-r border-gray-500 px-3 text-[13px] font-semibold text-black'
-                      onClick={(e) => toggleMobileSubmenu(item.name, e)}
-                    >
-                      {item.name}
-                      <IoMdArrowDropdown className='h-5 w-5' />
-                    </span>
-
-                    {/* Mobile Submenu Dropdown - positioned absolutely within viewport */}
-                    {mobileSubmenuOpen === item.name && (
-                      <ul
-                        className='bg-color fixed top-0 left-0 z-20 w-40 border border-gray-700 font-semibold text-white shadow-lg'
-                        style={{
-                          top: `${dropdownPosition.top}px`,
-                          left: `${dropdownPosition.left}px`,
-                          position: dropdownPosition.position,
-                        }}
-                      >
-                        {item.submenu
-                          .filter(
-                            (sub) =>
-                              !(
-                                userInfo?.role === 'agent' &&
-                                sub.name === 'Agent Downline List'
-                              )
-                          )
-                          .map((sub, index) => (
-                            <li
-                              key={index}
-                              className='border-b border-gray-700 last:border-b-0 hover:bg-gray-800'
-                            >
-                              <NavLink
-                                to={sub.path}
-                                className='block px-3 text-[13px]'
-                                onClick={(e) => {
-                                  setActiveItem(item.name);
-                                  setMobileSubmenuOpen(null);
-                                  if (sub.reload) {
-                                    e.preventDefault();
-                                    navigate(sub.path);
-                                    window.location.reload();
-                                  }
-                                }}
-                              >
-                                {sub.name}
-                              </NavLink>
-                            </li>
-                          ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
-            {/* Logout button in scrollable menu */}
-            <li className='inline-block'>
-              <button
-                onClick={logout}
-                className='flex items-center gap-1 border-r border-gray-500 px-3 text-[13px] font-semibold text-black'
-              >
-                Logout <MdLogout />
-              </button>
-            </li>
-          </ul>
-        </nav>
 
         <AccountSummaryBar />
 

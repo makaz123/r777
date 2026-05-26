@@ -565,7 +565,7 @@ export default function Cricketbet() {
   return (
     <div className='relative'>
       <Navbar />
-      <div className='scrollbar-hide min-h-screen overflow-y-scroll bg-[#f0f0f5] px-[15px] py-[13px]'>
+      <div className='scrollbar-hide min-h-screen overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full rounded-lg bg-white px-[15px] py-[10px]'>
           {loader ? (
             <div className='fixed top-52 left-[40%] py-4 text-center'>

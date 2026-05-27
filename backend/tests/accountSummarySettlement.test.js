@@ -17,12 +17,7 @@ import {
 import { getViewerShareOfUserClientPL } from '../utils/partnershipCommissionUtils.js';
 
 const viewer = { code: 'AGENT1', role: 'agent', partnership: 100 };
-const accountByCode = new Map([
-  [
-    'AGENT1',
-  viewer,
-  ],
-]);
+const accountByCode = new Map([['AGENT1', viewer]]);
 
 const makeUser = (id, clientPL) => ({
   _id: id,
@@ -34,9 +29,9 @@ const makeUser = (id, clientPL) => ({
 
 describe('expectedBettingPLFromHistory', () => {
   it('reduces creditor outstanding when winnings are paid (withdrawl)', () => {
-    expect(expectedBettingPLFromHistory(100, { withdrawl: 40, deposite: 0 })).toBe(
-      60
-    );
+    expect(
+      expectedBettingPLFromHistory(100, { withdrawl: 40, deposite: 0 })
+    ).toBe(60);
   });
 
   it('reduces debtor outstanding when loss is collected (deposite)', () => {
@@ -132,7 +127,10 @@ describe('applySettlementCashToUplineShare', () => {
 
   it('lena (−): deposite clears upline collectable (same as user P/L rule)', () => {
     expect(
-      applySettlementCashToUplineShare(-16.48, { withdrawl: 0, deposite: 16.48 })
+      applySettlementCashToUplineShare(-16.48, {
+        withdrawl: 0,
+        deposite: 16.48,
+      })
     ).toBe(0);
   });
 
@@ -199,13 +197,11 @@ describe('resolveAccountSummaryWeekPL', () => {
 
   it('sumDownlineWeekSettlementCashNet and getSelfWeekSettlementCashNet', () => {
     const users = [{ _id: 'u1', role: 'user' }];
-    const map = new Map([
-      ['u1', { withdrawl: 0, deposite: 50 }],
-    ]);
+    const map = new Map([['u1', { withdrawl: 0, deposite: 50 }]]);
     expect(sumDownlineWeekSettlementCashNet(users, map)).toBe(50);
-    expect(
-      getSelfWeekSettlementCashNet({ withdrawl: 100, deposite: 0 })
-    ).toBe(100);
+    expect(getSelfWeekSettlementCashNet({ withdrawl: 100, deposite: 0 })).toBe(
+      100
+    );
   });
 });
 

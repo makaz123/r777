@@ -1,9 +1,9 @@
-import dotenv from "dotenv";
-import dns from "dns";
+import dotenv from 'dotenv';
+import dns from 'dns';
 
 // Force IPv4 (Node.js v17+ issue fix)
-dns.setDefaultResultOrder("ipv4first");
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 // Load env variables
 dotenv.config();

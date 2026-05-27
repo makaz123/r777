@@ -132,13 +132,9 @@ export default function Userlist() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const {
-    userInfo,
-    currentPage,
-    totalPages,
-    onlyusers,
-    users,
-  } = useSelector((state) => state.auth);
+  const { userInfo, currentPage, totalPages, onlyusers, users } = useSelector(
+    (state) => state.auth
+  );
   const { id } = useParams();
   const [entries, setEntries] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -594,14 +590,14 @@ export default function Userlist() {
       Math.abs(gross - exp) > 0.01
         ? `Gross exposure: ${formatTableMoney(gross)}`
         : undefined;
-    
+
     // Allow clicking for everyone so admins/agents can see their downline's exposure details
     const isClickable = true;
 
     if (n === 0) {
       return (
-        <span 
-          className={`text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+        <span
+          className={`text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
           title={title}
           onClick={() => isClickable && handleExposureClick(row._id)}
         >
@@ -611,8 +607,8 @@ export default function Userlist() {
     }
     if (n < 0) {
       return (
-        <span 
-          className={`font-medium text-red-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+        <span
+          className={`font-medium text-red-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
           title={title}
           onClick={() => isClickable && handleExposureClick(row._id)}
         >
@@ -621,8 +617,8 @@ export default function Userlist() {
       );
     }
     return (
-      <span 
-        className={`font-medium text-green-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`} 
+      <span
+        className={`font-medium text-green-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
         title={title}
         onClick={() => isClickable && handleExposureClick(row._id)}
       >
@@ -804,7 +800,7 @@ export default function Userlist() {
 
       <div className='h-fit bg-gray-200 md:px-[15px] md:py-[13px]'>
         <div className='rounded-md bg-white px-4 py-1'>
-          <div className='mb-2 md:flex items-center justify-between'>
+          <div className='mb-2 items-center justify-between md:flex'>
             <div className='grid'>
               <div className='text-[14px] font-bold'>Client List</div>
               <div className='flex items-center gap-1'>
@@ -835,8 +831,8 @@ export default function Userlist() {
               </div>
             </div>
 
-            <div className='flex gap-1 mt-1 md:mt-0'>
-              <div className='mb-2 flex items-center justify-center font-semibold text-black md:mb-0 text-[12px] md:text-[12px]'>
+            <div className='mt-1 flex gap-1 md:mt-0'>
+              <div className='mb-2 flex items-center justify-center text-[12px] font-semibold text-black md:mb-0 md:text-[12px]'>
                 <span className='mr-2'>Show</span>
                 <select
                   className='rounded border border-gray-300 px-2 py-1'
@@ -853,14 +849,14 @@ export default function Userlist() {
               </div>
 
               <button
-                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] md:px-3 px-1 py-1 text-[12px] md:text-[14px] text-white h-fit'
+                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-1 py-1 text-[12px] text-white md:px-3 md:text-[14px]'
                 onClick={() => navigate('/agent-download-list/insertagent')}
               >
                 Add Client Account
               </button>
 
               <button
-                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] md:px-3 px-1 py-1 text-[12px] md:text-[14px] text-white h-fit'
+                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-1 py-1 text-[12px] text-white md:px-3 md:text-[14px]'
                 onClick={() =>
                   setActiveTab((tab) =>
                     tab === 'active' ? 'deactive' : 'active'
@@ -1796,30 +1792,15 @@ export default function Userlist() {
             </div>
           )}
 
-        {/* Settlement Modal */}
-        {settlePopup && settleSelectedUser && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.4 }}
-              className='w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
-            >
-              <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 py-2 text-white'>
-                <span className='text-[16px] font-bold'>Settlement</span>
-                <button
-                  type='button'
-                  onClick={() => setSettlePopup(false)}
-                  className='text-xl leading-none font-bold text-gray-200'
-                >
-                  ×
-                </button>
-              </div>
-
-              <form
-                onSubmit={handleSettleSubmit}
-                className='space-y-4 px-6 py-4 text-[14px]'
+          {/* Settlement Modal */}
+          {settlePopup && settleSelectedUser && (
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
               >
                 <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
                   <div className='font-bold text-gray-800'>User Name:</div>
@@ -1917,91 +1898,225 @@ export default function Userlist() {
                   <button
                     type='button'
                     onClick={() => setSettlePopup(false)}
-                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                    className='text-xl leading-none font-bold text-gray-200'
                   >
-                    Cancel
+                    ×
                   </button>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
 
-        {/* Exposure Modal */}
-        {exposurePopup && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className='w-full max-w-4xl overflow-hidden rounded bg-white shadow-xl'
-            >
-              <div className='flex items-center justify-between bg-gradient-to-r from-teal-500 to-teal-700 px-4 py-2 text-white'>
-                <h2 className='text-[15px] font-bold'>User Event Exposure</h2>
-                <button
-                  onClick={() => setExposurePopup(false)}
-                  className='text-2xl font-bold leading-none hover:text-gray-200'
+                <form
+                  onSubmit={handleSettleSubmit}
+                  className='space-y-4 px-6 py-4 text-[14px]'
                 >
-                  ×
-                </button>
-              </div>
+                  <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
+                    <div className='font-bold text-gray-800'>User Name:</div>
+                    <div className='text-black'>
+                      {settleSelectedUser.userName}
+                    </div>
 
-              <div className='p-4 max-h-[80vh] overflow-y-auto bg-gray-50'>
-                {isFetchingExposure ? (
-                  <div className='text-center py-10'>Loading...</div>
-                ) : exposureData && exposureData.length > 0 ? (
-                  <table className='w-full border-collapse border border-gray-300 text-[13px]'>
-                    <thead>
-                      <tr className='bg-gray-500 text-white'>
-                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Event Date & Time</th>
-                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Series Name</th>
-                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Event Name</th>
-                        <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>Market Type</th>
-                        <th className='border border-gray-300 px-2 py-1.5 text-right font-bold'>Exposure</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {exposureData.map((item, idx) => (
-                        <tr key={idx} className='bg-white'>
-                          <td className='border border-gray-300 px-2 py-1.5'>
-                            {item.eventDate ? new Date(item.eventDate).toLocaleString('en-IN') : '—'}
-                          </td>
-                          <td className='border border-gray-300 px-2 py-1.5'>{item.sportName}</td>
-                          <td className='border border-gray-300 px-2 py-1.5'>
-                            <span 
-                              className='font-bold underline cursor-pointer text-black hover:text-blue-600'
-                              onClick={() => {
-                                setExposurePopup(false);
-                                const sName = item.sportName?.toLowerCase() || '';
-                                if(sName === 'cricket' || sName === 'tennis' || sName === 'soccer') {
-                                  navigate(`/${sName}-bet/${item.sportName}/${item.eventName}/${item.gameId}`);
-                                } else if(sName === 'casino') {
-                                  navigate(`/casino-bet/${item.gameId}`);
-                                } else {
-                                  // default fallback 
-                                  navigate(`/cricket-bet/Cricket/${item.eventName}/${item.gameId}`);
-                                }
-                              }}
-                            >
-                              {item.eventName}
-                            </span>
-                          </td>
-                          <td className='border border-gray-300 px-2 py-1.5 uppercase'>{item.marketName}</td>
-                          <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-red-600'>
-                            {Number(item.displayExposure).toFixed(2)}
-                          </td>
+                    <div className='font-bold text-gray-800'>
+                      My Available Bal
+                    </div>
+                    <div className='font-bold text-gray-800'>P&L</div>
+
+                    <div className='font-bold text-green-600'>
+                      {Number(userInfo?.avbalance || 0).toFixed(2)}
+                    </div>
+                    <div
+                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {Number(settleUserPL || 0).toFixed(2)}
+                    </div>
+
+                    <div className='font-bold text-gray-800'>Exposure</div>
+                    <div className='font-bold text-gray-800'>
+                      Amount To Settle
+                    </div>
+
+                    <div className='text-black'>
+                      {Number(
+                        settleSelectedUser.shareExposure ??
+                          settleSelectedUser.exposure ??
+                          0
+                      ).toFixed(2)}
+                    </div>
+                    <div
+                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {Number(settleUserPL || 0).toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div className='mt-4 flex items-center gap-2'>
+                    <label className='w-[140px] font-bold text-gray-800'>
+                      Settle Amount
+                    </label>
+                    <input
+                      type='number'
+                      step='0.01'
+                      className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                      value={settleAmount}
+                      onChange={(e) => setSettleAmount(e.target.value)}
+                      required
+                    />
+                    <button
+                      type='button'
+                      onClick={() =>
+                        setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))
+                      }
+                      className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
+                    >
+                      Full Settle
+                    </button>
+                  </div>
+
+                  <div className='flex items-start gap-2'>
+                    <label className='w-[140px] font-bold text-gray-800'>
+                      Remarks
+                    </label>
+                    <textarea
+                      rows={3}
+                      className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
+                      value={settleRemarks}
+                      onChange={(e) => setSettleRemarks(e.target.value)}
+                    />
+                  </div>
+
+                  <div className='flex items-center gap-2'>
+                    <label className='w-[140px] font-bold text-gray-800'>
+                      Master Password
+                    </label>
+                    <input
+                      type='password'
+                      className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                      value={settlePassword}
+                      onChange={(e) => setSettlePassword(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className='flex justify-end gap-2 pt-2'>
+                    <button
+                      type='submit'
+                      disabled={isSettling}
+                      className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
+                    >
+                      {isSettling ? 'Processing...' : 'Submit'}
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSettlePopup(false)}
+                      className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Exposure Modal */}
+          {exposurePopup && (
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className='w-full max-w-4xl overflow-hidden rounded bg-white shadow-xl'
+              >
+                <div className='flex items-center justify-between bg-gradient-to-r from-teal-500 to-teal-700 px-4 py-2 text-white'>
+                  <h2 className='text-[15px] font-bold'>User Event Exposure</h2>
+                  <button
+                    onClick={() => setExposurePopup(false)}
+                    className='text-2xl leading-none font-bold hover:text-gray-200'
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className='max-h-[80vh] overflow-y-auto bg-gray-50 p-4'>
+                  {isFetchingExposure ? (
+                    <div className='py-10 text-center'>Loading...</div>
+                  ) : exposureData && exposureData.length > 0 ? (
+                    <table className='w-full border-collapse border border-gray-300 text-[13px]'>
+                      <thead>
+                        <tr className='bg-gray-500 text-white'>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Event Date & Time
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Series Name
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Event Name
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Market Type
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-right font-bold'>
+                            Exposure
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className='text-center py-10'>No exposure found.</div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-
+                      </thead>
+                      <tbody>
+                        {exposureData.map((item, idx) => (
+                          <tr key={idx} className='bg-white'>
+                            <td className='border border-gray-300 px-2 py-1.5'>
+                              {item.eventDate
+                                ? new Date(item.eventDate).toLocaleString(
+                                    'en-IN'
+                                  )
+                                : '—'}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5'>
+                              {item.sportName}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5'>
+                              <span
+                                className='cursor-pointer font-bold text-black underline hover:text-blue-600'
+                                onClick={() => {
+                                  setExposurePopup(false);
+                                  const sName =
+                                    item.sportName?.toLowerCase() || '';
+                                  if (
+                                    sName === 'cricket' ||
+                                    sName === 'tennis' ||
+                                    sName === 'soccer'
+                                  ) {
+                                    navigate(
+                                      `/${sName}-bet/${item.sportName}/${item.eventName}/${item.gameId}`
+                                    );
+                                  } else if (sName === 'casino') {
+                                    navigate(`/casino-bet/${item.gameId}`);
+                                  } else {
+                                    // default fallback
+                                    navigate(
+                                      `/cricket-bet/Cricket/${item.eventName}/${item.gameId}`
+                                    );
+                                  }
+                                }}
+                              >
+                                {item.eventName}
+                              </span>
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5 uppercase'>
+                              {item.marketName}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-red-600'>
+                              {Number(item.displayExposure).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className='py-10 text-center'>No exposure found.</div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
         </div>
       </div>
     </>

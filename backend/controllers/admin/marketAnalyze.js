@@ -102,10 +102,7 @@ export const buildSportAnalysisFromBets = (bets) => {
       const row = buildMarketRow(name, mBets, eventSides);
       markets.push(row);
       totalBets += row.bets;
-      totalAmount += mBets.reduce(
-        (s, b) => s + (Number(b.betAmount) || 0),
-        0
-      );
+      totalAmount += mBets.reduce((s, b) => s + (Number(b.betAmount) || 0), 0);
     }
 
     const primary =
@@ -158,19 +155,32 @@ async function getDownlineUsersFull(adminId) {
   return downlines[0]?.users || [];
 }
 
-export function applyAdminViceVersaTransformation(bets, admin, userMap, accountByCode) {
+export function applyAdminViceVersaTransformation(
+  bets,
+  admin,
+  userMap,
+  accountByCode
+) {
   return bets.map((bet) => {
     const clientUser = userMap[bet.userId?.toString()];
     if (!clientUser) return bet;
 
-    const shareAmountFor100 = getViewerShareOfUserClientPL(admin.code, clientUser, accountByCode, 100);
-    const shareRatio = shareAmountFor100 / (-100);
+    const shareAmountFor100 = getViewerShareOfUserClientPL(
+      admin.code,
+      clientUser,
+      accountByCode,
+      100
+    );
+    const shareRatio = shareAmountFor100 / -100;
 
     let adminOtype = bet.otype;
     let adminTotalPrice = bet.price * shareRatio;
     let adminTotalBetAmount = bet.betAmount * shareRatio;
 
-    if (bet.gameType !== 'Normal' && !bet.gameType?.toLowerCase().includes('fancy')) {
+    if (
+      bet.gameType !== 'Normal' &&
+      !bet.gameType?.toLowerCase().includes('fancy')
+    ) {
       adminOtype = bet.otype === 'back' ? 'lay' : 'back';
       adminTotalPrice = bet.betAmount * shareRatio;
       adminTotalBetAmount = bet.price * shareRatio;
@@ -199,7 +209,7 @@ export const getDownlinePendingBetsByGame = async (req, res) => {
 
     const downlineUsers = await getDownlineUsersFull(admin._id);
     const ids = downlineUsers.map((u) => u._id.toString());
-    
+
     if (ids.length === 0) {
       return res.json({
         success: true,
@@ -259,8 +269,13 @@ export const getDownlinePendingBetsByGame = async (req, res) => {
     const pendingBets = await betModel
       .find({ userId: { $in: ids }, status: 0 })
       .lean();
-      
-    const transformedBets = applyAdminViceVersaTransformation(pendingBets, admin, userMap, accountByCode);
+
+    const transformedBets = applyAdminViceVersaTransformation(
+      pendingBets,
+      admin,
+      userMap,
+      accountByCode
+    );
     const sportAnalysis = buildSportAnalysisFromBets(transformedBets);
 
     return res.status(200).json({ success: true, data: result, sportAnalysis });
@@ -320,7 +335,8 @@ export const getPendingMarketAmounts = async (req, res) => {
 
     const downlineUsers = downlines[0]?.users || [];
     const ids = downlineUsers.map((x) => x._id.toString());
-    if (ids.length === 0) return res.json({ success: true, data: [], comboBookData: [] });
+    if (ids.length === 0)
+      return res.json({ success: true, data: [], comboBookData: [] });
 
     const userMap = {};
     const accountByCode = new Map();
@@ -333,14 +349,21 @@ export const getPendingMarketAmounts = async (req, res) => {
 
     const validGameTypes = betTypes.map((bt) => bt.gameType);
 
-    const bets = await betModel.find({
-      userId: { $in: ids },
-      status: 0,
-      gameId, // from req.query
-      gameType: { $in: validGameTypes },
-    }).lean();
-    
-    const transformedBets = applyAdminViceVersaTransformation(bets, admin, userMap, accountByCode);
+    const bets = await betModel
+      .find({
+        userId: { $in: ids },
+        status: 0,
+        gameId, // from req.query
+        gameType: { $in: validGameTypes },
+      })
+      .lean();
+
+    const transformedBets = applyAdminViceVersaTransformation(
+      bets,
+      admin,
+      userMap,
+      accountByCode
+    );
 
     const grouped = {};
 
@@ -412,67 +435,76 @@ export const getPendingMarketAmounts = async (req, res) => {
       }
     }
 
-    const result = Object.values(grouped).map(g => ({
-       ...g,
-       totalBetAmount: Math.round(g.totalBetAmount * 100) / 100,
-       totalPrice: Math.round(g.totalPrice * 100) / 100,
+    const result = Object.values(grouped).map((g) => ({
+      ...g,
+      totalBetAmount: Math.round(g.totalBetAmount * 100) / 100,
+      totalPrice: Math.round(g.totalPrice * 100) / 100,
     }));
     console.log('GetPendingMarketAmounts', result);
 
     const comboBookDataMap = {}; // { [teamName]: adminNetOutcome }
-    const comboBookBets = bets.filter(b => b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy'));
-    
+    const comboBookBets = bets.filter(
+      (b) =>
+        b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
+    );
+
     // Find all unique teams involved in these bets
     const comboBookTeams = new Set();
     for (const bet of comboBookBets) {
-       if (bet.teamName) comboBookTeams.add(bet.teamName);
+      if (bet.teamName) comboBookTeams.add(bet.teamName);
     }
     const allTeams = Array.from(comboBookTeams);
 
     // Initialize map
     for (const team of allTeams) {
-       comboBookDataMap[team] = 0;
+      comboBookDataMap[team] = 0;
     }
 
     // Now calculate Admin net outcome per team
     for (const bet of comboBookBets) {
       const clientUser = userMap[bet.userId.toString()];
       if (!clientUser) continue;
-      
-      const shareAmountFor100 = getViewerShareOfUserClientPL(admin.code, clientUser, accountByCode, 100);
-      const shareRatio = shareAmountFor100 / (-100);
-      
+
+      const shareAmountFor100 = getViewerShareOfUserClientPL(
+        admin.code,
+        clientUser,
+        accountByCode,
+        100
+      );
+      const shareRatio = shareAmountFor100 / -100;
+
       const betTeam = bet.teamName;
       const profit = Number(bet.betAmount) || 0;
       const stake = Number(bet.price) || 0;
-      
+
       for (const team of allTeams) {
         let userNetOutcome = 0;
-        const isBetOnThisTeam = (betTeam === team);
-        
+        const isBetOnThisTeam = betTeam === team;
+
         if (bet.otype === 'back') {
-           if (isBetOnThisTeam) {
-              userNetOutcome = profit;
-           } else {
-              userNetOutcome = -stake;
-           }
-        } else { // lay
-           if (isBetOnThisTeam) {
-              userNetOutcome = -stake;
-           } else {
-              userNetOutcome = profit;
-           }
+          if (isBetOnThisTeam) {
+            userNetOutcome = profit;
+          } else {
+            userNetOutcome = -stake;
+          }
+        } else {
+          // lay
+          if (isBetOnThisTeam) {
+            userNetOutcome = -stake;
+          } else {
+            userNetOutcome = profit;
+          }
         }
-        
+
         // Admin liability is vice-versa (-1) * shareRatio
         const adminOutcome = -1 * userNetOutcome * shareRatio;
         comboBookDataMap[team] += adminOutcome;
       }
     }
-    
-    const comboBookData = Object.keys(comboBookDataMap).map(team => ({
-       teamName: team,
-       netOutcome: Math.round(comboBookDataMap[team] * 100) / 100
+
+    const comboBookData = Object.keys(comboBookDataMap).map((team) => ({
+      teamName: team,
+      netOutcome: Math.round(comboBookDataMap[team] * 100) / 100,
     }));
 
     return res

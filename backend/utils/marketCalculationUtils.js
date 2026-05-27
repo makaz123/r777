@@ -149,7 +149,7 @@ export function mapScenariosToMatchSides(scenarios, eventSides) {
     team1: eventSides.team1,
     team2: eventSides.team2,
     team1Value: round(scenarios[key1] ?? 0),
-    team2Value: round(key2 ? scenarios[key2] ?? 0 : 0),
+    team2Value: round(key2 ? (scenarios[key2] ?? 0) : 0),
   };
 }
 

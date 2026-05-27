@@ -144,13 +144,16 @@ router.get('/wipe-test-data', async (req, res) => {
     await TransactionHistory.deleteMany({});
     await CasinoBetHistory.deleteMany({});
     await betHistoryModel.deleteMany({});
-    await SubAdmin.updateMany({}, {
-      $set: {
-        bettingProfitLoss: 0,
-        uplineBettingProfitLoss: 0,
-      },
-      $unset: { weekPLResetAt: 1 }
-    });
+    await SubAdmin.updateMany(
+      {},
+      {
+        $set: {
+          bettingProfitLoss: 0,
+          uplineBettingProfitLoss: 0,
+        },
+        $unset: { weekPLResetAt: 1 },
+      }
+    );
     res.send('Test data wiped successfully!');
   } catch (error) {
     res.status(500).send(error.message);

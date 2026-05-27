@@ -240,7 +240,12 @@ export default function InsertAgent() {
                           type='text'
                           className='h-[30px] w-[15%] rounded-sm border border-[#ced4da] px-2 py-[1px] font-light text-gray-500'
                           value={formData.commition}
-                          onChange={(e) => setFormData({ ...formData, commition: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              commition: e.target.value,
+                            })
+                          }
                         />
                         <span className='px-0.5 text-[#a1aed4]'>%</span>
                         <span>({formData.commition || 0}%)</span>

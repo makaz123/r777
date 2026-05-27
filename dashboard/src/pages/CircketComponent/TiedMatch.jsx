@@ -20,8 +20,14 @@ const TiedMatch = ({ tiedMatchList, onBookClick }) => {
       }))
     : [];
 
-  const betCount = Array.isArray(betsData) 
-    ? betsData.filter(item => item?.gameType === 'Tied Match' || item?.marketName === 'Tied Match' || item?.gameType === tiedData[0]?.mname || item?.marketName === tiedData[0]?.mname).length 
+  const betCount = Array.isArray(betsData)
+    ? betsData.filter(
+        (item) =>
+          item?.gameType === 'Tied Match' ||
+          item?.marketName === 'Tied Match' ||
+          item?.gameType === tiedData[0]?.mname ||
+          item?.marketName === tiedData[0]?.mname
+      ).length
     : 0;
 
   // Helper function

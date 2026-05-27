@@ -47,8 +47,7 @@ const MyMarket = () => {
   }, [dispatch]);
 
   const tabCounts = useMemo(
-    () =>
-      SPORT_TABS.map((sport) => sportAnalysis?.[sport]?.count ?? 0),
+    () => SPORT_TABS.map((sport) => sportAnalysis?.[sport]?.count ?? 0),
     [sportAnalysis]
   );
 
@@ -139,9 +138,14 @@ const MyMarket = () => {
                         : [];
 
                   return (
-                    <div key={rowKey} className='mb-3 bg-white px-2 overflow-y-scroll scrollbar-hide'>
+                    <div
+                      key={rowKey}
+                      className='scrollbar-hide mb-3 overflow-y-scroll bg-white px-2'
+                    >
                       <div className='flex items-center gap-2 pt-2 pb-1 text-[16px] font-bold'>
-                        <span><FaArrowRight className='text-black' /></span>
+                        <span>
+                          <FaArrowRight className='text-black' />
+                        </span>
                         <span className='whitespace-nowrap'>{item.title}</span>
                       </div>
 
@@ -174,7 +178,7 @@ const MyMarket = () => {
                             <td className='border border-gray-300 px-3 py-1'>
                               <button
                                 type='button'
-                                className='text-left underline whitespace-nowrap'
+                                className='text-left whitespace-nowrap underline'
                                 onClick={() => goToEvent(item)}
                               >
                                 {item.match}

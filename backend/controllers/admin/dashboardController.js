@@ -257,10 +257,7 @@ export const getDashboardStats = async (req, res) => {
     };
 
     sportsBets.forEach((bet) => {
-      const { clientScaled } = scaleBetClientPL(
-        bet,
-        bet.profitLossChange || 0
-      );
+      const { clientScaled } = scaleBetClientPL(bet, bet.profitLossChange || 0);
       addPlayerPL(bet.userName, clientScaled);
     });
 
@@ -310,7 +307,10 @@ export const getDashboardStats = async (req, res) => {
     });
 
     activeCasinoBets.forEach((bet) => {
-      const { parentPL, clientScaled } = scaleBetClientPL(bet, getCasinoNetPL(bet));
+      const { parentPL, clientScaled } = scaleBetClientPL(
+        bet,
+        getCasinoNetPL(bet)
+      );
       const sport = 'Casino';
       const market = bet.game_name || 'Casino Game';
       const key = `${sport}||${market}`;
@@ -389,10 +389,7 @@ export const getDashboardStats = async (req, res) => {
     sportsBets.forEach((bet) => {
       const sport = bet.gameName || 'Unknown';
       const sportLower = sport.toLowerCase();
-      const { parentPL } = scaleBetClientPL(
-        bet,
-        bet.profitLossChange || 0
-      );
+      const { parentPL } = scaleBetClientPL(bet, bet.profitLossChange || 0);
 
       // Track Cricket, Tennis, Soccer in standard sports details using case-insensitive substring checks
       if (sportLower.includes('cricket')) {

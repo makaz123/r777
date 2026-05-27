@@ -1,18 +1,34 @@
 import mongoose from 'mongoose';
 
-import dotenv from "dotenv";
-import dns from "dns";
+import dotenv from 'dotenv';
+import dns from 'dns';
 
 // Force IPv4 (Node.js v17+ issue fix)
-dns.setDefaultResultOrder("ipv4first");
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
 dotenv.config();
 
 // Define minimal schemas to access collections
-const TransactionHistory = mongoose.model('TransactionHistory', new mongoose.Schema({}, { strict: false }), 'transactionhistories');
-const CasinoBetHistory = mongoose.model('CasinoBetHistory', new mongoose.Schema({}, { strict: false }), 'casinobethistories');
-const betHistoryModel = mongoose.model('betHistoryModel', new mongoose.Schema({}, { strict: false }), 'bethistories');
-const SubAdmin = mongoose.model('SubAdmin', new mongoose.Schema({}, { strict: false }), 'subadmins');
+const TransactionHistory = mongoose.model(
+  'TransactionHistory',
+  new mongoose.Schema({}, { strict: false }),
+  'transactionhistories'
+);
+const CasinoBetHistory = mongoose.model(
+  'CasinoBetHistory',
+  new mongoose.Schema({}, { strict: false }),
+  'casinobethistories'
+);
+const betHistoryModel = mongoose.model(
+  'betHistoryModel',
+  new mongoose.Schema({}, { strict: false }),
+  'bethistories'
+);
+const SubAdmin = mongoose.model(
+  'SubAdmin',
+  new mongoose.Schema({}, { strict: false }),
+  'subadmins'
+);
 
 async function run() {
   try {
@@ -44,7 +60,7 @@ async function run() {
         subAdmin.set('avbalance', bal);
         subAdmin.set('creditReferenceProfitLoss', bal - cred);
       }
-      
+
       await subAdmin.save();
     }
 
@@ -61,8 +77,11 @@ async function run() {
 
       admin.set('totalBalance', DownlineTotalBaseBalance);
       admin.set('agentAvbalance', DownlineTotalBaseBalance);
-      admin.set('totalAvbalance', (admin.get('avbalance') || 0) + DownlineTotalBaseBalance);
-      
+      admin.set(
+        'totalAvbalance',
+        (admin.get('avbalance') || 0) + DownlineTotalBaseBalance
+      );
+
       await admin.save();
     }
     console.log('SubAdmin reset complete.');

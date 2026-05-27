@@ -447,7 +447,11 @@ export async function getDownlineOutstandingPLMaps(
 ) {
   const downlineUserIds = await getDownlineUserIds(SubAdmin, viewerCode);
   if (!downlineUserIds.length) {
-    return { users: [], historyPLByUserId: new Map(), expectedPLByUserId: new Map() };
+    return {
+      users: [],
+      historyPLByUserId: new Map(),
+      expectedPLByUserId: new Map(),
+    };
   }
 
   const [users, plByUser] = await Promise.all([
@@ -822,7 +826,8 @@ export function resolveBetEndUser(bet, endUsers) {
   if (!name) return null;
   return (
     endUsers.find(
-      (u) => u.role === 'user' && String(u.userName || '').toLowerCase() === name
+      (u) =>
+        u.role === 'user' && String(u.userName || '').toLowerCase() === name
     ) || null
   );
 }
@@ -851,12 +856,7 @@ export function getViewerClientScaledPL(
   accountByCode
 ) {
   return roundMoney(
-    -getViewerParentPLFromClientDelta(
-      viewer,
-      endUser,
-      clientPL,
-      accountByCode
-    )
+    -getViewerParentPLFromClientDelta(viewer, endUser, clientPL, accountByCode)
   );
 }
 
@@ -885,7 +885,9 @@ export function resolveUplineSharePercent(admin, plTotals = {}) {
 export function computeUplineSharePL(admin, plTotals = {}) {
   const branchGross = roundMoney(plTotals.tillDownlinePLHistory ?? 0);
   // The amount passed up is everything the admin does not keep
-  const uplinePct = roundMoney(Math.max(0, 100 - getAccountMyKeepPercent(admin)));
+  const uplinePct = roundMoney(
+    Math.max(0, 100 - getAccountMyKeepPercent(admin))
+  );
   if (uplinePct <= 0 || Math.abs(branchGross) < 0.01) return 0;
   return roundMoney((branchGross * uplinePct) / 100);
 }
@@ -893,9 +895,11 @@ export function computeUplineSharePL(admin, plTotals = {}) {
 export function buildAccountSummary(admin, plTotals = {}) {
   const myKeepPct = getAccountMyKeepPercent(admin);
   const isEndUserRole = admin.role === 'user';
-  const totalExposure = roundMoney(Number(admin.totalExposure ?? admin.exposure) || 0);
+  const totalExposure = roundMoney(
+    Number(admin.totalExposure ?? admin.exposure) || 0
+  );
   let myShareExposureRaw = roundMoney(totalExposure * (myKeepPct / 100));
-  
+
   if (!isEndUserRole && plTotals.viewerExposure !== undefined) {
     myShareExposureRaw = roundMoney(plTotals.viewerExposure);
   }
@@ -932,7 +936,6 @@ export function buildAccountSummary(admin, plTotals = {}) {
       ? 'Super Admin'
       : admin.role === 'white'
         ? 'Admin'
-        
         : admin.role?.charAt(0).toUpperCase() + admin.role?.slice(1);
 
   return {
@@ -952,7 +955,9 @@ export function buildAccountSummary(admin, plTotals = {}) {
     currentWeekPLTotal: weekDownlinePL,
     clientWeekPLTotal: roundMoney(-weekDownlinePL),
     currentWeekPL: roundMoney(uplineSharePL + downlineClientPL),
-    currentWeekUplinePL: roundMoney(weekDownlinePL - roundMoney(uplineSharePL + downlineClientPL)),
+    currentWeekUplinePL: roundMoney(
+      weekDownlinePL - roundMoney(uplineSharePL + downlineClientPL)
+    ),
     /** Lifetime betting P/L (bet history); cash settlement does not change this. */
     myPLTillDate,
     myPLTillDateTotal: tillDownlinePLHistory,
@@ -1028,7 +1033,10 @@ export function expectedBettingPLFromHistory(trueTotalPL, settlementCash) {
  * Upline bar (dena/lena): cash settlement on this account clears partnership due
  * (same idea as end-user outstanding: move balance toward zero).
  */
-export function applySettlementCashToUplineShare(uplineSharePL, settlementCash) {
+export function applySettlementCashToUplineShare(
+  uplineSharePL,
+  settlementCash
+) {
   const pl = roundMoney(uplineSharePL);
   const withdrawl = roundMoney(settlementCash?.withdrawl || 0);
   const deposite = roundMoney(settlementCash?.deposite || 0);
@@ -1066,11 +1074,11 @@ export function isUplineSharePLCleared(uplineOutstanding) {
   return Math.abs(roundMoney(uplineOutstanding)) < 0.01;
 }
 
-export function isAccountLinesFullyCleared(hasDownlineOutstanding, uplineOutstanding) {
-  return (
-    !hasDownlineOutstanding &&
-    isUplineSharePLCleared(uplineOutstanding)
-  );
+export function isAccountLinesFullyCleared(
+  hasDownlineOutstanding,
+  uplineOutstanding
+) {
+  return !hasDownlineOutstanding && isUplineSharePLCleared(uplineOutstanding);
 }
 
 /**
@@ -1096,10 +1104,10 @@ export function resolveAccountSummaryWeekPL({
     return 0;
   }
 
-  const bettingPL = roundMoney(
-    weekViewerBettingPL ?? rawWeekViewerPL ?? 0
+  const bettingPL = roundMoney(weekViewerBettingPL ?? rawWeekViewerPL ?? 0);
+  const selfSettlementNet = getSelfWeekSettlementCashNet(
+    weekSelfSettlementCash
   );
-  const selfSettlementNet = getSelfWeekSettlementCashNet(weekSelfSettlementCash);
   return roundMoney(
     bettingPL + roundMoney(weekDownlineSettlementNet) - selfSettlementNet
   );

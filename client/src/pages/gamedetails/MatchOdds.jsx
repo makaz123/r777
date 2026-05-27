@@ -345,10 +345,7 @@ function MatchOdds({
       }
     }
 
-    const { netOutcome } = getBetDetails(
-      team,
-      matchOddsList?.[0]?.mname
-    );
+    const { netOutcome } = getBetDetails(team, matchOddsList?.[0]?.mname);
     let newPL = netOutcome !== null ? netOutcome : 0;
 
     const isMatchedTeam = team?.toLowerCase() === selectedTeam?.toLowerCase();

@@ -45,7 +45,7 @@
 
 // export default MatchedBet;
 
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getBetHistory } from '../../redux/reducer/betReducer';
 import { useTranslation } from '../../context/LanguageContext';
@@ -53,9 +53,10 @@ import { useTranslation } from '../../context/LanguageContext';
 function MatchedBet({ gameid }) {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { betHistory, loading, pagination } = useSelector((state) => state.bet);
-  useEffect(() => {
-    if (!localStorage.getItem('auth')) return;
+  const { betHistory } = useSelector((state) => state.bet);
+
+  const reloadBetHistory = useCallback(() => {
+    if (!localStorage.getItem('auth') || !gameid) return;
     dispatch(
       getBetHistory({
         gameid,
@@ -65,9 +66,30 @@ function MatchedBet({ gameid }) {
       })
     );
   }, [dispatch, gameid]);
-  console.log('betHistory', betHistory);
+
+  useEffect(() => {
+    reloadBetHistory();
+  }, [reloadBetHistory]);
+
+  useEffect(() => {
+    if (!gameid) return;
+
+    const onBetHistoryRefresh = (e) => {
+      const detailGid = e.detail?.gameId;
+      if (detailGid == null || String(detailGid) === String(gameid)) {
+        reloadBetHistory();
+      }
+    };
+
+    window.addEventListener('client-bet-history-refresh', onBetHistoryRefresh);
+    return () =>
+      window.removeEventListener(
+        'client-bet-history-refresh',
+        onBetHistoryRefresh
+      );
+  }, [gameid, reloadBetHistory]);
+
   const filteredBetHistory = betHistory.filter((bet) => bet.gameId === gameid);
-  console.log('filteredBetHistory', filteredBetHistory);
 
   const getMatchedBetLabel = (item) => {
     if (!item) return 'N/A';

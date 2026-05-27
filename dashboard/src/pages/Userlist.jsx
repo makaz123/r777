@@ -478,10 +478,10 @@ export default function Userlist() {
   const BalanceCell = ({ value }) => {
     const n = Number(value) || 0;
     if (n === 0) {
-      return <span className='text-black'>{formatTableMoney(0)}</span>;
+      return <span className='text-black font-bold'>{formatTableMoney(0)}</span>;
     }
     return (
-      <span className='font-medium text-green-600'>{formatTableMoney(n)}</span>
+      <span className='font-bold text-[#0e7926]'>{formatTableMoney(n)}</span>
     );
   };
 
@@ -491,7 +491,7 @@ export default function Userlist() {
       return <span className='text-black'>{formatTableMoney(0)}</span>;
     }
     return (
-      <span className='font-medium text-red-600'>{formatTableMoney(n)}</span>
+      <span className='font-bold text-[#c7313f]'>{formatTableMoney(n)}</span>
     );
   };
 
@@ -559,13 +559,13 @@ export default function Userlist() {
   const CurrentPLCell = ({ value, row }) => {
     const n = Number(value) || 0;
     if (n === 0) {
-      return <span className='text-black'>{formatTableMoney(0)}</span>;
+      return <span className='text-black font-bold'>{formatTableMoney(0)}</span>;
     }
     if (n < 0) {
       return (
         <span
           onClick={() => openSettleModal(row, n)}
-          className='inline-block cursor-pointer rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white hover:bg-red-700'
+          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] text-white font-bold'
         >
           {formatTableMoney(n)}
         </span>
@@ -574,7 +574,7 @@ export default function Userlist() {
     return (
       <span
         onClick={() => openSettleModal(row, n)}
-        className='inline-block cursor-pointer rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white hover:bg-green-700'
+        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] text-white font-bold'
       >
         {formatTableMoney(n)}
       </span>
@@ -597,7 +597,7 @@ export default function Userlist() {
     if (n === 0) {
       return (
         <span
-          className={`text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
+          className={`text-black font-bold ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
           title={title}
           onClick={() => isClickable && handleExposureClick(row._id)}
         >
@@ -608,7 +608,7 @@ export default function Userlist() {
     if (n < 0) {
       return (
         <span
-          className={`font-medium text-red-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
+          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] text-white font-bold'
           title={title}
           onClick={() => isClickable && handleExposureClick(row._id)}
         >
@@ -618,7 +618,7 @@ export default function Userlist() {
     }
     return (
       <span
-        className={`font-medium text-green-600 ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
+        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] text-white font-bold'
         title={title}
         onClick={() => isClickable && handleExposureClick(row._id)}
       >
@@ -801,11 +801,11 @@ export default function Userlist() {
     <>
       <Navbar />
 
-      <div className='h-fit bg-gray-200 md:px-[15px] md:py-[13px]'>
+      <div className='h-fit md:px-[15px] md:py-[13px]'>
         <div className='rounded-md bg-white px-4 py-1'>
-          <div className='mb-2 items-center justify-between md:flex'>
+          <div className='mb-2 items-end justify-between md:flex mt-2'>
             <div className='grid'>
-              <div className='text-[14px] font-bold'>Client List</div>
+              <div className='text-[15px] font-bold leading-none'>Client List</div>
               <div className='flex items-center gap-1'>
                 <input
                   type='text'
@@ -835,10 +835,10 @@ export default function Userlist() {
             </div>
 
             <div className='mt-1 flex gap-1 md:mt-0'>
-              <div className='mb-2 flex items-center justify-center text-[12px] font-semibold text-black md:mb-0 md:text-[12px]'>
+              <div className='mb-2 flex items-start justify-center text-[12px] font-semibold text-black md:mb-0 md:text-[14px]'>
                 <span className='mr-2'>Show</span>
                 <select
-                  className='rounded border border-gray-300 px-2 py-1'
+                  className='rounded border border-gray-300 px-2 py-1 font-normal text-gray-600'
                   value={entries}
                   onChange={(e) => setEntries(Number(e.target.value))}
                 >
@@ -906,7 +906,16 @@ export default function Userlist() {
                 header: 'Credit Reference',
                 accessor: 'creditReference',
                 align: 'right',
-                cell: (row) => formatTableMoney(row.creditReference ?? 0),
+                cell: (row) => {
+                  const n = Number(row.creditReference ?? 0) || 0;
+                  const colorClass =
+                    n < 0 ? 'text-[#c7313f]' : n === 0 ? 'text-black' : 'text-[#0e7926]';
+                  return (
+                    <span className={`font-bold ${colorClass}`}>
+                      {formatTableMoney(n)}
+                    </span>
+                  );
+                },
               },
               {
                 header: 'Balance',
@@ -1803,115 +1812,12 @@ export default function Userlist() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.4 }}
-                className='w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
+                className='w-full max-w-[500px] fixed top-7 overflow-hidden rounded bg-white shadow-lg'
               >
-                <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
-                  <div className='font-bold text-gray-800'>User Name:</div>
-                  <div className='text-black'>
-                    {settleSelectedUser.userName}
-                  </div>
-
-                  <div className='font-bold text-gray-800'>
-                    My Available Bal
-                  </div>
-                  <div className='font-bold text-gray-800'>P&L</div>
-
-                  <div className='font-bold text-green-600'>
-                    {Number(userInfo?.avbalance || 0).toFixed(2)}
-                  </div>
-                  <div
-                    className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {Number(settleUserPL || 0).toFixed(2)}
-                  </div>
-
-                  <div className='font-bold text-gray-800'>Exposure</div>
-                  <div className='font-bold text-gray-800'>
-                    Amount To Settle
-                  </div>
-
-                  <div className='text-black'>
-                    {Number(
-                      settleSelectedUser.shareExposure ??
-                        settleSelectedUser.exposure ??
-                        0
-                    ).toFixed(2)}
-                  </div>
-                  <div
-                    className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                  >
-                    {Number(settleUserPL || 0).toFixed(2)}
-                  </div>
-                </div>
-
-                <div className='mt-4 flex items-center gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>
-                    Settle Amount
-                  </label>
-                  <input
-                    type='number'
-                    step='0.01'
-                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
-                    value={settleAmount}
-                    onChange={(e) => setSettleAmount(e.target.value)}
-                    required
-                  />
-                  <button
-                    type='button'
-                    onClick={() =>
-                      setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))
-                    }
-                    className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
-                  >
-                    Full Settle
-                  </button>
-                </div>
-
-                <div className='flex items-start gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>
-                    Remarks
-                  </label>
-                  <textarea
-                    rows={3}
-                    className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
-                    value={settleRemarks}
-                    onChange={(e) => setSettleRemarks(e.target.value)}
-                  />
-                </div>
-
-                <div className='flex items-center gap-2'>
-                  <label className='w-[140px] font-bold text-gray-800'>
-                    Login Password
-                  </label>
-                  <input
-                    type='password'
-                    className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
-                    value={settlePassword}
-                    onChange={(e) => setSettlePassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className='flex justify-end gap-2 pt-2'>
-                  <button
-                    type='submit'
-                    disabled={isSettling}
-                    className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
-                  >
-                    {isSettling ? 'Processing...' : 'Submit'}
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => setSettlePopup(false)}
-                    className='text-xl leading-none font-bold text-gray-200'
-                  >
-                    ×
-                  </button>
-                </div>
-
+                <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 text-white text-[18px] font-medium pb-1 flex justify-between items-center'>Settlement <span className='text-[20px] flex font-bold text-gray-300 hover:text-gray-200' onClick={() => setSettlePopup(false)}>×</span></div>
                 <form
                   onSubmit={handleSettleSubmit}
-                  className='space-y-4 px-6 py-4 text-[14px]'
+                  className='space-y-4 px-4 pt-5 text-[14px] bg-sky-50'
                 >
                   <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
                     <div className='font-bold text-gray-800'>User Name:</div>
@@ -1952,14 +1858,14 @@ export default function Userlist() {
                     </div>
                   </div>
 
-                  <div className='mt-4 flex items-center gap-2'>
+                  <div className='mt-4 flex items-center gap-1'>
                     <label className='w-[140px] font-bold text-gray-800'>
                       Settle Amount
                     </label>
                     <input
                       type='number'
                       step='0.01'
-                      className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                      className='h-[30px] flex-1 border border-gray-800 px-2 outline-none'
                       value={settleAmount}
                       onChange={(e) => setSettleAmount(e.target.value)}
                       required
@@ -1969,49 +1875,49 @@ export default function Userlist() {
                       onClick={() =>
                         setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))
                       }
-                      className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
+                      className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white hover:opacity-90'
                     >
                       Full Settle
                     </button>
                   </div>
 
-                  <div className='flex items-start gap-2'>
+                  <div className='flex items-start gap-1'>
                     <label className='w-[140px] font-bold text-gray-800'>
                       Remarks
                     </label>
                     <textarea
                       rows={3}
-                      className='flex-1 rounded-sm border border-gray-400 px-2 py-1 outline-none'
+                      className='flex-1 border border-gray-800 px-2 py-1 outline-none'
                       value={settleRemarks}
                       onChange={(e) => setSettleRemarks(e.target.value)}
                     />
                   </div>
 
-                  <div className='flex items-center gap-2'>
+                  <div className='flex items-center gap-1'>
                     <label className='w-[140px] font-bold text-gray-800'>
                       Master Password
                     </label>
                     <input
                       type='password'
-                      className='h-[30px] flex-1 rounded-sm border border-gray-400 px-2 outline-none'
+                      className='h-[30px] flex-1 border border-gray-800 px-2 outline-none'
                       value={settlePassword}
                       onChange={(e) => setSettlePassword(e.target.value)}
                       required
                     />
                   </div>
 
-                  <div className='flex justify-end gap-2 pt-2'>
+                  <div className='flex justify-end gap-1 py-1.5 border-t border-gray-200'>
                     <button
                       type='submit'
                       disabled={isSettling}
-                      className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90 disabled:opacity-50'
+                      className='rounded-[3px] bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:opacity-90 disabled:opacity-50'
                     >
                       {isSettling ? 'Processing...' : 'Submit'}
                     </button>
                     <button
                       type='button'
                       onClick={() => setSettlePopup(false)}
-                      className='rounded bg-gradient-to-b from-[#359db1] to-[#247c8f] px-6 py-1.5 font-bold text-white shadow hover:opacity-90'
+                      className='rounded-[3px] bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:opacity-90'
                     >
                       Cancel
                     </button>
@@ -2028,13 +1934,13 @@ export default function Userlist() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className='w-full max-w-4xl overflow-hidden rounded bg-white shadow-xl'
+                className='w-[90%] fixed top-7 overflow-hidden rounded bg-white shadow-xl'
               >
-                <div className='flex items-center justify-between bg-gradient-to-r from-teal-500 to-teal-700 px-4 py-2 text-white'>
-                  <h2 className='text-[15px] font-bold'>User Event Exposure</h2>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 text-white leading-none'>
+                  <h2 className='text-[18px] font-medium'>User Event Exposure</h2>
                   <button
                     onClick={() => setExposurePopup(false)}
-                    className='text-2xl leading-none font-bold hover:text-gray-200'
+                    className='text-[22px] leading-none font-bold text-gray-300 hover:text-gray-100'
                   >
                     ×
                   </button>
@@ -2046,7 +1952,7 @@ export default function Userlist() {
                   ) : exposureData && exposureData.length > 0 ? (
                     <table className='w-full border-collapse border border-gray-300 text-[13px]'>
                       <thead>
-                        <tr className='bg-gray-500 text-white'>
+                        <tr className='bg-[#434141ba] text-white'>
                           <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
                             Event Date & Time
                           </th>

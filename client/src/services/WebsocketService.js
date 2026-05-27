@@ -83,12 +83,11 @@ class WebSocketService {
           }
         }
 
-        // if (data.type === 'open_bets_update') {
-        //   if (data.userId === this.currentUserId) {
-        //     console.log('Refreshing open bets for user:', this.currentUserId);
-        //     dispatch(getPendingBet());
-        //   }
-        // }
+        if (data.type === 'open_bets_update') {
+          if (this.matchesCurrentUser(data.userId)) {
+            dispatch(getPendingBet());
+          }
+        }
 
         if (data.type === 'cashout_update') {
           if (this.matchesCurrentUser(data.userId)) {
@@ -97,6 +96,10 @@ class WebSocketService {
         }
 
         if (data.type === 'bet_settlement') {
+          if (this.matchesCurrentUser(data.userId)) {
+            dispatch(getUser());
+            dispatch(getPendingBet());
+          }
           handleBetSettlementWebSocketPayload(data);
         }
       } catch (error) {

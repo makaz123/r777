@@ -45,6 +45,7 @@ export async function notifyBetSettlementAfterSave({
 
     sendBetSettlementNotification(String(bettorUser._id), {
       type: 'bet_settlement',
+      userId: String(bettorUser._id),
       role: 'bettor',
       ...base,
       status,
@@ -78,6 +79,7 @@ export async function notifyBetSettlementAfterSave({
 
       sendBetSettlementNotification(String(parent._id), {
         type: 'bet_settlement',
+        userId: String(parent._id),
         role: 'upline',
         ...base,
         status,

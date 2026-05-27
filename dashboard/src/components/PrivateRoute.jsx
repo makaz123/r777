@@ -125,6 +125,13 @@ const PrivateRoute = () => {
             window.dispatchEvent(new CustomEvent('account-summary-refresh'));
             window.dispatchEvent(new CustomEvent('downline-list-refresh'));
           } else if (data.type === 'bet_settlement') {
+            if (
+              data.userId != null &&
+              String(data.userId) === String(userInfo._id)
+            ) {
+              dispatch(getAdmin());
+              window.dispatchEvent(new CustomEvent('downline-list-refresh'));
+            }
             handleBetSettlementWebSocketPayload(data);
           }
         } catch (e) {}

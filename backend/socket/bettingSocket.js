@@ -453,13 +453,18 @@ export const sendExposureUpdates = (userId, newExposure) => {
 
 //FUNCTION THAT UPDATES OPEN BETS TO ALL THE CONNECTED CLIENTS AFTER BET SETTLEMENT
 export const sendOpenBetsUpdates = (userId, newOpenBets) => {
+  const uid = userId != null ? String(userId) : '';
   let sentCount = 0;
   clients.forEach((client) => {
-    if (client.userId === userId && client.ws.readyState === 1) {
+    if (
+      uid &&
+      String(client.userId) === uid &&
+      client.ws.readyState === 1
+    ) {
       client.ws.send(
         JSON.stringify({
           type: 'open_bets_update',
-          userId: userId,
+          userId: uid,
           newOpenBets: newOpenBets,
         })
       );

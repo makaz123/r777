@@ -33,6 +33,7 @@ import {
   isMatchOddsGameType,
   parseCommissionPercent,
 } from '../../utils/partnershipCommissionUtils.js';
+import { notifyBetSettlementAfterSave } from '../../utils/betSettlementToastNotify.js';
 
 // Fancy game types that require score-based settlement
 const FANCY_GAME_TYPES = ['Normal', 'meter', 'line', 'ball', 'khado'];
@@ -555,6 +556,7 @@ export const settleManualResult = async (req, res) => {
         // Update user balance & P/L atomically
         // balance uses betModel settlement (handles offset exposure correctly)
         // bettingProfitLoss uses betHistoryModel sum (single source of truth for P/L)
+        let bplForToast = 0;
         if (settlementResult.userUpdates) {
           let finalUpdates = settlementResult.userUpdates;
           let bplChange =
@@ -594,7 +596,14 @@ export const settleManualResult = async (req, res) => {
               bettingProfitLoss: bplChange,
             },
           });
+          bplForToast = bplChange;
         }
+
+        await notifyBetSettlementAfterSave({
+          bet,
+          bettorUser: user,
+          bplChange: bplForToast,
+        });
 
         processedUserIds.add(user._id.toString());
 

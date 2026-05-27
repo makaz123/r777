@@ -64,6 +64,8 @@ import {
   sendExposureUpdates,
   sendOpenBetsUpdates,
 } from '../socket/bettingSocket.js';
+import { notifyUplineChainRefresh } from '../utils/userRefreshNotify.js';
+import { notifyBetSettlementAfterSave } from '../utils/betSettlementToastNotify.js';
 import { cachedData, clients } from '../socket/bettingSocket.js';
 const sportsSettlementService =
   await import('../services/sportsSettlementService.js');
@@ -308,10 +310,15 @@ const placeCasinoBet = async (req, res) => {
     }
     if (rejectIfBetLocked(user, res)) return;
 
-    if (isSportGameBettingLocked(user.gamelock, 'casino')) {
-      return res
-        .status(403)
-        .json({ message: 'Casino betting is locked for your account' });
+    const advancedLockCheck = await checkAdvancedBetLocks(user, {
+      gameName: 'Casino',
+      gameType: 'Casino',
+      marketName: 'WINNER',
+      gameId,
+    });
+
+    if (advancedLockCheck.locked) {
+      return res.status(403).json({ message: advancedLockCheck.message });
     }
 
     // Market ID logic
@@ -760,12 +767,12 @@ const placeCasinoBet = async (req, res) => {
     sendBalanceUpdates(user._id, user.avbalance);
     sendExposureUpdates(user._id, user.exposure);
     sendOpenBetsUpdates(user);
-
     // Update all upline balances after bet placement
     try {
       console.time('CASINO_BET_UPLINE_UPDATE');
       await updateAllUplines(user._id);
       console.timeEnd('CASINO_BET_UPLINE_UPDATE');
+      await notifyUplineChainRefresh(user._id);
     } catch (err) {
       console.error(
         ` [CASINO BET] Error updating upline balances:`,
@@ -1276,13 +1283,15 @@ const placeBet = async (req, res) => {
     sendOpenBetsUpdates(user._id, null);
     console.timeEnd('SPORTS_BET_WEBSOCKET_UPDATES');
 
-    // Update all upline balances after bet placement (background)
-    updateAllUplines(user._id).catch((err) => {
-      console.error(
-        ` [SPORTS BET] Error updating upline balances:`,
-        err.message
-      );
-    });
+    // Update all upline balances after bet placement, then notify dashboards
+    updateAllUplines(user._id)
+      .then(() => notifyUplineChainRefresh(user._id))
+      .catch((err) => {
+        console.error(
+          ` [SPORTS BET] Error updating upline balances:`,
+          err.message
+        );
+      });
 
     // Record bet history regardless of new/existing
     const betHistory = new betHistoryModel({
@@ -1817,6 +1826,9 @@ export const placeFancyBet = async (req, res) => {
     sendOpenBetsUpdates(user);
     sendBalanceUpdates(user._id, user.avbalance);
     sendExposureUpdates(user._id, user.exposure);
+    void notifyUplineChainRefresh(user._id).catch((err) =>
+      console.error('[FANCY BET] notifyUplineChainRefresh:', err.message)
+    );
 
     return res.status(201).json({ message: 'Bet placed successfully' });
   } catch (error) {
@@ -1959,6 +1971,11 @@ export const updateResultOfBets = async (req, res) => {
                   bettingProfitLoss: cashoutValue,
                 },
               });
+              await notifyBetSettlementAfterSave({
+                bet: claimedBet,
+                bettorUser: user,
+                bplChange: cashoutValue,
+              });
             }
 
             // Update bet history for cashed-out bet
@@ -2034,6 +2051,7 @@ export const updateResultOfBets = async (req, res) => {
 
           let betHistoryTotalPL = 0;
           let totalMatchOddsCommission = 0;
+          let settlementBplForToast = 0;
 
           for (const historyRecord of betHistoryRecords) {
             // Handle void for history records
@@ -2162,7 +2180,14 @@ export const updateResultOfBets = async (req, res) => {
                 bettingProfitLoss: bplChange,
               },
             });
+            settlementBplForToast = bplChange;
           }
+
+          await notifyBetSettlementAfterSave({
+            bet,
+            bettorUser: user,
+            bplChange: settlementBplForToast,
+          });
 
           totalBetsProcessed++;
         } catch (err) {
@@ -3182,6 +3207,17 @@ export const updateFancyBetResult = async (req, res) => {
                   balance: settlementResult.userUpdates.balanceChange,
                   bettingProfitLoss: bplChange,
                 },
+              });
+              await notifyBetSettlementAfterSave({
+                bet,
+                bettorUser: user,
+                bplChange,
+              });
+            } else if (isVoid) {
+              await notifyBetSettlementAfterSave({
+                bet,
+                bettorUser: user,
+                bplChange: 0,
               });
             }
 

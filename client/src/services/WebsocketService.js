@@ -9,6 +9,7 @@ import {
   getPendingBet,
   updateCashoutValues,
 } from '../redux/reducer/betReducer';
+import { handleBetSettlementWebSocketPayload } from '../utils/betSettlementToast';
 
 class WebSocketService {
   constructor() {
@@ -93,6 +94,10 @@ class WebSocketService {
           if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateCashoutValues(data.bets));
           }
+        }
+
+        if (data.type === 'bet_settlement') {
+          handleBetSettlementWebSocketPayload(data);
         }
       } catch (error) {
         console.error(' WebSocket Error:', error);

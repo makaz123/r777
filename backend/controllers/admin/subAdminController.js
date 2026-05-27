@@ -65,6 +65,7 @@ import {
   roundMoney,
   splitProfitLossByMyShare,
   toStoredDownlineKeepPercent,
+  toStoredDownlineKeepFromCreateInput,
 } from '../../utils/partnershipCommissionUtils.js';
 
 const countUplines = async (user) => {
@@ -800,7 +801,7 @@ export const createSubAdmin = async (req, res) => {
       }
 
       const parentMyShareCap = getAccountMyKeepPercent(admin);
-      const downlineKeep = toStoredDownlineKeepPercent(partnership, admin);
+      const downlineKeep = toStoredDownlineKeepFromCreateInput(partnership, admin);
       if (downlineKeep > parentMyShareCap) {
         return res.status(400).json({
           message: `Downline share cannot exceed your keep (${parentMyShareCap}%)`,
@@ -839,7 +840,7 @@ export const createSubAdmin = async (req, res) => {
         : undefined,
       partnership:
         accountType !== 'user'
-          ? toStoredDownlineKeepPercent(partnership, admin)
+          ? toStoredDownlineKeepFromCreateInput(partnership, admin)
           : undefined,
       totalBalance: 0,
     });
@@ -1847,20 +1848,18 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
   );
   const isEndUser = row.role === 'user';
   const isNestedList = listParent.code !== rootViewer.code;
+  const shareParent = isNestedList ? listParent : rootViewer;
 
-  const parentShareOnRow = getParentShareOnDownlineRow(row, rootViewer);
-  const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, rootViewer);
+  const parentShareOnRow = getParentShareOnDownlineRow(row, shareParent);
+  const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, shareParent);
   const commissionPct = parseCommissionPercent(row.commition);
-
-  // Agents pass up everything they don't keep (100 - their keep).
-  const passedUpFromRow = roundMoney(Math.max(0, 100 - getAccountMyKeepPercent(row)));
 
   // End-users on a nested drill-down: show root viewer's share on the branch (e.g. 90%), not agent keep (10%).
   const parentSharePercent = isEndUser
     ? isNestedList
       ? getParentShareOnDownlineRow(listParent, rootViewer)
       : rootMySharePercent
-    : passedUpFromRow;
+    : parentShareOnRow;
   const downlineKeepPercent = isEndUser
     ? commissionPct || rootUplineSharePercent
     : downlineKeepOnRow;

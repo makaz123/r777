@@ -5,9 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   clampDownlineSharingPercent,
-  getParentShareStoredOnDownline,
+  getAccountMyKeepPercent,
   getRemainingMySharePercent,
-  getViewerMySharePercent,
 } from '@partnership-utils';
 import { addAdmin, getAdmin } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
@@ -53,10 +52,13 @@ export default function InsertAgent() {
   const isUserAccount = formData.accountType === 'user';
   const [downlineSharingInput, setDownlineSharingInput] = useState('');
 
-  const parentMyShare = useMemo(
-    () => getViewerMySharePercent(userInfo?.partnership),
-    [userInfo?.partnership]
-  );
+  const parentMyShare = useMemo(() => {
+    const fromSummary = userInfo?.accountSummary?.mySharePercent;
+    if (fromSummary != null && Number.isFinite(Number(fromSummary))) {
+      return Number(fromSummary);
+    }
+    return getAccountMyKeepPercent(userInfo);
+  }, [userInfo]);
 
   const downlineSharingPercent = useMemo(
     () =>
@@ -81,10 +83,7 @@ export default function InsertAgent() {
     setDownlineSharingInput(capped);
     setFormData((prev) => ({
       ...prev,
-      partnership:
-        capped === ''
-          ? null
-          : getParentShareStoredOnDownline(parentMyShare, capped),
+      partnership: capped === '' ? null : Number(capped),
     }));
   };
 

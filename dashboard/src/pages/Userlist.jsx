@@ -1012,7 +1012,14 @@ export default function Userlist() {
                   <div className='flex gap-1'>
                     {isFetchingAllUsers ? (
                       <>
-                        <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'
+                          onClick={() =>
+                            navigate('/agent-download-list/insertagent', {
+                              state: { editUser: row },
+                            })
+                          }
+                        >
                           U
                         </span>
                         <span

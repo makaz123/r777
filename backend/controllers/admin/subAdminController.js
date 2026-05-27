@@ -2281,7 +2281,7 @@ export const updatePartnership = async (req, res) => {
     }
 
     const parentMyShareCap = getAccountMyKeepPercent(admin);
-    const downlineKeep = toStoredDownlineKeepPercent(parsedPartnership, admin);
+    const downlineKeep = toStoredDownlineKeepFromCreateInput(parsedPartnership, admin);
     if (downlineKeep > parentMyShareCap) {
       return res.status(400).json({
         message: `Downline share cannot exceed your keep (${parentMyShareCap}%)`,
@@ -2291,29 +2291,86 @@ export const updatePartnership = async (req, res) => {
     editUser.partnership = downlineKeep;
     await editUser.save();
 
-    // Return updated user list (same pattern as updateCreditReference)
-    const filter =
-      role === 'supperadmin'
-        ? {
-            _id: { $ne: id },
-            role: { $ne: 'user' },
-            status: { $ne: 'delete' },
-          }
-        : {
-            invite: admin.code,
-            role: { $ne: 'user' },
-            status: { $ne: 'delete' },
-          };
-
-    const allUsers = await SubAdmin.find(filter);
-
     return res.status(200).json({
       success: true,
       message: `Partnership updated to ${downlineKeep}% (downline keep) successfully`,
-      data: allUsers,
+      data: editUser,
     });
   } catch (error) {
     console.error('Update Partnership Error:', error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateAdminDetails = async (req, res) => {
+  try {
+    const { id } = req;
+    const { userId, formData } = req.body;
+    const { name, commition, partnership, masterPassword } = formData;
+
+    // Find admin making the change
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // Verify master password
+    const isMatch = await verifyMasterPassword(admin, masterPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid login password.' });
+    }
+
+    // Find the user being updated
+    const editUser = await SubAdmin.findById(userId);
+    if (!editUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify the admin is the direct upline
+    if (editUser.invite !== admin.code && req.role !== 'supperadmin') {
+      return res.status(403).json({
+        message: 'You can only update details for your direct downline.',
+      });
+    }
+
+    // Update name
+    if (name !== undefined && name.trim() !== '') {
+      editUser.name = name;
+    }
+
+    // Update commission
+    if (commition !== undefined) {
+      editUser.commition = commition;
+    }
+
+    // Update partnership if not an end user
+    if (editUser.role !== 'user' && partnership !== undefined && partnership !== null && partnership !== '') {
+      const parsedPartnership = Number(partnership);
+      if (
+        !isNaN(parsedPartnership) &&
+        parsedPartnership >= 0 &&
+        parsedPartnership <= 100
+      ) {
+        const parentMyShareCap = getAccountMyKeepPercent(admin);
+        const downlineKeep = toStoredDownlineKeepFromCreateInput(parsedPartnership, admin);
+        if (downlineKeep > parentMyShareCap) {
+          return res.status(400).json({
+            message: `Downline share cannot exceed your keep (${parentMyShareCap}%)`,
+          });
+        }
+        editUser.partnership = downlineKeep;
+      }
+    }
+
+    await editUser.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account details updated successfully',
+      data: editUser,
+    });
+  } catch (error) {
+    console.error('Update Admin Details Error:', error);
     return res.status(500).json({ message: error.message });
   }
 };

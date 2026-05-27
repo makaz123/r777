@@ -206,9 +206,57 @@ export function createProviderC() {
     },
 
     async getResult(payload) {
+      const { event_id, market_name, sport_id } = payload;
+      const sid = Number(sport_id);
+
+      try {
+        let fancyUrl;
+        if (sid === 4) {
+          fancyUrl = `${API_URL}/cricket/fancybyevent?eventId=${event_id}&key=${API_KEY}`;
+        } else if (sid === 1) {
+          fancyUrl = `${API_URL}/stfancybyevent?eventId=${event_id}&key=${API_KEY}`;
+        } else if (sid === 2) {
+          fancyUrl = `${API_URL}/tennis/fancybyevent?eventId=${event_id}&key=${API_KEY}`;
+        }
+
+        if (fancyUrl) {
+          const response = await axios.get(fancyUrl);
+          const results = Array.isArray(response.data)
+            ? response.data
+            : response.data?.body || [];
+
+          if (results.length > 0) {
+            const needle = (market_name || '').toLowerCase().trim();
+
+            const match =
+              results.find(
+                (r) =>
+                  r.isResult &&
+                  r.fancyType &&
+                  r.fancyType.toLowerCase().trim() === needle
+              ) ||
+              results.find(
+                (r) =>
+                  r.isResult &&
+                  r.fancyName &&
+                  r.fancyName.toLowerCase().trim() === needle
+              );
+
+            if (match && match.result != null) {
+              return { final_result: match.result };
+            }
+          }
+        }
+      } catch (err) {
+        console.warn(
+          `[ProviderB] fancybyevent failed for event ${event_id}, falling back to POST /get-result:`,
+          err.message
+        );
+      }
+
       const response = await axios.post(
-        `${RESULT_API_URL}/get-result?key=${API_KEY}`,
-        { ...payload, api_key: API_KEY },
+        `${API_URL}/get-result?key=${API_KEY}`,
+        payload,
         { headers: { 'Content-Type': 'application/json' } }
       );
       return response.data;

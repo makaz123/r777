@@ -95,15 +95,9 @@ export const normalizeStoredDownlineKeepPercent = (downline, parent) => {
   const stored = parsePartnershipPercent(downline?.partnership);
   if (!parent) {
     if (stored >= 100) return 100;
-    if (stored > 50 && stored < 100) {
-      return roundMoney(100 - stored);
-    }
     return roundMoney(stored);
   }
   const parentKeep = getAccountMyKeepPercent(parent);
-  if (stored > parentKeep / 2) {
-    return roundMoney(Math.max(0, parentKeep - stored));
-  }
   return roundMoney(Math.min(stored, parentKeep));
 };
 
@@ -115,10 +109,6 @@ export const getAccountMyKeepPercent = (admin) => {
   }
   const stored = parsePartnershipPercent(admin?.partnership);
   if (stored >= 100) return 100;
-  // Legacy rows stored parent take (e.g. 85) instead of downline keep (15).
-  if (stored > 50 && stored < 100) {
-    return roundMoney(100 - stored);
-  }
   return roundMoney(stored);
 };
 
@@ -140,6 +130,13 @@ export const toStoredDownlineKeepPercent = (rawValue, parent) => {
     return roundMoney(Math.max(0, parentKeep - stored));
   }
   return roundMoney(Math.min(stored, parentKeep));
+};
+
+/** Create-account API: body field is downline keep % from InsertAgent (not legacy parent-take). */
+export const toStoredDownlineKeepFromCreateInput = (rawValue, parent) => {
+  const parentKeep = parent ? getAccountMyKeepPercent(parent) : 100;
+  const requested = parsePartnershipPercent(rawValue);
+  return roundMoney(Math.min(requested, parentKeep));
 };
 
 const applyParentTakeFromChild = (parentViewPL, child, accountByCode) => {

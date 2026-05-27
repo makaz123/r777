@@ -639,6 +639,20 @@ export default function Userlist() {
     return role.charAt(0).toUpperCase() + role.slice(1);
   };
 
+  /** My % / downline keep — matches InsertAgent (my share first, then downline). */
+  const formatRowMyPercent = (row) => {
+    if (row.role === 'user') {
+      const pct =
+        row.parentSharePercent ?? row.mySharePercent ?? row.viewerShareOnRow ?? 0;
+      return `${pct}%`;
+    }
+    const myShare =
+      row.parentSharePercent ?? row.mySharePercent ?? row.viewerShareOnRow ?? 0;
+    const downlineKeep =
+      row.downlineKeepPercent ?? row.downlineSharePercent ?? 0;
+    return `${myShare}% / ${downlineKeep}%`;
+  };
+
   const tableSummaryRow = useMemo(() => {
     const totals = filteredUsers.reduce(
       (acc, row) => {
@@ -958,18 +972,7 @@ export default function Userlist() {
               {
                 header: 'My %',
                 align: 'right',
-                cell: (row) => {
-                  // For agents/admins show 'parentShare% / downlineKeep%' format from backend
-                  if (row.role !== 'user' && row.myPercent) {
-                    return row.myPercent;
-                  }
-                  const pct =
-                    row.parentSharePercent ??
-                    row.mySharePercent ??
-                    row.viewerShareOnRow ??
-                    0;
-                  return `${pct}%`;
-                },
+                cell: (row) => formatRowMyPercent(row),
               },
               {
                 header: 'Type',

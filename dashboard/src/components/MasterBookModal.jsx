@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   getMasterBookCellDisplay,
   hasMasterBookDownline,
+  getMasterBookBreakdown,
 } from '../utils/masterBookUtils';
 
 const MasterBookModal = ({
@@ -21,6 +22,9 @@ const MasterBookModal = ({
   if (!open) return null;
 
   const colSpan = Math.max(2 + teamHeaders.length, 3);
+  const viewerPartnership = breadcrumbPath.length > 0 
+    ? Number(breadcrumbPath[breadcrumbPath.length - 1]?.partnership || 0) 
+    : 0;
 
   return (
     <div className={overlayClassName}>
@@ -122,15 +126,14 @@ const MasterBookModal = ({
                             {item.userName}
                           </td>
                           {teamHeaders.map((team, i) => {
-                            const { roundedValue, colorClass } =
-                              getMasterBookCellDisplay(item, team);
+                            const { total } = getMasterBookBreakdown(item, team, viewerPartnership);
 
                             return (
                               <td
                                 key={i}
                                 className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'
                               >
-                                <span className={colorClass}>{roundedValue}</span>
+                                <span className={total.class}>{total.value}</span>
                               </td>
                             );
                           })}
@@ -138,36 +141,35 @@ const MasterBookModal = ({
                         <tr className='bg-[#ced7df] border-b border-gray-200'>
                           <td className='border-r border-gray-200 p-2'></td>
                           <td className='border-r border-gray-200 p-2 font-bold'>Total</td>
-                          <td className='border-r border-gray-200 p-2 text-right font-bold'>
-                            00
-                          </td>
-                          <td className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'>
-                            00
-                          </td>
+                          {teamHeaders.map((team, i) => {
+                            const { total } = getMasterBookBreakdown(item, team, viewerPartnership);
+                            return (
+                              <td key={i} className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'>
+                                <span className={total.class}>{total.value}</span>
+                              </td>
+                            );
+                          })}
                         </tr>
                         <tr className='bg-[#ced7df] border-b border-gray-200'>
                           <td className='border-r border-gray-200 p-2'></td>
                           <td className='border-r border-gray-200 p-2 font-bold'>Up Line</td>
-                          <td className='border-r border-gray-200 p-2 text-right font-bold'>
-                            00
-                          </td>
-                          <td className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'>
-                            00
-                          </td>
+                          {teamHeaders.map((team, i) => {
+                            const { upline } = getMasterBookBreakdown(item, team, viewerPartnership);
+                            return (
+                              <td key={i} className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'>
+                                <span className={upline.class}>{upline.value}</span>
+                              </td>
+                            );
+                          })}
                         </tr>
                         <tr className='bg-[#ced7df]'>
                           <td className='border-r border-gray-200 p-2'></td>
                           <td className='border-r border-gray-200 p-2 font-bold'>P/L</td>
                           {teamHeaders.map((team, i) => {
-                            const { roundedValue, colorClass } =
-                              getMasterBookCellDisplay(item, team);
-
+                            const { pl } = getMasterBookBreakdown(item, team, viewerPartnership);
                             return (
-                              <td
-                                key={i}
-                                className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'
-                              >
-                                <span className={colorClass}>{roundedValue}</span>
+                              <td key={i} className='border-r border-gray-200 last:border-r-0 p-2 text-right font-bold'>
+                                <span className={pl.class}>{pl.value}</span>
                               </td>
                             );
                           })}

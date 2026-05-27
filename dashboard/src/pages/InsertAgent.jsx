@@ -1,21 +1,24 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   clampDownlineSharingPercent,
   getAccountMyKeepPercent,
   getRemainingMySharePercent,
 } from '@partnership-utils';
 import { LOGIN_PASSWORD_CONFIRM_LABEL } from '../config/featureFlags';
-import { addAdmin, getAdmin } from '../redux/reducer/authReducer';
+import { addAdmin, getAdmin, updateAdminDetails } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 
 export default function InsertAgent() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const editUser = location.state?.editUser;
+  const isEditMode = !!editUser;
   const { userInfo } = useSelector((state) => state.auth);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -52,6 +55,22 @@ export default function InsertAgent() {
   });
   const isUserAccount = formData.accountType === 'user';
   const [downlineSharingInput, setDownlineSharingInput] = useState('');
+
+  useEffect(() => {
+    if (isEditMode && editUser) {
+      setFormData((prev) => ({
+        ...prev,
+        name: editUser.name || '',
+        userName: editUser.userName || '',
+        accountType: editUser.role || '',
+        commition: editUser.commition || '',
+        partnership: editUser.partnership || null,
+      }));
+      if (editUser.role !== 'user' && editUser.partnership != null) {
+        setDownlineSharingInput(String(editUser.partnership));
+      }
+    }
+  }, [isEditMode, editUser]);
 
   const parentMyShare = useMemo(() => {
     const fromSummary = userInfo?.accountSummary?.mySharePercent;
@@ -108,20 +127,22 @@ export default function InsertAgent() {
       toast.error('Client name is required');
       return;
     }
-    if (!formData.userName?.trim()) {
-      toast.error('User name is required');
-      return;
-    }
-    if (!formData.password) {
-      toast.error('Password is required');
-      return;
+    if (!isEditMode) {
+      if (!formData.userName?.trim()) {
+        toast.error('User name is required');
+        return;
+      }
+      if (!formData.password) {
+        toast.error('Password is required');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('Password and Confirm Password do not match');
+        return;
+      }
     }
     if (!formData.masterPassword) {
       toast.error(`${LOGIN_PASSWORD_CONFIRM_LABEL} is required`);
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Password and Confirm Password do not match');
       return;
     }
     if (!isUserAccount && downlineSharingInput === '') {
@@ -136,15 +157,25 @@ export default function InsertAgent() {
     }
     if (userInfo) {
       try {
-        const result = await dispatch(addAdmin(formData)).unwrap();
-        toast.success(result.message);
+        if (isEditMode) {
+          const result = await dispatch(
+            updateAdminDetails({
+              userId: editUser._id,
+              formData: formData,
+            })
+          ).unwrap();
+          toast.success(result.message);
+        } else {
+          const result = await dispatch(addAdmin(formData)).unwrap();
+          toast.success(result.message);
+        }
         dispatch(getAdmin());
-        navigate('/user-download-list');
+        navigate(-1);
       } catch (error) {
         toast.error(
           typeof error === 'string'
             ? error
-            : error?.message || 'Failed to create account'
+            : error?.message || (isEditMode ? 'Failed to update account' : 'Failed to create account')
         );
       }
     } else {
@@ -160,7 +191,7 @@ export default function InsertAgent() {
       <Navbar />
       <div className='scrollbar-hide overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
         <div className='h-full rounded-lg bg-white px-[15px] py-[7px] min-h-[600px] pb-10'>
-          <span className='text-[16px] font-bold'>Add/Edit Client Account</span>
+          <span className='text-[16px] font-bold'>{isEditMode ? 'Update Client Account' : 'Add Client Account'}</span>
 
           <form onSubmit={handleSubmit}>
             <div className='mt-6 flex flex-wrap'>
@@ -180,11 +211,12 @@ export default function InsertAgent() {
                       </label>
 
                       <select
-                        className='rounded-sm border border-gray-300 bg-white px-2 py-1 text-gray-700 outline-none focus:border-[#4ecddd]'
+                        className='rounded-sm border border-gray-300 bg-white px-2 py-1 text-gray-700 outline-none focus:border-[#4ecddd] disabled:bg-gray-100 disabled:text-gray-500'
                         onChange={(e) =>
                           handleAccountTypeChange(e.target.value)
                         }
                         value={formData.accountType}
+                        disabled={isEditMode}
                       >
                         <option>Select User Type</option>
                         {allowedRoles.map((roleOption) => (
@@ -303,7 +335,7 @@ export default function InsertAgent() {
 
                       <input
                         type='text'
-                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
+                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd] disabled:bg-gray-100 disabled:text-gray-500'
                         onChange={(e) =>
                           setFormData({
                             ...formData,
@@ -311,44 +343,49 @@ export default function InsertAgent() {
                           })
                         }
                         value={formData.userName}
+                        disabled={isEditMode}
                       />
                     </div>
 
-                    <div className='flex flex-col'>
-                      <label className='mb-2 text-[13px] font-medium'>
-                        Password:
-                      </label>
+                    {!isEditMode && (
+                      <>
+                        <div className='flex flex-col'>
+                          <label className='mb-2 text-[13px] font-medium'>
+                            Password:
+                          </label>
 
-                      <input
-                        type='text'
-                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            password: e.target.value,
-                          })
-                        }
-                        value={formData.password}
-                      />
-                    </div>
+                          <input
+                            type='text'
+                            className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                password: e.target.value,
+                              })
+                            }
+                            value={formData.password}
+                          />
+                        </div>
 
-                    <div className='flex flex-col'>
-                      <label className='mb-2 text-[13px] font-medium'>
-                        Retype Password:
-                      </label>
+                        <div className='flex flex-col'>
+                          <label className='mb-2 text-[13px] font-medium'>
+                            Retype Password:
+                          </label>
 
-                      <input
-                        type='text'
-                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
-                        value={formData.confirmPassword}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            confirmPassword: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
+                          <input
+                            type='text'
+                            className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
+                            value={formData.confirmPassword}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                confirmPassword: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div className='flex flex-col'>
                       <label className='mb-2 text-[13px] font-medium'>
@@ -367,75 +404,77 @@ export default function InsertAgent() {
             </div>
 
             <div className='mt-7 flex flex-wrap'>
-              <div className='w-full md:w-1/2 md:pr-[15px]'>
-                <div className='relative rounded-md border border-black p-4'>
-                  {/* Title */}
-                  <span className='absolute -top-3 left-3 bg-white px-1 text-[14px] font-semibold'>
-                    Sport & Casino Balance
-                  </span>
+              {!isEditMode && (
+                <div className='w-full md:w-1/2 md:pr-[15px]'>
+                  <div className='relative rounded-md border border-black p-4'>
+                    {/* Title */}
+                    <span className='absolute -top-3 left-3 bg-white px-1 text-[14px] font-semibold'>
+                      Sport & Casino Balance
+                    </span>
 
-                  {/* Form Row */}
-                  <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
-                    <div className='flex flex-col'>
-                      <label className='mb-2 text-[13px] font-medium'>
-                        Credit Reference:
-                      </label>
-                      <input
-                        type='text'
-                        placeholder='Credit Reference'
-                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
-                        onChange={(e) => {
-                          const crRefValue = e.target.value;
-                          let roundedValue = crRefValue;
-                          if (crRefValue.includes('.')) {
-                            roundedValue = Math.round(
-                              parseFloat(crRefValue)
-                            ).toString();
-                          }
-                          setFormData({
-                            ...formData,
-                            creditReference: roundedValue,
-                          });
-                        }}
-                        value={formData.creditReference}
-                      />
-                    </div>
+                    {/* Form Row */}
+                    <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+                      <div className='flex flex-col'>
+                        <label className='mb-2 text-[13px] font-medium'>
+                          Credit Reference:
+                        </label>
+                        <input
+                          type='text'
+                          placeholder='Credit Reference'
+                          className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
+                          onChange={(e) => {
+                            const crRefValue = e.target.value;
+                            let roundedValue = crRefValue;
+                            if (crRefValue.includes('.')) {
+                              roundedValue = Math.round(
+                                parseFloat(crRefValue)
+                              ).toString();
+                            }
+                            setFormData({
+                              ...formData,
+                              creditReference: roundedValue,
+                            });
+                          }}
+                          value={formData.creditReference}
+                        />
+                      </div>
 
-                    <div className='flex flex-col'>
-                      <label className='mb-2 text-[13px] font-medium'>
-                        Add Deposit:
-                      </label>
-                      <input
-                        type='text'
-                        placeholder='Amount'
-                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
-                        onChange={(e) => {
-                          const openingValue = e.target.value;
-                          if (openingValue.includes('.')) {
-                            toast.error('The bank balance must be an integer');
-                            return;
-                          }
-                          setFormData({ ...formData, balance: openingValue });
-                        }}
-                        value={formData.balance}
-                      />
-                    </div>
+                      <div className='flex flex-col'>
+                        <label className='mb-2 text-[13px] font-medium'>
+                          Add Deposit:
+                        </label>
+                        <input
+                          type='text'
+                          placeholder='Amount'
+                          className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
+                          onChange={(e) => {
+                            const openingValue = e.target.value;
+                            if (openingValue.includes('.')) {
+                              toast.error('The bank balance must be an integer');
+                              return;
+                            }
+                            setFormData({ ...formData, balance: openingValue });
+                          }}
+                          value={formData.balance}
+                        />
+                      </div>
 
-                    <div className='flex flex-col'>
-                      <label className='mb-2 text-[13px] font-medium'>
-                        Deposit Remark:
-                      </label>
-                      <input
-                        type='text'
-                        placeholder='Remark'
-                        className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
-                      />
+                      <div className='flex flex-col'>
+                        <label className='mb-2 text-[13px] font-medium'>
+                          Deposit Remark:
+                        </label>
+                        <input
+                          type='text'
+                          placeholder='Remark'
+                          className='rounded-sm border border-gray-300 px-2 py-1 outline-none focus:border-[#4ecddd]'
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className='w-full md:w-1/2 md:pl-[15px] mt-2 md:mt-0'>
+              <div className={`w-full md:w-1/2 mt-2 md:mt-0 ${!isEditMode ? 'md:pl-[15px]' : ''}`}>
                 <div className='grid grid-cols-1 items-end gap-6 md:grid-cols-2'>
                   <div className='flex flex-col'>
                     <label className='mb-2 text-[13px] font-medium'>
@@ -455,7 +494,7 @@ export default function InsertAgent() {
                   </div>
                   <div className='flex flex-col'>
                     <button className='w-fit rounded-sm border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-[19px] py-1 text-white hover:bg-gradient-to-t'>
-                      Create Account
+                      {isEditMode ? 'Update Account' : 'Create Account'}
                     </button>
                   </div>
                 </div>

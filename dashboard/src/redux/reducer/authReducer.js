@@ -277,6 +277,24 @@ export const updatePartnership = createAsyncThunk(
   }
 );
 
+// Update admin details (name, commition, partnership)
+export const updateAdminDetails = createAsyncThunk(
+  'subAdmin/updateAdminDetails',
+  async (info, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/update/admin-details', info, {
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Get credit ref history by userId
 export const getCreditRefHistory = createAsyncThunk(
   'creditRef/getHistory',
@@ -943,12 +961,32 @@ const userSlice = createSlice({
       })
       .addCase(updatePartnership.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload.data;
+        if (Array.isArray(state.users)) {
+          const index = state.users.findIndex(u => u._id === action.payload.data._id);
+          if (index !== -1) {
+            state.users[index] = action.payload.data;
+          }
+        }
         state.successMessage = action.payload.message;
       })
       .addCase(updatePartnership.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Update Admin Details
+      .addCase(updateAdminDetails.fulfilled, (state, action) => {
+        const updatedUser = action.payload.data;
+        if (updatedUser) {
+          const updateArray = (arr) => {
+            if (Array.isArray(arr)) {
+              const index = arr.findIndex(u => u._id === updatedUser._id);
+              if (index !== -1) arr[index] = updatedUser;
+            }
+          };
+          updateArray(state.users);
+          updateArray(state.onlyusers);
+          updateArray(state.downlineList);
+        }
       })
 
       // Get credit ref history by userId

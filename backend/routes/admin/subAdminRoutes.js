@@ -39,6 +39,7 @@ import {
   getSettlementUsers,
   settleUser,
   getUserFullDetails,
+  updateAdminDetails,
 } from '../../controllers/admin/subAdminController.js';
 import { adminAuthMiddleware } from '../../middleware/authMiddleware.js';
 
@@ -63,6 +64,7 @@ router.get('/get/all-user-by-invite', adminAuthMiddleware, getUsersByInvite);
 router.post('/user-logout', adminAuthMiddleware, logout);
 router.post('/force-logout/:userId', adminAuthMiddleware, forceLogoutUser);
 router.put('/update/user-details', adminAuthMiddleware, updateCreditReference);
+router.put('/update/admin-details', adminAuthMiddleware, updateAdminDetails);
 router.put(
   '/update/user-explosore-limit',
   adminAuthMiddleware,

@@ -405,14 +405,14 @@ function Bookmaker({
           {hasCashoutAvailable ? (
             <button
               onClick={handleCashOutClick}
-              className='cursor-pointer bg-[#198754] p-1 font-[400] text-white'
+              className='cursor-pointer bg-black px-2.5 py-0.5 rounded-[3px] text-[12px] font-[600] text-white'
             >
               {t('cashout', 'Cashout')}
             </button>
           ) : (
             <button
               disabled
-              className='cursor-not-allowed bg-[#198754] p-1 font-[400] text-white opacity-60'
+              className='cursor-not-allowed bg-[#959595] px-2.5 py-0.5 rounded-[3px] text-[12px] font-[600] text-white'
             >
               {t('cashout', 'Cashout')}
             </button>
@@ -422,22 +422,24 @@ function Bookmaker({
           </span>
         </div>
       </div>
-      <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
-        <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
+      <div className='flex border-b border-b-[#c7c8ca]'>
+        <div className='ml-2 flex-1 items-center text-[12px] font-bold text-[#097c93]'>
           <span className='block text-gray-400 md:hidden'>
             {t('min', 'Min')}:{minValue} {t('max', 'Max')}:{formatMax(maxValue)}
           </span>
         </div>
-        <div className='hidden md:block' />
-        <div className='hidden md:block' />
-        <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-          {t('back', 'Back')}
+        <div className='w-[40%] md:w-[48%] flex'>
+          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='m-[1px] w-1/2 md:w-1/3 flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
+            {t('back', 'Back')}
+          </div>
+          <div className='m-[1px] w-1/2 md:w-1/3 flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
+            {t('lay', 'Lay')}
+          </div>
+          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='hidden md:block w-1/3 p-[2px]' />
         </div>
-        <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-          {t('lay', 'Lay')}
-        </div>
-        <div className='hidden md:block' />
-        <div className='hidden md:block' />
       </div>
 
       {bookmakerData.length > 0 ? (
@@ -459,7 +461,7 @@ function Bookmaker({
             const hasOdds = item && item.odds > 0;
             return (
               <div
-                className={`${bgClass} m-[1px] flex min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                className={`${bgClass} m-[1px] w-1/2 flex min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                 onClick={() =>
                   hasOdds &&
                   handleOddsClick(team, item.odds, type, sid, item?.oname)
@@ -494,9 +496,9 @@ function Bookmaker({
 
           return (
             <React.Fragment key={teamIndex}>
-              <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
+              <div className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'>
                 {/* Team Name with suggestions */}
-                <div className='ml-2 flex items-center justify-between truncate text-[13px] font-bold text-black lg:text-[14px]'>
+                <div className='ml-2 flex flex-1 items-center justify-between truncate text-[13px] font-bold text-black lg:text-[14px]'>
                   <div className='flex flex-col'>
                     <div className='flex items-center'>
                       <span>{team}</span>
@@ -603,97 +605,89 @@ function Bookmaker({
                   })()}
                 </div>
 
-                {isSuspended ? (
-                  <div className='col-span-2 flex min-h-[36px] items-center justify-center bg-[#4b4b4b] md:col-span-6'>
-                    <span className='font-bold tracking-wide text-red-600'>
-                      {t('suspended', 'SUSPENDED')}
-                    </span>
+
+              {/* Mobile: primary back & lay */}
+              <div className={`relative md:hidden w-[40%] md:w-[48%] flex ${isSuspended ? 'suspended-event':''}`}>
+                {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
+                {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
+              </div>
+
+              <div className={`relative w-[40%] md:w-[48%] md:flex hidden ${isSuspended ? 'suspended-event':''}`}>
+              {/* Desktop: BACK - 3 slots */}
+              {[0, 1, 2].map((i) => {
+                const backItem = backOdds[i];
+                const hasOdds = backItem && backItem.odds > 0;
+                return (
+                  <div
+                    key={`back-${i}`}
+                    className={`${backBg[i]} m-[1px] w-1/2 md:w-1/3 hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                    onClick={() =>
+                      hasOdds &&
+                      handleOddsClick(
+                        team,
+                        backItem.odds,
+                        'back',
+                        sid,
+                        backItem?.oname
+                      )
+                    }
+                  >
+                    {hasOdds ? (
+                      <>
+                        <span className='text-[14px] leading-none font-bold text-black lg:text-[14px]'>
+                          {backItem.odds}
+                        </span>
+                        <span className='pt-[1px] text-[8px] leading-none font-[100] text-black lg:text-[10px]'>
+                          {formatStake(backItem.size)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className='text-[15px] font-bold text-black lg:text-[16px]'>
+                        -
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    {/* Mobile: primary back & lay */}
-                    <div className='md:hidden'>
-                      {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
-                    </div>
-                    <div className='md:hidden'>
-                      {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
-                    </div>
+                );
+              })}
 
-                    {/* Desktop: BACK - 3 slots */}
-                    {[0, 1, 2].map((i) => {
-                      const backItem = backOdds[i];
-                      const hasOdds = backItem && backItem.odds > 0;
-                      return (
-                        <div
-                          key={`back-${i}`}
-                          className={`${backBg[i]} m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                          onClick={() =>
-                            hasOdds &&
-                            handleOddsClick(
-                              team,
-                              backItem.odds,
-                              'back',
-                              sid,
-                              backItem?.oname
-                            )
-                          }
-                        >
-                          {hasOdds ? (
-                            <>
-                              <span className='text-[14px] leading-none font-bold text-black lg:text-[14px]'>
-                                {backItem.odds}
-                              </span>
-                              <span className='pt-[1px] text-[8px] leading-none font-[100] text-black lg:text-[10px]'>
-                                {formatStake(backItem.size)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className='text-[15px] font-bold text-black lg:text-[16px]'>
-                              -
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+              {/* Desktop: LAY - 3 slots */}
+              {[0, 1, 2].map((i) => {
+                const layItem = layOdds[i];
+                const hasOdds = layItem && layItem.odds > 0;
+                return (
+                  <div
+                    key={`lay-${i}`}
+                    className={`${layBg[i]} m-[1px] w-1/2 md:w-1/3 hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                    onClick={() =>
+                      hasOdds &&
+                      handleOddsClick(
+                        team,
+                        layItem.odds,
+                        'lay',
+                        sid,
+                        layItem?.oname
+                      )
+                    }
+                  >
+                    {hasOdds ? (
+                      <>
+                        <span className='text-[14px] leading-none font-bold text-[#333] lg:text-[14px]'>
+                          {layItem.odds}
+                        </span>
+                        <span className='pt-[1px] text-[8px] leading-none font-[100] text-[#333] lg:text-[10px]'>
+                          {formatStake(layItem.size)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className='text-[15px] font-bold text-[#333] lg:text-[16px]'>
+                        -
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              </div>
 
-                    {/* Desktop: LAY - 3 slots */}
-                    {[0, 1, 2].map((i) => {
-                      const layItem = layOdds[i];
-                      const hasOdds = layItem && layItem.odds > 0;
-                      return (
-                        <div
-                          key={`lay-${i}`}
-                          className={`${layBg[i]} m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                          onClick={() =>
-                            hasOdds &&
-                            handleOddsClick(
-                              team,
-                              layItem.odds,
-                              'lay',
-                              sid,
-                              layItem?.oname
-                            )
-                          }
-                        >
-                          {hasOdds ? (
-                            <>
-                              <span className='text-[14px] leading-none font-bold text-[#333] lg:text-[14px]'>
-                                {layItem.odds}
-                              </span>
-                              <span className='pt-[1px] text-[8px] leading-none font-[100] text-[#333] lg:text-[10px]'>
-                                {formatStake(layItem.size)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className='text-[15px] font-bold text-[#333] lg:text-[16px]'>
-                              -
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
               </div>
               {showInlineBetSlip && (
                 <div className='border-b border-b-[#c7c8ca] bg-[#fafafa]'>

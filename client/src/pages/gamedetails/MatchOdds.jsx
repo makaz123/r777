@@ -410,14 +410,14 @@ function MatchOdds({
           {hasCashoutAvailable ? (
             <button
               onClick={handleCashOutClick}
-              className='cursor-pointer bg-[#198754] p-1 font-[400] text-white'
+              className='cursor-pointer bg-black px-2.5 py-0.5 rounded-[3px] text-[12px] font-[600] text-white'
             >
               {t('cashout', 'Cashout')}
             </button>
           ) : (
             <button
               disabled
-              className='cursor-not-allowed bg-[#198754] p-1 font-[400] text-white opacity-60'
+              className='cursor-not-allowed bg-[#959595] px-2.5 py-0.5 rounded-[3px] text-[12px] font-[600] text-white'
             >
               {t('cashout', 'Cashout')}
             </button>
@@ -427,26 +427,29 @@ function MatchOdds({
           </span>
         </div>
       </div>
-      <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
-        <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
+      <div className='flex border-b border-b-[#c7c8ca]'>
+        <div className='ml-2 flex-1 items-center text-[12px] font-bold text-[#097c93]'>
           <span className='block text-gray-400 md:hidden'>
             {t('max', 'Max')}:{maxValue}
           </span>
         </div>
-        <div className='hidden md:block' />
-        <div className='hidden md:block' />
-        <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-          {t('back', 'Back')}
+        <div className='w-[40%] md:w-[48%] flex'>
+          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='m-[1px] w-1/2 md:w-1/3 flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
+            {t('back', 'Back')}
+          </div>
+          <div className='m-[1px] w-1/2 md:w-1/3 flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
+            {t('lay', 'Lay')}
+          </div>
+          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='hidden md:block w-1/3 p-[2px]' />
         </div>
-        <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-          {t('lay', 'Lay')}
-        </div>
-        <div className='hidden md:block' />
-        <div className='hidden md:block' />
       </div>
 
       {oddsData.length > 0 ? (
-        oddsData.map(({ team, odds, sid }, teamIndex) => {
+        oddsData.map(({ team, odds, sid, gstatus }, teamIndex) => {
+          const isSuspended = gstatus === 'SUSPENDED';
           // Separate back and lay odds
           const backOdds = odds
             .filter((odd) => odd.otype === 'back' && odd.odds > 0)
@@ -463,7 +466,7 @@ function MatchOdds({
             const formattedOdds = item ? item.odds : null;
             return (
               <div
-                className={`${bgClass} m-[1px] flex min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                className={`${bgClass} m-[1px] w-1/2 flex min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                 onClick={() =>
                   formattedOdds &&
                   handleOddsClick(team, formattedOdds, type, sid, item?.oname)
@@ -500,9 +503,9 @@ function MatchOdds({
 
           return (
             <React.Fragment key={teamIndex}>
-              <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
+              <div className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'>
                 {/* Team with suggestions */}
-                <div className='ml-2 flex items-center justify-between truncate text-[13px] font-bold text-black lg:text-[14px]'>
+                <div className='ml-2 flex-1 items-center justify-between truncate text-[13px] font-bold text-black lg:text-[14px]'>
                   <div className='flex flex-col'>
                     <div className='flex items-center'>
                       <span>{team}</span>
@@ -611,21 +614,19 @@ function MatchOdds({
                   })()}
                 </div>
                 {/* Mobile: primary back & lay */}
-                <div className='md:hidden'>
+                <div className={`relative md:hidden w-[40%] md:w-[48%] flex ${isSuspended ? 'suspended-event':''}`}>
                   {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
-                </div>
-                <div className='md:hidden'>
                   {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
                 </div>
 
+                <div className={`relative w-[40%] md:w-[48%] md:flex hidden ${isSuspended ? 'suspended-event':''}`}>
                 {/* Desktop: BACK - 3 slots */}
                 {[0, 1, 2].map((i) => {
                   const backItem = backOdds[i];
                   const formattedOdds = backItem ? backItem.odds : null;
                   return (
-                    <div
-                      key={`back-${i}`}
-                      className={`${backBg[i]} m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                    <div key={`back-${i}`}
+                      className={`${backBg[i]} m-[1px] w-1/2 md:w-1/3 hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                       onClick={() =>
                         formattedOdds &&
                         handleOddsClick(
@@ -662,7 +663,7 @@ function MatchOdds({
                   return (
                     <div
                       key={`lay-${i}`}
-                      className={`${layBg[i]} m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                      className={`${layBg[i]} w-1/2 md:w-1/3 m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                       onClick={() =>
                         formattedOdds &&
                         handleOddsClick(
@@ -691,6 +692,7 @@ function MatchOdds({
                     </div>
                   );
                 })}
+                </div>
               </div>
 
               {showInlineBetSlip && (

@@ -244,6 +244,10 @@ function TennisBet() {
     ? bettingData.filter((item) => item.mname === 'MATCH_ODDS')
     : [];
 
+  const BookmakerList = Array.isArray(bettingData)
+    ? bettingData.filter((item) => item.mname === 'Bookmaker')
+    : [];
+
   console.log('this is matchOddsList', matchOddsList);
 
   console.log('bettingData', bettingData);
@@ -356,6 +360,23 @@ function TennisBet() {
             eventName={match}
             gameName='Tennis Game'
             sid={2}
+            onBetChange={handleBetChange}
+            onClose={() => setSelectedBet(null)}
+          />
+        )}
+
+        {/** Bookmaker */}
+        {BookmakerList.length > 0 && (
+          <Bookmaker
+            gameid={gameid}
+            onBetSelect={handleBetSelect}
+            BookmakerList={BookmakerList}
+            pendingBetAmounts={pendingBetAmounts}
+            selectedBet={selectedBet}
+            team1={team1}
+            team2={team2}
+            eventName={match}
+            gameName='Tennis Game'
             onBetChange={handleBetChange}
             onClose={() => setSelectedBet(null)}
           />

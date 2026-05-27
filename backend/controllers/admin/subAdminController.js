@@ -1826,14 +1826,6 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
   const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, shareParent);
   const commissionPct = parseCommissionPercent(row.commition);
 
-<<<<<<< Updated upstream
-=======
-  // Agents pass up everything they don't keep (100 - their keep).
-  const passedUpFromRow = roundMoney(
-    Math.max(0, 100 - getAccountMyKeepPercent(row))
-  );
-
->>>>>>> Stashed changes
   // End-users on a nested drill-down: show root viewer's share on the branch (e.g. 90%), not agent keep (10%).
   const parentSharePercent = isEndUser
     ? isNestedList

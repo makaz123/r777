@@ -100,7 +100,12 @@ const PrivateRoute = () => {
               })
             );
           } else if (data.type === 'exposure_update') {
-            dispatch(updateReduxUserBalance({ userId: data.userId, newExposure: data.newExposure }));
+            dispatch(
+              updateReduxUserBalance({
+                userId: data.userId,
+                newExposure: data.newExposure,
+              })
+            );
           } else if (
             data.type === 'user_refresh_needed' &&
             String(data.userId) === String(userInfo._id)

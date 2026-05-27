@@ -50,7 +50,9 @@ function parseEventName(eventName = '') {
 function normalizeStime(stimeRaw) {
   if (!stimeRaw) return '';
 
-  const cleaned = String(stimeRaw).replace(/\s*\(IST\)\s*/gi, '').trim();
+  const cleaned = String(stimeRaw)
+    .replace(/\s*\(IST\)\s*/gi, '')
+    .trim();
   if (!cleaned) return '';
 
   if (cleaned.includes('/')) {
@@ -93,8 +95,7 @@ function hasStructuredSection(raw) {
 
 /** 81club /esid: flat cricket array or { body: [...] } tennis/soccer — normalize for controllers */
 function normalizeEsidMatch(raw) {
-  const hasApiStime =
-    raw.stime != null && String(raw.stime).trim() !== '';
+  const hasApiStime = raw.stime != null && String(raw.stime).trim() !== '';
 
   let ename;
   let stime;
@@ -178,8 +179,7 @@ function normalizeEsidResponse(data) {
 }
 
 export function createProviderC() {
-  const API_URL =
-    process.env.PROVIDER_C_API_URL || 'https://81club.fun/api/v1';
+  const API_URL = process.env.PROVIDER_C_API_URL || 'https://81club.fun/api/v1';
   const API_KEY = process.env.PROVIDER_C_API_KEY || process.env.API_KEY;
   const RESULT_API_URL =
     process.env.PROVIDER_C_RESULT_API_URL ||
@@ -249,13 +249,13 @@ export function createProviderC() {
           runners: payload.runners || [],
         };
       }
-      console.log("fullPayload",fullPayload)
+      console.log('fullPayload', fullPayload);
       const response = await axios.post(
         `${API_URL}/bet-incoming?key=${API_KEY}`,
         fullPayload,
         { headers: { 'Content-Type': 'application/json' } }
       );
-      console.log("response",response.data)
+      console.log('response', response.data);
       return response.data;
     },
 
@@ -290,13 +290,16 @@ export function createProviderC() {
     },
 
     async fetchCricketFancyResult(eventId, fancyId) {
-      const response = await axios.get(`${API_URL}/fancyresult?key=${API_KEY}`, {
-        params: {
-          key: API_KEY,
-          eventId: String(eventId),
-          fancyId: String(fancyId),
-        },
-      });
+      const response = await axios.get(
+        `${API_URL}/fancyresult?key=${API_KEY}`,
+        {
+          params: {
+            key: API_KEY,
+            eventId: String(eventId),
+            fancyId: String(fancyId),
+          },
+        }
+      );
       return response.data;
     },
 

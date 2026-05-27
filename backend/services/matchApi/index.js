@@ -14,10 +14,10 @@ switch (PROVIDER) {
   case 'provider_b':
     activeProvider = createProviderB();
     break;
-    case 'providerc':
-  case 'provider_c':
-    activeProvider = createProviderC();
-    break;
+  case 'providerc':
+  case 'provider_c':
+    activeProvider = createProviderC();
+    break;
   case 'providera':
   case 'provider_a':
   default:

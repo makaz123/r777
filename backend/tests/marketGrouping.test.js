@@ -963,9 +963,8 @@ describe('Market Grouping: stress test — large scale', () => {
 
 describe('parseMatchSides / mapScenariosToMatchSides', () => {
   it('parses both teams from "Team A v Team B" event text', async () => {
-    const { parseMatchSides } = await import(
-      '../utils/marketCalculationUtils.js'
-    );
+    const { parseMatchSides } =
+      await import('../utils/marketCalculationUtils.js');
     expect(
       parseMatchSides(
         'RC Bengaluru v Gujarat Titans - 20 May 26 19:30',
@@ -978,10 +977,8 @@ describe('parseMatchSides / mapScenariosToMatchSides', () => {
   });
 
   it('single-sided market uses opponent name from event, not "Team 2"', async () => {
-    const {
-      calculateOutcomeScenarios,
-      mapScenariosToMatchSides,
-    } = await import('../utils/marketCalculationUtils.js');
+    const { calculateOutcomeScenarios, mapScenariosToMatchSides } =
+      await import('../utils/marketCalculationUtils.js');
     const scenarios = calculateOutcomeScenarios([
       {
         teamName: 'Royal Challengers Bengaluru',

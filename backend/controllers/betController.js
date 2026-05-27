@@ -190,9 +190,10 @@ export const getExposureDetails = async (req, res) => {
       }
     }
 
-    const activeBets = userIdsToFetch.length > 0 
-      ? await betModel.find({ userId: { $in: userIdsToFetch }, status: 0 })
-      : [];
+    const activeBets =
+      userIdsToFetch.length > 0
+        ? await betModel.find({ userId: { $in: userIdsToFetch }, status: 0 })
+        : [];
 
     const groupedBets = {};
     activeBets.forEach((bet) => {
@@ -207,7 +208,7 @@ export const getExposureDetails = async (req, res) => {
     for (const [gameId, bets] of Object.entries(groupedBets)) {
       const sampleBet = bets[0];
       const exposure = calculateAllExposure(bets);
-      
+
       if (exposure > 0) {
         marketDetails.push({
           gameId: sampleBet.gameId,
@@ -216,7 +217,7 @@ export const getExposureDetails = async (req, res) => {
           marketName: sampleBet.marketName,
           eventDate: sampleBet.date || sampleBet.createdAt,
           exposure: exposure,
-          displayExposure: -exposure
+          displayExposure: -exposure,
         });
       }
     }
@@ -889,7 +890,10 @@ const placeBet = async (req, res) => {
 
     // Only call the external API if there's no existing bet
     if (!existingExact) {
-      market_id = req.body.market_id || marketMeta.mid || String(Math.floor(10000000 + Math.random() * 90000000));
+      market_id =
+        req.body.market_id ||
+        marketMeta.mid ||
+        String(Math.floor(10000000 + Math.random() * 90000000));
 
       // Here we are using the external Api - RUN IN BACKGROUND to prevent blocking
       (async () => {
@@ -1234,7 +1238,9 @@ const placeBet = async (req, res) => {
     if (newBet) {
       pendingBets.push(newBet);
     } else if (existingBet) {
-      const idx = pendingBets.findIndex(b => b._id.toString() === existingBet._id.toString());
+      const idx = pendingBets.findIndex(
+        (b) => b._id.toString() === existingBet._id.toString()
+      );
       if (idx !== -1) {
         pendingBets[idx] = existingBet;
       } else {
@@ -1272,7 +1278,10 @@ const placeBet = async (req, res) => {
 
     // Update all upline balances after bet placement (background)
     updateAllUplines(user._id).catch((err) => {
-      console.error(` [SPORTS BET] Error updating upline balances:`, err.message);
+      console.error(
+        ` [SPORTS BET] Error updating upline balances:`,
+        err.message
+      );
     });
 
     // Record bet history regardless of new/existing
@@ -1425,7 +1434,10 @@ export const placeFancyBet = async (req, res) => {
             fancyType: gameType,
           });
         } catch (err) {
-          console.error(`[FANCY BET] Error fetching market_id (bet-incoming):`, err.message);
+          console.error(
+            `[FANCY BET] Error fetching market_id (bet-incoming):`,
+            err.message
+          );
         }
       })();
     }
@@ -1770,7 +1782,9 @@ export const placeFancyBet = async (req, res) => {
 
     // Recalculate exposure from updated bets (fancy + non-fancy)
     if (finalBetObj) {
-      const idx = pendingBets.findIndex(b => b._id.toString() === finalBetObj._id.toString());
+      const idx = pendingBets.findIndex(
+        (b) => b._id.toString() === finalBetObj._id.toString()
+      );
       if (idx !== -1) {
         pendingBets[idx] = finalBetObj;
       } else {
@@ -1793,7 +1807,10 @@ export const placeFancyBet = async (req, res) => {
 
     // Update all upline balances after bet placement (background)
     updateAllUplines(user._id).catch((err) => {
-      console.error(' [FANCY BET] Error updating upline balances:', err.message);
+      console.error(
+        ' [FANCY BET] Error updating upline balances:',
+        err.message
+      );
     });
 
     // Send updates to all connected clients
@@ -2985,7 +3002,7 @@ export const updateFancyBetResult = async (req, res) => {
             if (process.env.DEV_MOCK_API === '1') {
               score = '200';
               console.log(` [MOCK API] Using test score: ${score}`);
-            } else if ((isProviderB || isProviderC)  && bet.fancyId) {
+            } else if ((isProviderB || isProviderC) && bet.fancyId) {
               // Provider B: use /cricket/fancyresult with eventId + fancyId
               try {
                 const fancyResult = await apiFetchCricketFancyResult(
@@ -4746,7 +4763,12 @@ export const getAccountStatementHistory = async (req, res) => {
       limit = 100,
     } = req.query;
 
-    const allowedProfileRoles = ['admin', 'master', 'superadmin', 'supperadmin'];
+    const allowedProfileRoles = [
+      'admin',
+      'master',
+      'superadmin',
+      'supperadmin',
+    ];
     const isPrivileged = allowedProfileRoles.includes(role);
     let targetUserId = null;
 
@@ -4765,11 +4787,11 @@ export const getAccountStatementHistory = async (req, res) => {
     const pageNum = Math.max(parseInt(page), 1);
     const limitNum = Math.max(parseInt(limit), 1);
     const skip = (pageNum - 1) * limitNum;
-    
+
     // Parse Dates
     let dateFilter = null;
     let endOfDateRange = new Date();
-    
+
     if (startDate && endDate) {
       dateFilter = getDateRangeUTC(startDate, endDate);
       endOfDateRange = new Date(dateFilter.$lte || dateFilter.$lt || endDate);
@@ -4778,10 +4800,16 @@ export const getAccountStatementHistory = async (req, res) => {
     // 1. Get Target User's Current Balance
     let currentBalance = 0;
     if (targetUserId) {
-       const u = await SubAdmin.findById(targetUserId, { avbalance: 1, balance: 1, role: 1 }).lean();
-       if (u) {
-          currentBalance = Number(u.role === 'user' ? (u.avbalance || 0) : (u.balance || 0));
-       }
+      const u = await SubAdmin.findById(targetUserId, {
+        avbalance: 1,
+        balance: 1,
+        role: 1,
+      }).lean();
+      if (u) {
+        currentBalance = Number(
+          u.role === 'user' ? u.avbalance || 0 : u.balance || 0
+        );
+      }
     }
 
     const transactionQuery = {};
@@ -4800,82 +4828,97 @@ export const getAccountStatementHistory = async (req, res) => {
     if (marketName) betQuery.marketName = { $regex: marketName, $options: 'i' };
     if (sportsName) betQuery.gameName = { $regex: sportsName, $options: 'i' };
     if (sportsGameType) {
-      if (sportsGameType === 'matchOdds') betQuery.gameType = { $regex: '^Match\\s*Odds$', $options: 'i' };
-      else if (sportsGameType === 'fancy') betQuery.gameType = { $regex: 'fancy', $options: 'i' };
+      if (sportsGameType === 'matchOdds')
+        betQuery.gameType = { $regex: '^Match\\s*Odds$', $options: 'i' };
+      else if (sportsGameType === 'fancy')
+        betQuery.gameType = { $regex: 'fancy', $options: 'i' };
     }
 
     const transactionPipeline = [
       { $match: transactionQuery },
       {
         $project: {
-          date: { $ifNull: ["$createdAt", "$date"] },
-          credit: { $toDouble: { $ifNull: ["$deposite", 0] } },
-          debit: { $toDouble: { $ifNull: ["$withdrawl", 0] } },
-          description: { $ifNull: ["$remark", "Transaction"] },
-          fromto: { $concat: [{ $ifNull: ["$from", "-"] }, " / ", { $ifNull: ["$to", "-"] }] },
-          userName: { $ifNull: ["$userName", ""] },
-          type: { $literal: "txn" }
-        }
-      }
+          date: { $ifNull: ['$createdAt', '$date'] },
+          credit: { $toDouble: { $ifNull: ['$deposite', 0] } },
+          debit: { $toDouble: { $ifNull: ['$withdrawl', 0] } },
+          description: { $ifNull: ['$remark', 'Transaction'] },
+          fromto: {
+            $concat: [
+              { $ifNull: ['$from', '-'] },
+              ' / ',
+              { $ifNull: ['$to', '-'] },
+            ],
+          },
+          userName: { $ifNull: ['$userName', ''] },
+          type: { $literal: 'txn' },
+        },
+      },
     ];
 
     const betPipeline = [
       { $match: betQuery },
       {
         $project: {
-          date: { $ifNull: ["$date", "$createdAt"] },
-          pl: { $toDouble: { $ifNull: ["$profitLossChange", 0] } },
+          date: { $ifNull: ['$date', '$createdAt'] },
+          pl: { $toDouble: { $ifNull: ['$profitLossChange', 0] } },
           description: {
             $concat: [
-              { $ifNull: ["$gameName", "-"] }, " / ",
-              { $ifNull: ["$marketName", "-"] }, " / ",
-              { $ifNull: ["$betResult", "-"] }
-            ]
+              { $ifNull: ['$gameName', '-'] },
+              ' / ',
+              { $ifNull: ['$marketName', '-'] },
+              ' / ',
+              { $ifNull: ['$betResult', '-'] },
+            ],
           },
-          fromto: { $ifNull: ["$userName", ""] },
-          userName: { $ifNull: ["$userName", ""] },
-          type: { $literal: "bet" }
-        }
+          fromto: { $ifNull: ['$userName', ''] },
+          userName: { $ifNull: ['$userName', ''] },
+          type: { $literal: 'bet' },
+        },
       },
       {
         $project: {
           date: 1,
-          credit: { $cond: [{ $gt: ["$pl", 0] }, "$pl", 0] },
-          debit: { $cond: [{ $lt: ["$pl", 0] }, { $abs: "$pl" }, 0] },
+          credit: { $cond: [{ $gt: ['$pl', 0] }, '$pl', 0] },
+          debit: { $cond: [{ $lt: ['$pl', 0] }, { $abs: '$pl' }, 0] },
           description: 1,
           fromto: 1,
           userName: 1,
-          type: 1
-        }
-      }
+          type: 1,
+        },
+      },
     ];
 
     let mainColl;
     let pipeline = [];
-    
+
     if (accountType === 'all') {
       mainColl = TransactionHistory;
       pipeline = [
         ...transactionPipeline,
-        { $unionWith: { coll: betHistoryModel.collection.name, pipeline: betPipeline } },
-        { $sort: { date: -1 } }
+        {
+          $unionWith: {
+            coll: betHistoryModel.collection.name,
+            pipeline: betPipeline,
+          },
+        },
+        { $sort: { date: -1 } },
       ];
     } else if (accountType === 'deposit' || accountType === 'settlement') {
       mainColl = TransactionHistory;
-      pipeline = [ ...transactionPipeline, { $sort: { date: -1 } } ];
+      pipeline = [...transactionPipeline, { $sort: { date: -1 } }];
     } else {
       mainColl = betHistoryModel;
-      pipeline = [ ...betPipeline, { $sort: { date: -1 } } ];
+      pipeline = [...betPipeline, { $sort: { date: -1 } }];
     }
 
     const facetPipeline = [
       ...pipeline,
       {
         $facet: {
-          metadata: [{ $count: "total" }],
-          data: [{ $skip: skip }, { $limit: limitNum }]
-        }
-      }
+          metadata: [{ $count: 'total' }],
+          data: [{ $skip: skip }, { $limit: limitNum }],
+        },
+      },
     ];
 
     const result = await mainColl.aggregate(facetPipeline);
@@ -4885,33 +4928,65 @@ export const getAccountStatementHistory = async (req, res) => {
     // Base Balance calculation helpers
     const getSums = async (dateCond) => {
       if (!targetUserId) return { credit: 0, debit: 0 };
-      
+
       const matchTxn = { ...transactionQuery, ...dateCond };
-      let tCredit = 0, tDebit = 0;
-      if (accountType === 'all' || accountType === 'deposit' || accountType === 'settlement') {
-         const txnAgg = await TransactionHistory.aggregate([
-           { $match: matchTxn },
-           { $group: { _id: null, credit: { $sum: "$deposite" }, debit: { $sum: "$withdrawl" } } }
-         ]);
-         tCredit = txnAgg[0]?.credit || 0;
-         tDebit = txnAgg[0]?.debit || 0;
+      let tCredit = 0,
+        tDebit = 0;
+      if (
+        accountType === 'all' ||
+        accountType === 'deposit' ||
+        accountType === 'settlement'
+      ) {
+        const txnAgg = await TransactionHistory.aggregate([
+          { $match: matchTxn },
+          {
+            $group: {
+              _id: null,
+              credit: { $sum: '$deposite' },
+              debit: { $sum: '$withdrawl' },
+            },
+          },
+        ]);
+        tCredit = txnAgg[0]?.credit || 0;
+        tDebit = txnAgg[0]?.debit || 0;
       }
 
       const matchBet = { ...betQuery, ...dateCond };
-      let bCredit = 0, bDebit = 0;
-      if (accountType === 'all' || accountType === 'sports' || accountType === 'casino') {
-         const betAgg = await betHistoryModel.aggregate([
-           { $match: matchBet },
-           {
-             $group: {
-               _id: null,
-               credit: { $sum: { $cond: [{ $gt: ["$profitLossChange", 0] }, "$profitLossChange", 0] } },
-               debit: { $sum: { $cond: [{ $lt: ["$profitLossChange", 0] }, { $abs: "$profitLossChange" }, 0] } }
-             }
-           }
-         ]);
-         bCredit = betAgg[0]?.credit || 0;
-         bDebit = betAgg[0]?.debit || 0;
+      let bCredit = 0,
+        bDebit = 0;
+      if (
+        accountType === 'all' ||
+        accountType === 'sports' ||
+        accountType === 'casino'
+      ) {
+        const betAgg = await betHistoryModel.aggregate([
+          { $match: matchBet },
+          {
+            $group: {
+              _id: null,
+              credit: {
+                $sum: {
+                  $cond: [
+                    { $gt: ['$profitLossChange', 0] },
+                    '$profitLossChange',
+                    0,
+                  ],
+                },
+              },
+              debit: {
+                $sum: {
+                  $cond: [
+                    { $lt: ['$profitLossChange', 0] },
+                    { $abs: '$profitLossChange' },
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]);
+        bCredit = betAgg[0]?.credit || 0;
+        bDebit = betAgg[0]?.debit || 0;
       }
       return { credit: tCredit + bCredit, debit: tDebit + bDebit };
     };
@@ -4933,7 +5008,13 @@ export const getAccountStatementHistory = async (req, res) => {
       const skipAgg = await mainColl.aggregate([
         ...pipeline,
         { $limit: skip },
-        { $group: { _id: null, credit: { $sum: "$credit" }, debit: { $sum: "$debit" } } }
+        {
+          $group: {
+            _id: null,
+            credit: { $sum: '$credit' },
+            debit: { $sum: '$debit' },
+          },
+        },
       ]);
       const skippedCredit = skipAgg[0]?.credit || 0;
       const skippedDebit = skipAgg[0]?.debit || 0;
@@ -4941,8 +5022,8 @@ export const getAccountStatementHistory = async (req, res) => {
     }
 
     for (const row of paginatedRows) {
-       runningBalance = runningBalance + row.debit - row.credit;
-       row.closing = Number(runningBalance.toFixed(2));
+      runningBalance = runningBalance + row.debit - row.credit;
+      row.closing = Number(runningBalance.toFixed(2));
     }
 
     return res.status(200).json({

@@ -57,9 +57,8 @@ function CricketBet() {
   const [showodds, setshowodds] = useState(true);
   const [selectedBet, setSelectedBet] = useState(null);
   const { battingData } = useSelector((state) => state.cricket);
-  const { pendingBetAmounts, betHistory, successMessage, errorMessage } = useSelector(
-    (state) => state.bet
-  );
+  const { pendingBetAmounts, betHistory, successMessage, errorMessage } =
+    useSelector((state) => state.bet);
   const { userInfo } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     gameId: gameid,
@@ -470,7 +469,8 @@ function CricketBet() {
             onClick={() => setshowodds(false)}
           >
             {' '}
-            {t('open_bets', 'Open Bets')} ({betHistory?.filter(bet => bet.gameId === gameid).length || 0})
+            {t('open_bets', 'Open Bets')} (
+            {betHistory?.filter((bet) => bet.gameId === gameid).length || 0})
           </div>
         </div>
 
@@ -662,7 +662,8 @@ function CricketBet() {
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
             <span className='text-[14px]'>
-              {t('matched_bet', 'Matched Bet')} ({betHistory?.filter(bet => bet.gameId === gameid).length || 0})
+              {t('matched_bet', 'Matched Bet')} (
+              {betHistory?.filter((bet) => bet.gameId === gameid).length || 0})
             </span>
           </div>
           <MatchedBet gameid={gameid} />

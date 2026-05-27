@@ -21,8 +21,13 @@ const BookMaker = ({ BookmakerList, onBookClick }) => {
         }))
       : [];
 
-  const betCount = Array.isArray(betsData) 
-    ? betsData.filter(item => item?.gameType === 'Bookmaker' || item?.marketName === 'Bookmaker' || item?.gameType === bookmakerData[0]?.mname).length 
+  const betCount = Array.isArray(betsData)
+    ? betsData.filter(
+        (item) =>
+          item?.gameType === 'Bookmaker' ||
+          item?.marketName === 'Bookmaker' ||
+          item?.gameType === bookmakerData[0]?.mname
+      ).length
     : 0;
 
   const getBetDetails = (pendingBet, matchData, team) => {
@@ -158,11 +163,11 @@ const BookMaker = ({ BookmakerList, onBookClick }) => {
 
     return (
       <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
-        <div className='flex justify-between items-center'>
+        <div className='flex items-center justify-between'>
           <p>
             {team}
             {ratio !== null && (
-              <span className='text-[11px] text-[#4d6a8a] ml-1 font-normal tracking-tight'>
+              <span className='ml-1 text-[11px] font-normal tracking-tight text-[#4d6a8a]'>
                 [{oppositeTeam} : {ratio.toFixed(2)}]
               </span>
             )}

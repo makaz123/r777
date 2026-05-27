@@ -13,28 +13,28 @@ export const fetchSoccerData = async (req, res) => {
 
     const combinedData = [...t1Data, ...t2Data]
       .map((match) => ({
-      id: match.gmid,
-      title: match.cname,
-      match: match.ename,
-      date: match.stime,
-      iplay: match.iplay,
-      tv: match.tv,
-      bm: match.bm,
-      f: match.f,
-      channels: match.f ? ['F'] : [],
-      odds: match.section.reduce((acc, section, index) => {
-        const homeOdds = section.odds[0]?.odds || '0';
-        const awayOdds = section.odds[1]?.odds || '0';
+        id: match.gmid,
+        title: match.cname,
+        match: match.ename,
+        date: match.stime,
+        iplay: match.iplay,
+        tv: match.tv,
+        bm: match.bm,
+        f: match.f,
+        channels: match.f ? ['F'] : [],
+        odds: match.section.reduce((acc, section, index) => {
+          const homeOdds = section.odds[0]?.odds || '0';
+          const awayOdds = section.odds[1]?.odds || '0';
 
-        acc.push({ home: homeOdds, away: awayOdds });
+          acc.push({ home: homeOdds, away: awayOdds });
 
-        if (index < match.section.length - 1) {
-          acc.push({ home: '0', away: '0' });
-        }
+          if (index < match.section.length - 1) {
+            acc.push({ home: '0', away: '0' });
+          }
 
-        return acc;
-      }, []),
-    }))
+          return acc;
+        }, []),
+      }))
       .sort((a, b) => {
         const da = parseApiMatchDate(a.date);
         const db = parseApiMatchDate(b.date);

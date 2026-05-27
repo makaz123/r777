@@ -106,12 +106,10 @@ const AccountSummaryBar = () => {
         ? 'Upline partnership due (dena) — cash settlement reduces this amount.'
         : 'Upline partnership collectable (lena) — cash settlement reduces this amount.');
 
-
   const roleDisplay =
     summary?.userType ||
     (userInfo?.role?.toLowerCase() === 'white'
       ? 'Admin'
-      
       : userInfo?.role?.charAt(0).toUpperCase() + userInfo?.role?.slice(1));
 
   /** My Exposure: total exposure * my share percentage */
@@ -144,7 +142,7 @@ const AccountSummaryBar = () => {
 
       {open && (
         <div className='px-4 pt-0 pb-4'>
-          <div className='grid grid-cols gap-x-8 gap-y-2 md:grid-cols-5'>
+          <div className='grid-cols grid gap-x-8 gap-y-2 md:grid-cols-5'>
             <div className='space-y-1'>
               <MetricTooltipRow label='User ID : ' tooltip='Your username.'>
                 <span className='font-medium'>
@@ -190,9 +188,7 @@ const AccountSummaryBar = () => {
             </div>
 
             <div className='space-y-1'>
-              {!['supperadmin'].includes(
-                userInfo?.role
-              ) && (
+              {!['supperadmin'].includes(userInfo?.role) && (
                 <>
                   <MetricTooltipRow
                     label={`Up Line (${uplineLenDena}) : `}
@@ -225,9 +221,7 @@ const AccountSummaryBar = () => {
                 >
                   <span
                     className={
-                      myExposureAmount === 0
-                        ? 'text-white/90'
-                        : 'text-red-400'
+                      myExposureAmount === 0 ? 'text-white/90' : 'text-red-400'
                     }
                   >
                     {myExposureAmount > 0

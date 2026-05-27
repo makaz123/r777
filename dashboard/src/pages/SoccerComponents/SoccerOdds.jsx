@@ -5,8 +5,10 @@ import OddsGridCells from '../../components/OddsGridCells';
 const SoccerOdds = ({ matchOddsList, onBookClick }) => {
   const { pendingBet, betsData } = useSelector((state) => state.market);
 
-  const betCount = Array.isArray(betsData) 
-    ? betsData.filter(item => item?.gameType === 'Match Odds' || item?.gameType === 'Winner').length 
+  const betCount = Array.isArray(betsData)
+    ? betsData.filter(
+        (item) => item?.gameType === 'Match Odds' || item?.gameType === 'Winner'
+      ).length
     : 0;
 
   const oddsData =

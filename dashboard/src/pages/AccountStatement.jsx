@@ -22,7 +22,7 @@ const AccountStatement = () => {
     const year = d.getFullYear();
     let hours = '' + d.getHours();
     let minutes = '' + d.getMinutes();
-    
+
     if (month.length < 2) month = '0' + month;
     if (day.length < 2) day = '0' + day;
     if (hours.length < 2) hours = '0' + hours;
@@ -209,7 +209,7 @@ const AccountStatement = () => {
         <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Account Statement Report</div>
 
-          <div className='mt-2 mb-2 md:mb-6 grid md:grid-cols-6 gap-4 md:gap-6'>
+          <div className='mt-2 mb-2 grid gap-4 md:mb-6 md:grid-cols-6 md:gap-6'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
@@ -315,7 +315,7 @@ const AccountStatement = () => {
             </div>
           </div>
 
-          <div className='mb-5 flex flex-wrap gap-5 items-end justify-between'>
+          <div className='mb-5 flex flex-wrap items-end justify-between gap-5'>
             <div className='flex items-end'>
               <input
                 type='text'
@@ -365,7 +365,7 @@ const AccountStatement = () => {
               <span>entries</span>
             </div>
           </div>
-          <div className=' overflow-x-scroll scrollbar-hide'>
+          <div className='scrollbar-hide overflow-x-scroll'>
             <table className='w-full table-auto border-collapse border border-gray-300'>
               <thead>
                 <tr className='bg-[#016a82] text-white'>

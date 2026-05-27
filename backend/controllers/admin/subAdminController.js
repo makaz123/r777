@@ -252,21 +252,25 @@ const updateAdmin = async (id) => {
   }
 };
 
-/** 
+/**
  * Credit commission up the chain based on partnership percentages.
  * The direct agent keeps their partnership share of the commission, passing the rest up.
  * Master takes their share from the passed up amount, passing the rest up, etc.
  */
-export const distributeCommissionUpChain = async (user, initialCommissionAmount) => {
-  if (!user?.invite || !initialCommissionAmount || initialCommissionAmount <= 0) return null;
-  
+export const distributeCommissionUpChain = async (
+  user,
+  initialCommissionAmount
+) => {
+  if (!user?.invite || !initialCommissionAmount || initialCommissionAmount <= 0)
+    return null;
+
   let currentAmount = Number(initialCommissionAmount) || 0;
   let childNode = user;
   let currentParentCode = user.invite;
-  
+
   const directAgent = await SubAdmin.findOne({ code: currentParentCode });
   if (!directAgent) return null;
-  
+
   const firstAgent = directAgent;
 
   while (currentParentCode && currentAmount > 0) {
@@ -298,7 +302,7 @@ export const distributeCommissionUpChain = async (user, initialCommissionAmount)
     childNode = parent;
     currentParentCode = parent.invite;
   }
-  
+
   return firstAgent;
 };
 
@@ -1245,9 +1249,8 @@ const loadAccountSummaryForAdmin = async (adminId) => {
   if (updatedAdmin.invite) {
     uplineParent = await SubAdmin.findOne({ code: updatedAdmin.invite }).lean();
     if (uplineParent) {
-      const { getParentShareOnDownlineRow } = await import(
-        '../../utils/partnershipCommissionUtils.js'
-      );
+      const { getParentShareOnDownlineRow } =
+        await import('../../utils/partnershipCommissionUtils.js');
       uplineSharePercent = getParentShareOnDownlineRow(
         updatedAdmin,
         uplineParent
@@ -1766,7 +1769,10 @@ const buildDownlineViewerPayload = async (admin) => {
   );
 
   const totalPL = roundMoney(-rawGross);
-  const { myPL, uplinePL } = splitProfitLossByMyShare(totalPL, viewerMySharePercent);
+  const { myPL, uplinePL } = splitProfitLossByMyShare(
+    totalPL,
+    viewerMySharePercent
+  );
 
   return {
     partnership: Number(admin.partnership) || 0,
@@ -1820,6 +1826,14 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
   const downlineKeepOnRow = getDownlineKeepPercentOnRow(row, shareParent);
   const commissionPct = parseCommissionPercent(row.commition);
 
+<<<<<<< Updated upstream
+=======
+  // Agents pass up everything they don't keep (100 - their keep).
+  const passedUpFromRow = roundMoney(
+    Math.max(0, 100 - getAccountMyKeepPercent(row))
+  );
+
+>>>>>>> Stashed changes
   // End-users on a nested drill-down: show root viewer's share on the branch (e.g. 90%), not agent keep (10%).
   const parentSharePercent = isEndUser
     ? isNestedList
@@ -1859,13 +1873,13 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
       currentPL = roundMoney(avbalance - baseBalance);
     }
   } else {
-    // For agents, the "Current PL" column should accurately reflect the actual outstanding 
+    // For agents, the "Current PL" column should accurately reflect the actual outstanding
     // settlement balance (what the agent owes the rootViewer), factoring in cash settlements.
     const { clientPL } = await getDirectSettlementPL(rootViewer, row);
     // clientPL > 0 means agent owes the parent (rootViewer), which implies agent lost (debtor).
     // The "Current PL" conventionally shows negative numbers for losses.
     // Wait, clientPL > 0 in Settlement means creditor (downline WON).
-    // Let's look at getSettlementUsers: 
+    // Let's look at getSettlementUsers:
     // pl > 0: downline won their share (creditor / dena hai)
     // pl < 0: downline lost their share (debtor / lena hai)
     // For "Current P/L", if downline won, it should be positive. If downline lost, negative.
@@ -1891,7 +1905,10 @@ const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
     myPartnershipPercent: rootMySharePercent,
     mySharePercent: parentSharePercent,
     myPercent,
-    partnership: (rootViewer.role === 'supperadmin' || rootViewer.role === 'superadmin') ? parentSharePercent : row.partnership,
+    partnership:
+      rootViewer.role === 'supperadmin' || rootViewer.role === 'superadmin'
+        ? parentSharePercent
+        : row.partnership,
     rawBettingPL,
     myPLShare: plSplit.myPL,
     uplinePLShare: plSplit.uplinePL,
@@ -3958,16 +3975,17 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     .select('_id userName role invite code')
     .lean();
 
-  const [{ expectedPLByUserId, historyPLByUserId }, accountByCode] = await Promise.all([
-    getDownlineOutstandingPLMaps(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      TransactionHistory,
-      downline.code
-    ),
-    getAccountByCodeMap(SubAdmin, parentAdmin),
-  ]);
+  const [{ expectedPLByUserId, historyPLByUserId }, accountByCode] =
+    await Promise.all([
+      getDownlineOutstandingPLMaps(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        TransactionHistory,
+        downline.code
+      ),
+      getAccountByCodeMap(SubAdmin, parentAdmin),
+    ]);
   accountByCode.set(downline.code, downline);
 
   let grossClientPL = 0;
@@ -3979,16 +3997,14 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   grossClientPL = roundMoney(grossClientPL);
 
   const downlineShare = roundMoney(
-    -computeViewerPeriodPL(
-      downline,
-      endUsers,
-      historyPLByUserId,
-      accountByCode
-    )
+    -computeViewerPeriodPL(downline, endUsers, historyPLByUserId, accountByCode)
   );
-  
+
   const passedUpHistory = roundMoney(grossClientPL - downlineShare);
-  const clientPL = expectedBettingPLFromHistory(passedUpHistory, adminSettlementCash);
+  const clientPL = expectedBettingPLFromHistory(
+    passedUpHistory,
+    adminSettlementCash
+  );
 
   return {
     clientPL,
@@ -4162,7 +4178,6 @@ export const settleUser = async (req, res) => {
         remark: settleRemark,
         invite: admin.code,
       });
-
     } else if (pl < 0) {
       // User is Debtor (user owes admin).
       const absPl = Math.abs(pl);
@@ -4207,7 +4222,6 @@ export const settleUser = async (req, res) => {
         remark: settleRemark,
         invite: admin.code,
       });
-
     }
 
     await refreshSettlementHierarchy(id, userId);

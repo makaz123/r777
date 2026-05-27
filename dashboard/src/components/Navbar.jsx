@@ -232,7 +232,6 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           location.pathname == '/login' ? 'hidden' : 'block'
         }`}
       >
-
         {/* Desktop Header */}
         <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
           <div className='flex h-[52px] items-center'>
@@ -259,7 +258,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               <img src={logo} alt='logo' className='block h-full' />
             </NavLink>
 
-            <nav className='h-full text-black hidden md:flex'>
+            <nav className='hidden h-full text-black md:flex'>
               <ul className='relative z-999 mx-auto flex h-full w-full flex-wrap items-center'>
                 {visibleNavItems.map((item, i) => (
                   <li
@@ -335,7 +334,6 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
 
           <div className='mr-4 flex items-center gap-1'>
-            
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -343,7 +341,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               >
                 {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
               </p> */}
-              <p className='text-sm text-white'
+              <p
+                className='text-sm text-white'
                 onClick={() => setShowLogoutPopup((prev) => !prev)}
               >
                 {userInfo?.name}
@@ -382,7 +381,6 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             <NotificationBell role={userInfo?.role} />
           </div>
         </header>
-
 
         <AccountSummaryBar />
 

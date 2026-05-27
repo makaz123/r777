@@ -59,22 +59,22 @@ const cricketSlice = createSlice({
           // Format date: "12/14/2025 2:45:00 PM" -> "14/12/2025 14:45"
           const formatDate = (dateString) => {
             if (!dateString) return '';
-            
+
             // Try to parse "MM/DD/YYYY h:mm:ss A" explicitly
             const parts = String(dateString).split(' ');
             if (parts.length === 3) {
               const [datePart, timePart, ampm] = parts;
               const dateSplit = datePart.split('/');
               const timeSplit = timePart.split(':');
-              
+
               if (dateSplit.length === 3 && timeSplit.length >= 2) {
                 const [month, day, year] = dateSplit;
                 const [hours, minutes] = timeSplit;
-                
+
                 let hr = parseInt(hours, 10);
                 if (ampm.toUpperCase() === 'PM' && hr < 12) hr += 12;
                 if (ampm.toUpperCase() === 'AM' && hr === 12) hr = 0;
-                
+
                 return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year} ${String(hr).padStart(2, '0')}:${minutes.padStart(2, '0')}`;
               }
             }

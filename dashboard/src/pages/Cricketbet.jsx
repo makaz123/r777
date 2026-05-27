@@ -111,29 +111,32 @@ export default function Cricketbet() {
 
   const matchStartTime = useMemo(() => {
     if (location.state?.time) return location.state.time;
-    const listed = cricketMatches?.find(
-      (m) => String(m.id) === String(gameid)
-    );
+    const listed = cricketMatches?.find((m) => String(m.id) === String(gameid));
     if (listed?.time) return listed.time;
     if (listed?.date) return formatApiMatchDateTime(listed.date);
     return null;
   }, [location.state?.time, cricketMatches, gameid]);
 
-  const filteredBetsData = Array.isArray(betsData) ? betsData.filter((item) => {
-    let matchesAmount = true;
-    if (amountFilter) {
-      const amount = item.otype === 'lay' ? parseFloat(item.betAmount) : parseFloat(item.price);
-      matchesAmount = amount >= parseFloat(amountFilter);
-    }
-    let matchesMarket = true;
-    if (marketNameFilter) {
-      matchesMarket = item.gameType?.toLowerCase().includes(marketNameFilter.toLowerCase());
-    }
-    return matchesAmount && matchesMarket;
-  }) : [];
-  const subTabs = [
-    { id: 'Normal', name: 'All' },
-  ];
+  const filteredBetsData = Array.isArray(betsData)
+    ? betsData.filter((item) => {
+        let matchesAmount = true;
+        if (amountFilter) {
+          const amount =
+            item.otype === 'lay'
+              ? parseFloat(item.betAmount)
+              : parseFloat(item.price);
+          matchesAmount = amount >= parseFloat(amountFilter);
+        }
+        let matchesMarket = true;
+        if (marketNameFilter) {
+          matchesMarket = item.gameType
+            ?.toLowerCase()
+            .includes(marketNameFilter.toLowerCase());
+        }
+        return matchesAmount && matchesMarket;
+      })
+    : [];
+  const subTabs = [{ id: 'Normal', name: 'All' }];
 
   console.log('pendingBet', pendingBet);
   console.log('betPerantsData', betPerantsData);
@@ -457,7 +460,7 @@ export default function Cricketbet() {
       let targetUserId = '';
       setMasterBookBreadcrumb((prev) => {
         const next = prev.slice(0, index + 1);
-        targetUserId = index === 0 ? '' : next[index]?.id ?? '';
+        targetUserId = index === 0 ? '' : (next[index]?.id ?? '');
         return next;
       });
       await fetchMasterBookAtLevel(targetUserId);
@@ -517,13 +520,15 @@ export default function Cricketbet() {
     if (!teams.length || !pendingBet || pendingBet.length === 0) return [];
 
     const comboBets = pendingBet.filter(
-      (b) => b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
+      (b) =>
+        b.gameType !== 'Normal' && !b.gameType?.toLowerCase().includes('fancy')
     );
-    
+
     const results = teams.map((team) => {
       let netOutcome = 0;
       comboBets.forEach((bet) => {
-        const isBetOnThisTeam = bet.teamName?.toLowerCase() === team.toLowerCase();
+        const isBetOnThisTeam =
+          bet.teamName?.toLowerCase() === team.toLowerCase();
         const betAmount = parseFloat(bet.totalBetAmount) || 0;
         const stake = parseFloat(bet.totalPrice) || 0;
 
@@ -543,17 +548,20 @@ export default function Cricketbet() {
       });
       return {
         teamName: team,
-        netOutcome: Math.round(netOutcome * 100) / 100
+        netOutcome: Math.round(netOutcome * 100) / 100,
       };
     });
 
-    return results.map(item => {
+    return results.map((item) => {
       let ratio = null;
       let otherTeam = null;
       if (item.netOutcome !== 0 && results.length >= 2) {
-        const opposite = results.find(r => r.teamName !== item.teamName && (
-          (item.netOutcome > 0 && r.netOutcome < 0) || (item.netOutcome < 0 && r.netOutcome > 0)
-        ));
+        const opposite = results.find(
+          (r) =>
+            r.teamName !== item.teamName &&
+            ((item.netOutcome > 0 && r.netOutcome < 0) ||
+              (item.netOutcome < 0 && r.netOutcome > 0))
+        );
         if (opposite && opposite.netOutcome !== 0) {
           ratio = Math.abs(item.netOutcome / opposite.netOutcome);
           otherTeam = opposite.teamName;
@@ -573,12 +581,12 @@ export default function Cricketbet() {
             </div>
           ) : (
             <div className='flex w-full flex-col gap-8 md:flex-row'>
-              <div className='sm:w-full md:w-[60%]'>
+              <div className='w-full md:w-[60%]'>
                 <div className='flex items-center justify-between bg-[#18b0c8] px-[5px] py-[3px] text-[14px] font-bold text-white'>
-                  <span className='flex items-center'>
+                  <span className='w-[60%] items-center truncate'>
                     {gameTitle} - {gameName}
                   </span>
-                  <span>
+                  <span className='w-[40%] text-end'>
                     {matchStartTime || '—'}
                   </span>
                 </div>
@@ -586,42 +594,63 @@ export default function Cricketbet() {
                   <div className='flex items-center gap-1'>
                     <span className='font-bold'>Combo Book</span>
                   </div>
-                  <div className='cursor-pointer' onClick={() => setIsComboBookOpen(!isComboBookOpen)}>
-                    {isComboBookOpen ? <FaMinusCircle className='text-[18px]' /> : <FaPlusCircle className='text-[18px]' />}
+                  <div
+                    className='cursor-pointer'
+                    onClick={() => setIsComboBookOpen(!isComboBookOpen)}
+                  >
+                    {isComboBookOpen ? (
+                      <FaMinusCircle className='text-[18px]' />
+                    ) : (
+                      <FaPlusCircle className='text-[18px]' />
+                    )}
                   </div>
                 </div>
                 {isComboBookOpen && (
                   <table className='w-full'>
                     <tbody>
-                    {calculatedComboBookData && calculatedComboBookData.length > 0 ? (
-                      calculatedComboBookData.map((item, index) => {
-                        const isPositive = item.netOutcome >= 0;
-                        const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
-                        return (
-                          <tr key={index} className='leading-[22px] text-[14px] border-y border-gray-200'>
-                            <td className='py-0.5 pl-3 font-bold'>
-                              {item.teamName}
-                              {item.betAverage !== null && (
-                                <span className='text-[11px] text-[#4d6a8a] ml-1 font-normal tracking-tight'>
-                                  [{item.averageRelativeTeam} : {item.betAverage.toFixed(2)}]
+                      {calculatedComboBookData &&
+                      calculatedComboBookData.length > 0 ? (
+                        calculatedComboBookData.map((item, index) => {
+                          const isPositive = item.netOutcome >= 0;
+                          const colorClass = isPositive
+                            ? 'text-green-500'
+                            : 'text-red-500';
+                          return (
+                            <tr
+                              key={index}
+                              className='border-y border-gray-200 text-[14px] leading-[22px]'
+                            >
+                              <td className='py-0.5 pl-3 font-bold'>
+                                {item.teamName}
+                                {item.betAverage !== null && (
+                                  <span className='ml-1 text-[11px] font-normal tracking-tight text-[#4d6a8a]'>
+                                    [{item.averageRelativeTeam} :{' '}
+                                    {item.betAverage.toFixed(2)}]
+                                  </span>
+                                )}
+                              </td>
+                              <td className='px-1 py-0.5 text-right'>
+                                <span
+                                  className={`inline-block w-[155px] max-w-[240px] font-bold ${colorClass}`}
+                                >
+                                  {item.netOutcome}
                                 </span>
-                              )}
-                            </td>
-                            <td className='text-right py-0.5 px-1'>
-                              <span className={`font-bold w-[155px] max-w-[240px] inline-block ${colorClass}`}>
-                                {item.netOutcome}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr className='leading-[22px] text-[14px] border-y border-gray-200'>
-                        <td colSpan={2} className='py-0.5 px-3 text-center text-gray-500'>No Combo Book Data Available</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr className='border-y border-gray-200 text-[14px] leading-[22px]'>
+                          <td
+                            colSpan={2}
+                            className='px-3 py-0.5 text-center text-gray-500'
+                          >
+                            No Combo Book Data Available
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 )}
 
                 {/* odds match data */}
@@ -664,39 +693,45 @@ export default function Cricketbet() {
 
                 {/* which team will win the toss — only the two toss teams */}
                 {tossTeamsData.length > 0 && (
-                    <>
-                      <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
-                        <div className='flex items-center gap-1'>
-                          <span className='font-bold'>
-                            To Win The Toss
-                          </span>
-                          <span
-                            className='cursor-pointer rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'
-                            onClick={() =>
-                              hemdelMasterBook(
-                                '',
-                                Toss[0]?.gameType || 'Toss',
-                                buildMasterBookListFromTeams(tossTeamsData)
-                              )
-                            }
-                          >
-                            Book
-                          </span>
-                          <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                            BL <FaLock size={9} />
-                          </span>
-                          <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                            BetPlace
-                          </span>
-                          <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                            {Array.isArray(betsData) ? betsData.filter(item => item?.gameType === 'To Win the Toss' || item?.marketName === 'To Win The Toss' || item?.gameType === tossTeamsData[0]?.mname || item?.marketName === tossTeamsData[0]?.mname).length : 0}
-                          </span>
-                        </div>
-                        <div>
-                          Min: {tossTeamsData[0]?.min} | Max:{' '}
-                          {formatToK(tossTeamsData[0]?.max)}
-                        </div>
+                  <>
+                    <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+                      <div className='flex items-center gap-1'>
+                        <span className='font-bold'>To Win The Toss</span>
+                        <span
+                          className='cursor-pointer rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'
+                          onClick={() =>
+                            hemdelMasterBook(
+                              '',
+                              Toss[0]?.gameType || 'Toss',
+                              buildMasterBookListFromTeams(tossTeamsData)
+                            )
+                          }
+                        >
+                          Book
+                        </span>
+                        <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                          BL <FaLock size={9} />
+                        </span>
+                        <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                          BetPlace
+                        </span>
+                        <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                          {Array.isArray(betsData)
+                            ? betsData.filter(
+                                (item) =>
+                                  item?.gameType === 'To Win the Toss' ||
+                                  item?.marketName === 'To Win The Toss' ||
+                                  item?.gameType === tossTeamsData[0]?.mname ||
+                                  item?.marketName === tossTeamsData[0]?.mname
+                              ).length
+                            : 0}
+                        </span>
                       </div>
+                      <div>
+                        Min: {tossTeamsData[0]?.min} | Max:{' '}
+                        {formatToK(tossTeamsData[0]?.max)}
+                      </div>
+                    </div>
 
                     <div className='relative'>
                       {tossTeamsData[0]?.status === 'SUSPENDED' && (
@@ -804,7 +839,17 @@ export default function Cricketbet() {
                           BetPlace
                         </span>
                         <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                          {Array.isArray(betsData) ? betsData.filter(item => item?.gameType === 'Highest Score In 1st 6 Over' || item?.marketName === 'Highest Score In 1st 6 Over' || item?.gameType === over6TeamsData[0]?.mname || item?.marketName === over6TeamsData[0]?.mname).length : 0}
+                          {Array.isArray(betsData)
+                            ? betsData.filter(
+                                (item) =>
+                                  item?.gameType ===
+                                    'Highest Score In 1st 6 Over' ||
+                                  item?.marketName ===
+                                    'Highest Score In 1st 6 Over' ||
+                                  item?.gameType === over6TeamsData[0]?.mname ||
+                                  item?.marketName === over6TeamsData[0]?.mname
+                              ).length
+                            : 0}
                         </span>
                       </div>
                       <div>
@@ -1058,14 +1103,19 @@ export default function Cricketbet() {
                       <div className='flex items-center gap-1 text-[12px] text-white'>
                         Fancy{' '}
                         <span className='flex h-[15px] w-[14px] items-center justify-center rounded-sm border border-[#636363] bg-[#636363] text-[9px] leading-none'>
-                          {(Array.isArray(betsData) ? betsData.length - (matchOdd?.length || 0) - (Bookmaker?.length || 0) - (tiedMatch?.length || 0) : 0)}
+                          {Array.isArray(betsData)
+                            ? betsData.length -
+                              (matchOdd?.length || 0) -
+                              (Bookmaker?.length || 0) -
+                              (tiedMatch?.length || 0)
+                            : 0}
                         </span>
                       </div>
-                      <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white'>
+                      <div className='hidden items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white md:flex'>
                         Reset <FaFilter className='text-white' size={10} />
                       </div>
                     </div>
-                    <div className='flex gap-2'>
+                    <div className='hidden gap-2 md:flex'>
                       <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[5px] text-[12px] text-white'>
                         P&L <BsGraphUpArrow className='text-white' size={12} />
                       </div>
@@ -1915,8 +1965,6 @@ export default function Cricketbet() {
                   </motion.div>
                 </div>
               )}
-
-
             </div>
           )}
         </div>

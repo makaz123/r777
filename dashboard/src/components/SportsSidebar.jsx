@@ -82,7 +82,7 @@ function SportsSidebar({ isOpen, onClose }) {
       <>
         <button
           onClick={() => toggleItem(sportKey)}
-          className='flex w-full cursor-pointer items-center justify-between gap-1.5 px-4 py-1.5 text-white hover:bg-[#18b0c8] border-b border-[#18b0c8] last:border-b-0'
+          className='flex w-full cursor-pointer items-center justify-between gap-1.5 border-b border-[#18b0c8] px-4 py-1.5 text-white last:border-b-0 hover:bg-[#18b0c8]'
         >
           {sportName} <MdOutlineArrowDropDown />
         </button>
@@ -95,9 +95,11 @@ function SportsSidebar({ isOpen, onClose }) {
                 <>
                   <button
                     onClick={() => toggleItem(titleKey)}
-                    className='flex items-start w-full cursor-pointer items-center gap-2 py-[7px] text-black text-[12px] md:text-[14px]'
+                    className='flex w-full cursor-pointer items-center items-start gap-2 py-[7px] text-[12px] text-black md:text-[14px]'
                   >
-                    <span><ToggleIcon expanded={isExpanded(titleKey)} /></span>
+                    <span>
+                      <ToggleIcon expanded={isExpanded(titleKey)} />
+                    </span>
                     <span className='text-left'>{title}</span>{' '}
                   </button>
                   {isExpanded(titleKey) && matches && matches.length > 0 && (
@@ -105,7 +107,7 @@ function SportsSidebar({ isOpen, onClose }) {
                       {matches.map((match) => (
                         <a
                           href='#'
-                          className='flex items-center gap-1 py-1 text-black transition-colors text-[12px] md:text-[14px]'
+                          className='flex items-center gap-1 py-1 text-[12px] text-black transition-colors md:text-[14px]'
                           onClick={(e) => {
                             e.preventDefault();
                             navigate(
@@ -133,70 +135,88 @@ function SportsSidebar({ isOpen, onClose }) {
   return (
     <>
       <aside
-        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[200px] md:w-[250px] transform border-r border-gray-300 md:bg-[#007082] bg-gradient-to-b from-[#007082] to-[#18b0c8] text-white shadow-xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[200px] transform border-r border-gray-300 bg-gradient-to-b from-[#007082] to-[#18b0c8] text-white shadow-xl transition-transform duration-300 ease-in-out md:w-[250px] md:bg-[#007082] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } overflow-y-auto`}
       >
-         <ul className='block md:hidden'>
-            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/')}>
-              Dashboard
-            </li>
+        <ul className='block md:hidden'>
+          <li
+            className='border-b border-[#18b0c8] px-4 py-2'
+            onClick={() => navigate('/')}
+          >
+            Dashboard
+          </li>
 
-            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/user-download-list')}>
-              Client
-            </li>
+          <li
+            className='border-b border-[#18b0c8] px-4 py-2'
+            onClick={() => navigate('/user-download-list')}
+          >
+            Client
+          </li>
 
-            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/my-market')}>
-              Sport Analysis
-            </li>
+          <li
+            className='border-b border-[#18b0c8] px-4 py-2'
+            onClick={() => navigate('/my-market')}
+          >
+            Sport Analysis
+          </li>
 
-            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/casino-analysis')}>
-              Casino Analysis
-            </li>
+          <li
+            className='border-b border-[#18b0c8] px-4 py-2'
+            onClick={() => navigate('/casino-analysis')}
+          >
+            Casino Analysis
+          </li>
 
-            {/* Settlement Dropdown */}
-            <li>
-              <button
-                type='button'
-                onClick={() => setOpenSettlement(!openSettlement)}
-                className='w-full px-4 py-2 flex items-center justify-between border-b border-[#18b0c8]'
-              >
-                <span>Settlement</span>
+          {/* Settlement Dropdown */}
+          <li>
+            <button
+              type='button'
+              onClick={() => setOpenSettlement(!openSettlement)}
+              className='flex w-full items-center justify-between border-b border-[#18b0c8] px-4 py-2'
+            >
+              <span>Settlement</span>
 
-                <MdOutlineArrowDropDown
-                  className={`text-xl transition-transform duration-300 ${
-                    openSettlement ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+              <MdOutlineArrowDropDown
+                className={`text-xl transition-transform duration-300 ${
+                  openSettlement ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
 
-              {openSettlement && (
-                <ul>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/user-settlement')}>
-                    User
-                  </li>
+            {openSettlement && (
+              <ul>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/user-settlement')}
+                >
+                  User
+                </li>
 
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/master-settlement')}>
-                    Master
-                  </li>
-                </ul>
-              )}
-            </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/master-settlement')}
+                >
+                  Master
+                </li>
+              </ul>
+            )}
+          </li>
 
-            <li>
-              <button
-                type='button'
-                onClick={() => setOpenReport(!openReport)}
-                className='w-full px-4 py-2 flex items-center justify-between border-b border-[#18b0c8]'
-              >
-                <span>Reports</span>
+          <li>
+            <button
+              type='button'
+              onClick={() => setOpenReport(!openReport)}
+              className='flex w-full items-center justify-between border-b border-[#18b0c8] px-4 py-2'
+            >
+              <span>Reports</span>
 
-                <MdOutlineArrowDropDown
-                  className={`text-xl transition-transform duration-300 ${
-                    openReport ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+              <MdOutlineArrowDropDown
+                className={`text-xl transition-transform duration-300 ${
+                  openReport ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
 
               {openReport && (
                 <ul>
@@ -242,14 +262,20 @@ function SportsSidebar({ isOpen, onClose }) {
               )}
             </li>
 
-            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/gamebetlock')}>
-              Game Control
-            </li>
+          <li
+            className='border-b border-[#18b0c8] px-4 py-2'
+            onClick={() => navigate('/gamebetlock')}
+          >
+            Game Control
+          </li>
 
-            <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/casinolock')}>
-              Casino Control
-            </li>
-          </ul>
+          <li
+            className='border-b border-[#18b0c8] px-4 py-2'
+            onClick={() => navigate('/casinolock')}
+          >
+            Casino Control
+          </li>
+        </ul>
         {/* Cricket */}
         {renderSportSection(
           'Cricket',

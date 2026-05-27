@@ -53,7 +53,10 @@ export const isSettledClientWinPL = (profitLossChange, status) => {
   return true;
 };
 
-export const getMatchOddsCommissionFromNetWin = (netProfit, commissionPercent) => {
+export const getMatchOddsCommissionFromNetWin = (
+  netProfit,
+  commissionPercent
+) => {
   const net = Number(netProfit) || 0;
   const rate = Number(commissionPercent) || 0;
   if (net <= 0 || rate <= 0 || rate >= 100) return 0;
@@ -209,7 +212,7 @@ export const getViewerReceivedFromDownlineOfUserClientPL = (
 
   const viewer = accountByCode.get(viewerCode);
   const downlineKeep = getDownlineKeepPercentOnRow(childOfViewer, viewer);
-  
+
   // What the viewer receives is the total parentViewPL MINUS what the downlines took.
   // Wait, if downlineKeep is the absolute percentage that the downline keeps,
   // then the remainder (100 - downlineKeep) flows UP to the viewer.
@@ -218,7 +221,8 @@ export const getViewerReceivedFromDownlineOfUserClientPL = (
   // What flows UP from the child to the viewer is everything NOT kept by the child.
   // The amount NOT kept by the child is parentViewPL * (100 - downlineKeep)/100.
   // Because downlineKeep is an absolute percentage.
-  return splitProfitLossByMyShare(parentViewPL, roundMoney(100 - downlineKeep)).myPL;
+  return splitProfitLossByMyShare(parentViewPL, roundMoney(100 - downlineKeep))
+    .myPL;
 };
 
 export const clampDownlineSharingPercent = (raw, maxMyShare) => {
@@ -264,7 +268,11 @@ export const resolveMatchOddsWinCommission = (
   }
   const rate = Number(commissionPercent) || 0;
   if (rate <= 0) {
-    return { grossWin: roundMoney(pl), netProfit: roundMoney(pl), commission: 0 };
+    return {
+      grossWin: roundMoney(pl),
+      netProfit: roundMoney(pl),
+      commission: 0,
+    };
   }
   const fromNet = getMatchOddsCommissionFromNetWin(pl, rate);
   const fromGross = calculateWinCommission(pl, rate);
@@ -282,11 +290,8 @@ export const getMatchOddsCommissionAmount = (
   commissionPercent,
   status
 ) =>
-  resolveMatchOddsWinCommission(
-    profitLossChange,
-    commissionPercent,
-    status
-  ).commission;
+  resolveMatchOddsWinCommission(profitLossChange, commissionPercent, status)
+    .commission;
 
 export const getPartnershipUplineShare = (totalPL, partnershipPercent) => {
   const pl = Number(totalPL) || 0;

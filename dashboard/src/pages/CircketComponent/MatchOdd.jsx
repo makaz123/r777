@@ -6,8 +6,14 @@ import OddsGridCells from '../../components/OddsGridCells';
 const MatchOdd = ({ matchOddsList, onBookClick }) => {
   const { pendingBet, betsData } = useSelector((state) => state.market);
 
-  const betCount = Array.isArray(betsData) 
-    ? betsData.filter(item => item?.gameType === 'Match Odds' || item?.gameType === 'Winner' || item?.marketName === 'Match Odds' || item?.marketName === 'TOURNAMENT_WINNER').length 
+  const betCount = Array.isArray(betsData)
+    ? betsData.filter(
+        (item) =>
+          item?.gameType === 'Match Odds' ||
+          item?.gameType === 'Winner' ||
+          item?.marketName === 'Match Odds' ||
+          item?.marketName === 'TOURNAMENT_WINNER'
+      ).length
     : 0;
 
   const oddsData = matchOddsList[0]?.section?.length
@@ -161,12 +167,12 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
     }
 
     return (
-      <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
-        <div className='flex justify-between items-center'>
+      <div className='w-2/3 p-1 text-left text-sm font-bold md:text-[14px]'>
+        <div className='flex items-center justify-between'>
           <p>
-            {team}
+            <span className='truncate'>{team}</span>
             {ratio !== null && (
-              <span className='text-[11px] text-[#4d6a8a] ml-1 font-normal tracking-tight'>
+              <span className='ml-1 text-[11px] font-normal tracking-tight text-[#4d6a8a]'>
                 [{oppositeTeam} : {ratio.toFixed(2)}]
               </span>
             )}
@@ -209,7 +215,9 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
                 </span>
               </div>
               <div>
-                Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
+                <span className='hidden md:flex'>
+                  Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
+                </span>
               </div>
             </div>
 
@@ -222,27 +230,23 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
 
               {/* Header */}
               <div className='flex border-b border-gray-300 bg-white text-center'>
-                <div className='w-1/2 p-1'>
-                  <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                    <span className='text-[#315195]'>Min/Max </span>
-
-                    {isSuspended
-                      ? '100-100000'
-                      : `${matchOddsList[0]?.min}-${formatToK(matchOddsList[0]?.maxb)}`}
+                <div className='w-2/3 p-1'>
+                  <div className='p-0.5 text-left text-xs text-gray-600 md:hidden'>
+                    Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
                   </div>
                 </div>
 
-                <div className='grid w-1/2 grid-cols-6'>
-                  <div className='col-span-1'></div>
-                  <div className='col-span-1'></div>
+                <div className='grid w-1/3 grid-cols-2 md:grid-cols-6'>
+                  <div className='col-span-1 hidden md:block'></div>
+                  <div className='col-span-1 hidden md:block'></div>
                   <div className='col-span-1 mx-0.5 mt-0.5 rounded-tl-2xl bg-[#72bbef] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
                     Back
                   </div>
                   <div className='col-span-1 mx-0.5 mt-0.5 rounded-tr-2xl bg-[#faa9ba] p-1 text-[12px] font-bold text-slate-800 md:col-span-1'>
                     Lay
                   </div>
-                  <div className='col-span-1'></div>
-                  <div className='col-span-1'></div>
+                  <div className='col-span-1 hidden md:block'></div>
+                  <div className='col-span-1 hidden md:block'></div>
                 </div>
               </div>
 
@@ -262,12 +266,12 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
                       index={index}
                     />
                   ) : (
-                    <div className='w-1/2 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[14px]'>
+                    <div className='w-2/3 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[14px]'>
                       {team}
                     </div>
                   )}
 
-                  <div className='grid w-1/2 grid-cols-6'>
+                  <div className='grid w-1/3 grid-cols-2 md:grid-cols-6'>
                     <OddsGridCells odds={odds} />
                   </div>
                 </div>

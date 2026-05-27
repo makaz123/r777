@@ -61,7 +61,7 @@ const Login = () => {
 
   return (
     <div className='flex h-screen items-center bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
-      <div className='fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex w-[84%] md:w-[300px] flex-col items-center justify-center rounded-lg border-4 border-gray-700 bg-black p-7 text-white'>
+      <div className='fixed top-1/2 left-1/2 flex w-[84%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-lg border-4 border-gray-700 bg-black p-7 text-white md:w-[300px]'>
         <img src={brandLogo} alt='logo' className='h-[35px] object-cover' />
         <div className='w-full overflow-hidden rounded pt-5 text-[14px]'>
           <label htmlFor='username'>User Name:</label>

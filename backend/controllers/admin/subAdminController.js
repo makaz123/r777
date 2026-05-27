@@ -26,7 +26,6 @@ import {
   aggregateViewerExposure,
   applySettlementCashToUplineShare,
   buildAccountSummary,
-  computeViewerPeriodPL,
   expectedBettingPLFromHistory,
   getAccountByCodeMap,
   getCurrentWeekRange,
@@ -3951,8 +3950,9 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
       downline.code,
       null
     );
+    const passedUpHistory = roundMoney((-historyGross * parentSharePercent) / 100);
     const clientPL = expectedBettingPLFromHistory(
-      splitProfitLossByMyShare(historyGross, parentSharePercent).myPL,
+      passedUpHistory,
       adminSettlementCash
     );
     return {
@@ -3986,16 +3986,12 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   let grossClientPL = 0;
   for (const user of endUsers) {
     grossClientPL += roundMoney(
-      expectedPLByUserId.get(user._id.toString()) ?? 0
+      historyPLByUserId.get(user._id.toString()) ?? 0
     );
   }
   grossClientPL = roundMoney(grossClientPL);
 
-  const downlineShare = roundMoney(
-    -computeViewerPeriodPL(downline, endUsers, historyPLByUserId, accountByCode)
-  );
-
-  const passedUpHistory = roundMoney(grossClientPL - downlineShare);
+  const passedUpHistory = roundMoney((grossClientPL * parentSharePercent) / 100);
   const clientPL = expectedBettingPLFromHistory(
     passedUpHistory,
     adminSettlementCash

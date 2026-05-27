@@ -86,36 +86,10 @@ const countUplines = async (user) => {
 const generateSixDigitMasterPassword = () =>
   crypto.randomInt(100000, 1000000).toString();
 
+/** Confirms sensitive actions — uses login password (transaction password disabled). */
 const verifyMasterPassword = async (user, enteredPassword) => {
   if (!user || !enteredPassword) return false;
-
-  const loginPasswordMatches = await bcrypt.compare(
-    enteredPassword,
-    user.password
-  );
-  const isSuperAdmin = user.role === 'supperadmin';
-
-  if (user.masterPassword) {
-    try {
-      const transactionPasswordMatches = await bcrypt.compare(
-        enteredPassword,
-        user.masterPassword
-      );
-      // For all non-superadmin users, only transaction password is valid.
-      return isSuperAdmin
-        ? transactionPasswordMatches || loginPasswordMatches
-        : transactionPasswordMatches;
-    } catch (error) {
-      // Legacy plain-text fallback for old records.
-      const legacyMasterMatches = user.masterPassword === enteredPassword;
-      return isSuperAdmin
-        ? legacyMasterMatches || loginPasswordMatches
-        : legacyMasterMatches;
-    }
-  }
-
-  // If no transaction password exists yet, allow fallback only for superadmin.
-  return isSuperAdmin ? loginPasswordMatches : false;
+  return bcrypt.compare(enteredPassword, user.password);
 };
 
 const updateAdmin = async (id) => {
@@ -537,7 +511,7 @@ export const getAllUsersWithCompleteInfo = async (req, res) => {
 //     // Compare password
 //     const isMatch = await bcrypt.compare(masterPassword, admin.password);
 //     if (!isMatch) {
-//       return res.status(400).json({ message: 'Invalid Master password.' });
+//       return res.status(400).json({ message: 'Invalid login password.' });
 //     }
 
 //     if (!roleHierarchy[role] || !roleHierarchy[role].includes(accountType)) {
@@ -748,7 +722,7 @@ export const createSubAdmin = async (req, res) => {
     // Compare password
     const isMatch = await verifyMasterPassword(admin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     if (!roleHierarchy[role] || !roleHierarchy[role].includes(accountType)) {
@@ -835,9 +809,6 @@ export const createSubAdmin = async (req, res) => {
       phone,
       password,
       role: accountType,
-      masterPassword: masterPassword
-        ? await bcrypt.hash(masterPassword, 10)
-        : undefined,
       partnership:
         accountType !== 'user'
           ? toStoredDownlineKeepFromCreateInput(partnership, admin)
@@ -1158,12 +1129,8 @@ export const changePasswordBySubAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Old Password Has Not Matched!' });
     }
     subAdmin.password = newPassword;
-    let generatedMasterPassword = null;
-
     if (!subAdmin.isPasswordChanged) {
       subAdmin.isPasswordChanged = true;
-      generatedMasterPassword = generateSixDigitMasterPassword();
-      subAdmin.masterPassword = await bcrypt.hash(generatedMasterPassword, 10);
     }
 
     await subAdmin.save();
@@ -1177,7 +1144,6 @@ export const changePasswordBySubAdmin = async (req, res) => {
       success: true,
       message: 'Password changed successfully',
       isPasswordChanged: subAdmin.isPasswordChanged,
-      generatedMasterPassword,
       data: subAdmin,
     });
   } catch (error) {
@@ -1593,7 +1559,7 @@ export const restoreDeleteUser = async (req, res) => {
     // ✅ Verify Master Password
     const isMatch = await verifyMasterPassword(admin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     let editUser = await SubAdmin.findById(userId);
@@ -2139,7 +2105,7 @@ export const updateCreditReference = async (req, res) => {
     //  Verify Master Password
     const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     //  Find the user being updated
@@ -2212,7 +2178,7 @@ export const updateExploserLimit = async (req, res) => {
     //  Verify Master Password
     const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     //  Find the user being updated
@@ -2267,7 +2233,7 @@ export const updatePartnership = async (req, res) => {
     // Verify master password
     const isMatch = await verifyMasterPassword(admin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     // Find the user being updated
@@ -2411,7 +2377,7 @@ export const getCreditRefHistoryByUserId = async (req, res) => {
 //     //  Verify Master Password
 //     const isMatch = await bcrypt.compare(masterPassword, subAdmin.password);
 //     if (!isMatch) {
-//       return res.status(400).json({ message: 'Invalid Master password.' });
+//       return res.status(400).json({ message: 'Invalid login password.' });
 //     }
 
 //     //  Find the user being updated
@@ -2582,7 +2548,7 @@ export const withdrowalAndDeposite = async (req, res) => {
     //  Verify Master Password
     const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     //  Find the user being updated
@@ -2827,7 +2793,7 @@ export const userSetting = async (req, res) => {
     //  Verify Master Password
     const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     //  Find the user being updated
@@ -2887,7 +2853,7 @@ export const updateUserLock = async (req, res) => {
 
     const isMatch = await verifyMasterPassword(subAdmin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     const editUser = await SubAdmin.findById(userId);
@@ -4124,7 +4090,7 @@ export const settleUser = async (req, res) => {
     // Verify Master Password
     const isMatch = await verifyMasterPassword(admin, masterPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Master password.' });
+      return res.status(400).json({ message: 'Invalid login password.' });
     }
 
     const editUser = await SubAdmin.findById(userId);

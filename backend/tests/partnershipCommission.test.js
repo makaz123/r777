@@ -21,6 +21,7 @@ import {
   parseCommissionPercent,
   resolveMatchOddsWinCommission,
   splitProfitLossByMyShare,
+  toStoredDownlineKeepFromCreateInput,
   toStoredDownlineKeepPercent,
 } from '../utils/partnershipCommissionUtils.js';
 
@@ -144,18 +145,40 @@ describe('partnershipCommissionUtils', () => {
     expect(myPL).toBe(94.07);
   });
 
-  test('legacy parent-take 85 on row converts to 15% downline keep', () => {
+  test('partnership on row is downline keep (85% keep → 15% parent take)', () => {
     const master = { role: 'master', partnership: 100 };
     const agent = { role: 'agent', partnership: 85 };
 
-    expect(getDownlineKeepPercentOnRow(agent, master)).toBe(15);
-    expect(getParentShareOnDownlineRow(agent, master)).toBe(85);
+    expect(getDownlineKeepPercentOnRow(agent, master)).toBe(85);
+    expect(getParentShareOnDownlineRow(agent, master)).toBe(15);
+    expect(getAccountMyKeepPercent(agent)).toBe(85);
     expect(toStoredDownlineKeepPercent(85, master)).toBe(15);
   });
 
-  test('InsertAgent parent-share payload stores as downline keep', () => {
+  test('legacy update payload converts parent-take to downline keep', () => {
     const master = { role: 'master', partnership: 100 };
     expect(toStoredDownlineKeepPercent(85, master)).toBe(15);
     expect(toStoredDownlineKeepPercent(15, master)).toBe(15);
+  });
+
+  test('InsertAgent create payload stores downline keep from form', () => {
+    const master = { role: 'master', partnership: 100 };
+    expect(toStoredDownlineKeepFromCreateInput(85, master)).toBe(85);
+    expect(toStoredDownlineKeepFromCreateInput(15, master)).toBe(15);
+
+    const agent = { role: 'agent', partnership: 15, invite: 'M1', code: 'A1' };
+    expect(toStoredDownlineKeepFromCreateInput(5, agent)).toBe(5);
+    expect(toStoredDownlineKeepFromCreateInput(20, agent)).toBe(15);
+  });
+
+  test('list row shows viewer my % then downline keep', () => {
+    const master = { role: 'master', partnership: 100, invite: 'ROOT', code: 'M1' };
+    const agent = { role: 'agent', partnership: 85, invite: master.code };
+
+    const myShare = getParentShareOnDownlineRow(agent, master);
+    const downKeep = getDownlineKeepPercentOnRow(agent, master);
+    expect(myShare).toBe(15);
+    expect(downKeep).toBe(85);
+    expect(`${myShare}% / ${downKeep}%`).toBe('15% / 85%');
   });
 });

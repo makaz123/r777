@@ -331,13 +331,8 @@ export const changePasswordByFirstLogin = async (req, res) => {
       return res.status(400).json({ message: 'Old Password Has Not Matched!' });
     }
     subAdmin.password = newPassword;
-    let generatedMasterPassword = null;
-
-    //Also i have to match the newPassword and the confirmPassword
     if (!subAdmin.isPasswordChanged) {
       subAdmin.isPasswordChanged = true;
-      generatedMasterPassword = generateSixDigitMasterPassword();
-      subAdmin.masterPassword = await bcrypt.hash(generatedMasterPassword, 10);
     }
 
     await subAdmin.save();
@@ -352,7 +347,6 @@ export const changePasswordByFirstLogin = async (req, res) => {
       success: true,
       message: 'Password changed successfully',
       isPasswordChanged: true,
-      generatedMasterPassword,
       data: subAdmin,
     });
   } catch (error) {

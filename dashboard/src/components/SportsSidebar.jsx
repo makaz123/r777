@@ -7,6 +7,7 @@ import { fetchSoccerData } from '../redux/reducer/soccerSlice';
 import { fetchTennisData } from '../redux/reducer/tennisSlice';
 import { MdOutlineArrowDropDown } from 'react-icons/md';
 import { AiOutlineCloseSquare } from 'react-icons/ai';
+import { FEATURES } from '../config/featureFlags';
 
 function SportsSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -208,9 +209,14 @@ function SportsSidebar({ isOpen, onClose }) {
                   <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/SettlementReport')}>
                     Settlement/Balance Report
                   </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/TransactionReport')}>
-                    Transaction Report
-                  </li>
+                  {FEATURES.transactionReport && (
+                    <li
+                      className='px-4 py-2 border-b border-[#18b0c8]'
+                      onClick={() => navigate('/TransactionReport')}
+                    >
+                      Transaction Report
+                    </li>
+                  )}
                   <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/CurrentBets')}>
                     Current Bets
                   </li>

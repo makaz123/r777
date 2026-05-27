@@ -3,7 +3,7 @@ const FIELD_LABELS = {
   userName: 'User name',
   accountType: 'Account type',
   password: 'Password',
-  masterPassword: 'Master password',
+  masterPassword: 'Login password',
   balance: 'Balance',
   creditReference: 'Credit reference',
   partnership: 'Partnership',

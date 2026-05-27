@@ -330,7 +330,7 @@ export default function AgentLIst() {
     }
 
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -1148,7 +1148,7 @@ export default function AgentLIst() {
                     <div className='flex flex-col items-center justify-center'>
                       <div className='flex w-full flex-col items-center px-4 py-1 md:flex-row'>
                         <span className='basis-full text-center text-[12px] md:basis-[35%] md:text-left'>
-                          Master Password{' '}
+                          Login Password{' '}
                           <span className='text-red-500'>*</span>
                         </span>
                         <span className='relative w-full basis-full font-light md:basis-[75%]'>
@@ -1240,7 +1240,7 @@ export default function AgentLIst() {
                 </div>
 
                 <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-1 px-[15px]'>Login Password</div>
                   <div className='col-span-2'>
                     <div className='px-[15px]'>
                       <input
@@ -1329,7 +1329,7 @@ export default function AgentLIst() {
                 </div>
 
                 <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-1 px-[15px]'>Login Password</div>
                   <div className='col-span-2'>
                     <div className='px-[15px]'>
                       <input
@@ -1467,7 +1467,7 @@ export default function AgentLIst() {
                 </div>
 
                 <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-1 px-[15px]'>Login Password</div>
                   <div className='col-span-2'>
                     <div className='px-[15px]'>
                       <input
@@ -1609,7 +1609,7 @@ export default function AgentLIst() {
                 </div>
 
                 <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-1 px-[15px]'>Login Password</div>
                   <div className='col-span-2'>
                     <div className='px-[15px]'>
                       <input
@@ -1716,7 +1716,7 @@ export default function AgentLIst() {
               </div>
 
               <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>Master Password</div>
+                <div className='col-span-1 px-[15px]'>Login Password</div>
                 <div className='col-span-2'>
                   <div className='px-[15px]'>
                     <input
@@ -1801,7 +1801,7 @@ export default function AgentLIst() {
               </div>
 
               <div className='mb-[14px] grid grid-cols-3 items-center'>
-                <div className='col-span-1 px-[15px]'>Master Password</div>
+                <div className='col-span-1 px-[15px]'>Login Password</div>
                 <div className='col-span-2'>
                   <div className='px-[15px]'>
                     <input

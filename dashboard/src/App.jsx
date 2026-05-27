@@ -66,7 +66,7 @@ import HorseRacingbet from './pages/HorseRacingbet';
 import InsertUser from './pages/InsertUser';
 import InsertAgent from './pages/InsertAgent';
 import LiveCasino from './pages/LiveCasino';
-import TransactionPasswordSuccess from './pages/TransactionPasswordSuccess';
+import { FEATURES } from './config/featureFlags';
 import ChangePassword from './pages/ChangePassword';
 import BannerSettings from './pages/BannerSettings';
 import Notifications from './pages/Notifications';
@@ -143,10 +143,12 @@ function App() {
                     path='/AccountStatement'
                     element={<AccountStatement />}
                   />
-                  <Route
-                    path='/TransactionReport'
-                    element={<TransactionReport />}
-                  />
+                  {FEATURES.transactionReport && (
+                    <Route
+                      path='/TransactionReport'
+                      element={<TransactionReport />}
+                    />
+                  )}
                   <Route
                     path='/EventLossReport'
                     element={<EventLossReport />}
@@ -210,7 +212,7 @@ function App() {
                   <Route path='/live-casino' element={<LiveCasino />} />
                   <Route
                     path='/transaction-password-success'
-                    element={<TransactionPasswordSuccess />}
+                    element={<Navigate to='/home' replace />}
                   />
                   <Route path='/banner-settings' element={<BannerSettings />} />
                   <Route path='/casino-bet/:gameid' element={<CasinoBet />} />

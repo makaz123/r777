@@ -1059,8 +1059,8 @@ export const loginSubAdmin = async (req, res) => {
       return res.status(403).json({ message: 'Your account is locked.' });
     }
 
-    // Generate unique session token
-    const sessionToken = crypto.randomBytes(32).toString('hex');
+    // Reuse existing session token to allow multiple devices, or generate new if none
+    const sessionToken = subAdmin.sessionToken || crypto.randomBytes(32).toString('hex');
     const deviceId = req.headers['user-agent'] || 'unknown-device';
     const ipAddress =
       req.headers['x-forwarded-for'] || req.connection.remoteAddress;

@@ -5,6 +5,7 @@ import { getAdmin, user_reset } from '../redux/reducer/authReducer';
 import RouteLoader from './RouteLoader';
 import api, { host } from '../redux/api';
 import { updateReduxUserBalance } from '../redux/reducer/authReducer';
+import { handleBetSettlementWebSocketPayload } from '../utils/betSettlementToast';
 
 /** Full profile from API; JWT decode only has id/role/sessionToken. */
 export const hasValidSessionUser = (user) =>
@@ -99,11 +100,21 @@ const PrivateRoute = () => {
                 newBalance: data.newBalance,
               })
             );
+            window.dispatchEvent(
+              new CustomEvent('downline-user-updated', {
+                detail: { userId: data.userId },
+              })
+            );
           } else if (data.type === 'exposure_update') {
             dispatch(
               updateReduxUserBalance({
                 userId: data.userId,
                 newExposure: data.newExposure,
+              })
+            );
+            window.dispatchEvent(
+              new CustomEvent('downline-user-updated', {
+                detail: { userId: data.userId },
               })
             );
           } else if (
@@ -112,6 +123,9 @@ const PrivateRoute = () => {
           ) {
             dispatch(getAdmin());
             window.dispatchEvent(new CustomEvent('account-summary-refresh'));
+            window.dispatchEvent(new CustomEvent('downline-list-refresh'));
+          } else if (data.type === 'bet_settlement') {
+            handleBetSettlementWebSocketPayload(data);
           }
         } catch (e) {}
       };

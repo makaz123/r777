@@ -478,6 +478,23 @@ export const sendToUser = (userName, payload) => {
   });
 };
 
+/** Targeted settlement toast (register same userId on socket). */
+export const sendBetSettlementNotification = (targetUserId, payload) => {
+  const targetId = String(targetUserId);
+  let sent = 0;
+  clients.forEach((client) => {
+    if (String(client.userId) === targetId && client.ws.readyState === 1) {
+      client.ws.send(JSON.stringify(payload));
+      sent += 1;
+    }
+  });
+  if (sent > 0) {
+    console.log(
+      `[WS] bet_settlement → ${sent} client(s) userId=${targetId} role=${payload.role}`
+    );
+  }
+};
+
 // Function to send user refresh message (triggers getUser() on frontend)
 export const sendUserRefresh = (userId) => {
   console.log(' [WEBSOCKET] Sending user refresh request for userId:', userId);

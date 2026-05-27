@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { FaBan, FaCheckCircle, FaLock, FaRegFilePdf } from 'react-icons/fa';
@@ -28,6 +28,7 @@ import { AiOutlineFileExcel } from 'react-icons/ai';
 import pdfIcon from '../assets/icons/pdf-icon.svg';
 import excelIcon from '../assets/icons/csv-icon.svg';
 import VirtualTable from '../components/VirtualTable';
+
 export default function Userlist() {
   const downloadPDF = () => {
     const doc = new jsPDF();
@@ -165,6 +166,7 @@ export default function Userlist() {
 
   // Exposure modal state
   const [exposurePopup, setExposurePopup] = useState(false);
+  const [exposureUserId, setExposureUserId] = useState(null);
   const [exposureData, setExposureData] = useState([]);
   const [isFetchingExposure, setIsFetchingExposure] = useState(false);
 
@@ -314,10 +316,10 @@ export default function Userlist() {
     }
   };
 
-  const handleExposureClick = async (userId) => {
+  const fetchExposureDetails = useCallback(async (userId, showLoader = true) => {
+    if (!userId) return;
     try {
-      setIsFetchingExposure(true);
-      setExposurePopup(true);
+      if (showLoader) setIsFetchingExposure(true);
       const res = await api.get(`/admin/exposure-details?userId=${userId}`);
       if (res?.data?.status || res?.data?.meta?.status) {
         setExposureData(res.data.data);
@@ -326,11 +328,23 @@ export default function Userlist() {
       }
     } catch (error) {
       console.error('Failed to fetch exposure', error);
-      toast.error('Failed to fetch exposure details');
+      if (showLoader) toast.error('Failed to fetch exposure details');
       setExposureData([]);
     } finally {
-      setIsFetchingExposure(false);
+      if (showLoader) setIsFetchingExposure(false);
     }
+  }, []);
+
+  const handleExposureClick = async (userId) => {
+    setExposureUserId(userId);
+    setExposurePopup(true);
+    await fetchExposureDetails(userId, true);
+  };
+
+  const closeExposurePopup = () => {
+    setExposurePopup(false);
+    setExposureUserId(null);
+    setExposureData([]);
   };
 
   const handleSetting = async (e) => {
@@ -392,9 +406,10 @@ export default function Userlist() {
     );
   }, [dispatch, currentPage, entries, searchQuery]);
 
-  const reloadUserList = () => {
+  const reloadUserList = useCallback((options = {}) => {
+    const { silent = false } = options;
     if (isFetchingAllUsers === false && activeListCode) {
-      dispatch(fetchSubAdminByLevel({ code: activeListCode }));
+      dispatch(fetchSubAdminByLevel({ code: activeListCode, silent }));
     } else {
       dispatch(
         getDownlineList({
@@ -402,10 +417,61 @@ export default function Userlist() {
           limit: entries,
           searchQuery,
           listType: 'all',
+          silent,
         })
       );
     }
-  };
+  }, [
+    dispatch,
+    isFetchingAllUsers,
+    activeListCode,
+    currentPage,
+    entries,
+    searchQuery,
+  ]);
+
+  const isAnyBlockingModalOpen =
+    patnerPopup ||
+    depositPopup ||
+    withdrawPopup ||
+    settingPopup ||
+    passwordPopup ||
+    lockPopup ||
+    settlePopup;
+
+  // WebSocket (via PrivateRoute) pushes balance/exposure patches; upline gets
+  // user_refresh_needed → downline-list-refresh for full row P/L without resetting page.
+  useEffect(() => {
+    const onListRefresh = () => {
+      if (isAnyBlockingModalOpen) return;
+      reloadUserList({ silent: true });
+    };
+
+    const onUserUpdated = (event) => {
+      const updatedId = event.detail?.userId;
+      if (
+        exposurePopup &&
+        exposureUserId &&
+        updatedId &&
+        String(updatedId) === String(exposureUserId)
+      ) {
+        fetchExposureDetails(exposureUserId, false);
+      }
+    };
+
+    window.addEventListener('downline-list-refresh', onListRefresh);
+    window.addEventListener('downline-user-updated', onUserUpdated);
+    return () => {
+      window.removeEventListener('downline-list-refresh', onListRefresh);
+      window.removeEventListener('downline-user-updated', onUserUpdated);
+    };
+  }, [
+    reloadUserList,
+    isAnyBlockingModalOpen,
+    exposurePopup,
+    exposureUserId,
+    fetchExposureDetails,
+  ]);
 
   const formatNumber = (v) => {
     const num = Math.abs(Number(v));
@@ -1048,10 +1114,16 @@ export default function Userlist() {
                         </span>
                       </>
                     ) : null}
-                    <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'>
+                    <span 
+                      className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'
+                      onClick={() => navigate('/gamebetlock', { state: { targetUser: row } })}
+                    >
                       GC
                     </span>
-                    <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'>
+                    <span 
+                      className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'
+                      onClick={() => navigate('/casinolock', { state: { targetUser: row } })}
+                    >
                       CC
                     </span>
                   </div>
@@ -1946,7 +2018,7 @@ export default function Userlist() {
                 <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 text-white leading-none'>
                   <h2 className='text-[18px] font-medium'>User Event Exposure</h2>
                   <button
-                    onClick={() => setExposurePopup(false)}
+                    onClick={closeExposurePopup}
                     className='text-[22px] leading-none font-bold text-gray-300 hover:text-gray-100'
                   >
                     ×
@@ -1994,7 +2066,7 @@ export default function Userlist() {
                               <span
                                 className='cursor-pointer font-bold text-black underline hover:text-blue-600'
                                 onClick={() => {
-                                  setExposurePopup(false);
+                                  closeExposurePopup();
                                   const sName =
                                     item.sportName?.toLowerCase() || '';
                                   if (

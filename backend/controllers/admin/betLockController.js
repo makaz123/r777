@@ -73,20 +73,22 @@ export const getBetLockTree = async (req, res) => {
 
         const comp = competitionsMap.get(compId);
 
+        const matchId = match.beventId || match.oldgmid || match.gmid;
+
         // Map markets.
         const markets = [];
         if (match.section && match.section.length > 0) {
-          markets.push({ id: `mo_${match.gmid}`, name: 'Match Odds' });
+          markets.push({ id: `mo_${matchId}`, name: 'Match Odds' });
         }
         if (match.bm) {
-          markets.push({ id: `bm_${match.gmid}`, name: 'Bookmaker' });
+          markets.push({ id: `bm_${matchId}`, name: 'Bookmaker' });
         }
         if (match.f) {
-          markets.push({ id: `f_${match.gmid}`, name: 'Fancy' });
+          markets.push({ id: `f_${matchId}`, name: 'Fancy' });
         }
 
         comp.children.push({
-          id: match.gmid,
+          id: matchId,
           title: match.ename,
           markets: markets,
         });

@@ -56,6 +56,8 @@ const dismissalData = [
   { method: 'Stumped', odds: '20' },
   { method: 'Others', odds: '100' },
 ];
+const MARKET_DATA_REFRESH_MS = 3000;
+const PENDING_BETS_REFRESH_MS = 3000;
 
 export default function Cricketbet() {
   const { gameid } = useParams() || {};
@@ -190,24 +192,18 @@ export default function Cricketbet() {
   }, [gameid]);
 
   useEffect(() => {
-    let intervalId;
+    if (!gameid) return;
 
-    if (gameid) {
-      // Set loader true before initial fetch
-      setLoader(true);
-
-      const fetchData = async () => {
-        dispatch(fetchCricketBatingData(gameid));
-        setLoader(false);
-      };
-
-      fetchData();
-    }
-
-    return () => {
-      clearInterval(intervalId);
+    const fetchData = async () => {
+      await dispatch(fetchCricketBatingData(gameid));
+      setLoader(false);
     };
-  }, [gameid]);
+
+    fetchData();
+    const intervalId = setInterval(fetchData, MARKET_DATA_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, gameid]);
 
   useEffect(() => {
     setBettingData(battingData);
@@ -363,7 +359,14 @@ export default function Cricketbet() {
 
   useEffect(() => {
     dispatch(getPendingBetAmo(gameid));
-  }, [dispatch]);
+    if (!gameid) return;
+
+    const intervalId = setInterval(() => {
+      dispatch(getPendingBetAmo(gameid));
+    }, PENDING_BETS_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, gameid]);
 
   useEffect(() => {
     document.body.style.overflow = masterpopup ? 'hidden' : 'auto';

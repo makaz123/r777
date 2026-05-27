@@ -26,6 +26,10 @@ import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
 import { FaFilter, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { BsGraphUpArrow } from 'react-icons/bs';
 import { TfiMenuAlt } from 'react-icons/tfi';
+
+const MARKET_DATA_REFRESH_MS = 3000;
+const PENDING_BETS_REFRESH_MS = 3000;
+
 export default function Soccerbet() {
   const [bettingData, setBettingData] = useState(null);
   const dispatch = useDispatch();
@@ -97,8 +101,6 @@ export default function Soccerbet() {
       })
     : [];
 
-  let sharedSocket;
-
   useEffect(() => {
     dispatch(fetchSoccerData());
   }, [dispatch]);
@@ -106,52 +108,44 @@ export default function Soccerbet() {
   useEffect(() => {
     if (!gameid) return;
 
-    if (!sharedSocket || sharedSocket.readyState !== 1) {
-      sharedSocket = new WebSocket(host);
+    const socket = new WebSocket(host);
 
-      sharedSocket.onopen = () => {
-        console.log('✅ Socket connected');
-        sharedSocket.send(
-          JSON.stringify({ type: 'subscribe', gameid, apitype: 'soccer' })
-        );
-      };
-
-      sharedSocket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.gameid === gameid) {
-            setBettingData(message.data);
-          }
-        } catch (e) {
-          console.error('❌ Message error', e);
-        }
-      };
-
-      sharedSocket.onerror = (err) => {
-        console.error('WebSocket error:', err);
-      };
-
-      sharedSocket.onclose = () => {
-        console.log('Socket closed');
-      };
-    } else {
-      // Already connected, just send subscription
-      sharedSocket.send(
+    socket.onopen = () => {
+      socket.send(
         JSON.stringify({ type: 'subscribe', gameid, apitype: 'soccer' })
       );
-    }
-
-    return () => {
-      // Optionally leave socket open for reuse
     };
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.gameid === gameid) {
+          setBettingData(message.data);
+        }
+      } catch (err) {
+        console.error('❌ Error parsing message:', err);
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.error('❌ WebSocket error:', err);
+    };
+
+    socket.onclose = () => {
+      console.log('❌ WebSocket disconnected');
+    };
+
+    return () => socket.close();
   }, [gameid]);
 
   useEffect(() => {
-    // let intervalId;
+    if (!gameid) return;
 
-    if (gameid) {
-      dispatch(fetchSoccerBatingData(gameid)); // initial
-    }
+    const fetchData = () => dispatch(fetchSoccerBatingData(gameid));
+    fetchData();
+    const intervalId = setInterval(fetchData, MARKET_DATA_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
   }, [dispatch, gameid]);
 
   useEffect(() => {
@@ -192,7 +186,14 @@ export default function Soccerbet() {
 
   useEffect(() => {
     dispatch(getPendingBetAmo(gameid));
-  }, [dispatch]);
+    if (!gameid) return;
+
+    const intervalId = setInterval(() => {
+      dispatch(getPendingBetAmo(gameid));
+    }, PENDING_BETS_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, gameid]);
 
   useEffect(() => {
     document.body.style.overflow = masterpopup ? 'hidden' : 'auto';

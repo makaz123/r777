@@ -198,7 +198,10 @@ export const getAllOnlyUserAndDownline = createAsyncThunk(
 /** Unified API: listType `agents` | `clients` | `all` (all direct downline roles) + viewer partnership % */
 export const getDownlineList = createAsyncThunk(
   'user/get-downline-list',
-  async ({ page, limit, searchQuery, listType }, { rejectWithValue }) => {
+  async (
+    { page, limit, searchQuery, listType, silent = false },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await api.get('/get/downline-list', {
         params: { page, limit, searchQuery, listType },
@@ -890,8 +893,10 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(getDownlineList.pending, (state) => {
-        state.loading = true;
+      .addCase(getDownlineList.pending, (state, action) => {
+        if (!action.meta.arg?.silent) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(getDownlineList.fulfilled, (state, action) => {
@@ -900,7 +905,7 @@ const userSlice = createSlice({
         state.downlineViewer = action.payload.viewer || null;
         state.totalUsers = action.payload.totalUsers;
         state.totalPages = action.payload.totalPages;
-        state.currentPage = action.payload.currentPage;
+        // Keep client-owned page (avoids race when overlapping requests return page 1)
         if (action.payload.listType === 'agents') {
           state.users = action.payload.data;
         } else {
@@ -1064,8 +1069,10 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(fetchSubAdminByLevel.pending, (state) => {
-        state.loading = true;
+      .addCase(fetchSubAdminByLevel.pending, (state, action) => {
+        if (!action.meta.arg?.silent) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchSubAdminByLevel.fulfilled, (state, action) => {
@@ -1238,21 +1245,24 @@ const userSlice = createSlice({
     },
     updateReduxUserBalance: (state, action) => {
       const { userId, newBalance, newExposure } = action.payload;
-      const updateUser = (users) => {
-        return users?.map((u) => {
-          if (u._id === userId) {
-            const updated = { ...u };
-            if (newBalance !== undefined) updated.avbalance = newBalance;
-            if (newExposure !== undefined) {
-              updated.exposure = newExposure;
-              if (updated.totalExposure !== undefined)
-                updated.totalExposure = newExposure;
-            }
-            return updated;
+      const targetId = String(userId);
+      const updateUser = (users) =>
+        users?.map((u) => {
+          if (String(u._id) !== targetId) return u;
+          const updated = { ...u };
+          if (newBalance !== undefined) updated.avbalance = newBalance;
+          if (newExposure !== undefined) {
+            const gross = Number(newExposure) || 0;
+            updated.exposure = gross;
+            updated.totalExposure = gross;
+            const pct = Number(
+              u.parentSharePercent ?? u.mySharePercent ?? 100
+            );
+            updated.shareExposure =
+              Math.round(gross * (pct / 100) * 100) / 100;
           }
-          return u;
+          return updated;
         });
-      };
       state.users = updateUser(state.users);
       state.onlyusers = updateUser(state.onlyusers);
     },

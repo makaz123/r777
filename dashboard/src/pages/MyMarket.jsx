@@ -4,6 +4,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { marketGames } from '../redux/reducer/marketAnalyzeReducer';
 import Loader from '../components/Loader';
+import {
+  useAutoRefresh,
+  DEFAULT_LIST_REFRESH_MS,
+} from '../hooks/useAutoRefresh';
 import { FaArrowRight, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 
 const SPORT_TABS = ['Cricket', 'Tennis', 'Soccer'];
@@ -45,6 +49,8 @@ const MyMarket = () => {
   useEffect(() => {
     dispatch(marketGames());
   }, [dispatch]);
+
+  useAutoRefresh(() => dispatch(marketGames()), DEFAULT_LIST_REFRESH_MS);
 
   const tabCounts = useMemo(
     () => SPORT_TABS.map((sport) => sportAnalysis?.[sport]?.count ?? 0),

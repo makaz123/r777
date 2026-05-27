@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ImPlus, ImMinus } from 'react-icons/im';
 import { FaArrowRight } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../redux/api';
 import Navbar from '../components/Navbar';
@@ -26,6 +27,11 @@ const emptySportLocks = () => ({
 
 const GameBetLock = () => {
   const { userInfo } = useSelector((state) => state.auth);
+  const location = useLocation();
+  const targetUser = location.state?.targetUser;
+  const targetUserId = targetUser?._id || userInfo?._id;
+  const targetUserName = targetUser?.userName || userInfo?.userName;
+
   const [selected, setSelected] = useState({});
   const [openIds, setOpenIds] = useState([]);
   const [activeTab, setActiveTab] = useState('Cricket');
@@ -54,9 +60,9 @@ const GameBetLock = () => {
   }, []);
 
   const fetchUserLocks = useCallback(async () => {
-    if (!userInfo?._id) return;
+    if (!targetUserId) return;
     try {
-      const { data } = await api.get(`/admin/betlock/${userInfo._id}`);
+      const { data } = await api.get(`/admin/betlock/${targetUserId}`);
       if (data.success) {
         const advancedLocks = data.advancedBetLocks || {};
         const newSelected = {};
@@ -127,7 +133,7 @@ const GameBetLock = () => {
       console.error('Error fetching locks:', error);
       toast.error('Failed to fetch user locks');
     }
-  }, [userInfo?._id]);
+  }, [targetUserId]);
 
   useEffect(() => {
     fetchUserLocks();
@@ -173,11 +179,11 @@ const GameBetLock = () => {
   };
 
   const persistLocks = async (locksList, selectedMap, successMessage) => {
-    if (!userInfo?._id) return false;
+    if (!targetUserId) return false;
     setSaving(true);
     try {
       const advancedBetLocks = buildAdvancedBetLocks(locksList, selectedMap);
-      const { data } = await api.post(`/admin/betlock/${userInfo._id}`, {
+      const { data } = await api.post(`/admin/betlock/${targetUserId}`, {
         advancedBetLocks,
       });
 
@@ -402,7 +408,7 @@ const GameBetLock = () => {
         <div className='grid grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='col-span-2'>
             <div className='mb-2 flex justify-between text-[15px] font-bold'>
-              <span>Lock Application - {userInfo?.userName}</span>
+              <span>Lock Application - {targetUserName}</span>
               <button
                 onClick={handleSaveLocks}
                 disabled={saving}

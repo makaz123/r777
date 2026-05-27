@@ -22,9 +22,10 @@ const MasterBookModal = ({
   if (!open) return null;
 
   const colSpan = Math.max(2 + teamHeaders.length, 3);
-  const viewerPartnership = breadcrumbPath.length > 0 
-    ? Number(breadcrumbPath[breadcrumbPath.length - 1]?.partnership || 0) 
-    : 0;
+  const viewerPartnership =
+    breadcrumbPath.length > 0
+      ? Number(breadcrumbPath[breadcrumbPath.length - 1]?.partnership || 0)
+      : 0;
 
   return (
     <div className={overlayClassName}>

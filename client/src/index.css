@@ -14,6 +14,26 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+/* 
+.suspended-event:after{
+  
+} */
+.suspended-event:after {
+    background: url('/bg-disabled.png') rgba(0, 0, 0, .5);
+    color: red;
+    content: "Suspended";
+    cursor: not-allowed;
+    font-size: 12px;
+    font-weight: 600;
+    height: 100%;
+    line-height: 30px;
+    margin: 0 2px;
+    position: absolute;
+    right: 0;
+    text-align: center;
+    width: 100%;
+    z-index: 0;
+}
 
 /* Smooth transitions */
 * {

@@ -30,7 +30,7 @@ const playtechLiveGames = playtechGames.filter((game) =>
 function getGamesForTab(tabId) {
   switch (tabId) {
     case 'playtech':
-      return playtechLiveGames;
+      return playtechGames;
     case 'sexybcrt':
       return [];
     case 'km':

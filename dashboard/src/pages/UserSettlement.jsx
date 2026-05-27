@@ -104,7 +104,7 @@ const UserSettlement = ({ type = 'user' }) => {
 
   const handleBulkSubmit = async () => {
     if (!footerPassword) {
-      toast.error('Master password is required');
+      toast.error('Login password is required');
       return;
     }
 
@@ -151,7 +151,7 @@ const UserSettlement = ({ type = 'user' }) => {
         );
         if (
           err.response?.status === 400 &&
-          err.response?.data?.message === 'Invalid Master password.'
+          err.response?.data?.message === 'Invalid login password.'
         ) {
           break;
         }
@@ -165,7 +165,7 @@ const UserSettlement = ({ type = 'user' }) => {
       await fetchSettlementUsers();
       await dispatch(getAdmin());
     } else if (failCount > 0) {
-      toast.error('No accounts were settled. Check amounts and master password.');
+      toast.error('No accounts were settled. Check amounts and login password.');
     }
   };
 
@@ -500,14 +500,14 @@ const UserSettlement = ({ type = 'user' }) => {
 
               <div className='mb-6'>
                 <label className='mb-1 block text-sm font-medium text-gray-700'>
-                  Master Password
+                  Login Password
                 </label>
                 <input
                   type='password'
                   value={masterPassword}
                   onChange={(e) => setMasterPassword(e.target.value)}
                   className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none'
-                  placeholder='Enter your master password'
+                  placeholder='Enter your login password'
                   required
                 />
               </div>

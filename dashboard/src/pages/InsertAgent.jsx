@@ -8,6 +8,7 @@ import {
   getAccountMyKeepPercent,
   getRemainingMySharePercent,
 } from '@partnership-utils';
+import { LOGIN_PASSWORD_CONFIRM_LABEL } from '../config/featureFlags';
 import { addAdmin, getAdmin } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
@@ -116,7 +117,7 @@ export default function InsertAgent() {
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Master password is required');
+      toast.error(`${LOGIN_PASSWORD_CONFIRM_LABEL} is required`);
       return;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -433,7 +434,7 @@ export default function InsertAgent() {
                 <div className='grid grid-cols-1 items-end gap-6 md:grid-cols-2'>
                   <div className='flex flex-col'>
                     <label className='mb-2 text-[13px] font-medium'>
-                      Master Password
+                      {LOGIN_PASSWORD_CONFIRM_LABEL}
                     </label>
                     <input
                       type='text'

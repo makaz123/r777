@@ -254,7 +254,7 @@ export default function Userlist() {
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -727,7 +727,7 @@ export default function Userlist() {
       return;
     }
     if (!lockForm.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
     try {
@@ -767,7 +767,7 @@ export default function Userlist() {
     }
 
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -1159,7 +1159,7 @@ export default function Userlist() {
                   </div>
 
                   <div className='mb-[14px] grid grid-cols-3 items-center'>
-                    <div className='col-span-1 px-[15px]'>Master Password</div>
+                    <div className='col-span-1 px-[15px]'>Login Password</div>
                     <div className='col-span-2'>
                       <div className='px-[15px]'>
                         <input
@@ -1344,7 +1344,7 @@ export default function Userlist() {
 
                   <div className='flex flex-wrap items-center gap-2'>
                     <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
-                      Master Password
+                      Login Password
                     </label>
                     <input
                       type='password'
@@ -1488,7 +1488,7 @@ export default function Userlist() {
 
                     <div className='flex flex-wrap items-center gap-2'>
                       <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
-                        Master Password
+                        Login Password
                       </label>
                       <input
                         type='password'
@@ -1599,7 +1599,7 @@ export default function Userlist() {
                 </div>
 
                 <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-1 px-[15px]'>Login Password</div>
                   <div className='col-span-2'>
                     <div className='px-[15px]'>
                       <input
@@ -1676,7 +1676,7 @@ export default function Userlist() {
 
                   <div className='mb-2 flex items-center gap-3'>
                     <label className='w-[150px] shrink-0 text-[14px] text-gray-900'>
-                      Master Password
+                      Login Password
                     </label>
                     <input
                       type='password'
@@ -1760,7 +1760,7 @@ export default function Userlist() {
 
                   <div className='flex flex-wrap items-center gap-2'>
                     <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
-                      Master Password
+                      Login Password
                     </label>
                     <input
                       type='password'
@@ -1895,7 +1895,7 @@ export default function Userlist() {
 
                 <div className='flex items-center gap-2'>
                   <label className='w-[140px] font-bold text-gray-800'>
-                    Master Password
+                    Login Password
                   </label>
                   <input
                     type='password'

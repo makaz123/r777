@@ -226,7 +226,7 @@ const UserDetails = () => {
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -290,7 +290,7 @@ const UserDetails = () => {
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
     try {
@@ -323,7 +323,7 @@ const UserDetails = () => {
     }
 
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -1052,7 +1052,7 @@ const UserDetails = () => {
 
               <div className='flex flex-wrap items-center gap-2'>
                 <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
-                  Master Password
+                  Login Password
                 </label>
                 <input
                   type='password'
@@ -1193,7 +1193,7 @@ const UserDetails = () => {
 
                 <div className='flex flex-wrap items-center gap-2'>
                   <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
-                    Master Password
+                    Login Password
                   </label>
                   <input
                     type='password'
@@ -1279,7 +1279,7 @@ const UserDetails = () => {
 
               <div className='flex flex-wrap items-center gap-2'>
                 <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
-                  Master Password
+                  Login Password
                 </label>
                 <input
                   type='password'
@@ -1518,7 +1518,7 @@ const UserDetails = () => {
 
               <div className='flex items-center gap-2'>
                 <label className='w-[140px] font-bold text-gray-800'>
-                  Master Password
+                  Login Password
                 </label>
                 <input
                   type='password'

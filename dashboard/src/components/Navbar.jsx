@@ -24,6 +24,7 @@ import SportsSidebar from './SportsSidebar';
 import AccountSummaryBar from './AccountSummaryBar';
 import NotificationBell from './NotificationBell';
 import { isSuperAdmin } from '../utils/roleUtils';
+import { FEATURES } from '../config/featureFlags';
 
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
@@ -63,12 +64,6 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
 
       if (result.type.endsWith('/fulfilled')) {
         toast.success('Password changed successfully');
-        const generatedPassword = result?.payload?.generatedMasterPassword;
-        if (generatedPassword) {
-          navigate('/transaction-password-success', {
-            state: { masterPassword: generatedPassword },
-          });
-        }
         // ✅ Clear form
         setChangeFormData({
           oldPassword: '',
@@ -103,7 +98,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         { name: 'User Detail', path: '/user-details' },
         { name: 'Account Statement', path: '/AccountStatement' },
         { name: 'Settlement/Balance Report', path: '/SettlementReport' },
-        { name: 'Transaction Report', path: '/TransactionReport' },
+        ...(FEATURES.transactionReport
+          ? [{ name: 'Transaction Report', path: '/TransactionReport' }]
+          : []),
         { name: 'Current Bets', path: '/CurrentBets' },
         { name: 'Profit & Loss Report', path: '/ProfitLossReport' },
         { name: 'Event Profit & Loss Report', path: '/EventLossReport' },

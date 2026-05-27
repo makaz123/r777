@@ -237,7 +237,7 @@ export default function InsertUser() {
                       <div></div>
                       <div>
                         <span className='text-[14px] font-light text-[#1e1e1e]'>
-                          Master Password:
+                          Login Password:
                         </span>
                         <input
                           type={showPassword3 ? 'text' : 'password'}

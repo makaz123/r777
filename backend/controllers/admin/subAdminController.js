@@ -1923,7 +1923,7 @@ export const getDownlineList = async (req, res) => {
     const { id, role } = req;
     const {
       page = 1,
-      limit = 10,
+      limit = 25,
       searchQuery,
       listType = 'clients',
     } = req.query;

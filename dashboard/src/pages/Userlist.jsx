@@ -639,7 +639,10 @@ export default function Userlist() {
   const formatRowMyPercent = (row) => {
     if (row.role === 'user') {
       const pct =
-        row.parentSharePercent ?? row.mySharePercent ?? row.viewerShareOnRow ?? 0;
+        row.parentSharePercent ??
+        row.mySharePercent ??
+        row.viewerShareOnRow ??
+        0;
       return `${pct}%`;
     }
     const myShare =
@@ -849,14 +852,14 @@ export default function Userlist() {
               </div>
 
               <button
-                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-1 py-1 text-[12px] text-white md:px-3 md:text-[14px]'
+                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-2 py-1 text-[10px] text-white md:px-3 md:text-[14px]'
                 onClick={() => navigate('/agent-download-list/insertagent')}
               >
                 Add Client Account
               </button>
 
               <button
-                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-1 py-1 text-[12px] text-white md:px-3 md:text-[14px]'
+                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-2 py-1 text-[10px] text-white md:px-3 md:text-[14px]'
                 onClick={() =>
                   setActiveTab((tab) =>
                     tab === 'active' ? 'deactive' : 'active'
@@ -1808,7 +1811,9 @@ export default function Userlist() {
                     {settleSelectedUser.userName}
                   </div>
 
-                  <div className='font-bold text-gray-800'>My Available Bal</div>
+                  <div className='font-bold text-gray-800'>
+                    My Available Bal
+                  </div>
                   <div className='font-bold text-gray-800'>P&L</div>
 
                   <div className='font-bold text-green-600'>
@@ -1821,7 +1826,9 @@ export default function Userlist() {
                   </div>
 
                   <div className='font-bold text-gray-800'>Exposure</div>
-                  <div className='font-bold text-gray-800'>Amount To Settle</div>
+                  <div className='font-bold text-gray-800'>
+                    Amount To Settle
+                  </div>
 
                   <div className='text-black'>
                     {Number(
@@ -1852,9 +1859,7 @@ export default function Userlist() {
                   <button
                     type='button'
                     onClick={() =>
-                      setSettleAmount(
-                        Math.abs(settleUserPL || 0).toFixed(2)
-                      )
+                      setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))
                     }
                     className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-3 py-1 text-white hover:opacity-90'
                   >

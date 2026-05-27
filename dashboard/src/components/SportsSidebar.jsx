@@ -218,49 +218,79 @@ function SportsSidebar({ isOpen, onClose }) {
               />
             </button>
 
-              {openReport && (
-                <ul>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/user-details')}>
-                    User Detail
+            {openReport && (
+              <ul>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/user-details')}
+                >
+                  User Detail
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/AccountStatement')}
+                >
+                  Account Statement
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/SettlementReport')}
+                >
+                  Settlement/Balance Report
+                </li>
+                {FEATURES.transactionReport && (
+                  <li
+                    className='border-b border-[#18b0c8] px-4 py-2'
+                    onClick={() => navigate('/TransactionReport')}
+                  >
+                    Transaction Report
                   </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/AccountStatement')}>
-                    Account Statement
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/SettlementReport')}>
-                    Settlement/Balance Report
-                  </li>
-                  {FEATURES.transactionReport && (
-                    <li
-                      className='px-4 py-2 border-b border-[#18b0c8]'
-                      onClick={() => navigate('/TransactionReport')}
-                    >
-                      Transaction Report
-                    </li>
-                  )}
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/CurrentBets')}>
-                    Current Bets
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/ProfitLossReport')}>
-                    Profit & Loss Report
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/EventLossReport')}>
-                    Event Profit & Loss Report
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/BetHistoryReport')}>
-                    Bet History
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/LiveBetsReport')}>
-                    Live Bets
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/SportRevenue')}>
-                    Sports Revenue
-                  </li>
-                  <li className='px-4 py-2 border-b border-[#18b0c8]' onClick={() => navigate('/IpLookupReport')}>
-                    IP lookup
-                  </li>
-                </ul>
-              )}
-            </li>
+                )}
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/CurrentBets')}
+                >
+                  Current Bets
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/ProfitLossReport')}
+                >
+                  Profit & Loss Report
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/EventLossReport')}
+                >
+                  Event Profit & Loss Report
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/BetHistoryReport')}
+                >
+                  Bet History
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/LiveBetsReport')}
+                >
+                  Live Bets
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/SportRevenue')}
+                >
+                  Sports Revenue
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] px-4 py-2'
+                  onClick={() => navigate('/IpLookupReport')}
+                >
+                  IP lookup
+                </li>
+              </ul>
+            )}
+          </li>
 
           <li
             className='border-b border-[#18b0c8] px-4 py-2'

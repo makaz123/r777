@@ -69,7 +69,9 @@ async function main() {
 
   await mongoose.connect(process.env.MONGO_URI);
   console.log(`Connected: ${mongoose.connection.name}`);
-  console.log(apply ? 'MODE: APPLY (will update DB)\n' : 'MODE: DRY-RUN (no writes)\n');
+  console.log(
+    apply ? 'MODE: APPLY (will update DB)\n' : 'MODE: DRY-RUN (no writes)\n'
+  );
 
   const query = {
     role: { $ne: 'user' },
@@ -80,7 +82,9 @@ async function main() {
     query.userName = { $in: userFilter };
   }
 
-  const rows = await SubAdmin.find(query).select('userName role partnership invite code').lean();
+  const rows = await SubAdmin.find(query)
+    .select('userName role partnership invite code')
+    .lean();
   const parentByCode = new Map();
 
   const changes = [];
@@ -145,7 +149,9 @@ async function main() {
 
   if (!apply) {
     console.log('\nRun with --apply to save. Example:');
-    console.log('  node scripts/migratePartnershipDownlineKeep.js --apply --users=testing3');
+    console.log(
+      '  node scripts/migratePartnershipDownlineKeep.js --apply --users=testing3'
+    );
     await mongoose.disconnect();
     return;
   }

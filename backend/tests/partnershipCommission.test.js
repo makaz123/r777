@@ -172,7 +172,12 @@ describe('partnershipCommissionUtils', () => {
   });
 
   test('list row shows viewer my % then downline keep', () => {
-    const master = { role: 'master', partnership: 100, invite: 'ROOT', code: 'M1' };
+    const master = {
+      role: 'master',
+      partnership: 100,
+      invite: 'ROOT',
+      code: 'M1',
+    };
     const agent = { role: 'agent', partnership: 85, invite: master.code };
 
     const myShare = getParentShareOnDownlineRow(agent, master);

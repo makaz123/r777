@@ -1148,8 +1148,7 @@ export default function AgentLIst() {
                     <div className='flex flex-col items-center justify-center'>
                       <div className='flex w-full flex-col items-center px-4 py-1 md:flex-row'>
                         <span className='basis-full text-center text-[12px] md:basis-[35%] md:text-left'>
-                          Login Password{' '}
-                          <span className='text-red-500'>*</span>
+                          Login Password <span className='text-red-500'>*</span>
                         </span>
                         <span className='relative w-full basis-full font-light md:basis-[75%]'>
                           <input

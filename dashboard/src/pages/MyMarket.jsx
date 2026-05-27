@@ -37,6 +37,7 @@ const MyMarket = () => {
   const navigate = useNavigate();
   const [activeSport, setActiveSport] = useState('Cricket');
   const [openRows, setOpenRows] = useState([]);
+  const MARKET_REFRESH_MS = 5000;
 
   const { sportAnalysis, loading, errorMessage } = useSelector(
     (state) => state.market
@@ -44,7 +45,12 @@ const MyMarket = () => {
 
   useEffect(() => {
     dispatch(marketGames());
-  }, [dispatch]);
+    const intervalId = setInterval(() => {
+      dispatch(marketGames());
+    }, MARKET_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, MARKET_REFRESH_MS]);
 
   const tabCounts = useMemo(
     () => SPORT_TABS.map((sport) => sportAnalysis?.[sport]?.count ?? 0),

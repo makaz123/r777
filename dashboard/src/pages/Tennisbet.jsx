@@ -29,6 +29,10 @@ import { MdOutlineKeyboardArrowRight } from 'react-icons/md';
 import { FaFilter, FaMinusCircle, FaPlusCircle } from 'react-icons/fa';
 import { BsGraphUpArrow } from 'react-icons/bs';
 import { TfiMenuAlt } from 'react-icons/tfi';
+
+const MARKET_DATA_REFRESH_MS = 3000;
+const PENDING_BETS_REFRESH_MS = 3000;
+
 export default function Tennisbet() {
   const [bettingData, setBettingData] = useState(null);
   const hasCheckedRef = useRef(false);
@@ -105,14 +109,7 @@ export default function Tennisbet() {
     dispatch(fetchTennisData());
   }, [dispatch]);
 
-  // Initial fetch
-  useEffect(() => {
-    if (gameid) {
-      dispatch(fetchTannisBatingData(gameid));
-    }
-  }, [gameid, dispatch]);
-
-  // WebSocket for real-time updates
+  // WebSocket for real-time market/odds updates
   useEffect(() => {
     if (!gameid) return;
 
@@ -147,12 +144,18 @@ export default function Tennisbet() {
   }, [gameid]);
 
   useEffect(() => {
-    setBettingData(battingData);
-  }, [battingData]);
+    if (!gameid) return;
+
+    const fetchData = () => dispatch(fetchTannisBatingData(gameid));
+    fetchData();
+    const intervalId = setInterval(fetchData, MARKET_DATA_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, gameid]);
 
   useEffect(() => {
-    dispatch(getPendingBetAmo(gameid));
-  }, [dispatch]);
+    setBettingData(battingData);
+  }, [battingData]);
 
   const matchOddsList = Array.isArray(bettingData)
     ? bettingData.filter((item) => item.mname === 'MATCH_ODDS')
@@ -179,7 +182,14 @@ export default function Tennisbet() {
 
   useEffect(() => {
     dispatch(getPendingBetAmo(gameid));
-  }, [dispatch]);
+    if (!gameid) return;
+
+    const intervalId = setInterval(() => {
+      dispatch(getPendingBetAmo(gameid));
+    }, PENDING_BETS_REFRESH_MS);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, gameid]);
 
   useEffect(() => {
     document.body.style.overflow = masterpopup ? 'hidden' : 'auto';

@@ -52,7 +52,7 @@ const VirtualTable = ({
 
   return (
     <div className='scrollbar-hide overflow-x-auto rounded-md'>
-      <table className='w-[1500px] border-collapse text-[13px]'>
+      <table className='w-[1500px] md:w-full border-collapse text-[14px]'>
         <thead className={headerClass}>
           <tr>
             {columns.map((col, i) => (
@@ -108,7 +108,7 @@ const VirtualTable = ({
                 {columns.map((col, i) => (
                   <td
                     key={i}
-                    className={`border border-[#dee2e6] px-2 py-2 ${
+                    className={`border border-[#dee2e6] p-2 leading-[16px] ${
                       col.align === 'right' ? 'text-right' : 'text-left'
                     }`}
                   >

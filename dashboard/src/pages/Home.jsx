@@ -124,56 +124,54 @@ const Home = () => {
       <div className='min-h-screen bg-[#e9edf2] px-[15px] py-3'>
         <h1 className='mb-2 text-[16px] font-bold'>Dashboard</h1>
         <div className='mb-6 rounded-[3px] bg-white p-2 shadow-[0_2px_7px_0_#00708285]'>
-        <div className='flex flex-wrap items-start gap-[2%] gap-y-4 md:gap-x-8 items-end text-[12px] md:pb-4'>
-          <div className='w-[49%] md:w-fit'>
-            <label className='mb-1 block'>From Date:</label>
-            <DatePicker
-              selected={pendingFrom}
-              onChange={(date) => setPendingFrom(date)}
-              showTimeSelect
-              timeFormat='HH:mm'
-              timeIntervals={1}
-              dateFormat='dd/MM/yyyy HH:mm'
-              className='w-full md:w-[220px] rounded border border-[#ced4da] px-3 py-1 text-[14px] text-gray-500 outline-none'
-            />
-          </div>
+          <div className='flex flex-wrap items-end items-start gap-[2%] gap-y-4 text-[12px] md:gap-x-8 md:pb-4'>
+            <div className='w-[49%] md:w-fit'>
+              <label className='mb-1 block'>From Date:</label>
+              <DatePicker
+                selected={pendingFrom}
+                onChange={(date) => setPendingFrom(date)}
+                showTimeSelect
+                timeFormat='HH:mm'
+                timeIntervals={1}
+                dateFormat='dd/MM/yyyy HH:mm'
+                className='w-full rounded border border-[#ced4da] px-3 py-1 text-[14px] text-gray-500 outline-none md:w-[220px]'
+              />
+            </div>
+            <div className='w-[49%] md:w-fit'>
+              <label className='mb-1 block'>To Date:</label>
+              <DatePicker
+                selected={pendingTo}
+                onChange={(date) => setPendingTo(date)}
+                showTimeSelect
+                timeFormat='HH:mm'
+                timeIntervals={1}
+                dateFormat='dd/MM/yyyy HH:mm'
+                className='w-full rounded border border-[#ced4da] px-3 py-1 text-[14px] text-gray-500 outline-none md:w-[220px]'
+              />
+            </div>
+            <div className='flex w-full gap-1 pb-[1px] md:w-fit'>
+              <button
+                type='button'
+                onClick={handleSubmit}
+                className='rounded-l border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-[14px] text-white'
+              >
+                Submit
+              </button>
 
-          <div className='w-[49%] md:w-fit'>
-            <label className='mb-1 block'>To Date:</label>
-            <DatePicker
-              selected={pendingTo}
-              onChange={(date) => setPendingTo(date)}
-              showTimeSelect
-              timeFormat='HH:mm'
-              timeIntervals={1}
-              dateFormat='dd/MM/yyyy HH:mm'
-              className='w-full md:w-[220px] rounded border border-[#ced4da] px-3 py-1 text-[14px] text-gray-500 outline-none'
-            />
-          </div>
-
-          <div className='w-full md:w-fit flex gap-1 pb-[1px]'>
-            <button
-              type='button'
-              onClick={handleSubmit}
-              className='rounded-l border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-[14px] text-white'
-            >
-              Submit
-            </button>
-
-            <button
-              type='button'
-              onClick={() => {
-                const week = applyCurrentWeek();
-                fetchStats(week.startDate, week.endDate);
-              }}
-              className='rounded-r border border-[#dc3545] bg-[#dc3545] px-3 py-1.5 text-[14px] text-white'
-            >
-              Reset
-            </button>
+              <button
+                type='button'
+                onClick={() => {
+                  const week = applyCurrentWeek();
+                  fetchStats(week.startDate, week.endDate);
+                }}
+                className='rounded-r border border-[#dc3545] bg-[#dc3545] px-3 py-1.5 text-[14px] text-white'
+              >
+                Reset
+              </button>
+            </div>
           </div>
         </div>
-        </div>
-        <div className='mb-5 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-6'>
+        <div className='mb-5 grid gap-4 md:gap-8 grid-cols-2 lg:grid-cols-6'>
           {summaryCards.map((item, index) => (
             <div
               key={index}

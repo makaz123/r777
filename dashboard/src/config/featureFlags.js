@@ -5,4 +5,4 @@ export const FEATURES = {
 };
 
 /** Label for fields that verify the logged-in user's login password. */
-export const LOGIN_PASSWORD_CONFIRM_LABEL = 'Login Password';
+export const LOGIN_PASSWORD_CONFIRM_LABEL = 'Master Password';

@@ -158,13 +158,13 @@ export default function InsertAgent() {
   return (
     <>
       <Navbar />
-      <div className='h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className='scrollbar-hide overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
+        <div className='h-full rounded-lg bg-white px-[15px] py-[7px] min-h-[600px] pb-10'>
           <span className='text-[16px] font-bold'>Add/Edit Client Account</span>
 
           <form onSubmit={handleSubmit}>
-            <div className='mt-6 flex'>
-              <div className='w-1/2 pr-[15px]'>
+            <div className='mt-6 flex flex-wrap'>
+              <div className='w-full md:w-1/2 md:pr-[15px]'>
                 <div className='relative rounded-md border border-black p-4'>
                   {/* Title */}
                   <span className='absolute -top-3 left-3 bg-white px-1 text-[14px] font-semibold'>
@@ -287,7 +287,7 @@ export default function InsertAgent() {
                 )}
               </div>
 
-              <div className='w-1/2 pl-[15px]'>
+              <div className='w-full md:w-1/2 md:pl-[15px] mt-4 md:mt-0'>
                 <div className='relative rounded-md border border-black p-4'>
                   {/* Title */}
                   <span className='absolute -top-3 left-3 bg-white px-1 text-[14px] font-semibold'>
@@ -366,8 +366,8 @@ export default function InsertAgent() {
               </div>
             </div>
 
-            <div className='mt-7 flex'>
-              <div className='w-1/2 pr-[15px]'>
+            <div className='mt-7 flex flex-wrap'>
+              <div className='w-full md:w-1/2 md:pr-[15px]'>
                 <div className='relative rounded-md border border-black p-4'>
                   {/* Title */}
                   <span className='absolute -top-3 left-3 bg-white px-1 text-[14px] font-semibold'>
@@ -435,7 +435,7 @@ export default function InsertAgent() {
                 </div>
               </div>
 
-              <div className='w-1/2 pl-[15px]'>
+              <div className='w-full md:w-1/2 md:pl-[15px] mt-2 md:mt-0'>
                 <div className='grid grid-cols-1 items-end gap-6 md:grid-cols-2'>
                   <div className='flex flex-col'>
                     <label className='mb-2 text-[13px] font-medium'>

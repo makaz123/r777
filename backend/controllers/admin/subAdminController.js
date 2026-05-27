@@ -779,7 +779,10 @@ export const createSubAdmin = async (req, res) => {
       }
 
       const parentMyShareCap = getAccountMyKeepPercent(admin);
-      const downlineKeep = toStoredDownlineKeepFromCreateInput(partnership, admin);
+      const downlineKeep = toStoredDownlineKeepFromCreateInput(
+        partnership,
+        admin
+      );
       if (downlineKeep > parentMyShareCap) {
         return res.status(400).json({
           message: `Downline share cannot exceed your keep (${parentMyShareCap}%)`,

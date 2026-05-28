@@ -3549,73 +3549,49 @@ export const getTotalProfitLossReport = async (req, res) => {
       return false;
     };
 
-    const sportsMap = new Map();
-    const casinoMap = new Map();
+    const reportMap = new Map();
 
     for (const bet of settledBets) {
-      const eventName = bet.eventName || bet.gameName || 'N/A';
-      const gameType = bet.marketName || bet.gameType || '-';
-      const pl = Number(bet.profitLossChange || 0);
-      const openingAmount = Number(bet.betAmount || 0);
-
-      if (isSportsBet(bet)) {
-        const key = `${eventName}__${gameType}`;
-        if (!sportsMap.has(key)) {
-          sportsMap.set(key, {
-            eventName,
-            gameType,
-            opening: 0,
-            closing: 0,
-            profitLoss: 0,
-          });
-        }
-        const row = sportsMap.get(key);
-        row.opening += openingAmount;
-        row.closing += pl;
-        row.profitLoss += pl;
-      } else {
-        const key = eventName;
-        if (!casinoMap.has(key)) {
-          casinoMap.set(key, {
-            eventName,
-            opening: 0,
-            closing: 0,
-            profitLoss: 0,
-          });
-        }
-        const row = casinoMap.get(key);
-        row.opening += openingAmount;
-        row.closing += pl;
-        row.profitLoss += pl;
+      const isSports = isSportsBet(bet);
+      let sport = 'Casino';
+      if (isSports) {
+        sport = String(bet.gameName || 'Sports').charAt(0).toUpperCase() + String(bet.gameName || 'Sports').slice(1).toLowerCase();
       }
+
+      let marketName = String(bet.marketName || bet.gameType || bet.eventName || '-').toUpperCase();
+      
+      const pl = Number(bet.profitLossChange || 0);
+      const commission = Number(bet.commission || 0);
+
+      const key = `${sport}__${marketName}`;
+      if (!reportMap.has(key)) {
+        reportMap.set(key, {
+          sport,
+          marketName,
+          pl: 0,
+          commission: 0,
+          amount: 0,
+        });
+      }
+      
+      const row = reportMap.get(key);
+      row.pl += pl;
+      row.commission += commission;
+      row.amount = row.pl + row.commission;
     }
 
-    // Derive closing using opening +/- P/L
-    for (const row of sportsMap.values()) {
-      row.closing = row.opening + row.profitLoss;
-    }
-    for (const row of casinoMap.values()) {
-      row.closing = row.opening + row.profitLoss;
-    }
-
-    const sportsReport = [...sportsMap.values()];
-    const casinoReport = [...casinoMap.values()];
-    const sportsTotal = sportsReport.reduce(
-      (sum, row) => sum + row.profitLoss,
-      0
-    );
-    const casinoTotal = casinoReport.reduce(
-      (sum, row) => sum + row.profitLoss,
-      0
-    );
+    const data = [...reportMap.values()];
+    const totalPL = data.reduce((sum, row) => sum + row.pl, 0);
+    const totalCommission = data.reduce((sum, row) => sum + row.commission, 0);
+    const totalAmount = data.reduce((sum, row) => sum + row.amount, 0);
 
     return res.status(200).json({
       success: true,
       data: {
-        sportsReport,
-        casinoReport,
-        sportsTotal,
-        casinoTotal,
+        report: data,
+        totalPL,
+        totalCommission,
+        totalAmount,
       },
     });
   } catch (error) {

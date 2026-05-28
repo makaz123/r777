@@ -1456,19 +1456,19 @@ export const getSubAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Admin ID is required' });
     }
 
-    const admin = await SubAdmin.findById(id);
+    const admin = await SubAdmin.findById(id).lean();
     if (!admin) {
       return res.status(404).json({ message: 'Sub-admin not found' });
     }
 
-    const payload = await loadAccountSummaryForAdmin(id);
-    if (!payload) {
-      return res.status(404).json({ message: 'Sub-admin not found' });
-    }
+    // Run background account summary if needed, but don't block response
+    loadAccountSummaryForAdmin(id).catch(err => 
+      console.error('Background summary error:', err)
+    );
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: { ...payload.admin, accountSummary: payload.accountSummary },
+      data: { ...admin, accountSummary: null },
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);
@@ -2811,8 +2811,9 @@ export const withdrowalAndDeposite = async (req, res) => {
       });
     }
 
-    await updateAdmin(id);
-    await updateAllUplines(userId);
+    // ✅ Run heavy aggregations in background for performance with 30k+ users
+    updateAdmin(id).catch(err => console.error('Background updateAdmin error:', err));
+    updateAllUplines(userId).catch(err => console.error('Background updateAllUplines error:', err));
 
     // ✅ Fetch updated user list
     const filter =
@@ -3548,77 +3549,179 @@ export const getTotalProfitLossReport = async (req, res) => {
       return false;
     };
 
-    const sportsMap = new Map();
-    const casinoMap = new Map();
+    const reportMap = new Map();
 
     for (const bet of settledBets) {
-      const eventName = bet.eventName || bet.gameName || 'N/A';
-      const gameType = bet.marketName || bet.gameType || '-';
-      const pl = Number(bet.profitLossChange || 0);
-      const openingAmount = Number(bet.betAmount || 0);
-
-      if (isSportsBet(bet)) {
-        const key = `${eventName}__${gameType}`;
-        if (!sportsMap.has(key)) {
-          sportsMap.set(key, {
-            eventName,
-            gameType,
-            opening: 0,
-            closing: 0,
-            profitLoss: 0,
-          });
-        }
-        const row = sportsMap.get(key);
-        row.opening += openingAmount;
-        row.closing += pl;
-        row.profitLoss += pl;
-      } else {
-        const key = eventName;
-        if (!casinoMap.has(key)) {
-          casinoMap.set(key, {
-            eventName,
-            opening: 0,
-            closing: 0,
-            profitLoss: 0,
-          });
-        }
-        const row = casinoMap.get(key);
-        row.opening += openingAmount;
-        row.closing += pl;
-        row.profitLoss += pl;
+      const isSports = isSportsBet(bet);
+      let sport = 'Casino';
+      if (isSports) {
+        sport = String(bet.gameName || 'Sports').charAt(0).toUpperCase() + String(bet.gameName || 'Sports').slice(1).toLowerCase();
       }
+
+      let marketName = String(bet.marketName || bet.gameType || bet.eventName || '-').toUpperCase();
+      
+      const pl = Number(bet.profitLossChange || 0);
+      const commission = Number(bet.commission || 0);
+
+      const key = `${sport}__${marketName}`;
+      if (!reportMap.has(key)) {
+        reportMap.set(key, {
+          sport,
+          marketName,
+          pl: 0,
+          commission: 0,
+          amount: 0,
+        });
+      }
+      
+      const row = reportMap.get(key);
+      row.pl += pl;
+      row.commission += commission;
+      row.amount = row.pl + row.commission;
     }
 
-    // Derive closing using opening +/- P/L
-    for (const row of sportsMap.values()) {
-      row.closing = row.opening + row.profitLoss;
-    }
-    for (const row of casinoMap.values()) {
-      row.closing = row.opening + row.profitLoss;
-    }
-
-    const sportsReport = [...sportsMap.values()];
-    const casinoReport = [...casinoMap.values()];
-    const sportsTotal = sportsReport.reduce(
-      (sum, row) => sum + row.profitLoss,
-      0
-    );
-    const casinoTotal = casinoReport.reduce(
-      (sum, row) => sum + row.profitLoss,
-      0
-    );
+    const data = [...reportMap.values()];
+    const totalPL = data.reduce((sum, row) => sum + row.pl, 0);
+    const totalCommission = data.reduce((sum, row) => sum + row.commission, 0);
+    const totalAmount = data.reduce((sum, row) => sum + row.amount, 0);
 
     return res.status(200).json({
       success: true,
       data: {
-        sportsReport,
-        casinoReport,
-        sportsTotal,
-        casinoTotal,
+        report: data,
+        totalPL,
+        totalCommission,
+        totalAmount,
       },
     });
   } catch (error) {
     console.error('Error fetching total profit/loss report:', error);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+export const getEventProfitLossReport = async (req, res) => {
+  try {
+    const { id } = req;
+    const { startDate, endDate, searchQuery = '', userName = '' } = req.query;
+
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Admin not found' });
+    }
+
+    const queue = [admin.code];
+    const userIds = [];
+    while (queue.length > 0) {
+      const currentCode = queue.shift();
+      const downlineUsers = await SubAdmin.find({
+        invite: currentCode,
+        status: { $ne: 'delete' },
+      });
+
+      for (const user of downlineUsers) {
+        if (user.role === 'user') userIds.push(user._id.toString());
+        else queue.push(user.code);
+      }
+    }
+
+    if (!userIds.length) {
+      return res.status(200).json({
+        success: true,
+        data: { report: [], totalPL: 0, totalAmount: 0, totalOrders: 0 },
+      });
+    }
+
+    const filter = {
+      userId: { $in: userIds },
+      status: { $in: [1, 2] },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      filter.createdAt = { $gte: start, $lte: end };
+    }
+
+    const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    if (userName) {
+      filter.userName = { $regex: `^${escapeRegex(userName)}$`, $options: 'i' };
+    } else if (searchQuery) {
+      filter.userName = { $regex: searchQuery, $options: 'i' };
+    }
+
+    const settledBets = await betHistoryModel.find(filter).lean();
+
+    const reportMap = new Map();
+
+    for (const bet of settledBets) {
+      let sport = String(bet.gameName || 'Sports');
+      sport = sport.charAt(0).toUpperCase() + sport.slice(1).toLowerCase();
+      
+      const competition = String(bet.gameType || '-');
+      const event = String(bet.eventName || '-');
+      const pl = Number(bet.profitLossChange || 0);
+      const amount = Number(bet.betAmount || 0);
+
+      const key = `${sport}__${event}`;
+      if (!reportMap.has(key)) {
+        reportMap.set(key, {
+          sport,
+          competition,
+          event,
+          orderCount: 0,
+          totalAmount: 0,
+          pl: 0,
+          marketsMap: new Map(),
+        });
+      }
+      
+      const row = reportMap.get(key);
+      row.orderCount += 1;
+      row.totalAmount += amount;
+      row.pl += pl;
+
+      const marketName = String(bet.marketName || bet.gameType || '-').toUpperCase();
+      if (!row.marketsMap.has(marketName)) {
+        row.marketsMap.set(marketName, {
+          market: marketName,
+          orderCount: 0,
+          totalAmount: 0,
+          pl: 0,
+        });
+      }
+      const mRow = row.marketsMap.get(marketName);
+      mRow.orderCount += 1;
+      mRow.totalAmount += amount;
+      mRow.pl += pl;
+    }
+
+    const data = [...reportMap.values()].map(row => ({
+      ...row,
+      markets: [...row.marketsMap.values()],
+      marketsMap: undefined, // remove map from final output
+    }));
+    const totalPL = data.reduce((sum, row) => sum + row.pl, 0);
+    const totalAmount = data.reduce((sum, row) => sum + row.totalAmount, 0);
+    const totalOrders = data.reduce((sum, row) => sum + row.orderCount, 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        report: data,
+        totalPL,
+        totalAmount,
+        totalOrders,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching event profit/loss report:', error);
     return res
       .status(500)
       .json({ success: false, message: 'Server error', error: error.message });
@@ -4272,24 +4375,30 @@ export const settleUser = async (req, res) => {
       });
     }
 
-    await refreshSettlementHierarchy(id, userId);
+    // Run heavy calculations in the background for 30k+ user performance
+    refreshSettlementHierarchy(id, userId).catch(console.error);
 
-    let summaryPayload = await loadAccountSummaryForAdmin(id);
-    const settledAt = new Date();
+    (async () => {
+      try {
+        let summaryPayload = await loadAccountSummaryForAdmin(id);
+        const settledAt = new Date();
 
-    if (summaryPayload?.linesFullyCleared) {
-      await setWeekPLResetNow(SubAdmin, id, settledAt);
-    } else {
-      await SubAdmin.findByIdAndUpdate(id, {
-        $unset: { weekPLResetAt: 1 },
-      });
-    }
-    summaryPayload = await loadAccountSummaryForAdmin(id);
+        if (summaryPayload?.linesFullyCleared) {
+          await setWeekPLResetNow(SubAdmin, id, settledAt);
+        } else {
+          await SubAdmin.findByIdAndUpdate(id, {
+            $unset: { weekPLResetAt: 1 },
+          });
+        }
+      } catch (err) {
+        console.error('Background settlement summary error:', err);
+      }
+    })();
 
     return res.status(200).json({
       success: true,
       message: 'Settlement completed successfully',
-      accountSummary: summaryPayload?.accountSummary ?? null,
+      accountSummary: null,
     });
   } catch (error) {
     console.error('Error in settleUser:', error);

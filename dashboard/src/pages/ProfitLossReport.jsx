@@ -14,9 +14,38 @@ const ProfitLossReport = () => {
   const [sportsList, setSportsList] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserName, setSelectedUserName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+
+  const getFormattedDateTime = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    let hours = '' + d.getHours();
+    let minutes = '' + d.getMinutes();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    if (hours.length < 2) hours = '0' + hours;
+    if (minutes.length < 2) minutes = '0' + minutes;
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
   const [rows, setRows] = useState([]);
+  const [totals, setTotals] = useState({ pl: 0, commission: 0, amount: 0 });
+  const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -72,11 +101,19 @@ const ProfitLossReport = () => {
     setSportsList('');
     setSearchQuery('');
     setSelectedUserName('');
-    setStartDate('');
-    setEndDate('');
+    const dEnd = new Date();
+    dEnd.setDate(dEnd.getDate() + 1);
+    dEnd.setHours(0, 0, 0, 0);
+    setEndDate(getFormattedDateTime(dEnd));
+    const dStart = new Date();
+    dStart.setDate(dStart.getDate() - 1);
+    dStart.setHours(0, 0, 0, 0);
+    setStartDate(getFormattedDateTime(dStart));
     setUserSuggestions([]);
     setShowSuggestions(false);
     setRows([]);
+    setTotals({ pl: 0, commission: 0, amount: 0 });
+    setHasSearched(false);
   };
 
   const loadReport = async () => {
@@ -96,19 +133,26 @@ const ProfitLossReport = () => {
       if (sportsList) query.append('sportsName', sportsList);
       if (hasClientSearchAccess && selectedUserName) {
         query.append('userName', selectedUserName);
+      } else if (hasClientSearchAccess && searchQuery) {
+        query.append('searchQuery', searchQuery);
       }
 
-      query.append('accountType', accountType);
       const res = await api.get(
-        `/account-statement/history?${query.toString()}`,
+        `/get/total-profit-loss?${query.toString()}`,
         {
           withCredentials: true,
         }
       );
 
-      setRows(res.data?.data || []);
+      setRows(res.data?.data?.report || []);
+      setTotals({
+        pl: res.data?.data?.totalPL || 0,
+        commission: res.data?.data?.totalCommission || 0,
+        amount: res.data?.data?.totalAmount || 0,
+      });
     } catch (error) {
       setRows([]);
+      setTotals({ pl: 0, commission: 0, amount: 0 });
       toast.error(error?.response?.data?.message || 'Failed to load report');
     } finally {
       setLoading(false);
@@ -165,14 +209,14 @@ const ProfitLossReport = () => {
             {renderClientSearch()}
 
             <input
-              type='date'
+              type='datetime-local'
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
             />
 
             <input
-              type='date'
+              type='datetime-local'
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
@@ -181,7 +225,10 @@ const ProfitLossReport = () => {
             <div className='col-span-1 flex gap-1 outline-0'>
               <button
                 type='button'
-                onClick={loadReport}
+                onClick={() => {
+                  setHasSearched(true);
+                  loadReport();
+                }}
                 className='cursor-pointer rounded-l border border-[#247c8f] bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-white'
               >
                 Go
@@ -196,106 +243,69 @@ const ProfitLossReport = () => {
             </div>
           </div>
 
-          <div className='mb-5 flex items-end justify-between'>
-            <div className='flex items-end'>
-              <input
-                type='text'
-                placeholder='Search'
-                className='h-fit rounded-sm border border-gray-300 px-2 py-1 outline-0'
-              />
-              <img src={excelIcon} alt='' className='w-[35px]' />
-              <img src={pdfIcon} alt='' className='w-[35px]' />
-            </div>
+          {hasSearched && (
+            <>
+              <div className='mb-5 flex items-end justify-between'>
+                <div className='flex items-end'>
+                  <img src={excelIcon} alt='' className='w-[35px] cursor-pointer' />
+                  <img src={pdfIcon} alt='' className='w-[35px] cursor-pointer' />
+                </div>
+              </div>
 
-            <div className='mr-10'>
-              <span>Show</span>
-              <select
-                name=''
-                id=''
-                className='mx-2 rounded-sm border border-gray-300 px-2 py-1 text-gray-500 outline-0'
-              >
-                <option value=''>25</option>
-                <option value=''>50</option>
-                <option value=''>100</option>
-              </select>
-              <span>entries</span>
-            </div>
-          </div>
-
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Sport
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Market Name
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  P&L
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Description
-                </th>
-                <th className='px-2 py-1 text-right'>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className='border border-gray-300 odd:bg-gray-100'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25-05-2026
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  325000.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  -1091.73
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  10.92
-                </td>
-                <td className='px-2 py-1.5 text-right'>-1080.81</td>
-              </tr>
-              <tr className='border border-gray-300 odd:bg-gray-100'>
-                <td className='border border-gray-300 px-2 py-1.5' colSpan={2}>
-                  Total
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  -1091.73
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                  10.92
-                </td>
-                <td className='px-2 py-1.5 text-right'>-1080.81</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
-            <div>Showing 1 to 2 of 20 entries</div>
-            <div className='flex flex-wrap'>
-              {/* First Button */}
-              <button className='pgBtn rounded-l-sm px-[13px] py-[6.5px]'>
-                First
-              </button>
-
-              {/* Previous Button */}
-              <button className='pgBtn px-[12px] py-[6px]'>Prev</button>
-              {/* Page Numbers */}
-              <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
-                1
-              </button>
-
-              {/* Next Button */}
-              <button className='pgBtn px-[13px] py-[6.5px]'>Next</button>
-
-              {/* Last Button */}
-              <button className='pgBtn rounded-r-sm px-[13px] py-[6.5px]'>
-                Last
-              </button>
-            </div>
-          </div>
+              <table className='w-full table-auto border-collapse border border-gray-300'>
+                <thead>
+                  <tr className='bg-[#016a82] text-white'>
+                    <th className='border-r border-white px-2 py-1 text-left'>Sport</th>
+                    <th className='border-r border-white px-2 py-1 text-left'>Market Name</th>
+                    <th className='border-r border-white px-2 py-1 text-right'>P&L</th>
+                    <th className='border-r border-white px-2 py-1 text-right'>Commission</th>
+                    <th className='px-2 py-1 text-right'>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows && rows.length > 0 ? (
+                    rows.map((row, idx) => (
+                      <tr key={idx} className='border border-gray-300 odd:bg-gray-100 text-[14px] font-semibold'>
+                        <td className='border border-gray-300 px-2 py-1.5 text-gray-700 font-normal'>{row.sport}</td>
+                        <td className='border border-gray-300 px-2 py-1.5 text-gray-700 font-normal'>{row.marketName}</td>
+                        <td className={`border border-gray-300 px-2 py-1.5 text-right ${row.pl > 0 ? 'text-green-600' : row.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                          {row.pl.toFixed(2)}
+                        </td>
+                        <td className={`border border-gray-300 px-2 py-1.5 text-right ${row.commission > 0 ? 'text-green-600' : row.commission < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                          {row.commission.toFixed(2)}
+                        </td>
+                        <td className={`px-2 py-1.5 text-right ${row.amount > 0 ? 'text-green-600' : row.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                          {row.amount.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="py-4 text-center text-gray-500 font-semibold">
+                        {loading ? 'Loading...' : 'No data available'}
+                      </td>
+                    </tr>
+                  )}
+                  {rows && rows.length > 0 && (
+                    <tr className='border border-gray-300 bg-gray-50 text-[14px] font-bold'>
+                      <td className='border border-gray-300 px-2 py-1.5' colSpan={2}>
+                        Total
+                      </td>
+                      <td className={`border border-gray-300 px-2 py-1.5 text-right ${totals.pl > 0 ? 'text-green-600' : totals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        {totals.pl.toFixed(2)}
+                      </td>
+                      <td className={`border border-gray-300 px-2 py-1.5 text-right ${totals.commission > 0 ? 'text-green-600' : totals.commission < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        {totals.commission.toFixed(2)}
+                      </td>
+                      <td className={`px-2 py-1.5 text-right ${totals.amount > 0 ? 'text-green-600' : totals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        {totals.amount.toFixed(2)}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          )}
         </div>
       </div>
     </>

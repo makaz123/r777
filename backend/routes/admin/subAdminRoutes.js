@@ -20,6 +20,7 @@ import {
   getPasswordHistoryByUserId,
   getRegisterDetailReport,
   getSubAdmin,
+  getAccountSummary,
   getSubAdminuser,
   getTotalProfitLossReport,
   getEventProfitLossReport,
@@ -50,6 +51,11 @@ const router = express.Router();
 router.post('/sub-admin/create', adminAuthMiddleware, createSubAdmin);
 router.post('/sub-admin/login', loginSubAdmin);
 router.get('/sub-admin/getuserbyid', adminAuthMiddleware, getSubAdmin);
+router.get(
+  '/sub-admin/account-summary',
+  adminAuthMiddleware,
+  getAccountSummary
+);
 
 // Settlement routes
 router.get(

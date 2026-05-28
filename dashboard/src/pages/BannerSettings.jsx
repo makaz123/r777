@@ -16,6 +16,20 @@ const BannerSettings = () => {
 
   const [pageType, setPageType] = useState('home');
 
+  const [marqueeText, setMarqueeText] = useState('');
+  const [updatingMarquee, setUpdatingMarquee] = useState(false);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await api.get('/settings');
+      if (response.data && response.data.settings) {
+        setMarqueeText(response.data.settings.marqueeText || '');
+      }
+    } catch (error) {
+      console.error('Failed to fetch site settings', error);
+    }
+  };
+
   const fetchBanners = async () => {
     try {
       // By default fetch all banners across all pages for the admin panel
@@ -30,6 +44,7 @@ const BannerSettings = () => {
 
   useEffect(() => {
     fetchBanners();
+    fetchSettings();
   }, []);
 
   if (!isSuperAdmin(userInfo?.role)) {
@@ -114,6 +129,23 @@ const BannerSettings = () => {
       toast.error('Error deleting banners.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateMarquee = async () => {
+    setUpdatingMarquee(true);
+    try {
+      const response = await api.post('/admin/settings', { marqueeText });
+      if (response.data.success) {
+        toast.success('Marquee text updated successfully!');
+      } else {
+        toast.error('Failed to update marquee text.');
+      }
+    } catch (error) {
+      console.error('Error updating marquee text:', error);
+      toast.error('Error updating marquee text.');
+    } finally {
+      setUpdatingMarquee(false);
     }
   };
 
@@ -251,6 +283,39 @@ const BannerSettings = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        <div className='mt-8 overflow-hidden rounded bg-white shadow-md'>
+          <div className='bg-gray-800 px-4 py-3 text-white'>
+            <h2 className='text-lg font-semibold'>Site Settings</h2>
+          </div>
+          <div className='p-6'>
+            <div className='mb-6'>
+              <label className='mb-2 block font-medium text-gray-700'>
+                Marquee Text (Scrolling Text)
+              </label>
+              <textarea
+                value={marqueeText}
+                onChange={(e) => setMarqueeText(e.target.value)}
+                className='block w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500'
+                rows='3'
+                placeholder='Enter scrolling marquee text here...'
+              ></textarea>
+            </div>
+            <div className='flex justify-end'>
+              <button
+                onClick={handleUpdateMarquee}
+                disabled={updatingMarquee}
+                className={`rounded px-6 py-2 font-medium text-white shadow ${
+                  updatingMarquee
+                    ? 'cursor-not-allowed bg-gray-400'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {updatingMarquee ? 'Updating...' : 'Update Settings'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

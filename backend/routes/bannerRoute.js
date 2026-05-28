@@ -4,6 +4,8 @@ import {
   uploadBanner,
   getBanner,
   deleteBanners,
+  getSiteSettings,
+  updateSiteSettings,
 } from '../controllers/bannerController.js';
 import { adminAuthMiddleware } from '../middleware/authMiddleware.js';
 
@@ -19,5 +21,7 @@ router.post(
 );
 router.delete('/admin/banner', adminAuthMiddleware, deleteBanners);
 router.get('/banner', getBanner);
+router.get('/settings', getSiteSettings);
+router.post('/admin/settings', adminAuthMiddleware, updateSiteSettings);
 
 export default router;

@@ -72,6 +72,29 @@ export const getAdmin = createAsyncThunk(
   }
 );
 
+export const fetchAccountSummary = createAsyncThunk(
+  'user/fetch-account-summary',
+  async (force = false, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/sub-admin/account-summary', {
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(getApiErrorMessage(error));
+    }
+  },
+  {
+    condition: (force, { getState }) => {
+      const { auth } = getState();
+      if (!auth.userInfo?._id) return false;
+      if (auth.accountSummaryLoading) return false;
+      if (!force && auth.userInfo?.accountSummary) return false;
+      return true;
+    },
+  }
+);
+
 export const userLogout = createAsyncThunk(
   'auth/user-logout',
 
@@ -764,6 +787,7 @@ const initialState = {
   downlineListInFlightKey: null,
   totalRecords: 0,
   userInfo: null,
+  accountSummaryLoading: false,
   loading: false,
   error: null,
   singleadmin: null,
@@ -795,6 +819,11 @@ const userSlice = createSlice({
     },
     setCurrentPage: (state, action) => {
       state.currentPage = action.payload;
+    },
+    setAccountSummary: (state, action) => {
+      if (state.userInfo) {
+        state.userInfo.accountSummary = action.payload;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -837,12 +866,30 @@ const userSlice = createSlice({
       })
       .addCase(getAdmin.fulfilled, (state, action) => {
         state.loading = false;
-        state.userInfo = action.payload.data;
-        state.isPasswordChanged = action.payload.data?.isPasswordChanged;
+        const prevSummary = state.userInfo?.accountSummary;
+        const data = action.payload.data;
+        state.userInfo = {
+          ...data,
+          accountSummary: data.accountSummary ?? prevSummary ?? null,
+        };
+        state.isPasswordChanged = data?.isPasswordChanged;
       })
       .addCase(getAdmin.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      .addCase(fetchAccountSummary.pending, (state) => {
+        state.accountSummaryLoading = true;
+      })
+      .addCase(fetchAccountSummary.fulfilled, (state, action) => {
+        state.accountSummaryLoading = false;
+        if (state.userInfo && action.payload?.accountSummary) {
+          state.userInfo.accountSummary = action.payload.accountSummary;
+        }
+      })
+      .addCase(fetchAccountSummary.rejected, (state) => {
+        state.accountSummaryLoading = false;
       })
 
       .addCase(getAllUserAndDownline.pending, (state) => {
@@ -1304,6 +1351,7 @@ export const {
   clearError,
   user_reset,
   setCurrentPage,
+  setAccountSummary,
   updateReduxUserBalance,
 } = userSlice.actions;
 

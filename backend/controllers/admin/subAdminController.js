@@ -46,7 +46,10 @@ import {
   notifyUplineChainRefresh,
   refreshUserAndDownlines,
 } from '../../utils/userRefreshNotify.js';
-import { sendUserRefresh } from '../../socket/bettingSocket.js';
+import {
+  sendAccountSummaryUpdate,
+  sendUserRefresh,
+} from '../../socket/bettingSocket.js';
 import {
   adjustUserUpdatesForCommission,
   BET_STATUS_WIN,
@@ -90,6 +93,29 @@ const generateSixDigitMasterPassword = () =>
 const verifyMasterPassword = async (user, enteredPassword) => {
   if (!user || !enteredPassword) return false;
   return bcrypt.compare(enteredPassword, user.password);
+};
+
+const ACCOUNT_SUMMARY_CACHE_MS = 30_000;
+const accountSummaryCache = new Map();
+
+const getCachedAccountSummary = (adminId) => {
+  const key = String(adminId);
+  const entry = accountSummaryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.at > ACCOUNT_SUMMARY_CACHE_MS) {
+    accountSummaryCache.delete(key);
+    return null;
+  }
+  return entry.summary;
+};
+
+const setCachedAccountSummary = (adminId, summary) => {
+  if (!summary) return;
+  accountSummaryCache.set(String(adminId), { at: Date.now(), summary });
+};
+
+const invalidateAccountSummaryCache = (adminId) => {
+  accountSummaryCache.delete(String(adminId));
 };
 
 const updateAdmin = async (id) => {
@@ -1243,8 +1269,11 @@ export const getLoginHistory = async (req, res) => {
   }
 };
 
-const loadAccountSummaryForAdmin = async (adminId) => {
-  await updateAdmin(adminId);
+const loadAccountSummaryForAdmin = async (adminId, options = {}) => {
+  const { skipUpdateAdmin = false, barOnly = false } = options;
+  if (!skipUpdateAdmin) {
+    await updateAdmin(adminId);
+  }
   const updatedAdmin = await SubAdmin.findById(adminId).lean();
   if (!updatedAdmin) return null;
 
@@ -1262,83 +1291,159 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     }
   }
 
-  const weekRange = await getWeekPLRangeForAdmin(updatedAdmin);
-  const [
-    {
-      weekViewerBettingPL,
-      weekDownlineSettlementNet,
-      weekViewerPL: rawWeekViewerPL,
-      weekDownlinePL,
-    },
-    myPLTillDate,
-    tillDownlinePL,
-    downlineClientResult,
-    tillDownlinePLHistory,
-    viewerExposure,
-  ] = await Promise.all([
-    aggregateViewerWeekPL(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      TransactionHistory,
-      updatedAdmin,
-      weekRange
-    ),
-    // Lifetime betting P/L (bet history) — not reduced by cash settlement.
-    aggregateViewerProfitLoss(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      updatedAdmin,
-      null
-    ),
-    aggregateDownlineOutstandingGross(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      TransactionHistory,
-      updatedAdmin.code
-    ),
-    aggregateDownlineClientPLSum(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      TransactionHistory,
-      updatedAdmin.code
-    ),
-    aggregateDownlineParentViewPL(
-      SubAdmin,
-      betHistoryModel,
-      CasinoBetHistory,
-      updatedAdmin.code,
-      null
-    ),
-    aggregateViewerExposure(SubAdmin, updatedAdmin),
-  ]);
   const directDownlines = await SubAdmin.find({
     invite: updatedAdmin.code,
     status: { $ne: 'delete' },
   }).lean();
 
   let tillViewerOutstandingPL = 0;
-  for (const downline of directDownlines) {
-    const { clientPL } = await getDirectSettlementPL(updatedAdmin, downline);
-    tillViewerOutstandingPL += roundMoney(-clientPL);
+
+  let weekViewerBettingPL = 0;
+  let weekDownlineSettlementNet = 0;
+  let rawWeekViewerPL = 0;
+  let weekDownlinePL = 0;
+  let myPLTillDate = 0;
+  let tillDownlinePL = 0;
+  let tillDownlinePLHistory = 0;
+  let downlineClientResult = { total: 0, hasOutstanding: false };
+  let viewerExposure = 0;
+  let weekRange = null;
+  let weekSelfCash = { withdrawl: 0, deposite: 0 };
+
+  if (barOnly) {
+    myPLTillDate = roundMoney(
+      updatedAdmin.role === 'user'
+        ? (updatedAdmin.bettingProfitLoss ?? 0)
+        : (updatedAdmin.bettingProfitLoss ??
+            updatedAdmin.uplineBettingProfitLoss ??
+            0)
+    );
+
+    const { users, expectedPLByUserId } = await getDownlineOutstandingPLMaps(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      updatedAdmin.code
+    );
+
+    let downlineClientTotal = 0;
+    let hasOutstanding = false;
+    for (const user of users) {
+      const expectedPL = expectedPLByUserId.get(user._id.toString()) ?? 0;
+      if (Math.abs(expectedPL) > 0.01) hasOutstanding = true;
+      downlineClientTotal += roundMoney(expectedPL);
+    }
+    downlineClientResult = {
+      total: roundMoney(downlineClientTotal),
+      hasOutstanding,
+    };
+
+    const agentDownlines = [];
+    for (const downline of directDownlines) {
+      if (downline.role === 'user') {
+        tillViewerOutstandingPL += roundMoney(
+          -(expectedPLByUserId.get(String(downline._id)) ?? 0)
+        );
+      } else {
+        agentDownlines.push(downline);
+      }
+    }
+
+    const agentPLPromise =
+      agentDownlines.length > 0
+        ? Promise.all(
+            agentDownlines.map((downline) =>
+              getDirectSettlementPL(updatedAdmin, downline)
+            )
+          )
+        : Promise.resolve([]);
+
+    const [agentPLResults, exposure] = await Promise.all([
+      agentPLPromise,
+      aggregateViewerExposure(SubAdmin, updatedAdmin),
+    ]);
+
+    tillViewerOutstandingPL = roundMoney(
+      tillViewerOutstandingPL +
+        agentPLResults.reduce((sum, r) => sum + roundMoney(-r.clientPL), 0)
+    );
+    viewerExposure = exposure;
+  } else {
+    const directPLResults = await Promise.all(
+      directDownlines.map((downline) =>
+        getDirectSettlementPL(updatedAdmin, downline)
+      )
+    );
+    tillViewerOutstandingPL = roundMoney(
+      directPLResults.reduce((sum, r) => sum + roundMoney(-r.clientPL), 0)
+    );
+
+    weekRange = await getWeekPLRangeForAdmin(updatedAdmin);
+    const weekAgg = await Promise.all([
+      aggregateViewerWeekPL(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        TransactionHistory,
+        updatedAdmin,
+        weekRange
+      ),
+      aggregateViewerProfitLoss(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        updatedAdmin,
+        null
+      ),
+      aggregateDownlineOutstandingGross(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        TransactionHistory,
+        updatedAdmin.code
+      ),
+      aggregateDownlineClientPLSum(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        TransactionHistory,
+        updatedAdmin.code
+      ),
+      aggregateDownlineParentViewPL(
+        SubAdmin,
+        betHistoryModel,
+        CasinoBetHistory,
+        updatedAdmin.code,
+        null
+      ),
+      aggregateViewerExposure(SubAdmin, updatedAdmin),
+    ]);
+    ({
+      weekViewerBettingPL,
+      weekDownlineSettlementNet,
+      weekViewerPL: rawWeekViewerPL,
+      weekDownlinePL,
+    } = weekAgg[0]);
+    myPLTillDate = weekAgg[1];
+    tillDownlinePL = weekAgg[2];
+    downlineClientResult = weekAgg[3];
+    tillDownlinePLHistory = weekAgg[4];
+    viewerExposure = weekAgg[5];
+
+    const weekSelfCashByUser = await getSettlementCashTotalsByUserInRange(
+      TransactionHistory,
+      [String(updatedAdmin._id)],
+      weekRange
+    );
+    weekSelfCash = weekSelfCashByUser.get(String(updatedAdmin._id)) ?? {
+      withdrawl: 0,
+      deposite: 0,
+    };
   }
-  tillViewerOutstandingPL = roundMoney(tillViewerOutstandingPL);
 
   const downlineClientPL = downlineClientResult.total;
   const hasDownlineOutstanding = downlineClientResult.hasOutstanding;
-
-  const weekSelfCashByUser = await getSettlementCashTotalsByUserInRange(
-    TransactionHistory,
-    [String(updatedAdmin._id)],
-    weekRange
-  );
-  const weekSelfCash = weekSelfCashByUser.get(String(updatedAdmin._id)) ?? {
-    withdrawl: 0,
-    deposite: 0,
-  };
 
   let accountSummary = buildAccountSummary(updatedAdmin, {
     weekViewerPL: rawWeekViewerPL,
@@ -1395,7 +1500,7 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     hasDownlineOutstanding,
     uplineOutstanding
   );
-  if (linesFullyCleared) {
+  if (!barOnly && linesFullyCleared) {
     const rawWeekTotal = roundMoney(
       weekViewerBettingPL +
         weekDownlineSettlementNet -
@@ -1404,6 +1509,8 @@ const loadAccountSummaryForAdmin = async (adminId) => {
     if (!updatedAdmin.weekPLResetAt || Math.abs(rawWeekTotal) > 0.01) {
       await setWeekPLResetNow(SubAdmin, adminId, new Date());
     }
+  } else if (barOnly && linesFullyCleared) {
+    await setWeekPLResetNow(SubAdmin, adminId, new Date());
   }
 
   // The net outstanding P/L is the cash inflow from downlines minus the cash outflow to upline.
@@ -1429,25 +1536,76 @@ const loadAccountSummaryForAdmin = async (adminId) => {
         : 'Up Line: wahi amount jo User Settlement mein aapke upline ke saath dikhegi.',
   };
 
-  return { admin: updatedAdmin, accountSummary };
+  return {
+    admin: updatedAdmin,
+    accountSummary,
+    linesFullyCleared,
+  };
 };
 
-const refreshSettlementHierarchy = async (settlerId, settledUserId) => {
-  await updateAdmin(settledUserId);
-  await updateAdmin(settlerId);
+/** Notify upline parents only (settler gets account_summary_update directly). */
+const notifyUplineParentsRefresh = async (startUserId) => {
+  const node = await SubAdmin.findById(startUserId).select('invite').lean();
+  if (!node?.invite) return;
 
-  let node = await SubAdmin.findById(settlerId).select('invite').lean();
-  while (node?.invite) {
-    const parent = await SubAdmin.findOne({ code: node.invite })
+  let parent = await SubAdmin.findOne({ code: node.invite })
+    .select('_id invite')
+    .lean();
+
+  while (parent) {
+    sendUserRefresh(parent._id);
+    if (!parent.invite) break;
+    parent = await SubAdmin.findOne({ code: parent.invite })
       .select('_id invite')
       .lean();
-    if (!parent) break;
-    await updateAdmin(parent._id);
-    node = parent;
+  }
+};
+
+/** Heavy rollup + summary — run after settle response is sent. */
+const runSettlementBackgroundRefresh = async (settlerId, settledUserId) => {
+  invalidateAccountSummaryCache(settlerId);
+  await Promise.all([updateAdmin(settledUserId), updateAdmin(settlerId)]);
+
+  const summaryPayload = await loadAccountSummaryForAdmin(settlerId, {
+    skipUpdateAdmin: true,
+    barOnly: true,
+  });
+
+  const settledAt = new Date();
+  if (summaryPayload?.linesFullyCleared) {
+    await setWeekPLResetNow(SubAdmin, settlerId, settledAt);
+  } else {
+    await SubAdmin.findByIdAndUpdate(settlerId, {
+      $unset: { weekPLResetAt: 1 },
+    });
   }
 
-  await notifyUplineChainRefresh(settledUserId);
-  await notifyUplineChainRefresh(settlerId);
+  if (summaryPayload?.accountSummary) {
+    setCachedAccountSummary(settlerId, summaryPayload.accountSummary);
+    sendAccountSummaryUpdate(settlerId, summaryPayload.accountSummary);
+  }
+
+  sendUserRefresh(settledUserId);
+  await notifyUplineParentsRefresh(settlerId);
+};
+
+const settlementRefreshTimers = new Map();
+
+/** Coalesce rapid settles (bulk) into one rollup + summary push. */
+const queueSettlementBackgroundRefresh = (settlerId, settledUserId) => {
+  const key = String(settlerId);
+  if (settlementRefreshTimers.has(key)) {
+    clearTimeout(settlementRefreshTimers.get(key));
+  }
+  settlementRefreshTimers.set(
+    key,
+    setTimeout(() => {
+      settlementRefreshTimers.delete(key);
+      runSettlementBackgroundRefresh(settlerId, settledUserId).catch((err) =>
+        console.error('Background settlement refresh error:', err)
+      );
+    }, 500)
+  );
 };
 
 export const getSubAdmin = async (req, res) => {
@@ -1463,11 +1621,6 @@ export const getSubAdmin = async (req, res) => {
       return res.status(404).json({ message: 'Sub-admin not found' });
     }
 
-    // Run background account summary if needed, but don't block response
-    loadAccountSummaryForAdmin(id).catch((err) =>
-      console.error('Background summary error:', err)
-    );
-
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
       data: { ...admin, accountSummary: null },
@@ -1477,6 +1630,51 @@ export const getSubAdmin = async (req, res) => {
     res
       .status(500)
       .json({ error: 'Internal server error', details: error.message });
+  }
+};
+
+/** Account summary only — used by dashboard header on every page. */
+export const getAccountSummary = async (req, res) => {
+  try {
+    const { id } = req;
+    if (!id) {
+      return res.status(400).json({ message: 'Admin ID is required' });
+    }
+
+    const cached = getCachedAccountSummary(id);
+    if (cached) {
+      sendAccountSummaryUpdate(id, cached);
+      return res.status(200).json({
+        success: true,
+        accountSummary: cached,
+        cached: true,
+      });
+    }
+
+    const payload = await loadAccountSummaryForAdmin(id, {
+      skipUpdateAdmin: true,
+      barOnly: true,
+    });
+    if (!payload) {
+      return res.status(404).json({ message: 'Sub-admin not found' });
+    }
+
+    if (payload.accountSummary) {
+      setCachedAccountSummary(id, payload.accountSummary);
+      sendAccountSummaryUpdate(id, payload.accountSummary);
+    }
+
+    return res.status(200).json({
+      success: true,
+      accountSummary: payload.accountSummary,
+    });
+  } catch (error) {
+    console.error('Error fetching account summary:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
   }
 };
 
@@ -4565,30 +4763,11 @@ export const settleUser = async (req, res) => {
       });
     }
 
-    // Run heavy calculations in the background for 30k+ user performance
-    refreshSettlementHierarchy(id, userId).catch(console.error);
-
-    (async () => {
-      try {
-        let summaryPayload = await loadAccountSummaryForAdmin(id);
-        const settledAt = new Date();
-
-        if (summaryPayload?.linesFullyCleared) {
-          await setWeekPLResetNow(SubAdmin, id, settledAt);
-        } else {
-          await SubAdmin.findByIdAndUpdate(id, {
-            $unset: { weekPLResetAt: 1 },
-          });
-        }
-      } catch (err) {
-        console.error('Background settlement summary error:', err);
-      }
-    })();
+    queueSettlementBackgroundRefresh(id, userId);
 
     return res.status(200).json({
       success: true,
       message: 'Settlement completed successfully',
-      accountSummary: null,
     });
   } catch (error) {
     console.error('Error in settleUser:', error);

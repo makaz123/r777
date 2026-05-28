@@ -107,7 +107,7 @@ const MasterBookModal = ({
                 </tr>
               </thead>
               <tbody>
-                {loading && (
+                {loading && rows.length === 0 && (
                   <tr>
                     <td colSpan={colSpan} className='p-4 text-center'>
                       Loading...
@@ -115,7 +115,7 @@ const MasterBookModal = ({
                   </tr>
                 )}
 
-                {!loading && rows.length > 0
+                {rows.length > 0
                   ? rows.map((item, index) => {
                       const canDrillDown = hasMasterBookDownline(item);
 

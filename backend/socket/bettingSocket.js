@@ -502,6 +502,23 @@ export const sendBetSettlementNotification = (targetUserId, payload) => {
   }
 };
 
+/** Push refreshed account summary without forcing a slow full profile refetch. */
+export const sendAccountSummaryUpdate = (userId, accountSummary) => {
+  if (!accountSummary) return;
+  const targetId = String(userId);
+  clients.forEach((client) => {
+    if (String(client.userId) === targetId && client.ws.readyState === 1) {
+      client.ws.send(
+        JSON.stringify({
+          type: 'account_summary_update',
+          userId: targetId,
+          accountSummary,
+        })
+      );
+    }
+  });
+};
+
 // Function to send user refresh message (triggers getUser() on frontend)
 export const sendUserRefresh = (userId) => {
   console.log(' [WEBSOCKET] Sending user refresh request for userId:', userId);

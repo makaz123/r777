@@ -83,7 +83,7 @@ export default function Tennisbet() {
   } = useSelector((state) => state.market);
   const { userInfo } = useSelector((state) => state.auth);
 
-  const [isComboBookOpen, setIsComboBookOpen] = useState(true);
+  const [isComboBookOpen, setIsComboBookOpen] = useState(false);
 
   const filteredBetsData = Array.isArray(betsData)
     ? betsData.filter((item) => {
@@ -533,7 +533,7 @@ export default function Tennisbet() {
     <div className='relative'>
       <Navbar />
 
-      {loading ? (
+      {loading && (!battingData || battingData.length === 0) ? (
         <div className='py-4 text-center'>
           <Spinner2 />
         </div>

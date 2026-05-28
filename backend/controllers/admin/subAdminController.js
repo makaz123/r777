@@ -2811,8 +2811,9 @@ export const withdrowalAndDeposite = async (req, res) => {
       });
     }
 
-    await updateAdmin(id);
-    await updateAllUplines(userId);
+    // ✅ Run heavy aggregations in background for performance with 30k+ users
+    updateAdmin(id).catch(err => console.error('Background updateAdmin error:', err));
+    updateAllUplines(userId).catch(err => console.error('Background updateAllUplines error:', err));
 
     // ✅ Fetch updated user list
     const filter =

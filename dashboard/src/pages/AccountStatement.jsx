@@ -39,7 +39,8 @@ const AccountStatement = () => {
   });
   const [endDate, setEndDate] = useState(() => {
     const d = new Date();
-    d.setHours(23, 59, 59, 999);
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
     return getFormattedDateTime(d);
   });
   const [rows, setRows] = useState([]);
@@ -102,7 +103,8 @@ const AccountStatement = () => {
     setSearchQuery('');
     setSelectedUserName('');
     const dEnd = new Date();
-    dEnd.setHours(23, 59, 59, 999);
+    dEnd.setDate(dEnd.getDate() + 1);
+    dEnd.setHours(0, 0, 0, 0);
     setEndDate(getFormattedDateTime(dEnd));
     const dStart = new Date();
     dStart.setDate(dStart.getDate() - 1);

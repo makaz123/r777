@@ -1764,13 +1764,22 @@ const buildDownlineViewerPayload = async (admin) => {
     Math.max(0, 100 - viewerMySharePercent)
   );
 
-  const rawGross = await aggregateDownlineOutstandingGross(
-    SubAdmin,
-    betHistoryModel,
-    CasinoBetHistory,
-    TransactionHistory,
-    admin.code
-  );
+  const [rawGross, myPLTillDate] = await Promise.all([
+    aggregateDownlineOutstandingGross(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      admin.code
+    ),
+    aggregateViewerProfitLoss(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      admin,
+      null
+    )
+  ]);
 
   const totalPL = roundMoney(-rawGross);
   const { myPL, uplinePL } = splitProfitLossByMyShare(
@@ -1790,22 +1799,74 @@ const buildDownlineViewerPayload = async (admin) => {
     totalPL,
     myPL,
     uplinePL,
+    myPLTillDate,
   };
+};
+
+const PENDING_EXPOSURE_FIELDS =
+  'userId gameId roundId marketName teamName gameType otype betAmount price fancyScore isCashedOut cashoutValue betType';
+
+const getPendingExposureByUserMap = async (users) => {
+  const userIds = users
+    .filter((user) => user?.role === 'user' && user?._id)
+    .map((user) => String(user._id));
+
+  if (!userIds.length) {
+    return new Map();
+  }
+
+  const pendingBets = await betModel
+    .find({
+      userId: { $in: userIds },
+      status: 0,
+    })
+    .select(PENDING_EXPOSURE_FIELDS)
+    .lean();
+
+  const betsByUserId = new Map();
+  for (const bet of pendingBets) {
+    const betUserId = String(bet.userId);
+    const rows = betsByUserId.get(betUserId);
+    if (rows) {
+      rows.push(bet);
+    } else {
+      betsByUserId.set(betUserId, [bet]);
+    }
+  }
+
+  const exposureByUserId = new Map();
+  for (const userId of userIds) {
+    const bets = betsByUserId.get(userId) || [];
+    exposureByUserId.set(userId, calculateAllExposure(bets));
+  }
+
+  return exposureByUserId;
 };
 
 /**
  * @param rootViewer - logged-in admin (whose "My %" column is shown)
  * @param listParent - immediate parent whose downline is listed (same as rootViewer on top-level list)
  */
-const enrichDownlineRow = async (user, rootViewer, listParent = rootViewer) => {
+const enrichDownlineRow = async (
+  user,
+  rootViewer,
+  listParent = rootViewer,
+  options = {}
+) => {
+  const { pendingExposureByUserId } = options;
   let exposure = user.exposure || 0;
   if (user.role === 'user') {
     try {
-      const pendingBets = await betModel.find({
-        userId: user._id,
-        status: 0,
-      });
-      exposure = calculateAllExposure(pendingBets);
+      const userId = String(user._id);
+      if (pendingExposureByUserId?.has(userId)) {
+        exposure = pendingExposureByUserId.get(userId) || 0;
+      } else {
+        const pendingBets = await betModel.find({
+          userId: userId,
+          status: 0,
+        });
+        exposure = calculateAllExposure(pendingBets);
+      }
     } catch (err) {
       console.error(
         `[DOWNLINE LIST] exposure for ${user.userName}:`,
@@ -1987,8 +2048,11 @@ export const getDownlineList = async (req, res) => {
       buildDownlineViewerPayload(admin),
     ]);
 
+    const pendingExposureByUserId = await getPendingExposureByUserMap(allUsers);
     const data = await Promise.all(
-      allUsers.map((user) => enrichDownlineRow(user, admin, admin))
+      allUsers.map((user) =>
+        enrichDownlineRow(user, admin, admin, { pendingExposureByUserId })
+      )
     );
 
     return res.status(200).json({
@@ -2078,8 +2142,13 @@ export const getSubAdminuser = async (req, res) => {
       .limit(limitNum)
       .skip((pageNum - 1) * limitNum);
 
+    const pendingExposureByUserId = await getPendingExposureByUserMap(subAdmins);
     const data = await Promise.all(
-      subAdmins.map((user) => enrichDownlineRow(user, rootViewer, listParent))
+      subAdmins.map((user) =>
+        enrichDownlineRow(user, rootViewer, listParent, {
+          pendingExposureByUserId,
+        })
+      )
     );
     const totalUsers = await SubAdmin.countDocuments(filter);
 
@@ -4248,25 +4317,32 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     ]);
   accountByCode.set(downline.code, downline);
 
-  let grossClientPL = 0;
+  // Use settlement-adjusted (outstanding) P/L for the clientPL calculation.
+  // historyPLByUserId = raw lifetime bet P/L (never changes with settlement)
+  // expectedPLByUserId = bet P/L minus settlement cash (goes to 0 when settled)
+  let outstandingClientPL = 0;
+  let grossHistoryClientPL = 0;
   for (const user of endUsers) {
-    grossClientPL += roundMoney(
-      historyPLByUserId.get(user._id.toString()) ?? 0
-    );
+    const id = user._id.toString();
+    outstandingClientPL += roundMoney(expectedPLByUserId.get(id) ?? 0);
+    grossHistoryClientPL += roundMoney(historyPLByUserId.get(id) ?? 0);
   }
-  grossClientPL = roundMoney(grossClientPL);
+  outstandingClientPL = roundMoney(outstandingClientPL);
+  grossHistoryClientPL = roundMoney(grossHistoryClientPL);
 
-  const passedUpHistory = roundMoney(
-    (grossClientPL * parentSharePercent) / 100
+  // The amount passed up is based on outstanding (settlement-adjusted) client P/L
+  const passedUpOutstanding = roundMoney(
+    (outstandingClientPL * parentSharePercent) / 100
   );
+  // Apply admin's own settlement cash to get final outstanding
   const clientPL = expectedBettingPLFromHistory(
-    passedUpHistory,
+    passedUpOutstanding,
     adminSettlementCash
   );
 
   return {
     clientPL,
-    grossClientPL,
+    grossClientPL: roundMoney(grossHistoryClientPL),
     sharePercent: parentSharePercent,
   };
 };

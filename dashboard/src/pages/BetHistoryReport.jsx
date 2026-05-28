@@ -9,10 +9,37 @@ import excelIcon from '../assets/icons/csv-icon.svg';
 
 const BetHistoryReport = () => {
   const [gameType, setGameType] = useState('all');
+  const [initialLoad, setInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserName, setSelectedUserName] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const getFormattedDateTime = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+    let hours = '' + d.getHours();
+    let minutes = '' + d.getMinutes();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+    if (hours.length < 2) hours = '0' + hours;
+    if (minutes.length < 2) minutes = '0' + minutes;
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
   
@@ -80,8 +107,14 @@ const BetHistoryReport = () => {
     setGameType('all');
     setSearchQuery('');
     setSelectedUserName('');
-    setStartDate('');
-    setEndDate('');
+    const dEnd = new Date();
+    dEnd.setDate(dEnd.getDate() + 1);
+    dEnd.setHours(0, 0, 0, 0);
+    setEndDate(getFormattedDateTime(dEnd));
+    const dStart = new Date();
+    dStart.setDate(dStart.getDate() - 1);
+    dStart.setHours(0, 0, 0, 0);
+    setStartDate(getFormattedDateTime(dStart));
     setUserSuggestions([]);
     setShowSuggestions(false);
     setLocalSport('');
@@ -108,6 +141,12 @@ const BetHistoryReport = () => {
         query.append('userName', selectedUserName);
       }
 
+      if (localSport) query.append('selectedSport', localSport);
+      if (localEvent) query.append('selectedEvent', localEvent);
+      if (localMarketType) query.append('selectedMarketType', localMarketType);
+      if (localMarket) query.append('selectedMarket', localMarket);
+      if (localStatus) query.append('selectedStatus', localStatus);
+
       const res = await api.get(
         `/get/all-bet-list?${query.toString()}`,
         {
@@ -127,6 +166,10 @@ const BetHistoryReport = () => {
   };
 
   useEffect(() => {
+    if (initialLoad) {
+      setInitialLoad(false);
+      return;
+    }
     loadReport();
   }, [page, limit]);
 
@@ -134,16 +177,20 @@ const BetHistoryReport = () => {
     let result = [...rows];
     
     if (localSport) {
-      result = result.filter(r => r.gameName === localSport);
+      const sportLower = localSport.toLowerCase();
+      result = result.filter(r => String(r.gameName).toLowerCase().includes(sportLower));
     }
     if (localEvent) {
-      result = result.filter(r => r.eventName === localEvent);
+      const eventLower = localEvent.toLowerCase();
+      result = result.filter(r => String(r.eventName).toLowerCase() === eventLower);
     }
     if (localMarketType) {
-      result = result.filter(r => r.gameType === localMarketType);
+      const mtLower = localMarketType.toLowerCase();
+      result = result.filter(r => String(r.gameType).toLowerCase() === mtLower);
     }
     if (localMarket) {
-      result = result.filter(r => r.marketName === localMarket);
+      const mLower = localMarket.toLowerCase();
+      result = result.filter(r => String(r.marketName).toLowerCase() === mLower);
     }
     if (localStatus) {
       result = result.filter(r => {
@@ -159,10 +206,33 @@ const BetHistoryReport = () => {
   }, [rows, localSport, localEvent, localMarketType, localMarket, localStatus]);
 
   // Derive Dropdown Options
-  const sportsOptions = [...new Set(rows.map(r => r.gameName).filter(Boolean))];
-  const eventsOptions = [...new Set(rows.filter(r => !localSport || r.gameName === localSport).map(r => r.eventName).filter(Boolean))];
-  const marketTypeOptions = [...new Set(rows.filter(r => (!localSport || r.gameName === localSport) && (!localEvent || r.eventName === localEvent)).map(r => r.gameType).filter(Boolean))];
-  const marketOptions = [...new Set(rows.filter(r => (!localSport || r.gameName === localSport) && (!localEvent || r.eventName === localEvent) && (!localMarketType || r.gameType === localMarketType)).map(r => r.marketName).filter(Boolean))];
+  const sportsOptions = [
+    'Cricket',
+    'Soccer',
+    'Tennis',
+    'Kabaddi',
+    'Election',
+    'Horse Racing',
+    'Greyhound Racing'
+  ];
+
+  const casinoOptions = [
+    'Indian Poker/ Live Casino',
+    'Indian Poker II',
+    'Evolution',
+    'Vivo',
+    'Betgames',
+    'Casino III',
+    'Spribe',
+    'Mac88',
+    'Chicken Road',
+    'Rvgames',
+    'Ezugi'
+  ];
+  
+  const eventsOptions = [...new Set(rows.filter(r => !localSport || String(r.gameName).toLowerCase().includes(localSport.toLowerCase())).map(r => r.eventName).filter(Boolean))];
+  const marketTypeOptions = [...new Set(rows.filter(r => (!localSport || String(r.gameName).toLowerCase().includes(localSport.toLowerCase())) && (!localEvent || String(r.eventName).toLowerCase() === localEvent.toLowerCase())).map(r => r.gameType).filter(Boolean))];
+  const marketOptions = [...new Set(rows.filter(r => (!localSport || String(r.gameName).toLowerCase().includes(localSport.toLowerCase())) && (!localEvent || String(r.eventName).toLowerCase() === localEvent.toLowerCase()) && (!localMarketType || String(r.gameType).toLowerCase() === localMarketType.toLowerCase())).map(r => r.marketName).filter(Boolean))];
 
   const renderClientSearch = () =>
     hasClientSearchAccess ? (
@@ -212,14 +282,14 @@ const BetHistoryReport = () => {
 
           <div className='mt-2 mb-5 grid grid-cols-6 gap-6'>
             <input
-              type='date'
+              type='datetime-local'
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
             />
 
             <input
-              type='date'
+              type='datetime-local'
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
@@ -244,13 +314,23 @@ const BetHistoryReport = () => {
                 setLocalMarket('');
               }}
             >
-              <option value=''>Select Sport</option>
-              {sportsOptions.map(sport => <option key={sport} value={sport}>{sport}</option>)}
+              {gameType === 'casino' ? (
+                <>
+                  <option value=''>Select Casino</option>
+                  {casinoOptions.map(casino => <option key={casino} value={casino}>{casino}</option>)}
+                </>
+              ) : (
+                <>
+                  <option value=''>Select Sport</option>
+                  {sportsOptions.map(sport => <option key={sport} value={sport}>{sport}</option>)}
+                </>
+              )}
             </select>
 
             <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:bg-gray-200 disabled:cursor-not-allowed'
               value={localEvent}
+              disabled={gameType === 'casino'}
               onChange={(e) => {
                 setLocalEvent(e.target.value);
                 setLocalMarketType('');
@@ -262,8 +342,9 @@ const BetHistoryReport = () => {
             </select>
 
             <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:bg-gray-200 disabled:cursor-not-allowed'
               value={localMarketType}
+              disabled={gameType === 'casino'}
               onChange={(e) => {
                 setLocalMarketType(e.target.value);
                 setLocalMarket('');
@@ -274,8 +355,9 @@ const BetHistoryReport = () => {
             </select>
 
             <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:bg-gray-200 disabled:cursor-not-allowed'
               value={localMarket}
+              disabled={gameType === 'casino'}
               onChange={(e) => setLocalMarket(e.target.value)}
             >
               <option value=''>Select Market</option>
@@ -292,14 +374,15 @@ const BetHistoryReport = () => {
               <option value=''>Select Status</option>
               <option value='1'>WON</option>
               <option value='2'>LOST</option>
-              <option value='3'>VOID</option>
-              <option value='0'>UNSETTLED</option>
             </select>
 
             <div className='col-span-1 flex gap-1 outline-0'>
               <button
                 type='button'
-                onClick={loadReport}
+                onClick={() => {
+                  setPage(1);
+                  loadReport();
+                }}
                 className='cursor-pointer rounded-l border border-[#247c8f] bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-white'
               >
                 Go
@@ -412,7 +495,7 @@ const BetHistoryReport = () => {
                       {Number(row.profitLossChange || 0).toFixed(2)}
                     </td>
                     <td className='border border-gray-300 px-2 py-1.5 text-center uppercase text-[12px] font-bold'>
-                      {row.status === 1 ? 'WON' : row.status === 2 ? 'LOST' : row.status === 3 ? 'VOID' : 'UNSETTLED'}
+                      {row.status === 1 ? 'WON' : row.status === 2 ? 'LOST' : row.status === 3 ? 'VOID' : 'DECLARED'}
                     </td>
                     <td className='px-2 py-1.5 text-[13px] text-gray-500'>
                        -

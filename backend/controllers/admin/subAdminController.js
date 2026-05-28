@@ -3352,6 +3352,12 @@ export const getAllDownlineBets = async (req, res) => {
       selectedGame,
       selectedVoid,
       selectedType,
+      selectedSport,
+      selectedEvent,
+      selectedMarketType,
+      selectedMarket,
+      selectedStatus,
+      userName
     } = req.query;
 
     const admin = await SubAdmin.findById(id);
@@ -3361,25 +3367,42 @@ export const getAllDownlineBets = async (req, res) => {
         .json({ success: false, message: 'Admin not found' });
     }
 
-    let queue = [admin.code];
-    let userIds = [];
-
-    while (queue.length > 0) {
-      const currentCode = queue.shift();
-
-      const downlineUsers = await SubAdmin.find({
-        invite: currentCode,
-        status: { $ne: 'delete' },
-      });
-
-      for (const user of downlineUsers) {
-        if (user.role === 'user') {
-          userIds.push(user._id); // Collect user ID for bet query
-        } else {
-          // Add agent/admin code to queue to go deeper
-          queue.push(user.code);
+    const hierarchy = await SubAdmin.aggregate([
+      { $match: { _id: admin._id } },
+      {
+        $graphLookup: {
+          from: 'subadmins',
+          startWith: '$code',
+          connectFromField: 'code',
+          connectToField: 'invite',
+          as: 'downlines',
+          restrictSearchWithMatch: { status: { $ne: 'delete' } }
+        },
+      },
+      {
+        $project: {
+          userIds: {
+            $map: {
+              input: {
+                $filter: {
+                  input: '$downlines',
+                  as: 'd',
+                  cond: { $eq: ['$$d.role', 'user'] }
+                }
+              },
+              as: 'u',
+              in: { $toString: '$$u._id' }
+            }
+          }
         }
       }
+    ]);
+
+    let userIds = hierarchy[0]?.userIds || [];
+    
+    // Add admin itself if role is user (edge case)
+    if (admin.role === 'user') {
+      userIds.push(admin._id.toString());
     }
 
     const filter = { userId: { $in: userIds } };
@@ -3394,9 +3417,24 @@ export const getAllDownlineBets = async (req, res) => {
     if (selectedGame) {
       filter.gameName = selectedGame;
     }
+    if (selectedSport) {
+      filter.gameName = { $regex: new RegExp(selectedSport, 'i') };
+    }
+    if (selectedEvent) {
+      filter.eventName = selectedEvent;
+    }
+    if (selectedMarketType) {
+      filter.gameType = selectedMarketType;
+    }
+    if (selectedMarket) {
+      filter.marketName = selectedMarket;
+    }
     if (selectedType) {
       filter.otype = selectedType;
     }
+    // Exclude DECLARED (status 0) by default unless explicitly requested via filters.
+    filter.status = { $ne: 0 };
+
     // Filter by selectedVoid if provided
     if (selectedVoid === 'settel') {
       filter.status = { $ne: 0 };
@@ -3406,8 +3444,16 @@ export const getAllDownlineBets = async (req, res) => {
       filter.status = 0;
     }
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    if (selectedStatus) {
+      filter.status = Number(selectedStatus);
+    }
+
+    if (userName) {
+      filter.userName = { $regex: new RegExp(userName, 'i') };
+    }
+
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 25;
 
     // Fetch bets for all collected users
     const betData = await betHistoryModel

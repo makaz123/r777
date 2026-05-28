@@ -1013,32 +1013,10 @@ export const getAllCasinoProfitLoss = async (req, res) => {
       });
     }
 
-    // 3️⃣ For each direct downline, get ALL their descendants and aggregate casino P/L
-    const userPLReport = [];
+    // 3️⃣ Use a SINGLE graphLookup to get all descendants for all direct downlines
+    let userPLReport = [];
 
-    for (const downline of downlineResult) {
-      // Get all descendants of this downline (recursive)
-      const descendantsAggregation = await SubAdmin.aggregate([
-        { $match: { _id: downline._id } },
-        {
-          $graphLookup: {
-            from: 'subadmins',
-            startWith: '$code',
-            connectFromField: 'code',
-            connectToField: 'invite',
-            as: 'descendants',
-          },
-        },
-      ]);
-
-      // Extract all descendant IDs including the downline itself
-      const descendantIds =
-        descendantsAggregation[0]?.descendants.map((u) => u._id.toString()) ||
-        [];
-      if (!descendantIds.includes(downline._id.toString())) {
-        descendantIds.push(downline._id.toString());
-      }
-
+    if (targetUser.role === 'user') {
       // Build date filter
       const dateFilter = {};
       if (startDate && endDate) {
@@ -1047,12 +1025,10 @@ export const getAllCasinoProfitLoss = async (req, res) => {
           $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
         };
       }
-
-      // Aggregate casino P/L for this downline + all their descendants
       const casinoPLData = await CasinoBetHistory.aggregate([
         {
           $match: {
-            userId: { $in: descendantIds },
+            userId: targetUser._id.toString(),
             ...dateFilter,
           },
         },
@@ -1064,19 +1040,110 @@ export const getAllCasinoProfitLoss = async (req, res) => {
           },
         },
       ]);
-
       const plData = casinoPLData[0] || { totalStake: 0, totalChange: 0 };
-      const casinoPL = -(plData.totalChange || 0); // Flipped to Admin P&L
+      const casinoPL = -(plData.totalChange || 0);
 
       userPLReport.push({
-        userId: downline._id.toString(),
-        userName: downline.userName || '',
-        role: downline.role || '',
+        userId: targetUser._id.toString(),
+        userName: targetUser.userName || '',
+        role: targetUser.role || '',
         stake: plData.totalStake || 0,
         casinoPL: casinoPL,
         internationalCasinoPL: 0,
         uplinePL: -casinoPL || 0,
       });
+    } else {
+      const branches = await SubAdmin.aggregate([
+        { $match: { invite: targetUser.code, status: { $ne: 'delete' } } },
+        {
+          $graphLookup: {
+            from: 'subadmins',
+            startWith: '$code',
+            connectFromField: 'code',
+            connectToField: 'invite',
+            as: 'descendants',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            userName: 1,
+            role: 1,
+            userIds: {
+              $concatArrays: [
+                [{ $toString: '$_id' }],
+                {
+                  $map: {
+                    input: '$descendants',
+                    as: 'd',
+                    in: { $toString: '$$d._id' },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ]);
+
+      const allUserIdsMap = {};
+      const allIds = [];
+
+      for (const branch of branches) {
+        branch.totalStake = 0;
+        branch.totalChange = 0;
+        for (const uid of branch.userIds) {
+          allUserIdsMap[uid] = branch;
+          allIds.push(uid);
+        }
+      }
+
+      // Build date filter
+      const dateFilter = {};
+      if (startDate && endDate) {
+        dateFilter.createdAt = {
+          $gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
+          $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+        };
+      }
+
+      // 4️⃣ Aggregate ALL bets in one query
+      const betStats = await CasinoBetHistory.aggregate([
+        {
+          $match: {
+            userId: { $in: allIds },
+            ...dateFilter,
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            stake: { $sum: '$bet_amount' },
+            change: { $sum: '$change' },
+          },
+        },
+      ]);
+
+      // Aggregate stats back to their respective branches
+      for (const stat of betStats) {
+        const branch = allUserIdsMap[stat._id];
+        if (branch) {
+          branch.totalStake += stat.stake;
+          branch.totalChange += stat.change;
+        }
+      }
+
+      for (const branch of branches) {
+        const casinoPL = -(branch.totalChange || 0); // Flipped to Admin P&L
+        userPLReport.push({
+          userId: branch._id.toString(),
+          userName: branch.userName || '',
+          role: branch.role || '',
+          stake: branch.totalStake || 0,
+          casinoPL: casinoPL,
+          internationalCasinoPL: 0,
+          uplinePL: -casinoPL || 0,
+        });
+      }
     }
 
     // 4️⃣ Calculate totals
@@ -1144,43 +1211,28 @@ export const getCasinoProfitLossByDate = async (req, res) => {
       });
     }
 
-    // 2️⃣ Get ALL downlines (direct + recursive) for the target user
+    // 2️⃣ Get ALL downlines (direct + recursive) for the target user using a single $graphLookup
     let allDownlineIds = [];
 
     if (targetUser.role === 'user') {
-      // If user is a regular user, include only themselves
       allDownlineIds = [targetUser._id.toString()];
     } else {
-      // Get direct downlines
-      let downlineResult = await SubAdmin.find({
-        invite: targetUser.code,
-        status: { $ne: 'delete' },
-      });
-
-      // For each direct downline, get ALL their descendants (recursive)
-      for (const downline of downlineResult) {
-        const descendantsAggregation = await SubAdmin.aggregate([
-          { $match: { _id: downline._id } },
-          {
-            $graphLookup: {
-              from: 'subadmins',
-              startWith: '$code',
-              connectFromField: 'code',
-              connectToField: 'invite',
-              as: 'descendants',
-            },
+      const hierarchy = await SubAdmin.aggregate([
+        { $match: { _id: targetUser._id } },
+        {
+          $graphLookup: {
+            from: 'subadmins',
+            startWith: '$code',
+            connectFromField: 'code',
+            connectToField: 'invite',
+            as: 'descendants',
           },
-        ]);
+        },
+      ]);
 
-        // Extract all descendant IDs including the downline itself
-        const descendantIds =
-          descendantsAggregation[0]?.descendants.map((u) => u._id.toString()) ||
-          [];
-        if (!descendantIds.includes(downline._id.toString())) {
-          descendantIds.push(downline._id.toString());
-        }
-
-        allDownlineIds = [...allDownlineIds, ...descendantIds];
+      allDownlineIds = hierarchy[0]?.descendants.map((u) => u._id.toString()) || [];
+      if (!allDownlineIds.includes(targetUser._id.toString())) {
+        allDownlineIds.push(targetUser._id.toString());
       }
     }
 

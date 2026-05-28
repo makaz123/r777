@@ -1929,8 +1929,11 @@ export const getDownlineList = async (req, res) => {
       listType = 'clients',
     } = req.query;
 
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const requestedLimit = Math.max(parseInt(limit, 10) || 25, 1);
+    // Protect API/DB from very large payload requests.
+    const MAX_LIMIT = 200;
+    const limitNum = Math.min(requestedLimit, MAX_LIMIT);
     const typeRaw = String(listType).toLowerCase();
     const type =
       typeRaw === 'agents'
@@ -1941,7 +1944,7 @@ export const getDownlineList = async (req, res) => {
             ? 'admin'
             : 'clients';
 
-    const admin = await SubAdmin.findById(id);
+    const admin = await SubAdmin.findById(id).lean();
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found' });
     }
@@ -1963,31 +1966,40 @@ export const getDownlineList = async (req, res) => {
     }
 
     if (searchQuery) {
+      const escapedSearch = String(searchQuery).replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+      );
       filter = {
         ...filter,
-        userName: { $regex: searchQuery, $options: 'i' },
+        userName: { $regex: escapedSearch, $options: 'i' },
       };
     }
 
-    const allUsers = await SubAdmin.find(filter)
-      .limit(limitNum)
-      .skip((pageNum - 1) * limitNum);
+    const [allUsers, totalUsers, viewer] = await Promise.all([
+      SubAdmin.find(filter)
+        .lean()
+        .sort({ _id: -1 })
+        .limit(limitNum)
+        .skip((pageNum - 1) * limitNum),
+      SubAdmin.countDocuments(filter),
+      buildDownlineViewerPayload(admin),
+    ]);
 
     const data = await Promise.all(
       allUsers.map((user) => enrichDownlineRow(user, admin, admin))
     );
 
-    const totalUsers = await SubAdmin.countDocuments(filter);
-
     return res.status(200).json({
       success: true,
       message: 'Downline list retrieved successfully',
       listType: type,
-      viewer: await buildDownlineViewerPayload(admin),
+      viewer,
       data,
       totalUsers,
       totalPages: Math.ceil(totalUsers / limitNum) || 1,
       currentPage: pageNum,
+      pageSize: limitNum,
     });
   } catch (error) {
     console.error('Error in getDownlineList:', error);

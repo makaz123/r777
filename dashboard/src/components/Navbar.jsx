@@ -234,7 +234,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
       >
         {/* Desktop Header */}
         <header className='flex h-[40px] md:h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
-          <div className='flex items-center'>
+          <div className='flex items-center h-[40px] md:h-[52px]'>
             <button
               type='button'
               onClick={() => setSportsSidebarOpen((prev) => !prev)}

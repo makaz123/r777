@@ -157,11 +157,11 @@ const LiveBetsReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Live Bets</div>
 
-          <div className='mt-2 mb-5 grid grid-cols-6 gap-x-6 gap-y-4'>
+          <div className='mt-2 mb-5 grid md:grid-cols-6 md:gap-x-6 gap-y-4'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
@@ -211,7 +211,7 @@ const LiveBetsReport = () => {
               </div>
             </div>
           </div>
-
+          <div className='overflow-x-scroll scrollbar-hide w-full'>
           <table className='w-full table-auto border-collapse border border-gray-300'>
             <thead>
               <tr className='bg-[#016a82] text-white'>
@@ -307,6 +307,7 @@ const LiveBetsReport = () => {
               </tr>
             </tbody>
           </table>
+          </div>
 
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>

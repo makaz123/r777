@@ -417,29 +417,32 @@ export default function Userlist() {
     }
   }, [dispatch, currentPage, totalPages]);
 
-  const reloadUserList = useCallback((options = {}) => {
-    const { silent = false } = options;
-    if (isFetchingAllUsers === false && activeListCode) {
-      dispatch(fetchSubAdminByLevel({ code: activeListCode, silent }));
-    } else {
-      dispatch(
-        getDownlineList({
-          page: currentPage,
-          limit: entries,
-          searchQuery,
-          listType: 'all',
-          silent,
-        })
-      );
-    }
-  }, [
-    dispatch,
-    isFetchingAllUsers,
-    activeListCode,
-    currentPage,
-    entries,
-    searchQuery,
-  ]);
+  const reloadUserList = useCallback(
+    (options = {}) => {
+      const { silent = false } = options;
+      if (isFetchingAllUsers === false && activeListCode) {
+        dispatch(fetchSubAdminByLevel({ code: activeListCode, silent }));
+      } else {
+        dispatch(
+          getDownlineList({
+            page: currentPage,
+            limit: entries,
+            searchQuery,
+            listType: 'all',
+            silent,
+          })
+        );
+      }
+    },
+    [
+      dispatch,
+      isFetchingAllUsers,
+      activeListCode,
+      currentPage,
+      entries,
+      searchQuery,
+    ]
+  );
 
   const isAnyBlockingModalOpen =
     patnerPopup ||
@@ -916,8 +919,8 @@ export default function Userlist() {
     <>
       <Navbar />
 
-      <div className='h-fit md:px-[15px] md:py-[13px]'>
-        <div className='rounded-md bg-white px-4 py-1'>
+      <div className='h-fit md:px-[15px] md:pt-[13px] pb-10'>
+        <div className='rounded-md bg-white px-2 md:px-4 py-1'>
           <div className='mt-2 mb-2 items-end justify-between md:flex'>
             <div className='grid'>
               <div className='text-[15px] leading-none font-bold'>
@@ -1007,15 +1010,11 @@ export default function Userlist() {
                       className={`flex items-center gap-2${!isClient ? ' cursor-pointer' : ''}`}
                       onClick={() => handleLoadNextLevel(row, row.code)}
                     >
-                      <span className='inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#016a82] text-[10px] font-bold text-white'>
+                      <span className='flex h-[14px] w-[14px] items-center justify-center bg-[#094d54] text-[12px] font-bold text-white'>
                         {isClient ? 'C' : 'A'}
                       </span>
                       <span
-                        className={`font-medium text-black ${
-                          !isClient
-                            ? 'underline decoration-[#016a82] underline-offset-2'
-                            : ''
-                        }`}
+                        className={`text-black ${!isClient ? 'underline' : ''}`}
                       >
                         {row.userName}
                       </span>
@@ -1086,7 +1085,7 @@ export default function Userlist() {
                     checked={getLockFieldValue(row, 'uLock')}
                     readOnly
                     onClick={() => openLockPopup(row, 'uLock')}
-                    className='h-5 w-5 cursor-pointer accent-[#146578]'
+                    className="relative h-[22px] w-[22px] cursor-pointer appearance-none border border-black bg-gray-200/50 checked:border-black checked:bg-black checked:after:absolute checked:after:top-1/2 checked:after:left-1/2 checked:after:-translate-x-1/2 checked:after:-translate-y-1/2 checked:after:text-[14px] checked:after:text-white checked:after:content-['✓']"
                   />
                 ),
               },
@@ -1098,7 +1097,7 @@ export default function Userlist() {
                     checked={getLockFieldValue(row, 'betLock')}
                     readOnly
                     onClick={() => openLockPopup(row, 'betLock')}
-                    className='h-5 w-5 cursor-pointer accent-[#146578]'
+                    className="relative h-[22px] w-[22px] cursor-pointer appearance-none border border-black bg-gray-200/50 checked:border-black checked:bg-black checked:after:absolute checked:after:top-1/2 checked:after:left-1/2 checked:after:-translate-x-1/2 checked:after:-translate-y-1/2 checked:after:text-[14px] checked:after:text-white checked:after:content-['✓']"
                   />
                 ),
               },

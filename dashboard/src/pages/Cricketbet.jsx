@@ -577,7 +577,7 @@ export default function Cricketbet() {
     <div className='relative'>
       <Navbar />
       <div className='scrollbar-hide min-h-screen overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full rounded-lg bg-white px-[15px] py-[10px]'>
+        <div className='h-full rounded-lg bg-white py-[10px] md:px-[15px]'>
           {loader ? (
             <div className='fixed top-52 left-[40%] py-4 text-center'>
               <Spinner2 />
@@ -585,7 +585,7 @@ export default function Cricketbet() {
           ) : (
             <div className='flex w-full flex-col gap-8 md:flex-row'>
               <div className='w-full md:w-[60%]'>
-                <div className='flex items-center justify-between bg-[#18b0c8] px-[5px] py-[3px] text-[14px] font-bold text-white'>
+                <div className='flex items-center justify-between bg-[#18b0c8] px-[5px] py-[3px] text-[12px] font-bold text-white md:text-[14px]'>
                   <span className='w-[60%] items-center truncate'>
                     {gameTitle} - {gameName}
                   </span>
@@ -593,7 +593,7 @@ export default function Cricketbet() {
                     {matchStartTime || '—'}
                   </span>
                 </div>
-                <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+                <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[12px] text-white md:text-[14px]'>
                   <div className='flex items-center gap-1'>
                     <span className='font-bold'>Combo Book</span>
                   </div>
@@ -621,7 +621,7 @@ export default function Cricketbet() {
                           return (
                             <tr
                               key={index}
-                              className='border-y border-gray-200 text-[14px] leading-[22px]'
+                              className='border-y border-gray-200 text-[12px] leading-[22px] md:text-[14px]'
                             >
                               <td className='py-0.5 pl-3 font-bold'>
                                 {item.teamName}
@@ -643,7 +643,7 @@ export default function Cricketbet() {
                           );
                         })
                       ) : (
-                        <tr className='border-y border-gray-200 text-[14px] leading-[22px]'>
+                        <tr className='border-y border-gray-200 text-[12px] leading-[22px] md:text-[14px]'>
                           <td
                             colSpan={2}
                             className='px-3 py-0.5 text-center text-gray-500'
@@ -695,9 +695,9 @@ export default function Cricketbet() {
                 />
 
                 {/* which team will win the toss — only the two toss teams */}
-                {tossTeamsData.length > 0 && (
+                {/* {tossTeamsData.length > 0 && (
                   <>
-                    <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+                    <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[12px] md:text-[14px] text-white'>
                       <div className='flex items-center gap-1'>
                         <span className='font-bold'>To Win The Toss</span>
                         <span
@@ -796,7 +796,7 @@ export default function Cricketbet() {
                               isSuspended ? 'opacity-30' : ''
                             }`}
                           >
-                            <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
+                            <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[12px] md:text-[14px]'>
                               <div className='flex justify-between'>
                                 <p>{teamName}</p>
                                 <p style={{ color: betColor }}>
@@ -813,12 +813,12 @@ export default function Cricketbet() {
                       })}
                     </div>
                   </>
-                )}
+                )} */}
 
                 {/* 1st 6 over — only the two team rows */}
-                {over6TeamsData.length > 0 && (
+                {/* {over6TeamsData.length > 0 && (
                   <>
-                    <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+                    <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[12px] md:text-[14px] text-white'>
                       <div className='flex items-center gap-1'>
                         <span className='font-bold'>
                           Highest Score In 1st 6 Over
@@ -924,7 +924,7 @@ export default function Cricketbet() {
                               isSuspended ? 'opacity-30' : ''
                             }`}
                           >
-                            <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[14px]'>
+                            <div className='w-1/2 p-1 text-left text-sm font-bold md:text-[12px] md:text-[14px]'>
                               <div className='flex justify-between'>
                                 <p>{teamName}</p>
                                 <p style={{ color: betColor }}>
@@ -941,7 +941,7 @@ export default function Cricketbet() {
                       })}
                     </div>
                   </>
-                )}
+                )} */}
 
                 {/*fancy  */}
                 <div className='mt-2'>
@@ -950,105 +950,135 @@ export default function Cricketbet() {
                   </button>
                   {activeTab === 'fancy' && (
                     <>
-                      <div className='flex justify-start gap-1 overflow-x-auto scroll-smooth bg-[#007082] px-0.5 whitespace-nowrap text-white'>
+                      <div className='scrollbar-hide flex justify-start gap-1 overflow-x-auto scroll-smooth bg-[#007082] px-0.5 whitespace-nowrap text-white'>
                         {subTabs.map((tab) => (
                           <button
                             key={tab.id}
-                            className='mr-0.5 rounded-[5px] bg-[#18b0c8] px-[9px] py-[5px] text-[13px] font-bold text-black text-white'
+                            className={`mr-0.5 rounded-[5px] px-[9px] py-[5px] text-[13px] font-bold text-white ${
+                              activeSubTab === tab.id
+                                ? 'bg-[#18b0c8]'
+                                : 'bg-[#0f8ea4]'
+                            }`}
                             onClick={() => setActiveSubTab(tab.id)}
                           >
                             {tab.name}
                           </button>
                         ))}
                       </div>
-                      <table className='w-full shadow-[0_1px_6px_#00000017]'>
-                        <thead>
-                          <tr className='leading-[22px]'>
-                            <th className='w-[64%] px-1 py-0.5'></th>
-                            <th className='w-[16%] px-[3px] py-0.5'>
-                              <div className='flex'>
-                                <div className='w-1/2'>Yes</div>
-                                <div className='w-1/2'>No</div>
-                              </div>
-                            </th>
-                            <th className='w-[16%] px-[3px] py-0.5'></th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <div className='grid grid-cols-1 gap-0 shadow-[0_1px_6px_#00000017] lg:gap-2'>
+                        <div>
+                          <div className='flex border-b border-b-[#c7c8ca]'>
+                            <div className='flex-1'></div>
+                            <div className='flex w-[40%] items-center justify-center text-[14px] font-bold text-black md:w-[16%]'>
+                              <span className='w-1/2 p-[2px] text-center'>
+                                No
+                              </span>
+                              <span className='w-1/2 p-[2px] text-center'>
+                                Yes
+                              </span>
+                            </div>
+                            <div className='hidden w-[16%] lg:block'></div>
+                          </div>
+
                           {fancy2Data.length > 0 ? (
                             fancy2Data.map(
-                              ({ team, odds, min, max, status }, index) => (
-                                <tr
-                                  key={index}
-                                  className='border-y border-gray-200'
-                                >
-                                  <td className='w-[64%] pr-0.5 pl-2 align-top font-bold'>
-                                    {team}
-                                    <span>
-                                      {pendingBet
-                                        ?.filter(
-                                          (item) =>
-                                            item.gameType === activeSubTab &&
-                                            item.teamName?.toLowerCase() ===
-                                              team?.toLowerCase()
-                                        )
-                                        .reduce(
-                                          (sum, item) =>
-                                            sum + (item.totalPrice || '0.00'),
-                                          ''
-                                        )}
-                                    </span>
-                                  </td>
-                                  <td className='relative w-[16%] px-[3px]'>
-                                    <div className='flex font-bold'>
-                                      {odds.map(
-                                        (odd, i) =>
-                                          odd?.tno === 0 && (
-                                            <div
-                                              key={i}
-                                              className={`w-1/2 py-1 ${
-                                                odd?.otype === 'back'
-                                                  ? 'bg-[#72bbef]'
-                                                  : 'bg-[#faa9ba]'
-                                              } m-0.5 grid justify-items-center`}
-                                            >
-                                              <span className='leading-[18px]'>
-                                                {odd?.odds}
-                                              </span>
-                                              <span className='text-[10px] leading-none text-[#43444a]'>
-                                                {odd?.size}
-                                              </span>
-                                            </div>
-                                          )
+                              ({ team, odds, min, max, status }, index) => {
+                                const layOdd = odds.find(
+                                  (odd) =>
+                                    odd?.tno === 0 && odd?.otype === 'lay'
+                                );
+                                const backOdd = odds.find(
+                                  (odd) =>
+                                    odd?.tno === 0 && odd?.otype === 'back'
+                                );
+                                const hasStatus =
+                                  status && status.trim() !== '';
+                                const fancyBetAmount = pendingBet
+                                  ?.filter(
+                                    (item) =>
+                                      item.gameType === activeSubTab &&
+                                      item.teamName?.toLowerCase() ===
+                                        team?.toLowerCase()
+                                  )
+                                  .reduce(
+                                    (sum, item) =>
+                                      sum + (item.totalPrice || '0.00'),
+                                    ''
+                                  );
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'
+                                  >
+                                    <div className='ml-2 flex w-[60%] flex-col justify-center truncate text-[14px] text-black md:w-[68%]'>
+                                      <div className='truncate font-bold'>
+                                        {team}
+                                      </div>
+                                      {fancyBetAmount && (
+                                        <div className='flex gap-1 text-[11px]'>
+                                          <span className='flex items-center gap-0.5 text-red-500'>
+                                            <FaArrowRight />
+                                            {fancyBetAmount}
+                                          </span>
+                                        </div>
                                       )}
                                     </div>
-                                    {status === 'SUSPENDED' && (
-                                      <div className='absolute inset-0 mx-1 my-0.5 flex items-center justify-center bg-black/70 text-gray-300'>
-                                        SUSPENDED
+
+                                    <div
+                                      className={`relative flex w-[40%] md:w-[16%] ${
+                                        hasStatus ? 'suspended-event' : ''
+                                      }`}
+                                    >
+                                      <div
+                                        className={`m-[1px] flex min-h-[36px] w-1/2 flex-col items-center justify-center rounded-[3px] bg-[#faa9ba] ${
+                                          layOdd?.odds
+                                            ? 'cursor-pointer transition-opacity hover:opacity-80'
+                                            : ''
+                                        }`}
+                                      >
+                                        <span className='text-[14px] leading-none font-bold text-black'>
+                                          {layOdd?.odds || '-'}
+                                        </span>
+                                        <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
+                                          {layOdd?.size || ''}
+                                        </span>
                                       </div>
-                                    )}
-                                  </td>
-                                  <td className='w-[16%] pr-2 pl-0.5 text-right text-[11px]'>
-                                    <span className='block'>Max:{min}</span>
-                                    <span className='block'>
-                                      MKT:{formatToK(max)}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )
+                                      <div
+                                        className={`m-[1px] flex min-h-[36px] w-1/2 flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${
+                                          backOdd?.odds
+                                            ? 'cursor-pointer transition-opacity hover:opacity-80'
+                                            : ''
+                                        }`}
+                                      >
+                                        <span className='text-[14px] leading-none font-bold text-black'>
+                                          {backOdd?.odds || '-'}
+                                        </span>
+                                        <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
+                                          {backOdd?.size || ''}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className='hidden w-[40%] flex-col items-end justify-center px-2 md:w-[16%] lg:flex'>
+                                      <span className='text-[10px] leading-4 font-bold capitalize'>
+                                        Min:{min}
+                                      </span>
+                                      <span className='text-[10px] leading-4 font-bold'>
+                                        Max:{formatToK(max)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              }
                             )
                           ) : (
-                            <tr>
-                              <td
-                                colSpan={3}
-                                className='px-1 text-center text-gray-500'
-                              >
-                                No betting options available for this category
-                              </td>
-                            </tr>
+                            <div className='py-4 text-center text-gray-500'>
+                              No betting options available for this category
+                            </div>
                           )}
-                        </tbody>
-                      </table>
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
@@ -1211,7 +1241,7 @@ export default function Cricketbet() {
                     <div className='bg-white'>
                       {betsData.length > 0 ? (
                         <div className=''>
-                          <div className='grid grid-cols-10 border-b border-gray-400 bg-white px-2 py-2 text-[14px] font-bold'>
+                          <div className='grid grid-cols-10 border-b border-gray-400 bg-white px-2 py-2 text-[12px] md:text-[14px] font-bold'>
                             <div className='col-span-4'>UserName</div>
                             <div className='col-span-4'>Nation</div>
                             <div className='col-span-1'>Rate</div>
@@ -1231,19 +1261,19 @@ export default function Cricketbet() {
                               <div
                                 className={`${item.otype === 'back' ? ' bg-[#beddf4]' : 'bg-[#f8e8eb]'} grid grid-cols-10 gap-2 text-sm`}
                               >
-                                <div className='col-span-4 text-[14px]'>
+                                <div className='col-span-4 text-[12px] md:text-[14px]'>
                                   {item.userName}
                                 </div>
-                                <div className='col-span-4 text-[14px] uppercase'>
+                                <div className='col-span-4 text-[12px] md:text-[14px] uppercase'>
                                   {item.teamName}
                                 </div>
-                                <div className='col-span-1 text-[14px]'>
+                                <div className='col-span-1 text-[12px] md:text-[14px]'>
                                   {item.gameType === 'Normal'
                                     ? `${item.fancyScore}/`
                                     : ''}
                                   {item.xValue}
                                 </div>
-                                <div className='col-span-1 text-right text-[14px]'>
+                                <div className='col-span-1 text-right text-[12px] md:text-[14px]'>
                                   {item.otype === 'lay'
                                     ? item.betAmount
                                     : item.price}

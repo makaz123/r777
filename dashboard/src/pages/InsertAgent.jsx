@@ -197,7 +197,7 @@ export default function InsertAgent() {
     <>
       <Navbar />
       <div className='scrollbar-hide overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px] pb-10'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px] pb-10'>
           <span className='text-[16px] font-bold'>
             {isEditMode ? 'Update Client Account' : 'Add Client Account'}
           </span>

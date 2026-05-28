@@ -51,7 +51,7 @@ const VirtualTable = ({
     : 'odd:bg-[#0000000d]';
 
   return (
-    <div className='scrollbar-hide overflow-x-auto rounded-md'>
+    <div className='scrollbar-hide overflow-x-auto'>
       <table className='w-[1500px] border-collapse text-[14px] md:w-full'>
         <thead className={headerClass}>
           <tr>
@@ -59,18 +59,19 @@ const VirtualTable = ({
               <th
                 key={i}
                 onClick={() => handleSort(col)}
-                className={`border-r border-white/30 px-2 py-2.5 text-left text-sm font-semibold ${
+                className={`border-r border-white/30 px-2 py-1.5 text-left text-sm font-semibold ${
                   col.sortKey || col.accessor ? 'cursor-pointer' : ''
                 } ${col.align === 'right' ? 'text-right' : ''}`}
               >
                 <span
-                  className={`flex items-center ${col.align === 'right' ? 'justify-end' : ''}`}
+                  className={`flex items-center ${col.align === 'right' ? 'items-end' : ''}`}
                 >
                   {col.header}
                   {(col.sortKey || col.accessor) && (
-                    <span className='ml-1 flex text-white'>
-                      <BiSortAlt2 size={18} />
-                    </span>
+                    <>
+                      <span className='ml-0.5 text-[12px] text-white'>↑</span>
+                      <span className='ml-0.5 text-[12px] text-white'>↓</span>
+                    </>
                   )}
                 </span>
               </th>

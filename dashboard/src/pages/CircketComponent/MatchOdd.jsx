@@ -167,7 +167,7 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
     }
 
     return (
-      <div className='w-2/3 p-1 text-left text-sm font-bold md:text-[14px]'>
+      <div className='md w-[60%] p-1 text-left text-[12px] font-bold md:w-[52%] md:text-[14px]'>
         <div className='flex items-center justify-between'>
           <p>
             <span className='truncate'>{team}</span>
@@ -195,7 +195,7 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
       <div>
         {oddsData.length > 0 && (
           <>
-            <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
+            <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[12px] text-white md:text-[14px]'>
               <div className='flex items-center gap-1'>
                 <span className='font-bold'>{oddsData[0]?.mname}</span>
                 <span
@@ -222,12 +222,6 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
             </div>
 
             <div className='relative'>
-              {isSuspended && (
-                <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
-                  <p className='text-3xl font-bold text-red-700'>SUSPENDED</p>
-                </div>
-              )}
-
               {/* Header */}
               <div className='flex border-b border-gray-300 bg-white text-center'>
                 <div className='w-[60%] p-1 md:w-[52%]'>
@@ -237,16 +231,16 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
                 </div>
 
                 <div className='flex w-[40%] md:w-[48%]'>
-                  <div className='hidden w-1/3 md:block'></div>
-                  <div className='hidden w-1/3 md:block'></div>
-                  <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
+                  <div className='m-0.5 hidden w-1/3 md:block'></div>
+                  <div className='m-0.5 hidden w-1/3 md:block'></div>
+                  <div className='m-0.5 flex w-1/2 items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[12px] font-bold text-black md:w-1/3 md:text-[14px]'>
                     Back
                   </div>
-                  <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
+                  <div className='m-0.5 flex w-1/2 items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[12px] font-bold text-black md:w-1/3 md:text-[14px]'>
                     Lay
                   </div>
-                  <div className='hidden w-1/3 md:block'></div>
-                  <div className='hidden w-1/3 md:block'></div>
+                  <div className='m-0.5 hidden w-1/3 md:block'></div>
+                  <div className='m-0.5 hidden w-1/3 md:block'></div>
                 </div>
               </div>
 
@@ -254,24 +248,17 @@ const MatchOdd = ({ matchOddsList, onBookClick }) => {
               {oddsData.map(({ team, odds }, index) => (
                 <div
                   key={team}
-                  className={`flex border-b border-gray-300 bg-white text-center text-[10px] font-semibold ${
-                    isSuspended ? 'opacity-30' : ''
-                  }`}
+                  className='flex border-b border-gray-300 bg-white text-center font-semibold'
                 >
-                  {!isSuspended ? (
-                    <MyComponent
-                      team={team}
-                      matchData={oddsData[0]}
-                      pendingBet={pendingBet}
-                      index={index}
-                    />
-                  ) : (
-                    <div className='w-2/3 p-1 pl-4 text-left text-sm font-bold md:text-[14px]'>
-                      {team}
-                    </div>
-                  )}
-
-                  <div className='flex w-1/2 md:w-1/3'>
+                  <MyComponent
+                    team={team}
+                    matchData={oddsData[0]}
+                    pendingBet={pendingBet}
+                    index={index}
+                  />
+                  <div
+                    className={`relative flex w-[40%] md:w-[48%] ${isSuspended ? 'suspended-event' : ''}`}
+                  >
                     <OddsGridCells odds={odds} />
                   </div>
                 </div>

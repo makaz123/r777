@@ -42,7 +42,7 @@ const BetHistoryReport = () => {
   });
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
-  
+
   // Local filter states
   const [localSport, setLocalSport] = useState('');
   const [localEvent, setLocalEvent] = useState('');
@@ -54,7 +54,7 @@ const BetHistoryReport = () => {
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
-  
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -147,12 +147,9 @@ const BetHistoryReport = () => {
       if (localMarket) query.append('selectedMarket', localMarket);
       if (localStatus) query.append('selectedStatus', localStatus);
 
-      const res = await api.get(
-        `/get/all-bet-list?${query.toString()}`,
-        {
-          withCredentials: true,
-        }
-      );
+      const res = await api.get(`/get/all-bet-list?${query.toString()}`, {
+        withCredentials: true,
+      });
 
       setRows(res.data?.data || []);
       setTotalPages(res.data?.totalPages || 1);
@@ -175,25 +172,33 @@ const BetHistoryReport = () => {
 
   useEffect(() => {
     let result = [...rows];
-    
+
     if (localSport) {
       const sportLower = localSport.toLowerCase();
-      result = result.filter(r => String(r.gameName).toLowerCase().includes(sportLower));
+      result = result.filter((r) =>
+        String(r.gameName).toLowerCase().includes(sportLower)
+      );
     }
     if (localEvent) {
       const eventLower = localEvent.toLowerCase();
-      result = result.filter(r => String(r.eventName).toLowerCase() === eventLower);
+      result = result.filter(
+        (r) => String(r.eventName).toLowerCase() === eventLower
+      );
     }
     if (localMarketType) {
       const mtLower = localMarketType.toLowerCase();
-      result = result.filter(r => String(r.gameType).toLowerCase() === mtLower);
+      result = result.filter(
+        (r) => String(r.gameType).toLowerCase() === mtLower
+      );
     }
     if (localMarket) {
       const mLower = localMarket.toLowerCase();
-      result = result.filter(r => String(r.marketName).toLowerCase() === mLower);
+      result = result.filter(
+        (r) => String(r.marketName).toLowerCase() === mLower
+      );
     }
     if (localStatus) {
-      result = result.filter(r => {
+      result = result.filter((r) => {
         if (localStatus === '1') return r.status === 1;
         if (localStatus === '2') return r.status === 2;
         if (localStatus === '3') return r.status === 3;
@@ -213,7 +218,7 @@ const BetHistoryReport = () => {
     'Kabaddi',
     'Election',
     'Horse Racing',
-    'Greyhound Racing'
+    'Greyhound Racing',
   ];
 
   const casinoOptions = [
@@ -227,12 +232,56 @@ const BetHistoryReport = () => {
     'Mac88',
     'Chicken Road',
     'Rvgames',
-    'Ezugi'
+    'Ezugi',
   ];
-  
-  const eventsOptions = [...new Set(rows.filter(r => !localSport || String(r.gameName).toLowerCase().includes(localSport.toLowerCase())).map(r => r.eventName).filter(Boolean))];
-  const marketTypeOptions = [...new Set(rows.filter(r => (!localSport || String(r.gameName).toLowerCase().includes(localSport.toLowerCase())) && (!localEvent || String(r.eventName).toLowerCase() === localEvent.toLowerCase())).map(r => r.gameType).filter(Boolean))];
-  const marketOptions = [...new Set(rows.filter(r => (!localSport || String(r.gameName).toLowerCase().includes(localSport.toLowerCase())) && (!localEvent || String(r.eventName).toLowerCase() === localEvent.toLowerCase()) && (!localMarketType || String(r.gameType).toLowerCase() === localMarketType.toLowerCase())).map(r => r.marketName).filter(Boolean))];
+
+  const eventsOptions = [
+    ...new Set(
+      rows
+        .filter(
+          (r) =>
+            !localSport ||
+            String(r.gameName).toLowerCase().includes(localSport.toLowerCase())
+        )
+        .map((r) => r.eventName)
+        .filter(Boolean)
+    ),
+  ];
+  const marketTypeOptions = [
+    ...new Set(
+      rows
+        .filter(
+          (r) =>
+            (!localSport ||
+              String(r.gameName)
+                .toLowerCase()
+                .includes(localSport.toLowerCase())) &&
+            (!localEvent ||
+              String(r.eventName).toLowerCase() === localEvent.toLowerCase())
+        )
+        .map((r) => r.gameType)
+        .filter(Boolean)
+    ),
+  ];
+  const marketOptions = [
+    ...new Set(
+      rows
+        .filter(
+          (r) =>
+            (!localSport ||
+              String(r.gameName)
+                .toLowerCase()
+                .includes(localSport.toLowerCase())) &&
+            (!localEvent ||
+              String(r.eventName).toLowerCase() === localEvent.toLowerCase()) &&
+            (!localMarketType ||
+              String(r.gameType).toLowerCase() ===
+                localMarketType.toLowerCase())
+        )
+        .map((r) => r.marketName)
+        .filter(Boolean)
+    ),
+  ];
 
   const renderClientSearch = () =>
     hasClientSearchAccess ? (
@@ -276,11 +325,11 @@ const BetHistoryReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Bet History</div>
 
-          <div className='mt-2 mb-5 grid grid-cols-6 gap-6'>
+          <div className='mt-2 mb-5 grid md:grid-cols-6 gap-4 md:gap-6'>
             <input
               type='datetime-local'
               value={startDate}
@@ -317,18 +366,26 @@ const BetHistoryReport = () => {
               {gameType === 'casino' ? (
                 <>
                   <option value=''>Select Casino</option>
-                  {casinoOptions.map(casino => <option key={casino} value={casino}>{casino}</option>)}
+                  {casinoOptions.map((casino) => (
+                    <option key={casino} value={casino}>
+                      {casino}
+                    </option>
+                  ))}
                 </>
               ) : (
                 <>
                   <option value=''>Select Sport</option>
-                  {sportsOptions.map(sport => <option key={sport} value={sport}>{sport}</option>)}
+                  {sportsOptions.map((sport) => (
+                    <option key={sport} value={sport}>
+                      {sport}
+                    </option>
+                  ))}
                 </>
               )}
             </select>
 
             <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:bg-gray-200 disabled:cursor-not-allowed'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:cursor-not-allowed disabled:bg-gray-200'
               value={localEvent}
               disabled={gameType === 'casino'}
               onChange={(e) => {
@@ -338,11 +395,15 @@ const BetHistoryReport = () => {
               }}
             >
               <option value=''>Select Event</option>
-              {eventsOptions.map(event => <option key={event} value={event}>{event}</option>)}
+              {eventsOptions.map((event) => (
+                <option key={event} value={event}>
+                  {event}
+                </option>
+              ))}
             </select>
 
             <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:bg-gray-200 disabled:cursor-not-allowed'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:cursor-not-allowed disabled:bg-gray-200'
               value={localMarketType}
               disabled={gameType === 'casino'}
               onChange={(e) => {
@@ -351,17 +412,25 @@ const BetHistoryReport = () => {
               }}
             >
               <option value=''>Select Market Type</option>
-              {marketTypeOptions.map(mType => <option key={mType} value={mType}>{mType}</option>)}
+              {marketTypeOptions.map((mType) => (
+                <option key={mType} value={mType}>
+                  {mType}
+                </option>
+              ))}
             </select>
 
             <select
-              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:bg-gray-200 disabled:cursor-not-allowed'
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0 disabled:cursor-not-allowed disabled:bg-gray-200'
               value={localMarket}
               disabled={gameType === 'casino'}
               onChange={(e) => setLocalMarket(e.target.value)}
             >
               <option value=''>Select Market</option>
-              {marketOptions.map(m => <option key={m} value={m}>{m}</option>)}
+              {marketOptions.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
             </select>
 
             {renderClientSearch()}
@@ -397,7 +466,7 @@ const BetHistoryReport = () => {
             </div>
           </div>
 
-          <div className='mb-2 flex items-end justify-between'>
+          <div className='mb-2 flex flex-wrap gap-2 items-end justify-between'>
             <div className='flex items-end'>
               <input
                 type='text'
@@ -408,7 +477,7 @@ const BetHistoryReport = () => {
               <img src={pdfIcon} alt='' className='w-[35px]' />
             </div>
 
-            <div className='mr-10'>
+            <div className='ml-auto md:mr-10'>
               <span>Show</span>
               <select
                 value={limit}
@@ -425,7 +494,7 @@ const BetHistoryReport = () => {
               <span>entries</span>
             </div>
           </div>
-
+          <div className='overflow-x-scroll scrollbar-hide w-full'>
           <table className='w-full table-auto border-collapse border border-gray-300'>
             <thead>
               <tr className='bg-[#016a82] text-white'>
@@ -472,62 +541,113 @@ const BetHistoryReport = () => {
             <tbody>
               {filteredRows.length > 0 ? (
                 filteredRows.map((row, idx) => (
-                  <tr key={idx} className={`border border-gray-300 text-gray-800 ${row.status === 1 ? 'bg-[#72bbef]' : row.status === 2 ? 'bg-[#faa9ba]' : 'odd:bg-gray-100'}`}>
+                  <tr
+                    key={idx}
+                    className={`border border-gray-300 text-gray-800 ${row.status === 1 ? 'bg-[#72bbef]' : row.status === 2 ? 'bg-[#faa9ba]' : 'odd:bg-gray-100'}`}
+                  >
                     <td className='border border-gray-300 px-2 py-1.5 text-[14px] whitespace-nowrap'>
                       {new Date(row.createdAt).toLocaleString()}
                     </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.userName}</td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.gameType || '-'}</td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] max-w-[200px] truncate' title={row.eventName}>{row.eventName || '-'}</td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.marketName || '-'}</td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.teamName || '-'}</td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] capitalize'>{row.otype || '-'}</td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                      {row.userName}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                      {row.gameType || '-'}
+                    </td>
+                    <td
+                      className='max-w-[200px] truncate border border-gray-300 px-2 py-1.5 text-[14px]'
+                      title={row.eventName}
+                    >
+                      {row.eventName || '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                      {row.marketName || '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                      {row.teamName || '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] capitalize'>
+                      {row.otype || '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
                       {row.fancyScore || '-'}
                     </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
                       {row.price || row.xValue || 0}
                     </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
                       {Number(row.betAmount || 0).toFixed(2)}
                     </td>
-                    <td className={`border border-gray-300 px-2 py-1.5 text-right font-bold text-[14px] ${row.profitLossChange >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    <td
+                      className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold ${row.profitLossChange >= 0 ? 'text-green-700' : 'text-red-700'}`}
+                    >
                       {Number(row.profitLossChange || 0).toFixed(2)}
                     </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-center uppercase text-[12px] font-bold'>
-                      {row.status === 1 ? 'WON' : row.status === 2 ? 'LOST' : row.status === 3 ? 'VOID' : 'DECLARED'}
+                    <td className='border border-gray-300 px-2 py-1.5 text-center text-[12px] font-bold uppercase'>
+                      {row.status === 1
+                        ? 'WON'
+                        : row.status === 2
+                          ? 'LOST'
+                          : row.status === 3
+                            ? 'VOID'
+                            : 'DECLARED'}
                     </td>
-                    <td className='px-2 py-1.5 text-[13px] text-gray-500'>
-                       -
-                    </td>
+                    <td className='px-2 py-1.5 text-[13px] text-gray-500'>-</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="13" className="text-center py-4 text-gray-500">{loading ? 'Loading...' : 'No data available'}</td>
+                  <td colSpan='13' className='py-4 text-center text-gray-500'>
+                    {loading ? 'Loading...' : 'No data available'}
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
 
           {/* Pagination */}
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
-            <div>Showing {(page - 1) * limit + (filteredRows.length > 0 ? 1 : 0)} to {Math.min(page * limit, totalEntries)} of {totalEntries} entries</div>
+            <div>
+              Showing {(page - 1) * limit + (filteredRows.length > 0 ? 1 : 0)}{' '}
+              to {Math.min(page * limit, totalEntries)} of {totalEntries}{' '}
+              entries
+            </div>
             <div className='flex flex-wrap'>
-              <button disabled={page === 1} onClick={() => setPage(1)} className='pgBtn rounded-l-sm px-[13px] py-[6.5px] disabled:opacity-50'>
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(1)}
+                className='pgBtn rounded-l-sm px-[13px] py-[6.5px] disabled:opacity-50'
+              >
                 First
               </button>
 
-              <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className='pgBtn px-[12px] py-[6px] disabled:opacity-50'>Prev</button>
-              
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className='pgBtn px-[12px] py-[6px] disabled:opacity-50'
+              >
+                Prev
+              </button>
+
               <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
                 {page}
               </button>
 
-              <button disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className='pgBtn px-[13px] py-[6.5px] disabled:opacity-50'>Next</button>
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className='pgBtn px-[13px] py-[6.5px] disabled:opacity-50'
+              >
+                Next
+              </button>
 
-              <button disabled={page === totalPages} onClick={() => setPage(totalPages)} className='pgBtn rounded-r-sm px-[13px] py-[6.5px] disabled:opacity-50'>
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage(totalPages)}
+                className='pgBtn rounded-r-sm px-[13px] py-[6.5px] disabled:opacity-50'
+              >
                 Last
               </button>
             </div>

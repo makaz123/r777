@@ -51,7 +51,7 @@ const CasinoLock = () => {
   return (
     <>
       <Navbar />
-      <div className="scrollbar-hide pt-[15px]' bg-[#f0f0f5] md:px-[15px] md:py-[13px]">
+      <div className="scrollbar-hide md:px-[15px] md:pt-[13px] pb-10">
         <div className='grid h-[calc(100vh-123px)] grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='col-span-2'>
             {/* Event Type */}

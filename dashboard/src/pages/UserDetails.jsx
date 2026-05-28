@@ -427,7 +427,7 @@ const UserDetails = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:py-[13px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
         {/* Search Section */}
 
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>

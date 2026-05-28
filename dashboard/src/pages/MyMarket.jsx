@@ -87,8 +87,8 @@ const MyMarket = () => {
     <div>
       <Navbar />
 
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           {loading ? (
             <div className='flex items-center justify-center py-20'>
               <Loader />

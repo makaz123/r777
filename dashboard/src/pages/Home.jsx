@@ -76,8 +76,8 @@ const Home = () => {
 
   const getSignedValueColor = (value) => {
     const n = Number(value) || 0;
-    if (n > 0) return 'text-green-600';
-    if (n < 0) return 'text-red-600';
+    if (n > 0) return 'text-[#0e7926]';
+    if (n < 0) return 'text-[#c7313f]';
     return 'text-gray-800';
   };
 
@@ -87,14 +87,20 @@ const Home = () => {
       value: stats?.header?.pl ?? 0,
       signed: true,
     },
-    { title: 'COMMISSION', value: stats?.header?.commission ?? 0 },
+    {
+      title: 'COMMISSION',
+      value: stats?.header?.commission ?? 0,
+      signed: true,
+    },
     {
       title: 'DEPOSIT',
       value: `${stats?.header?.deposit ?? 0}${stats?.header?.depositCount !== undefined ? ` (${stats?.header?.depositCount})` : ''}`,
+      colorValue: stats?.header?.deposit ?? 0,
     },
     {
       title: 'WITHDRAWAL',
       value: `${stats?.header?.withdrawal ?? 0}${stats?.header?.withdrawalCount !== undefined ? ` (${stats?.header?.withdrawalCount})` : ''}`,
+      colorValue: stats?.header?.withdrawal ?? 0,
     },
     { title: 'TOTAL BETS', value: stats?.header?.totalBets ?? 0 },
     {
@@ -121,7 +127,7 @@ const Home = () => {
   return (
     <>
       <Navbar />
-      <div className='min-h-screen bg-[#e9edf2] px-2 py-1 md:px-[15px] md:py-3'>
+      <div className='min-h-screen bg-[#e9edf2] px-2 pt-1 pb-10 md:px-[15px] md:pt-3'>
         <h5 className='mb-2 text-[16px] font-bold leading-[1.2]'>Dashboard</h5>
         <div className='mb-4 rounded-[3px] bg-white p-2 shadow-[0_2px_7px_0_#00708285]'>
           <div className='flex flex-wrap items-end items-start gap-[2%] gap-y-4 text-[12px] md:gap-x-8 md:pb-4'>
@@ -185,7 +191,9 @@ const Home = () => {
                 className={`px-2.5 py-2 text-[18px] font-bold ${
                   item.signed
                     ? getSignedValueColor(item.value)
-                    : 'text-gray-800'
+                    : item.colorValue !== undefined
+                      ? getSignedValueColor(item.colorValue)
+                      : 'text-gray-800'
                 }`}
               >
                 {item.signed ? formatSignedMoney(item.value) : item.value}
@@ -218,7 +226,7 @@ const Home = () => {
                     <td className='w-[75%] border border-[#dee2e6] p-1.5 text-left'>
                       {player.userName}
                     </td>
-                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right text-green-500'>
+                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right text-[#0e7926]'>
                       {player.amount}
                     </td>
                   </tr>
@@ -251,7 +259,7 @@ const Home = () => {
                     <td className='w-[75%] border border-[#dee2e6] p-1.5 text-left'>
                       {player.userName}
                     </td>
-                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right text-red-500'>
+                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right text-[#c7313f]'>
                       {player.amount}
                     </td>
                   </tr>
@@ -290,7 +298,7 @@ const Home = () => {
                     <td className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>
                       {market.market}
                     </td>
-                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-right text-green-500'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-right text-[#0e7926]'>
                       {market.amount}
                     </td>
                   </tr>
@@ -329,8 +337,8 @@ const Home = () => {
                     <td className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>
                       {market.market}
                     </td>
-                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-right text-red-500'>
-                      {market.amount}
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-right text-[#c7313f]'>
+                      -{market.amount}
                     </td>
                   </tr>
                 ))}
@@ -416,7 +424,7 @@ const Home = () => {
                 <tr className='text-[12px] bg-[#0000000d]'>
                   <td className='border border-[#dee2e6] p-1.5 text-left'>Total P&L</td>
                   <td
-                    className={`border border-[#dee2e6] p-1.5 text-right ${(stats?.sportsGameplay?.[selectedSport]?.totalPL || 0) < 0 ? 'text-red-500' : ''}`}
+                    className={`border border-[#dee2e6] p-1.5 text-right ${(stats?.sportsGameplay?.[selectedSport]?.totalPL || 0) < 0 ? 'text-[#c7313f]' : 'text-[#0e7926]'}`}
                   >
                     {stats?.sportsGameplay?.[selectedSport]?.totalPL || 0}
                   </td>

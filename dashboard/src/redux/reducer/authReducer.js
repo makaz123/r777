@@ -78,6 +78,7 @@ export const fetchAccountSummary = createAsyncThunk(
     try {
       const response = await api.get('/sub-admin/account-summary', {
         withCredentials: true,
+        params: force ? { fresh: 1 } : undefined,
       });
       return response.data;
     } catch (error) {

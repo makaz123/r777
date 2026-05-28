@@ -27,6 +27,7 @@ import {
   applySettlementCashToUplineShare,
   buildAccountSummary,
   expectedBettingPLFromHistory,
+  applySettlementCashToPassedUpPL,
   getAccountByCodeMap,
   getCurrentWeekRange,
   getDownlineOutstandingPLMaps,
@@ -1311,14 +1312,6 @@ const loadAccountSummaryForAdmin = async (adminId, options = {}) => {
   let weekSelfCash = { withdrawl: 0, deposite: 0 };
 
   if (barOnly) {
-    myPLTillDate = roundMoney(
-      updatedAdmin.role === 'user'
-        ? (updatedAdmin.bettingProfitLoss ?? 0)
-        : (updatedAdmin.bettingProfitLoss ??
-            updatedAdmin.uplineBettingProfitLoss ??
-            0)
-    );
-
     const { users, expectedPLByUserId } = await getDownlineOutstandingPLMaps(
       SubAdmin,
       betHistoryModel,
@@ -1359,10 +1352,59 @@ const loadAccountSummaryForAdmin = async (adminId, options = {}) => {
           )
         : Promise.resolve([]);
 
-    const [agentPLResults, exposure] = await Promise.all([
+    const lifetimePLPromise =
+      updatedAdmin.role === 'user'
+        ? (async () => {
+            const plResult = await betHistoryModel.aggregate([
+              {
+                $match: {
+                  userId: updatedAdmin._id.toString(),
+                  status: { $in: [1, 2] },
+                },
+              },
+              { $group: { _id: null, totalPL: { $sum: '$profitLossChange' } } },
+            ]);
+            const sportsPL =
+              plResult.length > 0 ? roundMoney(plResult[0].totalPL) : 0;
+            const casinoAgg = await CasinoBetHistory.aggregate([
+              {
+                $match: {
+                  userId: updatedAdmin._id.toString(),
+                  $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+                },
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalPL: {
+                    $sum: {
+                      $subtract: [
+                        { $ifNull: ['$win_amount', 0] },
+                        { $ifNull: ['$bet_amount', 0] },
+                      ],
+                    },
+                  },
+                },
+              },
+            ]);
+            const casinoPL =
+              casinoAgg.length > 0 ? roundMoney(casinoAgg[0].totalPL) : 0;
+            return roundMoney(sportsPL + casinoPL);
+          })()
+        : aggregateViewerProfitLoss(
+            SubAdmin,
+            betHistoryModel,
+            CasinoBetHistory,
+            updatedAdmin,
+            null
+          );
+
+    const [agentPLResults, exposure, lifetimePL] = await Promise.all([
       agentPLPromise,
       aggregateViewerExposure(SubAdmin, updatedAdmin),
+      lifetimePLPromise,
     ]);
+    myPLTillDate = roundMoney(lifetimePL);
 
     tillViewerOutstandingPL = roundMoney(
       tillViewerOutstandingPL +
@@ -1496,10 +1538,24 @@ const loadAccountSummaryForAdmin = async (adminId, options = {}) => {
         ? 'lena'
         : 'clear';
 
-  const linesFullyCleared = isAccountLinesFullyCleared(
+  let linesFullyCleared = isAccountLinesFullyCleared(
     hasDownlineOutstanding,
     uplineOutstanding
   );
+
+  if (
+    !hasDownlineOutstanding &&
+    Math.abs(tillViewerOutstandingPL) < 0.01 &&
+    Math.abs(downlineClientPL) < 0.01
+  ) {
+    uplineOutstanding = 0;
+    accountSummary.uplineSharePL = 0;
+    accountSummary.uplineDena = 0;
+    accountSummary.uplineLenDena = 'clear';
+    accountSummary.otherAdminSharePL = 0;
+    linesFullyCleared = true;
+  }
+
   if (!barOnly && linesFullyCleared) {
     const rawWeekTotal = roundMoney(
       weekViewerBettingPL +
@@ -1517,7 +1573,9 @@ const loadAccountSummaryForAdmin = async (adminId, options = {}) => {
   // downlineClientPL < 0 means downline lost, so agent collects (cash inflow).
   // uplineOutstanding > 0 means agent owes upline (cash outflow).
   // Net cash profit = (-downlineClientPL) - uplineOutstanding = -(uplineOutstanding + downlineClientPL)
-  const weekViewerPL = roundMoney(-(uplineOutstanding + downlineClientPL));
+  const weekViewerPL = linesFullyCleared
+    ? 0
+    : roundMoney(-(uplineOutstanding + downlineClientPL));
 
   accountSummary = {
     ...accountSummary,
@@ -1641,7 +1699,9 @@ export const getAccountSummary = async (req, res) => {
       return res.status(400).json({ message: 'Admin ID is required' });
     }
 
-    const cached = getCachedAccountSummary(id);
+    const skipCache =
+      req.query.fresh === '1' || req.query.fresh === 'true';
+    const cached = skipCache ? null : getCachedAccountSummary(id);
     if (cached) {
       sendAccountSummaryUpdate(id, cached);
       return res.status(200).json({
@@ -4490,7 +4550,7 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     const passedUpHistory = roundMoney(
       (-historyGross * parentSharePercent) / 100
     );
-    const clientPL = expectedBettingPLFromHistory(
+    const clientPL = applySettlementCashToPassedUpPL(
       passedUpHistory,
       adminSettlementCash
     );
@@ -4539,8 +4599,8 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   const passedUpOutstanding = roundMoney(
     (outstandingClientPL * parentSharePercent) / 100
   );
-  // Apply admin's own settlement cash to get final outstanding
-  const clientPL = expectedBettingPLFromHistory(
+  // Apply admin's own settlement cash only while passed-up share is still open
+  const clientPL = applySettlementCashToPassedUpPL(
     passedUpOutstanding,
     adminSettlementCash
   );
@@ -4763,6 +4823,7 @@ export const settleUser = async (req, res) => {
       });
     }
 
+    invalidateAccountSummaryCache(id);
     queueSettlementBackgroundRefresh(id, userId);
 
     return res.status(200).json({

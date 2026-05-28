@@ -8,19 +8,30 @@ import excelIcon from '../assets/icons/csv-icon.svg';
 /* ============ Main Page ============ */
 
 const BetHistoryReport = () => {
-  const [accountType, setAccountType] = useState('all');
   const [gameType, setGameType] = useState('all');
-  const [sportsGameType, setSportsGameType] = useState('');
-  const [sportsList, setSportsList] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserName, setSelectedUserName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [rows, setRows] = useState([]);
+  const [filteredRows, setFilteredRows] = useState([]);
+  
+  // Local filter states
+  const [localSport, setLocalSport] = useState('');
+  const [localEvent, setLocalEvent] = useState('');
+  const [localMarketType, setLocalMarketType] = useState('');
+  const [localMarket, setLocalMarket] = useState('');
+  const [localStatus, setLocalStatus] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
+  
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEntries, setTotalEntries] = useState(0);
   const { userInfo } = useSelector((state) => state.auth);
 
   const allowedProfileRoles = ['admin', 'master', 'superadmin', 'supperadmin'];
@@ -66,17 +77,19 @@ const BetHistoryReport = () => {
   }, [searchQuery, hasClientSearchAccess]);
 
   const resetFilters = () => {
-    setAccountType('all');
     setGameType('all');
-    setSportsGameType('');
-    setSportsList('');
     setSearchQuery('');
     setSelectedUserName('');
     setStartDate('');
     setEndDate('');
     setUserSuggestions([]);
     setShowSuggestions(false);
-    setRows([]);
+    setLocalSport('');
+    setLocalEvent('');
+    setLocalMarketType('');
+    setLocalMarket('');
+    setLocalStatus('');
+    setPage(1);
   };
 
   const loadReport = async () => {
@@ -85,28 +98,26 @@ const BetHistoryReport = () => {
       const query = new URLSearchParams();
       if (startDate) query.append('startDate', startDate);
       if (endDate) query.append('endDate', endDate);
+      query.append('page', page);
+      query.append('limit', limit);
 
-      if (accountType === 'casino' || accountType === 'sports') {
-        query.append('gameType', accountType);
-      } else if (gameType && gameType !== 'all') {
-        query.append('gameType', gameType);
+      if (gameType && gameType !== 'all') {
+        query.append('selectedGame', gameType);
       }
-
-      if (sportsGameType) query.append('sportsGameType', sportsGameType);
-      if (sportsList) query.append('sportsName', sportsList);
       if (hasClientSearchAccess && selectedUserName) {
         query.append('userName', selectedUserName);
       }
 
-      query.append('accountType', accountType);
       const res = await api.get(
-        `/account-statement/history?${query.toString()}`,
+        `/get/all-bet-list?${query.toString()}`,
         {
           withCredentials: true,
         }
       );
 
       setRows(res.data?.data || []);
+      setTotalPages(res.data?.totalPages || 1);
+      setTotalEntries(res.data?.totalBets || res.data?.data?.length || 0);
     } catch (error) {
       setRows([]);
       toast.error(error?.response?.data?.message || 'Failed to load report');
@@ -114,6 +125,44 @@ const BetHistoryReport = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadReport();
+  }, [page, limit]);
+
+  useEffect(() => {
+    let result = [...rows];
+    
+    if (localSport) {
+      result = result.filter(r => r.gameName === localSport);
+    }
+    if (localEvent) {
+      result = result.filter(r => r.eventName === localEvent);
+    }
+    if (localMarketType) {
+      result = result.filter(r => r.gameType === localMarketType);
+    }
+    if (localMarket) {
+      result = result.filter(r => r.marketName === localMarket);
+    }
+    if (localStatus) {
+      result = result.filter(r => {
+        if (localStatus === '1') return r.status === 1;
+        if (localStatus === '2') return r.status === 2;
+        if (localStatus === '3') return r.status === 3;
+        if (localStatus === '0') return r.status === 0;
+        return true;
+      });
+    }
+
+    setFilteredRows(result);
+  }, [rows, localSport, localEvent, localMarketType, localMarket, localStatus]);
+
+  // Derive Dropdown Options
+  const sportsOptions = [...new Set(rows.map(r => r.gameName).filter(Boolean))];
+  const eventsOptions = [...new Set(rows.filter(r => !localSport || r.gameName === localSport).map(r => r.eventName).filter(Boolean))];
+  const marketTypeOptions = [...new Set(rows.filter(r => (!localSport || r.gameName === localSport) && (!localEvent || r.eventName === localEvent)).map(r => r.gameType).filter(Boolean))];
+  const marketOptions = [...new Set(rows.filter(r => (!localSport || r.gameName === localSport) && (!localEvent || r.eventName === localEvent) && (!localMarketType || r.gameType === localMarketType)).map(r => r.marketName).filter(Boolean))];
 
   const renderClientSearch = () =>
     hasClientSearchAccess ? (
@@ -178,64 +227,73 @@ const BetHistoryReport = () => {
 
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value)}
+              value={gameType}
+              onChange={(e) => setGameType(e.target.value)}
             >
-              <option value='sport'>Sports</option>
+              <option value='all'>Sports</option>
               <option value='casino'>Casino</option>
             </select>
 
-            {accountType === 'sport' && (
-              <select
-                className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-              >
-                <option value=''>Select Sports</option>
-                <option value=''>Cricket</option>
-                <option value=''>Soccer</option>
-                <option value=''>Tennis</option>
-              </select>
-            )}
+            <select
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              value={localSport}
+              onChange={(e) => {
+                setLocalSport(e.target.value);
+                setLocalEvent('');
+                setLocalMarketType('');
+                setLocalMarket('');
+              }}
+            >
+              <option value=''>Select Sport</option>
+              {sportsOptions.map(sport => <option key={sport} value={sport}>{sport}</option>)}
+            </select>
 
-            {accountType === 'casino' && (
-              <select
-                className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-              >
-                <option value=''>Select Casino</option>
-                <option value=''>Indian Poker / Live Asino</option>
-                <option value=''>Indian Poker II</option>
-                <option value=''>Evolution</option>
-                <option value=''>Vivo</option>
-                <option value=''>Betgames</option>
-                <option value=''>Casino III</option>
-                <option value=''>Spribe</option>
-                <option value=''>Ezugi</option>
-              </select>
-            )}
-
-            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+            <select
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              value={localEvent}
+              onChange={(e) => {
+                setLocalEvent(e.target.value);
+                setLocalMarketType('');
+                setLocalMarket('');
+              }}
+            >
               <option value=''>Select Event</option>
+              {eventsOptions.map(event => <option key={event} value={event}>{event}</option>)}
             </select>
 
-            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+            <select
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              value={localMarketType}
+              onChange={(e) => {
+                setLocalMarketType(e.target.value);
+                setLocalMarket('');
+              }}
+            >
               <option value=''>Select Market Type</option>
+              {marketTypeOptions.map(mType => <option key={mType} value={mType}>{mType}</option>)}
             </select>
 
-            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+            <select
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              value={localMarket}
+              onChange={(e) => setLocalMarket(e.target.value)}
+            >
               <option value=''>Select Market</option>
+              {marketOptions.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
 
             {renderClientSearch()}
 
-            <select className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'>
+            <select
+              className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
+              value={localStatus}
+              onChange={(e) => setLocalStatus(e.target.value)}
+            >
               <option value=''>Select Status</option>
-              <option value=''>WON</option>
-              <option value=''>LOSS</option>
-              <option value=''>VOID</option>
-              <option value=''>DECLARED</option>
+              <option value='1'>WON</option>
+              <option value='2'>LOST</option>
+              <option value='3'>VOID</option>
+              <option value='0'>UNSETTLED</option>
             </select>
 
             <div className='col-span-1 flex gap-1 outline-0'>
@@ -270,13 +328,16 @@ const BetHistoryReport = () => {
             <div className='mr-10'>
               <span>Show</span>
               <select
-                name=''
-                id=''
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
                 className='mx-2 rounded-sm border border-gray-300 px-2 py-1 text-gray-500 outline-0'
               >
-                <option value=''>25</option>
-                <option value=''>50</option>
-                <option value=''>100</option>
+                <option value='25'>25</option>
+                <option value='50'>50</option>
+                <option value='100'>100</option>
               </select>
               <span>entries</span>
             </div>
@@ -326,100 +387,64 @@ const BetHistoryReport = () => {
             </thead>
 
             <tbody>
-              <tr className='border border-gray-300 bg-[#faa9ba] text-gray-800'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25/5/2026, 4:10:55 pm
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Women's T20 Blast Div 2
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Kent W v Sussex Sharks W - 25 May 26
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Bookmaker 0 Commission
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Sussex Sharks W
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>Lay</td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  120
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  84
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  100.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  100.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right uppercase'>
-                  won
-                </td>
-                <td className='px-2 py-1.5'>24.125.164.235</td>
-              </tr>
-              <tr className='border border-gray-300 bg-[#72bbef] text-gray-800'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25/5/2026, 4:10:55 pm
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Women's T20 Blast Div 2
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Kent W v Sussex Sharks W - 25 May 26
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Bookmaker 0 Commission
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Sussex Sharks W
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>Back</td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  120
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  84
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  100.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  100.00
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right uppercase'>
-                  loss
-                </td>
-                <td className='px-2 py-1.5'>24.125.164.235</td>
-              </tr>
+              {filteredRows.length > 0 ? (
+                filteredRows.map((row, idx) => (
+                  <tr key={idx} className={`border border-gray-300 text-gray-800 ${row.status === 1 ? 'bg-[#72bbef]' : row.status === 2 ? 'bg-[#faa9ba]' : 'odd:bg-gray-100'}`}>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] whitespace-nowrap'>
+                      {new Date(row.createdAt).toLocaleString()}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.userName}</td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.gameType || '-'}</td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] max-w-[200px] truncate' title={row.eventName}>{row.eventName || '-'}</td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.marketName || '-'}</td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>{row.teamName || '-'}</td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] capitalize'>{row.otype || '-'}</td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                      {row.fancyScore || '-'}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                      {row.price || row.xValue || 0}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                      {Number(row.betAmount || 0).toFixed(2)}
+                    </td>
+                    <td className={`border border-gray-300 px-2 py-1.5 text-right font-bold text-[14px] ${row.profitLossChange >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {Number(row.profitLossChange || 0).toFixed(2)}
+                    </td>
+                    <td className='border border-gray-300 px-2 py-1.5 text-center uppercase text-[12px] font-bold'>
+                      {row.status === 1 ? 'WON' : row.status === 2 ? 'LOST' : row.status === 3 ? 'VOID' : 'UNSETTLED'}
+                    </td>
+                    <td className='px-2 py-1.5 text-[13px] text-gray-500'>
+                       -
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="13" className="text-center py-4 text-gray-500">{loading ? 'Loading...' : 'No data available'}</td>
+                </tr>
+              )}
             </tbody>
           </table>
 
           {/* Pagination */}
+          {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
-            <div>Showing 1 to 2 of 20 entries</div>
+            <div>Showing {(page - 1) * limit + (filteredRows.length > 0 ? 1 : 0)} to {Math.min(page * limit, totalEntries)} of {totalEntries} entries</div>
             <div className='flex flex-wrap'>
-              {/* First Button */}
-              <button className='pgBtn rounded-l-sm px-[13px] py-[6.5px]'>
+              <button disabled={page === 1} onClick={() => setPage(1)} className='pgBtn rounded-l-sm px-[13px] py-[6.5px] disabled:opacity-50'>
                 First
               </button>
 
-              {/* Previous Button */}
-              <button className='pgBtn px-[12px] py-[6px]'>Prev</button>
-              {/* Page Numbers */}
+              <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className='pgBtn px-[12px] py-[6px] disabled:opacity-50'>Prev</button>
+              
               <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
-                1
+                {page}
               </button>
 
-              {/* Next Button */}
-              <button className='pgBtn px-[13px] py-[6.5px]'>Next</button>
+              <button disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className='pgBtn px-[13px] py-[6.5px] disabled:opacity-50'>Next</button>
 
-              {/* Last Button */}
-              <button className='pgBtn rounded-r-sm px-[13px] py-[6.5px]'>
+              <button disabled={page === totalPages} onClick={() => setPage(totalPages)} className='pgBtn rounded-r-sm px-[13px] py-[6.5px] disabled:opacity-50'>
                 Last
               </button>
             </div>

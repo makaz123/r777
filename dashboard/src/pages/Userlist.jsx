@@ -133,11 +133,10 @@ export default function Userlist() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, currentPage, totalPages, onlyusers, users } = useSelector(
-    (state) => state.auth
-  );
+  const { userInfo, currentPage, totalPages, totalUsers, onlyusers, users } =
+    useSelector((state) => state.auth);
   const { id } = useParams();
-  const [entries, setEntries] = useState(10);
+  const [entries, setEntries] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
   const [patnerPopup, setPatnerPopup] = useState(false);
   const [depositPopup, setDepositPopup] = useState(false);
@@ -194,7 +193,8 @@ export default function Userlist() {
   }, [dispatch]);
 
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
+    const maxPage = Math.max(1, Number(totalPages) || 1);
+    if (newPage >= 1 && newPage <= maxPage) {
       dispatch(setCurrentPage(newPage));
     }
   };
@@ -409,32 +409,37 @@ export default function Userlist() {
     );
   }, [dispatch, currentPage, entries, searchQuery]);
 
-  const reloadUserList = useCallback(
-    (options = {}) => {
-      const { silent = false } = options;
-      if (isFetchingAllUsers === false && activeListCode) {
-        dispatch(fetchSubAdminByLevel({ code: activeListCode, silent }));
-      } else {
-        dispatch(
-          getDownlineList({
-            page: currentPage,
-            limit: entries,
-            searchQuery,
-            listType: 'all',
-            silent,
-          })
-        );
-      }
-    },
-    [
-      dispatch,
-      isFetchingAllUsers,
-      activeListCode,
-      currentPage,
-      entries,
-      searchQuery,
-    ]
-  );
+  /** If list shrinks (search, deletes), avoid staying on an empty page. */
+  useEffect(() => {
+    const max = Math.max(1, Number(totalPages) || 1);
+    if (currentPage > max) {
+      dispatch(setCurrentPage(max));
+    }
+  }, [dispatch, currentPage, totalPages]);
+
+  const reloadUserList = useCallback((options = {}) => {
+    const { silent = false } = options;
+    if (isFetchingAllUsers === false && activeListCode) {
+      dispatch(fetchSubAdminByLevel({ code: activeListCode, silent }));
+    } else {
+      dispatch(
+        getDownlineList({
+          page: currentPage,
+          limit: entries,
+          searchQuery,
+          listType: 'all',
+          silent,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    isFetchingAllUsers,
+    activeListCode,
+    currentPage,
+    entries,
+    searchQuery,
+  ]);
 
   const isAnyBlockingModalOpen =
     patnerPopup ||
@@ -491,6 +496,18 @@ export default function Userlist() {
     () => (isFetchingAllUsers === false ? users : onlyusers) || [],
     [isFetchingAllUsers, users, onlyusers]
   );
+
+  const paginationSummary = useMemo(() => {
+    const total = Number(totalUsers) || 0;
+    const size = Number(entries) || 1;
+    const page = Number(currentPage) || 1;
+    if (total === 0) {
+      return { from: 0, to: 0, total: 0 };
+    }
+    const from = (page - 1) * size + 1;
+    const to = Math.min(page * size, total);
+    return { from, to, total };
+  }, [totalUsers, entries, currentPage]);
 
   const filteredUsers = useMemo(
     () =>
@@ -918,10 +935,14 @@ export default function Userlist() {
                 <select
                   className='rounded border border-gray-300 px-2 py-1 font-normal text-gray-600'
                   value={entries}
-                  onChange={(e) => setEntries(Number(e.target.value))}
+                  onChange={(e) => {
+                    setEntries(Number(e.target.value));
+                    dispatch(setCurrentPage(1));
+                  }}
                 >
                   <option value='10'>10</option>
                   <option value='20'>20</option>
+                  <option value='25'>25</option>
                   <option value='50'>50</option>
                   <option value='100'>100</option>
                   <option value='500'>500</option>
@@ -1155,8 +1176,8 @@ export default function Userlist() {
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
             <div>
-              Showing {currentPage} to {totalPages} of {listUsers?.length}{' '}
-              entries
+              Showing {paginationSummary.from} to {paginationSummary.to} of{' '}
+              {paginationSummary.total} entries
             </div>
             <div className='flex flex-wrap'>
               {/* First Button */}

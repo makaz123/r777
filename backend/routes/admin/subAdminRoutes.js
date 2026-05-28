@@ -22,6 +22,7 @@ import {
   getSubAdmin,
   getSubAdminuser,
   getTotalProfitLossReport,
+  getEventProfitLossReport,
   getUserProfile,
   getUsersByInvite,
   getUserTransactionHistory,
@@ -112,6 +113,11 @@ router.get(
   '/get/total-profit-loss',
   adminAuthMiddleware,
   getTotalProfitLossReport
+);
+router.get(
+  '/get/event-profit-loss',
+  adminAuthMiddleware,
+  getEventProfitLossReport
 );
 router.get('/get/bet-perents/:id', adminAuthMiddleware, parentsDetails);
 router.patch('/gamelock/:id', adminAuthMiddleware, updateGameLock);

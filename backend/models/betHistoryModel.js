@@ -163,6 +163,7 @@ const betHistorySchema = new mongoose.Schema(
 betHistorySchema.index({ betId: 1 }); // Primary lookup for settlement
 betHistorySchema.index({ status: 1 }); // Settlement filtering
 betHistorySchema.index({ userId: 1 }); // User-specific queries
+betHistorySchema.index({ userId: 1, createdAt: -1 }); // Account Statement performance
 betHistorySchema.index({ gameId: 1 }); // Game settlement lookups
 betHistorySchema.index({ userName: 1, gameName: 1, status: 1 }); // Report queries
 

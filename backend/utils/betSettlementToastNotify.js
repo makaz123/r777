@@ -16,6 +16,7 @@ const MAX_UPLINE_DEPTH = 16;
 function buildBasePayload(bet) {
   return {
     betId: String(bet._id),
+    gameId: bet.gameId != null ? String(bet.gameId) : '',
     eventName: bet.eventName || '',
     marketName: bet.marketName || bet.gameType || 'Market',
     gameType: bet.gameType || '',

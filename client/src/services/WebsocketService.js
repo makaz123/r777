@@ -86,6 +86,11 @@ class WebSocketService {
         if (data.type === 'open_bets_update') {
           if (this.matchesCurrentUser(data.userId)) {
             dispatch(getPendingBet());
+            window.dispatchEvent(
+              new CustomEvent('client-bet-history-refresh', {
+                detail: {},
+              })
+            );
           }
         }
 
@@ -99,6 +104,13 @@ class WebSocketService {
           if (this.matchesCurrentUser(data.userId)) {
             dispatch(getUser());
             dispatch(getPendingBet());
+            if (data.role === 'bettor' && data.gameId) {
+              window.dispatchEvent(
+                new CustomEvent('client-bet-history-refresh', {
+                  detail: { gameId: String(data.gameId) },
+                })
+              );
+            }
           }
           handleBetSettlementWebSocketPayload(data);
         }

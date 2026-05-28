@@ -74,6 +74,15 @@ const PrivateRoute = () => {
     if (!sessionReady || !userInfo?._id) return;
 
     let ws = null;
+    let listRefreshTimer = null;
+    const scheduleDownlineListRefresh = () => {
+      if (listRefreshTimer) clearTimeout(listRefreshTimer);
+      listRefreshTimer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('downline-list-refresh'));
+        listRefreshTimer = null;
+      }, 650);
+    };
+
     let wsUrl = host;
     // Fix ws:// or wss:// if host is just a path
     if (wsUrl === '/') {
@@ -105,6 +114,8 @@ const PrivateRoute = () => {
                 detail: { userId: data.userId },
               })
             );
+            // Patch updates one row; parent P/L & rollups need a silent list refetch.
+            scheduleDownlineListRefresh();
           } else if (data.type === 'exposure_update') {
             dispatch(
               updateReduxUserBalance({
@@ -117,6 +128,7 @@ const PrivateRoute = () => {
                 detail: { userId: data.userId },
               })
             );
+            scheduleDownlineListRefresh();
           } else if (
             data.type === 'user_refresh_needed' &&
             String(data.userId) === String(userInfo._id)
@@ -139,6 +151,7 @@ const PrivateRoute = () => {
     } catch (e) {}
 
     return () => {
+      if (listRefreshTimer) clearTimeout(listRefreshTimer);
       if (ws) ws.close();
     };
   }, [sessionReady, userInfo?._id, dispatch]);

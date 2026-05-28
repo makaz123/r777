@@ -746,6 +746,8 @@ const initialState = {
   totalUsers: 0,
   totalPages: 1,
   currentPage: 1,
+  /** Latest getDownlineList thunk requestId — ignore stale fulfilled/rejected responses. */
+  downlineListLatestRequestId: null,
   totalRecords: 0,
   userInfo: null,
   loading: false,
@@ -894,12 +896,16 @@ const userSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(getDownlineList.pending, (state, action) => {
+        state.downlineListLatestRequestId = action.meta.requestId;
         if (!action.meta.arg?.silent) {
           state.loading = true;
         }
         state.error = null;
       })
       .addCase(getDownlineList.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.downlineListLatestRequestId) {
+          return;
+        }
         state.loading = false;
         state.downlineList = action.payload.data || [];
         state.downlineViewer = action.payload.viewer || null;
@@ -913,6 +919,9 @@ const userSlice = createSlice({
         }
       })
       .addCase(getDownlineList.rejected, (state, action) => {
+        if (action.meta.requestId !== state.downlineListLatestRequestId) {
+          return;
+        }
         state.loading = false;
         state.error = action.payload;
       })

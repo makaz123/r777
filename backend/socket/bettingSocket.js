@@ -393,8 +393,11 @@ export const setupWebSocket = (server) => {
 
 //FUNCTION THAT SENDS BALANCE UPDATES TO ALL THE CONNECTED CLIENTS
 export const sendBalanceUpdates = (userId, newBalance) => {
+  const uid = userId != null ? String(userId) : '';
+  if (!uid) return;
+
   //Check if the value is changed
-  const lastBalance = lastSentValues.balance.get(userId);
+  const lastBalance = lastSentValues.balance.get(uid);
 
   if (lastBalance === newBalance) {
     console.log('Skipped-No Change');
@@ -409,7 +412,7 @@ export const sendBalanceUpdates = (userId, newBalance) => {
       client.ws.send(
         JSON.stringify({
           type: 'balance_update',
-          userId: userId,
+          userId: uid,
           newBalance: newBalance,
         })
       );
@@ -419,14 +422,17 @@ export const sendBalanceUpdates = (userId, newBalance) => {
   });
 
   //Update Cache
-  lastSentValues.balance.set(userId, newBalance);
+  lastSentValues.balance.set(uid, newBalance);
 
   console.log(` [WEBSOCKET] Sent to ${sentCount} clients`);
 };
 
 //FUNCTIONS THAT SEND EXPOSURE UPDATES TO ALL THE CONNECTED CLIENTS
 export const sendExposureUpdates = (userId, newExposure) => {
-  const lastExposure = lastSentValues.exposure.get(userId);
+  const uid = userId != null ? String(userId) : '';
+  if (!uid) return;
+
+  const lastExposure = lastSentValues.exposure.get(uid);
   if (lastExposure === newExposure) {
     return;
   }
@@ -439,7 +445,7 @@ export const sendExposureUpdates = (userId, newExposure) => {
       client.ws.send(
         JSON.stringify({
           type: 'exposure_update',
-          userId: userId,
+          userId: uid,
           newExposure: newExposure,
         })
       );
@@ -448,7 +454,7 @@ export const sendExposureUpdates = (userId, newExposure) => {
   });
 
   //Update Cache
-  lastSentValues.exposure.set(userId, newExposure);
+  lastSentValues.exposure.set(uid, newExposure);
 };
 
 //FUNCTION THAT UPDATES OPEN BETS TO ALL THE CONNECTED CLIENTS AFTER BET SETTLEMENT

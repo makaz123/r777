@@ -195,7 +195,7 @@ const Home = () => {
         </div>
         <div className='mb-4 grid grid-cols-1 gap-4 md:gap-8 lg:grid-cols-4'>
           {/* Winning Player */}
-          <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
+          <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
             <div className='bg-[#16a3bb] px-[10px] py-[2px] text-[16px] font-medium text-black'>
               TOP 5 WINNING PLAYER
             </div>
@@ -228,7 +228,7 @@ const Home = () => {
           </div>
 
           {/* Losing Player */}
-          <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
+          <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
             <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               TOP 5 LOSING PLAYER
             </div>
@@ -261,7 +261,7 @@ const Home = () => {
           </div>
 
           {/* Winning Markets */}
-          <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
+          <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
             <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               TOP 5 WINNING MARKETS
             </div>
@@ -300,7 +300,7 @@ const Home = () => {
           </div>
 
           {/* Losing Markets */}
-          <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
+          <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
             <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               TOP 5 LOSING MARKETS
             </div>
@@ -468,7 +468,7 @@ const Home = () => {
           </div>
 
           {/* Casino Gameplay */}
-          <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
+          <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
             <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               CASINO GAMEPLAY DETAILS
             </div>

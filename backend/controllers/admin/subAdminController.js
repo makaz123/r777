@@ -65,6 +65,7 @@ import {
   splitProfitLossByMyShare,
   toStoredDownlineKeepPercent,
   toStoredDownlineKeepFromCreateInput,
+  resolveMatchOddsWinCommission,
 } from '../../utils/partnershipCommissionUtils.js';
 
 const countUplines = async (user) => {
@@ -3503,20 +3504,42 @@ export const getTotalProfitLossReport = async (req, res) => {
         .json({ success: false, message: 'Admin not found' });
     }
 
-    // Collect all end-user ids under current admin recursively.
-    const queue = [admin.code];
-    const userIds = [];
-    while (queue.length > 0) {
-      const currentCode = queue.shift();
-      const downlineUsers = await SubAdmin.find({
-        invite: currentCode,
-        status: { $ne: 'delete' },
-      });
-
-      for (const user of downlineUsers) {
-        if (user.role === 'user') userIds.push(user._id.toString());
-        else queue.push(user.code);
+    const hierarchy = await SubAdmin.aggregate([
+      { $match: { _id: admin._id } },
+      {
+        $graphLookup: {
+          from: 'subadmins',
+          startWith: '$code',
+          connectFromField: 'code',
+          connectToField: 'invite',
+          as: 'downlines',
+          restrictSearchWithMatch: { status: { $ne: 'delete' } }
+        },
+      },
+      {
+        $project: {
+          users: {
+            $filter: {
+              input: '$downlines',
+              as: 'd',
+              cond: { $eq: ['$$d.role', 'user'] }
+            }
+          }
+        }
       }
+    ]);
+
+    const users = hierarchy[0]?.users || [];
+    if (admin.role === 'user') {
+      users.push(admin);
+    }
+
+    const userIds = [];
+    const usersCommitionMap = new Map();
+
+    for (const u of users) {
+      userIds.push(u._id.toString());
+      usersCommitionMap.set(u._id.toString(), parseCommissionPercent(u.commition));
     }
 
     if (!userIds.length) {
@@ -3630,8 +3653,16 @@ export const getTotalProfitLossReport = async (req, res) => {
 
       let marketName = String(bet.marketName || bet.gameType || bet.eventName || '-').toUpperCase();
       
-      const pl = Number(bet.profitLossChange || 0);
-      const commission = Number(bet.commission || 0);
+      let pl = Number(bet.profitLossChange || 0);
+      let commission = 0;
+      let grossWin = pl;
+
+      if (isSports && isMatchOddsBetRecord(bet) && isSettledClientWinPL(pl, bet.status)) {
+        const rate = usersCommitionMap.get(bet.userId) || 0;
+        const resolved = resolveMatchOddsWinCommission(pl, rate, bet.status);
+        commission = resolved.commission;
+        pl = resolved.netProfit; // The actual P&L should be the Net P&L for the user
+      }
 
       const key = `${sport}__${marketName}`;
       if (!reportMap.has(key)) {
@@ -3647,6 +3678,8 @@ export const getTotalProfitLossReport = async (req, res) => {
       const row = reportMap.get(key);
       row.pl += pl;
       row.commission += commission;
+      // Net Profit + Commission = Gross Profit (which is the total amount they won before cuts)
+      // Since `pl` is Net P&L, `pl + commission` is exactly the original amount
       row.amount = row.pl + row.commission;
     }
 

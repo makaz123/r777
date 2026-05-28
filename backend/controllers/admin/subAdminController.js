@@ -3602,6 +3602,132 @@ export const getTotalProfitLossReport = async (req, res) => {
   }
 };
 
+export const getEventProfitLossReport = async (req, res) => {
+  try {
+    const { id } = req;
+    const { startDate, endDate, searchQuery = '', userName = '' } = req.query;
+
+    const admin = await SubAdmin.findById(id);
+    if (!admin) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Admin not found' });
+    }
+
+    const queue = [admin.code];
+    const userIds = [];
+    while (queue.length > 0) {
+      const currentCode = queue.shift();
+      const downlineUsers = await SubAdmin.find({
+        invite: currentCode,
+        status: { $ne: 'delete' },
+      });
+
+      for (const user of downlineUsers) {
+        if (user.role === 'user') userIds.push(user._id.toString());
+        else queue.push(user.code);
+      }
+    }
+
+    if (!userIds.length) {
+      return res.status(200).json({
+        success: true,
+        data: { report: [], totalPL: 0, totalAmount: 0, totalOrders: 0 },
+      });
+    }
+
+    const filter = {
+      userId: { $in: userIds },
+      status: { $in: [1, 2] },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      filter.createdAt = { $gte: start, $lte: end };
+    }
+
+    const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    if (userName) {
+      filter.userName = { $regex: `^${escapeRegex(userName)}$`, $options: 'i' };
+    } else if (searchQuery) {
+      filter.userName = { $regex: searchQuery, $options: 'i' };
+    }
+
+    const settledBets = await betHistoryModel.find(filter).lean();
+
+    const reportMap = new Map();
+
+    for (const bet of settledBets) {
+      let sport = String(bet.gameName || 'Sports');
+      sport = sport.charAt(0).toUpperCase() + sport.slice(1).toLowerCase();
+      
+      const competition = String(bet.gameType || '-');
+      const event = String(bet.eventName || '-');
+      const pl = Number(bet.profitLossChange || 0);
+      const amount = Number(bet.betAmount || 0);
+
+      const key = `${sport}__${event}`;
+      if (!reportMap.has(key)) {
+        reportMap.set(key, {
+          sport,
+          competition,
+          event,
+          orderCount: 0,
+          totalAmount: 0,
+          pl: 0,
+          marketsMap: new Map(),
+        });
+      }
+      
+      const row = reportMap.get(key);
+      row.orderCount += 1;
+      row.totalAmount += amount;
+      row.pl += pl;
+
+      const marketName = String(bet.marketName || bet.gameType || '-').toUpperCase();
+      if (!row.marketsMap.has(marketName)) {
+        row.marketsMap.set(marketName, {
+          market: marketName,
+          orderCount: 0,
+          totalAmount: 0,
+          pl: 0,
+        });
+      }
+      const mRow = row.marketsMap.get(marketName);
+      mRow.orderCount += 1;
+      mRow.totalAmount += amount;
+      mRow.pl += pl;
+    }
+
+    const data = [...reportMap.values()].map(row => ({
+      ...row,
+      markets: [...row.marketsMap.values()],
+      marketsMap: undefined, // remove map from final output
+    }));
+    const totalPL = data.reduce((sum, row) => sum + row.pl, 0);
+    const totalAmount = data.reduce((sum, row) => sum + row.totalAmount, 0);
+    const totalOrders = data.reduce((sum, row) => sum + row.orderCount, 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        report: data,
+        totalPL,
+        totalAmount,
+        totalOrders,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching event profit/loss report:', error);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 export const parentsDetails = async (req, res) => {
   const { id } = req.params;
 

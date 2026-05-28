@@ -1764,13 +1764,22 @@ const buildDownlineViewerPayload = async (admin) => {
     Math.max(0, 100 - viewerMySharePercent)
   );
 
-  const rawGross = await aggregateDownlineOutstandingGross(
-    SubAdmin,
-    betHistoryModel,
-    CasinoBetHistory,
-    TransactionHistory,
-    admin.code
-  );
+  const [rawGross, myPLTillDate] = await Promise.all([
+    aggregateDownlineOutstandingGross(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      TransactionHistory,
+      admin.code
+    ),
+    aggregateViewerProfitLoss(
+      SubAdmin,
+      betHistoryModel,
+      CasinoBetHistory,
+      admin,
+      null
+    )
+  ]);
 
   const totalPL = roundMoney(-rawGross);
   const { myPL, uplinePL } = splitProfitLossByMyShare(
@@ -1790,6 +1799,7 @@ const buildDownlineViewerPayload = async (admin) => {
     totalPL,
     myPL,
     uplinePL,
+    myPLTillDate,
   };
 };
 
@@ -4307,25 +4317,32 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
     ]);
   accountByCode.set(downline.code, downline);
 
-  let grossClientPL = 0;
+  // Use settlement-adjusted (outstanding) P/L for the clientPL calculation.
+  // historyPLByUserId = raw lifetime bet P/L (never changes with settlement)
+  // expectedPLByUserId = bet P/L minus settlement cash (goes to 0 when settled)
+  let outstandingClientPL = 0;
+  let grossHistoryClientPL = 0;
   for (const user of endUsers) {
-    grossClientPL += roundMoney(
-      historyPLByUserId.get(user._id.toString()) ?? 0
-    );
+    const id = user._id.toString();
+    outstandingClientPL += roundMoney(expectedPLByUserId.get(id) ?? 0);
+    grossHistoryClientPL += roundMoney(historyPLByUserId.get(id) ?? 0);
   }
-  grossClientPL = roundMoney(grossClientPL);
+  outstandingClientPL = roundMoney(outstandingClientPL);
+  grossHistoryClientPL = roundMoney(grossHistoryClientPL);
 
-  const passedUpHistory = roundMoney(
-    (grossClientPL * parentSharePercent) / 100
+  // The amount passed up is based on outstanding (settlement-adjusted) client P/L
+  const passedUpOutstanding = roundMoney(
+    (outstandingClientPL * parentSharePercent) / 100
   );
+  // Apply admin's own settlement cash to get final outstanding
   const clientPL = expectedBettingPLFromHistory(
-    passedUpHistory,
+    passedUpOutstanding,
     adminSettlementCash
   );
 
   return {
     clientPL,
-    grossClientPL,
+    grossClientPL: roundMoney(grossHistoryClientPL),
     sharePercent: parentSharePercent,
   };
 };

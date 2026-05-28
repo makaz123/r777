@@ -164,6 +164,7 @@ const UserSettlement = ({ type = 'user' }) => {
       handleClearAll();
       await fetchSettlementUsers();
       await dispatch(getAdmin());
+      window.dispatchEvent(new CustomEvent('account-summary-refresh'));
     } else if (failCount > 0) {
       toast.error(
         'No accounts were settled. Check amounts and master password.'

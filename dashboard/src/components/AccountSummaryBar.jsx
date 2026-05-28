@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
+import { fetchAccountSummary } from '../redux/reducer/authReducer';
 
 const MetricTooltipRow = ({
   label,
@@ -36,8 +37,23 @@ const MetricTooltipRow = ({
 
 const AccountSummaryBar = () => {
   const location = useLocation();
+  const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
-  const { userInfo, downlineViewer } = useSelector((state) => state.auth);
+  const { userInfo, downlineViewer, accountSummaryLoading } = useSelector(
+    (state) => state.auth
+  );
+
+  useEffect(() => {
+    if (!userInfo?._id || userInfo?.accountSummary) return;
+    dispatch(fetchAccountSummary(false));
+  }, [dispatch, userInfo?._id, userInfo?.accountSummary]);
+
+  useEffect(() => {
+    const onRefresh = () => dispatch(fetchAccountSummary(true));
+    window.addEventListener('account-summary-refresh', onRefresh);
+    return () =>
+      window.removeEventListener('account-summary-refresh', onRefresh);
+  }, [dispatch]);
 
   if (location.pathname === '/login' || !userInfo) {
     return null;
@@ -138,9 +154,15 @@ const AccountSummaryBar = () => {
       Math.round(totalExposure * (mySharePct / 100) * 100) / 100
   );
 
+  const summaryReady = Boolean(userInfo?.accountSummary);
+  const showSummaryLoading = accountSummaryLoading && !summaryReady;
+
   return (
     <div className='relative z-20 w-full overflow-visible bg-[#007082] py-[7px] text-sm text-white'>
-      <div className='flex h-[27px] w-full items-center justify-center'>
+      <div className='flex h-[27px] w-full items-center justify-center gap-2'>
+        {showSummaryLoading && (
+          <span className='text-[11px] text-white/80'>Loading summary…</span>
+        )}
         <button
           type='button'
           aria-expanded={open}

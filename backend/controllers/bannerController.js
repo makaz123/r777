@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import Banner from '../models/bannerModel.js';
+import SiteSetting from '../models/siteSettingModel.js';
 
 const isSuperAdminRole = (role) =>
   role === 'supperadmin' || role === 'superadmin';
@@ -100,6 +101,51 @@ export const deleteBanners = async (req, res) => {
       .json({ success: true, message: 'Banners deleted successfully' });
   } catch (error) {
     console.error('Error deleting banners:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const getSiteSettings = async (req, res) => {
+  try {
+    let settings = await SiteSetting.findOne();
+    if (!settings) {
+      settings = await SiteSetting.create({ marqueeText: '1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫' });
+    }
+    return res.status(200).json({ success: true, settings });
+  } catch (error) {
+    console.error('Error fetching site settings:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const updateSiteSettings = async (req, res) => {
+  try {
+    if (!isSuperAdminRole(req.role)) {
+      return res.status(403).json({
+        message: 'Only super admin can manage site settings',
+      });
+    }
+
+    const { marqueeText } = req.body;
+
+    let settings = await SiteSetting.findOne();
+    if (!settings) {
+      settings = new SiteSetting();
+    }
+
+    if (marqueeText !== undefined) {
+      settings.marqueeText = marqueeText;
+    }
+
+    await settings.save();
+
+    return res.status(200).json({
+      success: true,
+      settings,
+      message: 'Settings updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating site settings:', error);
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 };

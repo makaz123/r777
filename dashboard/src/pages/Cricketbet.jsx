@@ -91,7 +91,7 @@ export default function Cricketbet() {
 
   const [activeTab, setActiveTab] = useState('fancy');
   const [activeSubTab, setActiveSubTab] = useState('Normal');
-  const [isComboBookOpen, setIsComboBookOpen] = useState(true);
+  const [isComboBookOpen, setIsComboBookOpen] = useState(false);
   const [scoreUrl, setScoreUrl] = useState(false);
   const [url, setUrl] = useState('');
   const [masterpopup, setMasterpopup] = useState(false);

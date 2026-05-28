@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { getAdmin, user_reset } from '../redux/reducer/authReducer';
+import {
+  getAdmin,
+  setAccountSummary,
+  user_reset,
+} from '../redux/reducer/authReducer';
 import RouteLoader from './RouteLoader';
 import api, { host } from '../redux/api';
 import { updateReduxUserBalance } from '../redux/reducer/authReducer';
@@ -129,6 +133,13 @@ const PrivateRoute = () => {
               })
             );
             scheduleDownlineListRefresh();
+          } else if (
+            data.type === 'account_summary_update' &&
+            String(data.userId) === String(userInfo._id) &&
+            data.accountSummary
+          ) {
+            dispatch(setAccountSummary(data.accountSummary));
+            window.dispatchEvent(new CustomEvent('account-summary-refresh'));
           } else if (
             data.type === 'user_refresh_needed' &&
             String(data.userId) === String(userInfo._id)

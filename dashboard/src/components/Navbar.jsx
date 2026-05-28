@@ -27,6 +27,7 @@ import NotificationBell from './NotificationBell';
 import { isSuperAdmin } from '../utils/roleUtils';
 import { FEATURES } from '../config/featureFlags';
 import varahiLogo from '../assets/icons/varahiLogo.png';
+import api from '../redux/api';
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -47,8 +48,23 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     confirmPassword: '',
   });
 
+  const [marqueeText, setMarqueeText] = useState('');
+
   useEffect(() => {
     dispatch(getAdmin());
+
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/settings');
+        if (response.data && response.data.settings) {
+          setMarqueeText(response.data.settings.marqueeText || 'Welcome To Our Exchange...');
+        }
+      } catch (error) {
+        console.error('Failed to fetch site settings', error);
+      }
+    };
+
+    fetchSettings();
   }, [dispatch]);
 
   const changeSubmit = async (e) => {
@@ -537,13 +553,11 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         <div className='rfm-marquee-container'>
           <span className='rfm-marquee'>
             <FaBullhorn className='mr-2 inline-block' />
-            1️⃣Welcome To
-            Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫
+            {marqueeText}
           </span>
           <span className='rfm-marquee'>
             <FaBullhorn className='mr-2 inline-block' />
-            1️⃣Welcome To
-            Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫
+            {marqueeText}
           </span>
         </div>
       </div>

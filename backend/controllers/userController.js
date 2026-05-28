@@ -10,6 +10,10 @@ import passwordHistory from '../models/passwordHistory.js';
 import SubAdmin from '../models/subAdminModel.js';
 import TransactionHistory from '../models/transtionHistoryModel.js';
 import { calculateAllExposure } from '../utils/exposureUtils.js';
+import {
+  buildUplineChain,
+  mergeAdvancedBetLocksFromChain,
+} from '../utils/betLockUtils.js';
 
 const DEMO_BALANCE = 1500;
 /** Demo accounts not logged out are deleted after this many ms (default 24 hours). */
@@ -228,14 +232,18 @@ export const getUserById = async (req, res) => {
     const updatedPendingBets = await betModel.find({ userId: id, status: 0 });
     const currentExposure = calculateAllExposure(updatedPendingBets);
 
+    const chain = await buildUplineChain(user);
+    const effectiveAdvancedBetLocks = mergeAdvancedBetLocksFromChain(chain);
+
     const userWithExposure = {
       ...user.toObject(),
       exposure: currentExposure,
+      effectiveAdvancedBetLocks,
     };
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: userWithExposure, // ← Send the new object, not the modified user
+      data: userWithExposure,
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);
@@ -323,13 +331,8 @@ export const changePasswordByFirstLogin = async (req, res) => {
       return res.status(400).json({ message: 'Old Password Has Not Matched!' });
     }
     subAdmin.password = newPassword;
-    let generatedMasterPassword = null;
-
-    //Also i have to match the newPassword and the confirmPassword
     if (!subAdmin.isPasswordChanged) {
       subAdmin.isPasswordChanged = true;
-      generatedMasterPassword = generateSixDigitMasterPassword();
-      subAdmin.masterPassword = await bcrypt.hash(generatedMasterPassword, 10);
     }
 
     await subAdmin.save();
@@ -344,7 +347,6 @@ export const changePasswordByFirstLogin = async (req, res) => {
       success: true,
       message: 'Password changed successfully',
       isPasswordChanged: true,
-      generatedMasterPassword,
       data: subAdmin,
     });
   } catch (error) {

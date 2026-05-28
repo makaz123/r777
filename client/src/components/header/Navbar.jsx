@@ -39,17 +39,24 @@ function Navbar() {
 
   const { matches: soccerMatches } = useSelector((state) => state.soccer);
   const { matches: tennisMatches } = useSelector((state) => state.tennis);
+  const deactivatedMatches = useSelector(
+    (state) => state.auth?.deactivatedMatches || []
+  );
+
+  const getFilteredInplayCount = (matches) => {
+    if (!Array.isArray(matches)) return 0;
+    return matches.filter(
+      (m) =>
+        m.inplay &&
+        !deactivatedMatches.includes(String(m.id)) &&
+        !deactivatedMatches.includes(String(m.title))
+    ).length;
+  };
 
   const inplayCounts = {
-    cricket: Array.isArray(cricketMatches)
-      ? cricketMatches.filter((m) => m.inplay).length
-      : 0,
-    soccer: Array.isArray(soccerMatches)
-      ? soccerMatches.filter((m) => m.inplay).length
-      : 0,
-    tennis: Array.isArray(tennisMatches)
-      ? tennisMatches.filter((m) => m.inplay).length
-      : 0,
+    cricket: getFilteredInplayCount(cricketMatches),
+    soccer: getFilteredInplayCount(soccerMatches),
+    tennis: getFilteredInplayCount(tennisMatches),
   };
 
   const mainNavItems = [

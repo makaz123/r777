@@ -24,7 +24,8 @@ import SportsSidebar from './SportsSidebar';
 import AccountSummaryBar from './AccountSummaryBar';
 import NotificationBell from './NotificationBell';
 import { isSuperAdmin } from '../utils/roleUtils';
-
+import { FEATURES } from '../config/featureFlags';
+import varahiLogo from '../assets/icons/varahiLogo.png'
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -63,12 +64,6 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
 
       if (result.type.endsWith('/fulfilled')) {
         toast.success('Password changed successfully');
-        const generatedPassword = result?.payload?.generatedMasterPassword;
-        if (generatedPassword) {
-          navigate('/transaction-password-success', {
-            state: { masterPassword: generatedPassword },
-          });
-        }
         // ✅ Clear form
         setChangeFormData({
           oldPassword: '',
@@ -100,17 +95,19 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     {
       name: 'Reports',
       submenu: [
-        { name: 'User Detail', path: '/RegisterDetail' },
+        { name: 'User Detail', path: '/user-details' },
         { name: 'Account Statement', path: '/AccountStatement' },
-        { name: 'Settlement/Balance Report', path: '/SettlementBalanceReport' },
-        { name: 'Transaction Report', path: '/TransactionReport' },
-        { name: 'Current Bets', path: '/betlist' },
-        { name: 'Profit & Loss Report', path: '/ProfitLoss' },
-        { name: 'Event Profit & Loss Report', path: '/eventpl' },
-        { name: 'Bet History', path: '/bet-history' },
-        { name: 'Live Bets', path: '/live-bets' },
-        { name: 'Sports Revenue', path: '/sports-revenue' },
-        { name: 'IP lookup', path: '/ip-lookup' },
+        { name: 'Settlement/Balance Report', path: '/SettlementReport' },
+        ...(FEATURES.transactionReport
+          ? [{ name: 'Transaction Report', path: '/TransactionReport' }]
+          : []),
+        { name: 'Current Bets', path: '/CurrentBets' },
+        { name: 'Profit & Loss Report', path: '/ProfitLossReport' },
+        { name: 'Event Profit & Loss Report', path: '/EventLossReport' },
+        { name: 'Bet History', path: '/BetHistoryReport' },
+        { name: 'Live Bets', path: '/LiveBetsReport' },
+        { name: 'Sports Revenue', path: '/SportRevenue' },
+        { name: 'IP lookup', path: '/IpLookupReport' },
       ],
     },
     // {
@@ -123,11 +120,12 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
     {
       name: 'Control',
       submenu: [
-        { name: 'Game', path: '/live-casino?cat=Roulette' },
-        { name: 'Casino', path: '/live-casino?cat=Teenpatti' },
+        { name: 'Game', path: '/gamebetlock' },
+        { name: 'Casino', path: '/casinolock' },
       ],
     },
     { name: 'Banner Settings', path: '/banner-settings', superAdminOnly: true },
+    { name: 'Match Control', path: '/match-control', superAdminOnly: true },
     // {
     //   name: 'Live Market',
     //   submenu: [
@@ -234,59 +232,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           location.pathname == '/login' ? 'hidden' : 'block'
         }`}
       >
-        {/* Mobile Header - Split into two rows */}
-        <div className='hidden'>
-          {/* Top row - Role and Name */}
-          <header className='flex h-[52px] items-center justify-between border-b border-gray-800 bg-gradient-to-b from-[#022c43] to-[#18b0c8] p-2'>
-            <div className='flex items-center gap-2'>
-              <button
-                onClick={() => setSportsSidebarOpen((prev) => !prev)}
-                className='flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded bg-[#2a2a2a] text-white'
-                style={{ boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)' }}
-              >
-                <IoMdMenu className='text-xl' />
-              </button>
-              <img src={logo} alt='logo' className='h-[50px]' />
-            </div>
-            <div className='grid justify-items-end'>
-              <div className='flex items-center gap-2'>
-                <p
-                  className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
-                  style={{
-                    boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)',
-                  }}
-                >
-                  {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
-                </p>
-                <p className='text-sm text-white'>{userInfo?.userName}</p>
-              </div>
-              <div className='mt-1 flex items-center gap-2'>
-                <div className='text-xs font-semibold text-white'>
-                  {loading ? (
-                    <p>Loading...</p>
-                  ) : (
-                    <p>
-                      IRP (<span className=''>{userInfo?.avbalance || 0}</span>)
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={reload}
-                  className='flex h-[25px] w-[25px] cursor-pointer items-center justify-center rounded-[2px] bg-[#2a2a2a] text-[20px] leading-[20px] text-white'
-                  style={{
-                    boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, .4)',
-                  }}
-                >
-                  <IoMdRefresh className='p-[1px]' />
-                </button>
-              </div>
-            </div>
-          </header>
-        </div>
-
         {/* Desktop Header */}
-        <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
-          <div className='flex h-[52px] items-center'>
+        <header className='flex h-[40px] md:h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
+          <div className='flex items-center h-[40px] md:h-[52px]'>
             <button
               type='button'
               onClick={() => setSportsSidebarOpen((prev) => !prev)}
@@ -298,7 +246,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </button>
             <NavLink
               to='/user-download-list'
-              className='mr-10 h-[32px]'
+              className='md:mr-10 h-[25px] md:h-[32px]'
               onClick={(e) => {
                 if (onLogoClick) {
                   e.preventDefault();
@@ -310,8 +258,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               <img src={logo} alt='logo' className='block h-full' />
             </NavLink>
 
-            <nav className='h-full text-black'>
-              <ul className='relative mx-auto flex h-full w-full flex-wrap items-center z-999'>
+            <nav className='hidden h-full text-black md:flex'>
+              <ul className='relative z-999 mx-auto flex h-full w-full flex-wrap items-center'>
                 {visibleNavItems.map((item, i) => (
                   <li
                     key={i}
@@ -332,7 +280,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                       </NavLink>
                     ) : (
                       <span
-                        className={`flex h-full cursor-pointer items-center gap-[2px] from-[#16a4bc] to-[#16a4bc] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b ${isSubmenuActive(item) ? 'bg-color text-white' : 'text-black'} "`}
+                        className={`" flex h-full cursor-pointer items-center gap-[2px] from-[#16a4bc] to-[#16a4bc] px-1.5 py-2 text-[14px] whitespace-nowrap text-white hover:bg-gradient-to-b`}
                       >
                         {item.name}
                         <IoMdArrowDropdown />
@@ -385,8 +333,10 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </nav>
           </div>
 
-          <div className='mr-4 flex items-center gap-4'>
-            <NotificationBell role={userInfo?.role} />
+          <div className='mr-1 md:mr-4 flex items-center gap-0.5 md:gap-1'>
+            {userInfo?.role === 'supperadmin' && (
+              <img src={varahiLogo} alt="" className='w-[40px] md:w-[50px]'/>
+            )}
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -394,22 +344,12 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               >
                 {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
               </p> */}
-              <p
-                className='text-sm text-white'
-                onClick={() => setShowLogoutPopup((prev) => !prev)}
-              >
+
+
+              <p className='text-[12px] md:text-sm text-white' onClick={() => setShowLogoutPopup((prev) => !prev)}>
                 {userInfo?.name}
               </p>
               <RiArrowDownSFill size={16} className='text-white' />
-              {/* <div className='text-sm text-[13px] font-semibold text-white'>
-                {loading ? (
-                  <p>Loading...</p>
-                ) : (
-                  <p>
-                    IRP (<span className=''>{userInfo?.avbalance || 0}</span>)
-                  </p>
-                )}
-              </div> */}
               {showLogoutPopup && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -431,98 +371,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                 </motion.div>
               )}
             </div>
+            <NotificationBell role={userInfo?.role} />
           </div>
         </header>
-
-        {/* Mobile Navigation (Horizontal Scrollable) */}
-        <nav className='bg-color2 relative mb-[15px] hidden overflow-x-auto leading-[30px] whitespace-nowrap text-white'>
-          <ul className='flex'>
-            {visibleNavItems.map((item, i) => (
-              <li
-                key={i}
-                className='relative inline-block'
-                onMouseEnter={() => setHoveredItem(item.name)}
-                onMouseLeave={() => setHoveredItem(null)}
-              >
-                {item.path ? (
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `block border-r border-gray-500 px-3 text-[13px] font-semibold transition-colors ${
-                        isActive ? 'bg-color text-white' : 'text-black'
-                      }`
-                    }
-                    onClick={() => setActiveItem(item.name)}
-                  >
-                    {item.name}
-                  </NavLink>
-                ) : (
-                  <div className='relative'>
-                    <span
-                      className='flex cursor-pointer items-center border-r border-gray-500 px-3 text-[13px] font-semibold text-black'
-                      onClick={(e) => toggleMobileSubmenu(item.name, e)}
-                    >
-                      {item.name}
-                      <IoMdArrowDropdown className='h-5 w-5' />
-                    </span>
-
-                    {/* Mobile Submenu Dropdown - positioned absolutely within viewport */}
-                    {mobileSubmenuOpen === item.name && (
-                      <ul
-                        className='bg-color fixed top-0 left-0 z-20 w-40 border border-gray-700 font-semibold text-white shadow-lg'
-                        style={{
-                          top: `${dropdownPosition.top}px`,
-                          left: `${dropdownPosition.left}px`,
-                          position: dropdownPosition.position,
-                        }}
-                      >
-                        {item.submenu
-                          .filter(
-                            (sub) =>
-                              !(
-                                userInfo?.role === 'agent' &&
-                                sub.name === 'Agent Downline List'
-                              )
-                          )
-                          .map((sub, index) => (
-                            <li
-                              key={index}
-                              className='border-b border-gray-700 last:border-b-0 hover:bg-gray-800'
-                            >
-                              <NavLink
-                                to={sub.path}
-                                className='block px-3 text-[13px]'
-                                onClick={(e) => {
-                                  setActiveItem(item.name);
-                                  setMobileSubmenuOpen(null);
-                                  if (sub.reload) {
-                                    e.preventDefault();
-                                    navigate(sub.path);
-                                    window.location.reload();
-                                  }
-                                }}
-                              >
-                                {sub.name}
-                              </NavLink>
-                            </li>
-                          ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
-            {/* Logout button in scrollable menu */}
-            <li className='inline-block'>
-              <button
-                onClick={logout}
-                className='flex items-center gap-1 border-r border-gray-500 px-3 text-[13px] font-semibold text-black'
-              >
-                Logout <MdLogout />
-              </button>
-            </li>
-          </ul>
-        </nav>
 
         <AccountSummaryBar />
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { getUser } from '../redux/reducer/authReducer';
 import Header from '../components/header/Header';
 import Sidebar from '../components/sidebar/Sidebar';
 import Footer from '../components/footer/Footer';
@@ -14,6 +15,7 @@ const MAIN_MENU_PATHS = [
 ];
 
 function MainLayout() {
+  const dispatch = useDispatch();
   const { pathname } = useLocation();
   const userInfo = useSelector((state) => state.auth.userInfo);
   const showSidebar = !(pathname === '/' && !userInfo);
@@ -34,6 +36,13 @@ function MainLayout() {
       setSidebarView('popular');
     }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!userInfo?._id || !localStorage.getItem('auth')) return;
+    if (/-bet(\/|$)/.test(pathname)) {
+      dispatch(getUser());
+    }
+  }, [pathname, userInfo?._id, dispatch]);
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
   const closeSidebar = () => setIsSidebarOpen(false);

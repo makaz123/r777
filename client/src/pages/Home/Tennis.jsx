@@ -30,6 +30,10 @@ export default function Tennis({
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { matches, loader, error } = useSelector((state) => state.tennis);
+  const deactivatedMatches = useSelector(
+    (state) => state.auth?.deactivatedMatches || []
+  );
+
   console.log('tennis matches', matches);
   useEffect(() => {
     dispatch(fetchTennisData());
@@ -38,14 +42,27 @@ export default function Tennis({
   useEffect(() => {
     if (!onInplayCountChange) return;
     const count = Array.isArray(matches)
-      ? matches.filter((m) => m.inplay).length
+      ? matches.filter(
+          (m) =>
+            m.inplay &&
+            !deactivatedMatches.includes(String(m.id)) &&
+            !deactivatedMatches.includes(String(m.title))
+        ).length
       : 0;
     onInplayCountChange(count);
-  }, [matches, onInplayCountChange]);
+  }, [matches, deactivatedMatches, onInplayCountChange]);
+
+  const activeMatches = Array.isArray(matches)
+    ? matches.filter(
+        (m) =>
+          !deactivatedMatches.includes(String(m.id)) &&
+          !deactivatedMatches.includes(String(m.title))
+      )
+    : [];
 
   const filteredMatches = showOnlyInplay
-    ? matches.filter((m) => m.inplay)
-    : matches;
+    ? activeMatches.filter((m) => m.inplay)
+    : activeMatches;
   const visibleMatches =
     previewLimit != null && Array.isArray(filteredMatches)
       ? filteredMatches.slice(0, previewLimit)

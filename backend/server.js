@@ -1,7 +1,16 @@
+import dotenv from 'dotenv';
+import dns from 'dns';
+
+// Force IPv4 (Node.js v17+ issue fix)
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
+// Load env variables
+dotenv.config();
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
 import express from 'express';
 import http from 'http';
 import morgan from 'morgan';
@@ -19,6 +28,7 @@ import casinoRoutes from './routes/casinoRoutes.js';
 import crickeRoute from './routes/cricketRoutes.js';
 import horseRacingRoutes from './routes/horseRacingRoutes.js';
 import soccerRoutes from './routes/soccerRoutes.js';
+import betLockRoutes from './routes/admin/betLockRoutes.js';
 import tennisRoutes from './routes/tennisRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import cashoutRoute from './routes/cashoutRoute.js';
@@ -83,6 +93,7 @@ app.use('/api', tennisRoutes);
 app.use('/api', horseRacingRoutes);
 app.use('/api', casinoRoutes);
 app.use('/api', marketAnalizeRoutes);
+app.use('/api/admin/betlock', betLockRoutes);
 app.use('/api', matchSettingsRoutes);
 app.use('/api', manualResultRoutes);
 app.use('/api', cashoutRoute);

@@ -171,7 +171,9 @@ function Bookmaker({
     if (!teamData) return;
 
     // Find the best LAY odds (highest lay odds available > 0)
-    const layOdds = teamData.odds.filter((o) => o.otype === 'lay' && o.odds > 0);
+    const layOdds = teamData.odds.filter(
+      (o) => o.otype === 'lay' && o.odds > 0
+    );
     if (layOdds.length === 0) {
       toast.error('No lay odds available for cashout');
       return;
@@ -184,7 +186,7 @@ function Bookmaker({
     if (isNaN(X) || X <= 0) return;
 
     // Cashout Formula: S = (pHigh - pLow) / (1 + X/100)
-    let calculatedStake = (pHigh - pLow) / (1 + (X / 100));
+    let calculatedStake = (pHigh - pLow) / (1 + X / 100);
     calculatedStake = Math.round(calculatedStake * 100) / 100;
 
     if (calculatedStake <= 0) {
@@ -304,104 +306,68 @@ function Bookmaker({
     const oddsNum = parseFloat(odds);
     if (isNaN(stakeNum) || isNaN(oddsNum) || stakeNum === 0) return null;
 
-    const { otype, totalBetAmount, totalPrice, teamName } = getBetDetails(team);
-    const isMatchedTeam = teamName?.toLowerCase() === team?.toLowerCase();
-    const existingBet =
-      (otype && totalBetAmount) || (totalPrice && teamName && isMatchedTeam);
+    // Hedge calculation check to ensure perfect match
+    const teams = bookmakerData.map((item) => item.team);
+    if (teams.length >= 2) {
+      const teamA = teams[0];
+      const teamB = teams[1];
+      const detailsA = getBetDetails(teamA);
+      const detailsB = getBetDetails(teamB);
 
-    if (!existingBet) {
-      // Bookmaker calculation: b = otype === 'lay' ? p : p * (x / 100), p = otype === 'lay' ? p * (x / 100) : p
-      const p = stakeNum;
-      const x = oddsNum;
-      const b = selectedType === 'lay' ? p : p * (x / 100);
-      const pCalc = selectedType === 'lay' ? p * (x / 100) : p;
+      let plA = detailsA.netOutcome !== null ? detailsA.netOutcome : 0;
+      let plB = detailsB.netOutcome !== null ? detailsB.netOutcome : 0;
 
       if (selectedType === 'back') {
-        const profit = b; // For BACK: profit = stake * (odds / 100)
+        if (selectedTeam?.toLowerCase() === teamA.toLowerCase()) {
+          plA += stakeNum * (oddsNum / 100);
+          plB -= stakeNum;
+        } else {
+          plA -= stakeNum;
+          plB += stakeNum * (oddsNum / 100);
+        }
+      } else if (selectedType === 'lay') {
+        if (selectedTeam?.toLowerCase() === teamA.toLowerCase()) {
+          plA -= stakeNum * (oddsNum / 100);
+          plB += stakeNum;
+        } else {
+          plA += stakeNum;
+          plB -= stakeNum * (oddsNum / 100);
+        }
+      }
+
+      // If the resulting PL is very close (e.g. within 0.1), average them to avoid precision differences
+      if (Math.abs(plA - plB) < 0.1) {
+        const avgPL = (plA + plB) / 2;
         return {
-          value: Math.abs(profit),
-          color: profit >= 0 ? 'green' : 'red',
+          value: avgPL,
+          color: avgPL >= 0 ? 'green' : 'red',
         };
-      } else {
-        // For LAY: if selected team wins, you lose pCalc (stake * odds / 100)
-        // The value should be negative to show loss
-        const profit = -pCalc; // Negative because it's a loss if selected team wins
-        return { value: Math.abs(profit), color: 'red' }; // Always red for LAY loss on selected team
       }
     }
 
-    // Complex calculation with existing bet (same logic as PlaceBet)
-    let p = stakeNum;
-    let x = oddsNum;
-    // Bookmaker calculation: b = otype === 'lay' ? p : p * (x / 100)
-    // p = otype === 'lay' ? p * (x / 100) : p
-    let b = selectedType === 'lay' ? p : p * (x / 100);
-    p = selectedType === 'lay' ? p * (x / 100) : p;
+    const { netOutcome } = getBetDetails(team);
+    let newPL = netOutcome !== null ? netOutcome : 0;
 
-    const totalBetAmt = parseFloat(totalBetAmount || 0);
-    const totalPrc = parseFloat(totalPrice || 0);
+    const isMatchedTeam = team?.toLowerCase() === selectedTeam?.toLowerCase();
 
-    if (selectedTeam?.toLowerCase() === teamName?.toLowerCase()) {
-      if (selectedType === otype) {
-        // Same team, same type - merge
-        b = b + totalBetAmt;
-        p = p + totalPrc;
-        const calValue = selectedType === 'back' ? b : p;
-        return {
-          value: Math.abs(calValue),
-          color: selectedType === 'back' && calValue >= 0 ? 'green' : 'red',
-        };
+    if (selectedType === 'back') {
+      if (isMatchedTeam) {
+        newPL += stakeNum * (oddsNum / 100);
       } else {
-        // Same team, opposite type - offset
-        if (selectedType === 'back') {
-          if (totalBetAmt > p) {
-            p = totalPrc - b;
-            return { value: Math.abs(p), color: 'red' };
-          } else {
-            b = b - totalPrc;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          }
-        } else if (selectedType === 'lay') {
-          if (totalPrc >= b) {
-            b = totalBetAmt - p;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          } else {
-            p = p - totalBetAmt;
-            return { value: Math.abs(p), color: 'red' };
-          }
-        }
+        newPL -= stakeNum;
       }
-    } else {
-      // Different team
-      if (selectedType === otype) {
-        if (selectedType === 'back') {
-          if (totalPrc >= b) {
-            p = totalPrc - b;
-            return { value: Math.abs(p), color: 'red' };
-          } else {
-            b = b - totalPrc;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          }
-        } else if (selectedType === 'lay') {
-          if (totalPrc >= b) {
-            b = totalBetAmt - p;
-            return { value: Math.abs(b), color: b < 0 ? 'red' : 'green' };
-          } else {
-            p = p - totalBetAmt;
-            return { value: Math.abs(p), color: 'red' };
-          }
-        }
+    } else if (selectedType === 'lay') {
+      if (isMatchedTeam) {
+        newPL -= stakeNum * (oddsNum / 100);
       } else {
-        // Different team, different type - add
-        b = b + totalBetAmt;
-        p = p + totalPrc;
-        const calValue = selectedType === 'back' ? b : p;
-        return {
-          value: Math.abs(calValue),
-          color: selectedType === 'back' && calValue >= 0 ? 'green' : 'red',
-        };
+        newPL += stakeNum;
       }
     }
+
+    return {
+      value: newPL,
+      color: newPL >= 0 ? 'green' : 'red',
+    };
   };
 
   const handleOddsClick = (team, rate, type, sid, oname) => {
@@ -446,7 +412,7 @@ function Bookmaker({
           ) : (
             <button
               disabled
-              className='cursor-not-allowed bg-[#198754] p-1 font-[400] text-white opacity-60'
+              className='cursor-not-allowed rounded-[3px] bg-[#959595] px-2.5 py-0.5 text-[12px] font-[600] text-white'
             >
               {t('cashout', 'Cashout')}
             </button>
@@ -456,22 +422,24 @@ function Bookmaker({
           </span>
         </div>
       </div>
-      <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
-        <div className='ml-2 flex items-center text-[12px] font-bold text-[#097c93]'>
+      <div className='flex border-b border-b-[#c7c8ca]'>
+        <div className='ml-2 flex-1 items-center text-[12px] font-bold text-[#097c93]'>
           <span className='block text-gray-400 md:hidden'>
             {t('min', 'Min')}:{minValue} {t('max', 'Max')}:{formatMax(maxValue)}
           </span>
         </div>
-        <div className='hidden md:block' />
-        <div className='hidden md:block' />
-        <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-          {t('back', 'Back')}
+        <div className='flex w-[40%] md:w-[48%]'>
+          <div className='hidden w-1/3 p-[2px] md:block' />
+          <div className='hidden w-1/3 p-[2px] md:block' />
+          <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
+            {t('back', 'Back')}
+          </div>
+          <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
+            {t('lay', 'Lay')}
+          </div>
+          <div className='hidden w-1/3 p-[2px] md:block' />
+          <div className='hidden w-1/3 p-[2px] md:block' />
         </div>
-        <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-          {t('lay', 'Lay')}
-        </div>
-        <div className='hidden md:block' />
-        <div className='hidden md:block' />
       </div>
 
       {bookmakerData.length > 0 ? (
@@ -493,7 +461,7 @@ function Bookmaker({
             const hasOdds = item && item.odds > 0;
             return (
               <div
-                className={`${bgClass} m-[1px] flex min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                className={`${bgClass} m-[1px] flex min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                 onClick={() =>
                   hasOdds &&
                   handleOddsClick(team, item.odds, type, sid, item?.oname)
@@ -528,80 +496,29 @@ function Bookmaker({
 
           return (
             <React.Fragment key={teamIndex}>
-              <div className='grid grid-cols-[1fr_70px_70px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] md:grid-cols-[1fr_70px_70px_70px_70px_70px_70px]'>
+              <div className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'>
                 {/* Team Name with suggestions */}
-                <div className='ml-2 truncate text-[13px] font-bold text-black lg:text-[14px]'>
-                  <div className='flex items-center'>
-                    <span>{team}</span>
-                    {showCashoutOptions && (
-                      <span
-                        className={`ml-2 text-[12px] font-bold ${mergedCashoutValue >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        {cashoutLoading
-                          ? '...'
-                          : `₹ ${mergedCashoutValue.toFixed(2)}`}
-                      </span>
-                    )}
-                  </div>
-                  {(() => {
-                    if (!userInfo) return null;
-                    const isBookmakerBet =
-                      selectedBet?.gameType === 'Bookmaker' ||
-                      selectedBet?.marketName === 'Bookmaker';
-
-                    const {
-                      otype,
-                      totalBetAmount,
-                      totalPrice,
-                      teamName,
-                      isHedged,
-                      netOutcome,
-                    } = getBetDetails(team);
-                    const isMatchedTeam =
-                      teamName?.toLowerCase() === team?.toLowerCase();
-                    const existingBet =
-                      isHedged ||
-                      (otype && totalBetAmount) ||
-                      (totalPrice && teamName && isMatchedTeam);
-
-                    const isSelectedTeam =
-                      selectedBet?.team?.toLowerCase() === team?.toLowerCase();
-
-                    if (isBookmakerBet && selectedBet?.stake) {
-                      let suggestionValue = null;
-                      let suggestionColor = 'green';
-
-                      if (isSelectedTeam) {
-                        const suggestion = calculateSuggestion(
-                          team,
-                          selectedBet.team,
-                          selectedBet.type,
-                          selectedBet.stake,
-                          selectedBet.odds
-                        );
-                        if (suggestion) {
-                          if (
-                            selectedBet.type === 'lay' &&
-                            suggestion.color === 'red'
-                          ) {
-                            suggestionValue = -suggestion.value;
-                          } else {
-                            suggestionValue = suggestion.value;
-                          }
-                          suggestionColor = suggestion.color;
-                        }
-                      } else {
-                        const stakeNum = parseFloat(selectedBet.stake);
-                        if (!isNaN(stakeNum) && stakeNum > 0) {
-                          if (selectedBet.type === 'back') {
-                            suggestionValue = stakeNum;
-                            suggestionColor = 'red';
-                          } else {
-                            suggestionValue = stakeNum;
-                            suggestionColor = 'green';
-                          }
-                        }
-                      }
+                <div className='ml-2 flex flex-1 items-center justify-between truncate text-[13px] font-bold text-black lg:text-[14px]'>
+                  <div className='flex flex-col'>
+                    <div className='flex items-center'>
+                      <span>{team}</span>
+                    </div>
+                    {(() => {
+                      if (!userInfo) return null;
+                      const {
+                        otype,
+                        totalBetAmount,
+                        totalPrice,
+                        teamName,
+                        isHedged,
+                        netOutcome,
+                      } = getBetDetails(team);
+                      const isMatchedTeam =
+                        teamName?.toLowerCase() === team?.toLowerCase();
+                      const existingBet =
+                        isHedged ||
+                        (otype && totalBetAmount) ||
+                        (totalPrice && teamName && isMatchedTeam);
 
                       if (existingBet) {
                         let betColor;
@@ -649,168 +566,130 @@ function Bookmaker({
                                   {parseFloat(displayValue).toFixed(2)}
                                 </span>
                               )}
-                            {suggestionValue !== null && (
-                              <span
-                                style={{ color: suggestionColor }}
-                                className='text-[11px]'
-                              >
-                                ({suggestionValue < 0 ? '-' : ''}
-                                {Math.abs(suggestionValue).toFixed(2)})
-                              </span>
-                            )}
                           </div>
                         );
-                      } else {
-                        if (suggestionValue !== null) {
-                          return (
-                            <span
-                              style={{ color: suggestionColor }}
-                              className='text-[11px]'
-                            >
-                              ({suggestionValue < 0 ? '-' : ''}
-                              {Math.abs(suggestionValue).toFixed(2)})
-                            </span>
-                          );
-                        }
                       }
-                    } else if (existingBet) {
-                      let betColor;
-                      let displayValue;
+                      return null;
+                    })()}
+                  </div>
 
-                      if (isHedged && netOutcome !== null) {
-                        displayValue = netOutcome;
-                        betColor = netOutcome >= 0 ? 'green' : 'red';
-                      } else {
-                        betColor =
-                          otype === 'lay'
-                            ? isMatchedTeam
-                              ? 'red'
-                              : 'green'
-                            : otype === 'back'
-                              ? isMatchedTeam
-                                ? 'green'
-                                : 'red'
-                              : 'green';
+                  {/* Suggestion Value on the right */}
+                  {(() => {
+                    if (!userInfo) return null;
+                    const isBookmakerBet =
+                      selectedBet?.gameType === 'Bookmaker' ||
+                      selectedBet?.marketName === 'Bookmaker';
 
-                        displayValue = (() => {
-                          if (otype === 'lay') {
-                            return isMatchedTeam ? totalPrice : totalBetAmount;
-                          } else if (otype === 'back') {
-                            return isMatchedTeam ? totalBetAmount : totalPrice;
-                          }
-                          return '';
-                        })();
-                      }
-
-                      return (
-                        <div className='flex gap-1' style={{ color: betColor }}>
-                          {displayValue !== '' &&
-                            displayValue !== null &&
-                            displayValue !== undefined && (
-                              <span className='flex items-center gap-0.5 text-[11px]'>
-                                <FaArrowRight />
-                                {parseFloat(displayValue).toFixed(2)}
-                              </span>
-                            )}
-                        </div>
+                    if (isBookmakerBet && selectedBet?.stake) {
+                      const suggestion = calculateSuggestion(
+                        team,
+                        selectedBet.team,
+                        selectedBet.type,
+                        selectedBet.stake,
+                        selectedBet.odds
                       );
-                    }
 
+                      if (suggestion) {
+                        return (
+                          <span
+                            style={{ color: suggestion.color }}
+                            className='mr-2 text-[12px] font-bold'
+                          >
+                            {suggestion.value < 0 ? '-' : ''}
+                            {Math.abs(suggestion.value).toFixed(2)}
+                          </span>
+                        );
+                      }
+                    }
                     return null;
                   })()}
                 </div>
 
-                {isSuspended ? (
-                  <div className='col-span-2 flex min-h-[36px] items-center justify-center bg-[#4b4b4b] md:col-span-6'>
-                    <span className='font-bold tracking-wide text-red-600'>
-                      {t('suspended', 'SUSPENDED')}
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    {/* Mobile: primary back & lay */}
-                    <div className='md:hidden'>
-                      {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
-                    </div>
-                    <div className='md:hidden'>
-                      {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
-                    </div>
+                {/* Mobile: primary back & lay */}
+                <div
+                  className={`relative flex w-[40%] md:hidden md:w-[48%] ${isSuspended ? 'suspended-event' : ''}`}
+                >
+                  {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
+                  {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
+                </div>
 
-                    {/* Desktop: BACK - 3 slots */}
-                    {[0, 1, 2].map((i) => {
-                      const backItem = backOdds[i];
-                      const hasOdds = backItem && backItem.odds > 0;
-                      return (
-                        <div
-                          key={`back-${i}`}
-                          className={`${backBg[i]} m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                          onClick={() =>
-                            hasOdds &&
-                            handleOddsClick(
-                              team,
-                              backItem.odds,
-                              'back',
-                              sid,
-                              backItem?.oname
-                            )
-                          }
-                        >
-                          {hasOdds ? (
-                            <>
-                              <span className='text-[14px] leading-none font-bold text-black lg:text-[14px]'>
-                                {backItem.odds}
-                              </span>
-                              <span className='pt-[1px] text-[8px] leading-none font-[100] text-black lg:text-[10px]'>
-                                {formatStake(backItem.size)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className='text-[15px] font-bold text-black lg:text-[16px]'>
-                              -
+                <div
+                  className={`relative hidden w-[40%] md:flex md:w-[48%] ${isSuspended ? 'suspended-event' : ''}`}
+                >
+                  {/* Desktop: BACK - 3 slots */}
+                  {[0, 1, 2].map((i) => {
+                    const backItem = backOdds[i];
+                    const hasOdds = backItem && backItem.odds > 0;
+                    return (
+                      <div
+                        key={`back-${i}`}
+                        className={`${backBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          hasOdds &&
+                          handleOddsClick(
+                            team,
+                            backItem.odds,
+                            'back',
+                            sid,
+                            backItem?.oname
+                          )
+                        }
+                      >
+                        {hasOdds ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-black lg:text-[14px]'>
+                              {backItem.odds}
                             </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                            <span className='pt-[1px] text-[8px] leading-none font-[100] text-black lg:text-[10px]'>
+                              {formatStake(backItem.size)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-black lg:text-[16px]'>
+                            -
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
 
-                    {/* Desktop: LAY - 3 slots */}
-                    {[0, 1, 2].map((i) => {
-                      const layItem = layOdds[i];
-                      const hasOdds = layItem && layItem.odds > 0;
-                      return (
-                        <div
-                          key={`lay-${i}`}
-                          className={`${layBg[i]} m-[1px] hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                          onClick={() =>
-                            hasOdds &&
-                            handleOddsClick(
-                              team,
-                              layItem.odds,
-                              'lay',
-                              sid,
-                              layItem?.oname
-                            )
-                          }
-                        >
-                          {hasOdds ? (
-                            <>
-                              <span className='text-[14px] leading-none font-bold text-[#333] lg:text-[14px]'>
-                                {layItem.odds}
-                              </span>
-                              <span className='pt-[1px] text-[8px] leading-none font-[100] text-[#333] lg:text-[10px]'>
-                                {formatStake(layItem.size)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className='text-[15px] font-bold text-[#333] lg:text-[16px]'>
-                              -
+                  {/* Desktop: LAY - 3 slots */}
+                  {[0, 1, 2].map((i) => {
+                    const layItem = layOdds[i];
+                    const hasOdds = layItem && layItem.odds > 0;
+                    return (
+                      <div
+                        key={`lay-${i}`}
+                        className={`${layBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${hasOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          hasOdds &&
+                          handleOddsClick(
+                            team,
+                            layItem.odds,
+                            'lay',
+                            sid,
+                            layItem?.oname
+                          )
+                        }
+                      >
+                        {hasOdds ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-[#333] lg:text-[14px]'>
+                              {layItem.odds}
                             </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
+                            <span className='pt-[1px] text-[8px] leading-none font-[100] text-[#333] lg:text-[10px]'>
+                              {formatStake(layItem.size)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-[#333] lg:text-[16px]'>
+                            -
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               {showInlineBetSlip && (
                 <div className='border-b border-b-[#c7c8ca] bg-[#fafafa]'>

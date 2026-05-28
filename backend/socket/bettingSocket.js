@@ -393,8 +393,11 @@ export const setupWebSocket = (server) => {
 
 //FUNCTION THAT SENDS BALANCE UPDATES TO ALL THE CONNECTED CLIENTS
 export const sendBalanceUpdates = (userId, newBalance) => {
+  const uid = userId != null ? String(userId) : '';
+  if (!uid) return;
+
   //Check if the value is changed
-  const lastBalance = lastSentValues.balance.get(userId);
+  const lastBalance = lastSentValues.balance.get(uid);
 
   if (lastBalance === newBalance) {
     console.log('Skipped-No Change');
@@ -409,7 +412,7 @@ export const sendBalanceUpdates = (userId, newBalance) => {
       client.ws.send(
         JSON.stringify({
           type: 'balance_update',
-          userId: userId,
+          userId: uid,
           newBalance: newBalance,
         })
       );
@@ -419,14 +422,17 @@ export const sendBalanceUpdates = (userId, newBalance) => {
   });
 
   //Update Cache
-  lastSentValues.balance.set(userId, newBalance);
+  lastSentValues.balance.set(uid, newBalance);
 
   console.log(` [WEBSOCKET] Sent to ${sentCount} clients`);
 };
 
 //FUNCTIONS THAT SEND EXPOSURE UPDATES TO ALL THE CONNECTED CLIENTS
 export const sendExposureUpdates = (userId, newExposure) => {
-  const lastExposure = lastSentValues.exposure.get(userId);
+  const uid = userId != null ? String(userId) : '';
+  if (!uid) return;
+
+  const lastExposure = lastSentValues.exposure.get(uid);
   if (lastExposure === newExposure) {
     return;
   }
@@ -439,7 +445,7 @@ export const sendExposureUpdates = (userId, newExposure) => {
       client.ws.send(
         JSON.stringify({
           type: 'exposure_update',
-          userId: userId,
+          userId: uid,
           newExposure: newExposure,
         })
       );
@@ -448,18 +454,19 @@ export const sendExposureUpdates = (userId, newExposure) => {
   });
 
   //Update Cache
-  lastSentValues.exposure.set(userId, newExposure);
+  lastSentValues.exposure.set(uid, newExposure);
 };
 
 //FUNCTION THAT UPDATES OPEN BETS TO ALL THE CONNECTED CLIENTS AFTER BET SETTLEMENT
 export const sendOpenBetsUpdates = (userId, newOpenBets) => {
+  const uid = userId != null ? String(userId) : '';
   let sentCount = 0;
   clients.forEach((client) => {
-    if (client.userId === userId && client.ws.readyState === 1) {
+    if (uid && String(client.userId) === uid && client.ws.readyState === 1) {
       client.ws.send(
         JSON.stringify({
           type: 'open_bets_update',
-          userId: userId,
+          userId: uid,
           newOpenBets: newOpenBets,
         })
       );
@@ -478,13 +485,31 @@ export const sendToUser = (userName, payload) => {
   });
 };
 
+/** Targeted settlement toast (register same userId on socket). */
+export const sendBetSettlementNotification = (targetUserId, payload) => {
+  const targetId = String(targetUserId);
+  let sent = 0;
+  clients.forEach((client) => {
+    if (String(client.userId) === targetId && client.ws.readyState === 1) {
+      client.ws.send(JSON.stringify(payload));
+      sent += 1;
+    }
+  });
+  if (sent > 0) {
+    console.log(
+      `[WS] bet_settlement → ${sent} client(s) userId=${targetId} role=${payload.role}`
+    );
+  }
+};
+
 // Function to send user refresh message (triggers getUser() on frontend)
 export const sendUserRefresh = (userId) => {
   console.log(' [WEBSOCKET] Sending user refresh request for userId:', userId);
 
+  const targetId = String(userId);
   let sentCount = 0;
   clients.forEach((client) => {
-    if (client.userId === userId && client.ws.readyState === 1) {
+    if (String(client.userId) === targetId && client.ws.readyState === 1) {
       client.ws.send(
         JSON.stringify({
           type: 'user_refresh_needed',

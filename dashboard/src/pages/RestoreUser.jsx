@@ -26,14 +26,14 @@ const RestoreUser = () => {
 
   const handleDelete = (id) => {
     MySwal.fire({
-      title: 'Enter Master Password',
+      title: 'Enter Login Password',
       input: 'password',
-      inputPlaceholder: 'Master Password',
+      inputPlaceholder: 'Login Password',
       showCancelButton: true,
       confirmButtonText: 'Restore User',
       preConfirm: (masterPassword) => {
         if (!masterPassword) {
-          Swal.showValidationMessage('Please enter master password');
+          Swal.showValidationMessage('Please enter login password');
         }
         return masterPassword;
       },

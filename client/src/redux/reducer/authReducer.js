@@ -192,6 +192,28 @@ export const updateUserTheme = createAsyncThunk(
   }
 );
 
+export const fetchDeactivatedMatches = createAsyncThunk(
+  'user/fetchDeactivatedMatches',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get('/match-settings/deactivated', {
+        params: { page: 1, limit: 10000 },
+      });
+      if (res.data.success) {
+        // Return array of deactivated IDs (match IDs and tournament names)
+        return res.data.data.matches.map((m) => String(m.matchId));
+      }
+      return [];
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || {
+          message: 'Failed to fetch deactivated matches',
+        }
+      );
+    }
+  }
+);
+
 const decodeToken = (token) => {
   if (!token) {
     return null;
@@ -234,6 +256,7 @@ const initialState = {
   message: null,
   isPasswordChanged: null,
   justLoggedIn: false,
+  deactivatedMatches: [],
 };
 
 // User slice
@@ -428,6 +451,10 @@ const userSlice = createSlice({
       .addCase(updateUserTheme.rejected, (state, action) => {
         state.loading = false;
         state.errorMessage = action.payload?.message;
+      })
+      // Fetch deactivated matches
+      .addCase(fetchDeactivatedMatches.fulfilled, (state, action) => {
+        state.deactivatedMatches = action.payload;
       });
   },
 });

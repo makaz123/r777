@@ -9,6 +9,7 @@ import {
   getPendingBet,
   updateCashoutValues,
 } from '../redux/reducer/betReducer';
+import { handleBetSettlementWebSocketPayload } from '../utils/betSettlementToast';
 
 class WebSocketService {
   constructor() {
@@ -19,6 +20,15 @@ class WebSocketService {
     this.currentUserId = null;
   }
 
+  matchesCurrentUser(messageUserId) {
+    const currentId = this.currentUserId ? String(this.currentUserId) : null;
+    const targetId =
+      messageUserId != null && messageUserId !== ''
+        ? String(messageUserId)
+        : null;
+    return !targetId || !currentId || targetId === currentId;
+  }
+
   connect(dispatch, userId = null) {
     if (this.socket) {
       console.log('WebSocket already connected');
@@ -26,9 +36,16 @@ class WebSocketService {
     }
 
     // Store userId for filtering incoming messages
-    this.currentUserId = userId || localStorage.getItem('userId');
+    const raw = userId || localStorage.getItem('userId');
+    this.currentUserId = raw ? String(raw) : null;
 
-    this.socket = new WebSocket(host);
+    let wsUrl = host;
+    if (wsUrl === '/') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsUrl = `${protocol}//${window.location.host}`;
+    }
+
+    this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
       this.isConnected = true;
@@ -48,40 +65,54 @@ class WebSocketService {
         const data = JSON.parse(event.data);
 
         if (data.type === 'balance_update') {
-          // Only update if this is for the current user
-          if (!data.userId || data.userId === this.currentUserId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateAvbalance(data.newBalance));
           }
         }
 
         if (data.type === 'user_refresh_needed') {
-          // Trigger a user data refresh via Redux
-          if (!data.userId || data.userId === this.currentUserId) {
-            console.log(
-              '🔄 [WEBSOCKET] Casino callback received - refreshing user data'
-            );
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(getUser());
+            window.dispatchEvent(new CustomEvent('user-profile-refresh'));
           }
         }
 
         if (data.type === 'exposure_update') {
-          // Only update if this is for the current user
-          if (!data.userId || data.userId === this.currentUserId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateExposure(data.newExposure));
           }
         }
 
-        // if (data.type === 'open_bets_update') {
-        //   if (data.userId === this.currentUserId) {
-        //     console.log('Refreshing open bets for user:', this.currentUserId);
-        //     dispatch(getPendingBet());
-        //   }
-        // }
+        if (data.type === 'open_bets_update') {
+          if (this.matchesCurrentUser(data.userId)) {
+            dispatch(getPendingBet());
+            window.dispatchEvent(
+              new CustomEvent('client-bet-history-refresh', {
+                detail: {},
+              })
+            );
+          }
+        }
 
         if (data.type === 'cashout_update') {
-          if (data.userId === this.currentUserId) {
+          if (this.matchesCurrentUser(data.userId)) {
             dispatch(updateCashoutValues(data.bets));
           }
+        }
+
+        if (data.type === 'bet_settlement') {
+          if (this.matchesCurrentUser(data.userId)) {
+            dispatch(getUser());
+            dispatch(getPendingBet());
+            if (data.role === 'bettor' && data.gameId) {
+              window.dispatchEvent(
+                new CustomEvent('client-bet-history-refresh', {
+                  detail: { gameId: String(data.gameId) },
+                })
+              );
+            }
+          }
+          handleBetSettlementWebSocketPayload(data);
         }
       } catch (error) {
         console.error(' WebSocket Error:', error);
@@ -122,10 +153,11 @@ class WebSocketService {
 
   // Update current userId (useful when user logs in)
   setUserId(userId) {
-    this.currentUserId = userId;
-    // Re-register with backend if already connected
+    this.currentUserId = userId ? String(userId) : null;
     if (this.socket && this.socket.readyState === WebSocket.OPEN && userId) {
-      this.socket.send(JSON.stringify({ type: 'register', userId }));
+      this.socket.send(
+        JSON.stringify({ type: 'register', userId: String(userId) })
+      );
     }
   }
 

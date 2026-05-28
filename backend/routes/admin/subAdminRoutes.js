@@ -22,6 +22,7 @@ import {
   getSubAdmin,
   getSubAdminuser,
   getTotalProfitLossReport,
+  getEventProfitLossReport,
   getUserProfile,
   getUsersByInvite,
   getUserTransactionHistory,
@@ -38,6 +39,8 @@ import {
   withdrowalAndDeposite,
   getSettlementUsers,
   settleUser,
+  getUserFullDetails,
+  updateAdminDetails,
 } from '../../controllers/admin/subAdminController.js';
 import { adminAuthMiddleware } from '../../middleware/authMiddleware.js';
 
@@ -62,6 +65,7 @@ router.get('/get/all-user-by-invite', adminAuthMiddleware, getUsersByInvite);
 router.post('/user-logout', adminAuthMiddleware, logout);
 router.post('/force-logout/:userId', adminAuthMiddleware, forceLogoutUser);
 router.put('/update/user-details', adminAuthMiddleware, updateCreditReference);
+router.put('/update/admin-details', adminAuthMiddleware, updateAdminDetails);
 router.put(
   '/update/user-explosore-limit',
   adminAuthMiddleware,
@@ -110,6 +114,11 @@ router.get(
   adminAuthMiddleware,
   getTotalProfitLossReport
 );
+router.get(
+  '/get/event-profit-loss',
+  adminAuthMiddleware,
+  getEventProfitLossReport
+);
 router.get('/get/bet-perents/:id', adminAuthMiddleware, parentsDetails);
 router.patch('/gamelock/:id', adminAuthMiddleware, updateGameLock);
 router.get(
@@ -127,5 +136,36 @@ router.post(
   adminAuthMiddleware,
   changePasswordBySubAdmin
 );
+router.get(
+  '/get/user-full-details/:userId',
+  adminAuthMiddleware,
+  getUserFullDetails
+);
+
+import CasinoBetHistory from '../../models/casinoBetHistory.model.js';
+import betHistoryModel from '../../models/betHistoryModel.js';
+import TransactionHistory from '../../models/transtionHistoryModel.js';
+import SubAdmin from '../../models/subAdminModel.js';
+
+router.get('/wipe-test-data', async (req, res) => {
+  try {
+    await TransactionHistory.deleteMany({});
+    await CasinoBetHistory.deleteMany({});
+    await betHistoryModel.deleteMany({});
+    await SubAdmin.updateMany(
+      {},
+      {
+        $set: {
+          bettingProfitLoss: 0,
+          uplineBettingProfitLoss: 0,
+        },
+        $unset: { weekPLResetAt: 1 },
+      }
+    );
+    res.send('Test data wiped successfully!');
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
 
 export default router;

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchDeactivatedMatches } from './redux/reducer/authReducer';
 import Login from './pages/auth/Login';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home/Home';
@@ -37,6 +38,20 @@ function HomeGate() {
 
 function App() {
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Fetch immediately on mount
+    dispatch(fetchDeactivatedMatches());
+
+    // Poll every 10 seconds so deactivations sync instantly without refreshing
+    const intervalId = setInterval(() => {
+      dispatch(fetchDeactivatedMatches());
+    }, 10000);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch]);
+
   return (
     <>
       <Routes>
@@ -77,7 +92,7 @@ function App() {
       </Routes>
       <ToastContainer
         position='top-right'
-        autoClose={800}
+        autoClose={2000}
         hideProgressBar={true}
         newestOnTop={false}
         closeOnClick={true}

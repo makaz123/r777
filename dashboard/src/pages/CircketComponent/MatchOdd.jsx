@@ -2,8 +2,19 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { HiOutlineExclamationCircle } from 'react-icons/hi2';
 import { FaArrowRight, FaLock } from 'react-icons/fa';
-const MatchOdd = ({ matchOddsList }) => {
-  const { pendingBet } = useSelector((state) => state.market);
+import OddsGridCells from '../../components/OddsGridCells';
+const MatchOdd = ({ matchOddsList, onBookClick }) => {
+  const { pendingBet, betsData } = useSelector((state) => state.market);
+
+  const betCount = Array.isArray(betsData)
+    ? betsData.filter(
+        (item) =>
+          item?.gameType === 'Match Odds' ||
+          item?.gameType === 'Winner' ||
+          item?.marketName === 'Match Odds' ||
+          item?.marketName === 'TOURNAMENT_WINNER'
+      ).length
+    : 0;
 
   const oddsData = matchOddsList[0]?.section?.length
     ? matchOddsList[0]?.section?.map((sec) => ({
@@ -136,11 +147,37 @@ const MatchOdd = ({ matchOddsList }) => {
       );
     })();
 
+    let ratio = null;
+    let oppositeTeam = null;
+
+    if (netOutcome !== 0 && oddsData && oddsData.length >= 2) {
+      for (const other of oddsData) {
+        if (other.team !== team) {
+          const otherDetails = getBetDetails(pendingBet, matchData, other.team);
+          if (
+            (netOutcome > 0 && otherDetails.netOutcome < 0) ||
+            (netOutcome < 0 && otherDetails.netOutcome > 0)
+          ) {
+            ratio = Math.abs(netOutcome / otherDetails.netOutcome);
+            oppositeTeam = other.team;
+            break;
+          }
+        }
+      }
+    }
+
     return (
-      <div className='col-span-5 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[11px]'>
-        <div>
-          <p>{team}</p>
-          <p style={{ color: betColor }}>{displayValue || '0.00'}</p>
+      <div className='w-2/3 p-1 text-left text-sm font-bold md:text-[14px]'>
+        <div className='flex items-center justify-between'>
+          <p>
+            <span className='truncate'>{team}</span>
+            {ratio !== null && (
+              <span className='ml-1 text-[11px] font-normal tracking-tight text-[#4d6a8a]'>
+                [{oppositeTeam} : {ratio.toFixed(2)}]
+              </span>
+            )}
+          </p>
+          <p style={{ color: betColor }}>{displayValue}</p>
         </div>
       </div>
     );
@@ -151,6 +188,7 @@ const MatchOdd = ({ matchOddsList }) => {
     const n = Number(num);
     return `${n / 1000}k`;
   };
+  const isSuspended = oddsData[0]?.status === 'SUSPENDED';
 
   return (
     <div>
@@ -160,7 +198,10 @@ const MatchOdd = ({ matchOddsList }) => {
             <div className='mt-2 flex items-center justify-between bg-[#27a6c3] px-2.5 py-[3px] text-[14px] text-white'>
               <div className='flex items-center gap-1'>
                 <span className='font-bold'>{oddsData[0]?.mname}</span>
-                <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
+                <span
+                  className='cursor-pointer rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'
+                  onClick={onBookClick}
+                >
                   Book
                 </span>
                 <span className='flex items-center gap-0.5 rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
@@ -170,138 +211,72 @@ const MatchOdd = ({ matchOddsList }) => {
                   BetPlace
                 </span>
                 <span className='rounded-[3px] bg-[#f8bb12] px-2 py-[3px] text-[11px] leading-none text-black'>
-                  0
+                  {betCount}
                 </span>
               </div>
               <div>
-                Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
+                <span className='hidden md:flex'>
+                  Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
+                </span>
               </div>
             </div>
 
-            {oddsData[0]?.status === 'SUSPENDED' ? (
-              <div className='relative mx-auto border-2 border-red-500'>
-                <div className='justify-centerz-10 absolute flex h-full w-full items-center bg-[#e1e1e17e]'>
-                  <p className='absolute left-1/2 -translate-x-1/2 transform text-3xl font-bold text-red-700'>
-                    SUSPENDED
-                  </p>
+            <div className='relative'>
+              {isSuspended && (
+                <div className='absolute z-10 flex h-full w-full items-center justify-center bg-[#e1e1e17e]'>
+                  <p className='text-3xl font-bold text-red-700'>SUSPENDED</p>
+                </div>
+              )}
+
+              {/* Header */}
+              <div className='flex border-b border-gray-300 bg-white text-center'>
+                <div className='w-[60%] p-1 md:w-[52%]'>
+                  <div className='p-0.5 text-left text-xs text-gray-600 md:hidden'>
+                    Min: {oddsData[0]?.min} | Max: {matchOddsList[0]?.maxb}
+                  </div>
                 </div>
 
-                <div className='grid grid-cols-9 border-b border-gray-300 bg-white text-center'>
-                  <div className='col-span-5 p-1 md:col-span-5'>
-                    <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      100-100000
-                    </div>
-                  </div>
-                  <div className='col-span-2 bg-[#72bbef] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
+                <div className='flex w-[40%] md:w-[48%]'>
+                  <div className='hidden w-1/3 md:block'></div>
+                  <div className='hidden w-1/3 md:block'></div>
+                  <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
                     Back
                   </div>
-                  <div className='col-span-2 bg-[#faa9ba] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
+                  <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
                     Lay
                   </div>
-                  <div className='col-span-2 hidden rounded-lg p-1 text-[11px] font-semibold md:block'>
-                    <div className='rounded-md bg-[#bed5d8] p-0.5'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      100-100000
+                  <div className='hidden w-1/3 md:block'></div>
+                  <div className='hidden w-1/3 md:block'></div>
+                </div>
+              </div>
+
+              {/* Rows */}
+              {oddsData.map(({ team, odds }, index) => (
+                <div
+                  key={team}
+                  className={`flex border-b border-gray-300 bg-white text-center text-[10px] font-semibold ${
+                    isSuspended ? 'opacity-30' : ''
+                  }`}
+                >
+                  {!isSuspended ? (
+                    <MyComponent
+                      team={team}
+                      matchData={oddsData[0]}
+                      pendingBet={pendingBet}
+                      index={index}
+                    />
+                  ) : (
+                    <div className='w-2/3 p-1 pl-4 text-left text-sm font-bold md:text-[14px]'>
+                      {team}
                     </div>
+                  )}
+
+                  <div className='flex w-1/2 md:w-1/3'>
+                    <OddsGridCells odds={odds} />
                   </div>
                 </div>
-                {oddsData.map(({ team, odds }, index) => (
-                  <div key={index}>
-                    <div className='grid cursor-pointer grid-cols-9 border-b border-gray-300 bg-white text-center text-[10px] font-semibold opacity-30 hover:bg-gray-200'>
-                      <div className='col-span-5 p-1 pl-4 text-left text-sm font-bold md:col-span-3 md:text-[11px]'>
-                        {team}
-                      </div>
-                      {odds.map((odd, i) => (
-                        <div
-                          key={i}
-                          className={`col-span-2 cursor-pointer p-1 md:col-span-1 ${
-                            i === 0
-                              ? 'hidden bg-sky-100 md:block'
-                              : i === 1
-                                ? 'hidden bg-sky-200 md:block'
-                                : i === 2
-                                  ? 'bg-[#72bbef] '
-                                  : i === 3
-                                    ? 'bg-[#faa9ba]'
-                                    : i === 4
-                                      ? 'hidden bg-pink-200 md:block'
-                                      : 'hidden bg-pink-100 md:block'
-                          }`}
-                        >
-                          <div className='font-bold'>{odd?.odds}</div>
-                          <div className='text-gray-800'>
-                            {' '}
-                            {formatToK(odd?.size)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div>
-                <div className='grid grid-cols-9 border-b border-gray-300 bg-white text-center'>
-                  <div className='col-span-5 p-1 md:col-span-5'>
-                    {' '}
-                    <div className='rounded-md bg-[#bed5d8] p-0.5 text-xs text-gray-600 md:hidden'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      {oddsData[0]?.min}-{formatToK(matchOddsList[0]?.maxb)}
-                    </div>
-                  </div>
-                  <div className='col-span-2 bg-[#72bbef] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
-                    Back
-                  </div>
-                  <div className='col-span-2 bg-[#faa9ba] p-1 font-bold text-slate-800 md:col-span-1 md:md:rounded-t-2xl'>
-                    Lay
-                  </div>
-                  <div className='col-span-2 hidden rounded-lg p-1 text-[11px] font-semibold md:block'>
-                    <div className='rounded-md bg-[#bed5d8] p-0.5'>
-                      <span className='text-[#315195]'>Min/Max </span>
-                      {matchOddsList[0]?.min}-
-                      {formatToK(matchOddsList[0]?.maxb)}
-                    </div>
-                  </div>
-                </div>
-                {oddsData.map(({ team, odds }, index) => (
-                  <div key={index}>
-                    <div className='grid cursor-pointer grid-cols-9 border-b border-gray-300 bg-white text-center text-[10px] font-semibold hover:bg-gray-200'>
-                      <MyComponent
-                        key={team}
-                        team={team}
-                        matchData={oddsData[0]}
-                        pendingBet={pendingBet}
-                        index={index}
-                      />
-                      {odds.map((odd, i) => (
-                        <div
-                          key={i}
-                          className={`col-span-2 cursor-pointer p-1 md:col-span-1 ${
-                            i === 0
-                              ? 'hidden bg-sky-100 md:block'
-                              : i === 1
-                                ? 'hidden bg-sky-200 md:block'
-                                : i === 2
-                                  ? 'bg-[#72bbef] '
-                                  : i === 3
-                                    ? 'bg-[#faa9ba]'
-                                    : i === 4
-                                      ? 'hidden bg-pink-200 md:block'
-                                      : 'hidden bg-pink-100 md:block'
-                          }`}
-                        >
-                          <div>
-                            <div className='font-bold'>{odd?.odds}</div>
-                            <div className='text-gray-800'>{odd?.size}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
           </>
         )}
       </div>

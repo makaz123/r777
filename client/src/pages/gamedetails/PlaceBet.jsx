@@ -427,6 +427,7 @@ import { toast } from 'react-toastify';
 import LoginPopup from '../../components/auth/LoginPopup';
 import cancelIcon from '../../assets/icons/bt-iconCancel.jpg';
 import { useTranslation } from '../../context/LanguageContext';
+import { getBetLockMessage } from '../../utils/betLockUtils';
 
 function PlaceBet({
   selectedBet,
@@ -1063,6 +1064,20 @@ function PlaceBet({
   const handleSubmit = async () => {
     if (!userInfo || !localStorage.getItem('auth')) {
       setShowLoginPopup(true);
+      return;
+    }
+
+    const lockMessage = getBetLockMessage({
+      userInfo,
+      gameName,
+      gameType,
+      marketName: marketName || gameType,
+      gameId,
+      market_id: null,
+      sid,
+    });
+    if (lockMessage) {
+      toast.error(lockMessage);
       return;
     }
 

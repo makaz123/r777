@@ -77,9 +77,7 @@ const NotificationBell = ({ role }) => {
       });
       setUnreadCount(data?.unreadCount ?? 0);
       setItems((prev) =>
-        prev.map((n) =>
-          n._id === notificationId ? { ...n, isRead: true } : n
-        )
+        prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
       );
     } catch {
       /* ignore */
@@ -111,7 +109,7 @@ const NotificationBell = ({ role }) => {
         type='button'
         aria-label='Notifications'
         onClick={() => setOpen((p) => !p)}
-        className='relative flex h-9 w-9 items-center justify-center rounded border border-white/40 bg-white/10 text-white transition hover:bg-white/20'
+        className='relative flex items-center justify-center rounded border border-white/40 p-1 md:p-1.5 text-white transition hover:bg-white/20'
       >
         <IoNotificationsOutline size={20} />
         {unreadCount > 0 && (
@@ -193,7 +191,7 @@ const NotificationBell = ({ role }) => {
                 <p className='text-[12px] font-semibold text-[#016a82]'>
                   {active.title}
                 </p>
-                <p className='mt-1 text-[12px] leading-relaxed text-gray-700 whitespace-pre-wrap'>
+                <p className='mt-1 text-[12px] leading-relaxed whitespace-pre-wrap text-gray-700'>
                   {active.message}
                 </p>
               </div>

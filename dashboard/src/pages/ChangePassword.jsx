@@ -2,12 +2,10 @@ import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import { changePasswordBySubAdmin } from '../redux/reducer/authReducer';
 
 const ChangePassword = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -38,12 +36,6 @@ const ChangePassword = () => {
         toast.success(
           result.payload?.message || 'Password changed successfully'
         );
-        const generatedPassword = result?.payload?.generatedMasterPassword;
-        if (generatedPassword) {
-          navigate('/transaction-password-success', {
-            state: { masterPassword: generatedPassword },
-          });
-        }
         setFormData({
           oldPassword: '',
           newPassword: '',

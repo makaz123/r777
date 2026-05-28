@@ -53,15 +53,78 @@ const AccountSummaryBar = () => {
     Number(v) >= 0 ? 'text-green-400' : 'text-red-400';
 
   const summary = userInfo?.accountSummary;
+  const isClientRole = userInfo?.role === 'user';
+
+  /** Down Line:
+   *  - Non-client roles: exact outstanding partnership share = downlineDena
+   *  - Client role: whole 100% client P/L = downlineClientPL
+   */
+  const downlineAmount = isClientRole
+    ? Number(
+        userInfo?.accountSummary?.downlineClientPL ??
+          downlineViewer?.totalPL ??
+          0
+      )
+    : Number(
+        userInfo?.accountSummary?.downlineDena ??
+          userInfo?.accountSummary?.downlineDenaGross ??
+          downlineViewer?.totalPL ??
+          0
+      );
+  const uplineAmount = Number(
+    userInfo?.accountSummary?.uplineSharePL ??
+      userInfo?.accountSummary?.uplineDena ??
+      downlineViewer?.uplinePL ??
+      0
+  );
+  const weekPLAmount = Number(summary?.currentWeekPL ?? 0);
+
+  const downlineLenDena =
+    userInfo?.accountSummary?.downlineClientLenDena ??
+    (downlineAmount > 0.005
+      ? 'dena'
+      : downlineAmount < -0.005
+        ? 'lena'
+        : 'clear');
+  const uplineLenDena =
+    userInfo?.accountSummary?.uplineLenDena ??
+    (uplineAmount > 0.005 ? 'dena' : uplineAmount < -0.005 ? 'lena' : 'clear');
+
+  const downlineTooltip =
+    summary?.downlineTooltip ??
+    (downlineLenDena === 'lena'
+      ? 'Down Line: Direct downline accounts ka outstanding settlement balance — aapko lena hai.'
+      : downlineLenDena === 'dena'
+        ? 'Down Line: Direct downline accounts ka outstanding settlement balance — aapko dena hai.'
+        : 'Down line settled — koi outstanding balance nahi.');
+
+  const uplineTooltip =
+    summary?.uplineTooltip ??
+    (uplineLenDena === 'clear'
+      ? 'Up line settled — koi outstanding upline partnership due nahi.'
+      : uplineLenDena === 'dena'
+        ? 'Upline partnership due (dena) — cash settlement reduces this amount.'
+        : 'Upline partnership collectable (lena) — cash settlement reduces this amount.');
+
   const roleDisplay =
     summary?.userType ||
-    (userInfo?.role === 'white'
-      ? 'White Label'
+    (userInfo?.role?.toLowerCase() === 'white'
+      ? 'Admin'
       : userInfo?.role?.charAt(0).toUpperCase() + userInfo?.role?.slice(1));
 
+  /** My Exposure: total exposure * my share percentage */
+  const totalExposure = Number(
+    summary?.totalExposure ?? userInfo?.totalExposure ?? userInfo?.exposure ?? 0
+  );
+  const mySharePct = Number(summary?.mySharePercent ?? 100);
+  const myExposureAmount = Number(
+    summary?.myShareExposure ??
+      Math.round(totalExposure * (mySharePct / 100) * 100) / 100
+  );
+
   return (
-    <div className='relative z-20 w-full overflow-visible bg-[#016a82] text-sm text-white'>
-      <div className='flex w-full items-center justify-center py-2'>
+    <div className='relative z-20 w-full overflow-visible bg-[#007082] py-[7px] text-sm text-white'>
+      <div className='flex h-[27px] w-full items-center justify-center'>
         <button
           type='button'
           aria-expanded={open}
@@ -69,17 +132,17 @@ const AccountSummaryBar = () => {
             open ? 'Collapse account summary' : 'Expand account summary'
           }
           onClick={() => setOpen((prev) => !prev)}
-          className='flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#016a82] transition hover:bg-gray-100'
+          className='flex h-5.5 w-5.5 items-center justify-center rounded-full bg-white text-[#016a82] transition hover:bg-gray-100'
         >
           <FaChevronDown
-            className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            className={`h-3 w-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           />
         </button>
       </div>
 
       {open && (
         <div className='px-4 pt-0 pb-4'>
-          <div className='grid grid-cols-2 gap-x-8 gap-y-2 md:grid-cols-5'>
+          <div className='grid-cols grid gap-x-8 gap-y-2 md:grid-cols-5'>
             <div className='space-y-1'>
               <MetricTooltipRow label='User ID : ' tooltip='Your username.'>
                 <span className='font-medium'>
@@ -94,7 +157,11 @@ const AccountSummaryBar = () => {
             <div className='space-y-1'>
               <MetricTooltipRow
                 label='Given Bal : '
-                tooltip='Aapko Upper Se Diya Gaya Balance.'
+                tooltip={
+                  isClientRole
+                    ? 'Aapko Upper Se Diya Gaya Balance.'
+                    : 'Aapne Niche Diya Gaya Balance.'
+                }
               >
                 <span
                   className={plColorClass(
@@ -121,81 +188,104 @@ const AccountSummaryBar = () => {
             </div>
 
             <div className='space-y-1'>
+              {!['supperadmin'].includes(userInfo?.role) && (
+                <>
+                  <MetricTooltipRow
+                    label={`Up Line (${uplineLenDena}) : `}
+                    tooltip={uplineTooltip}
+                  >
+                    <span
+                      className={
+                        uplineLenDena === 'clear'
+                          ? 'text-green-400'
+                          : plColorClass(uplineAmount)
+                      }
+                    >
+                      {formatMoney(uplineAmount)}
+                    </span>
+                  </MetricTooltipRow>
+                </>
+              )}
               <MetricTooltipRow
-                label='Up Line (dena) : '
-                tooltip={
-                  summary?.uplineTooltip ??
-                  'Upper Level Ke Saath Hisab Ka Len-Den.'
-                }
+                label={`Down Line (${downlineLenDena}) : `}
+                tooltip={summary?.downlineTooltip ?? downlineTooltip}
               >
-                <span
-                  className={plColorClass(
-                    summary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
-                  )}
-                >
-                  {formatMoney(
-                    summary?.uplineDena ?? downlineViewer?.uplinePL ?? 0
-                  )}
+                <span className={plColorClass(downlineAmount)}>
+                  {formatMoney(downlineAmount)}
                 </span>
               </MetricTooltipRow>
-              <MetricTooltipRow
-                label='Down Line (dena) : '
-                tooltip={
-                  summary?.downlineTooltip ??
-                  'Down Line Ke Saath Hisab Ka Len-Den.'
-                }
-              >
-                <span
-                  className={plColorClass(
-                    summary?.downlineDena ??
-                      downlineViewer?.totalPL ??
-                      userInfo?.uplineBettingProfitLoss ??
-                      0
-                  )}
+              {!isClientRole && (
+                <MetricTooltipRow
+                  label='My Exposure : '
+                  tooltip='Total exposure x My Share % — shows only your percentage of the total exposure.'
                 >
-                  {formatMoney(
-                    summary?.downlineDena ??
-                      downlineViewer?.totalPL ??
-                      userInfo?.uplineBettingProfitLoss ??
-                      0
-                  )}
-                </span>
-              </MetricTooltipRow>
+                  <span
+                    className={
+                      myExposureAmount === 0 ? 'text-white/90' : 'text-red-400'
+                    }
+                  >
+                    {myExposureAmount > 0
+                      ? `-${formatMoney(myExposureAmount)}`
+                      : formatMoney(myExposureAmount)}
+                  </span>
+                </MetricTooltipRow>
+              )}
             </div>
 
-            <div className='space-y-1'>
-              <MetricTooltipRow
-                label='Current P&L : '
-                tooltip='Upline + Downline Ka Bina Settle Kiya Hua Profit & Loss Account.'
-              >
-                <span
-                  className={plColorClass(
-                    summary?.currentWeekPL ?? downlineViewer?.myPL ?? 0
-                  )}
+            {isClientRole ? (
+              <div className='space-y-1'>
+                <MetricTooltipRow
+                  label='Current P&L : '
+                  tooltip='Available minus balance when exposure is zero.'
                 >
-                  {formatMoney(summary?.currentWeekPL ?? 0)}
-                </span>
-              </MetricTooltipRow>
-              <MetricTooltipRow
-                label='Exposure : '
-                tooltip='Your current market exposure with all kind of games that your clients are playing currently.'
-              >
-                <span
-                  className={plColorClass(
-                    summary?.exposureDisplay ?? summary?.myShareExposure ?? 0
-                  )}
+                  <span
+                    className={plColorClass(
+                      summary?.currentWeekPL ?? downlineViewer?.myPL ?? 0
+                    )}
+                  >
+                    {formatMoney(summary?.currentWeekPL ?? 0)}
+                  </span>
+                </MetricTooltipRow>
+                <MetricTooltipRow
+                  label='My Exposure : '
+                  tooltip='Shows ONLY your percentage exposure (Total Exposure x My %)'
                 >
-                  {formatMoney(
-                    summary?.exposureDisplay ?? summary?.myShareExposure ?? 0
-                  )}
-                </span>
-              </MetricTooltipRow>
-            </div>
+                  <span
+                    className={plColorClass(
+                      summary?.exposureDisplay ?? summary?.myShareExposure ?? 0
+                    )}
+                  >
+                    {formatMoney(
+                      summary?.exposureDisplay ?? summary?.myShareExposure ?? 0
+                    )}
+                  </span>
+                </MetricTooltipRow>
+              </div>
+            ) : (
+              <div className='space-y-1'>
+                {/* <MetricTooltipRow
+                  label='Net Outstanding : '
+                  tooltip='Aapka total unsettled cash profit/loss. Jab Up Line aur Down Line dono clear hon, toh yeh 0 ho jayega.'
+                >
+                  <span className={plColorClass(weekPLAmount)}>
+                    {formatMoney(weekPLAmount)}
+                  </span>
+                </MetricTooltipRow> */}
+                {/* <MetricTooltipRow
+                  label='My Share : '
+                  tooltip='Your partnership percentage share.'
+                >
+                  <span className='font-semibold text-blue-300'>
+                    {summary?.mySharePercent ?? 0}%
+                  </span>
+                </MetricTooltipRow> */}
+              </div>
+            )}
 
             <div className='space-y-1 md:col-span-1'>
               <MetricTooltipRow
-                label='My P&L : '
-                tooltip='Mera Profit & Loss Account.'
+                label='Dashboard P&L : '
+                tooltip='Shows ONLY your percentage (P x My % / 100). Lifetime betting P&L from downline.'
                 alignTooltip='center'
               >
                 <span

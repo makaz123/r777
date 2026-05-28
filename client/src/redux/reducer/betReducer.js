@@ -88,10 +88,10 @@ export const getProLoss = createAsyncThunk(
       eventName,
       marketName,
       marketId,
+      groupByMarket,
     },
     { rejectWithValue }
   ) => {
-    // console.log("eventName", gameId);
     try {
       let query = `?page=${page}&limit=${limit}`;
       if (startDate && endDate) {
@@ -100,18 +100,19 @@ export const getProLoss = createAsyncThunk(
       if (gameName) {
         query += `&gameName=${gameName}`;
       }
-
       if (eventName) {
         query += `&eventName=${eventName}`;
       }
-
       if (marketName) {
         query += `&marketName=${marketName}`;
       }
       if (marketId) {
         query += `&marketId=${marketId}`;
       }
-      const response = await api.get(`/user/profit-loss/history?${query}`, {
+      if (groupByMarket) {
+        query += `&groupByMarket=true`;
+      }
+      const response = await api.get(`/user/profit-loss/history${query}`, {
         withCredentials: true,
       });
       return response.data;
@@ -217,7 +218,10 @@ export const getBetHistory = createAsyncThunk(
 );
 export const getTransactionHistory = createAsyncThunk(
   'bet/getTransHistory',
-  async ({ startDate, endDate, page, limit, accountType }, { rejectWithValue }) => {
+  async (
+    { startDate, endDate, page, limit, accountType },
+    { rejectWithValue }
+  ) => {
     try {
       let query = `?page=${page}&limit=${limit}`;
 

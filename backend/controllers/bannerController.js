@@ -58,12 +58,10 @@ export const uploadBanner = async (req, res) => {
     });
   } catch (error) {
     console.error('Error uploading banners:', error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: 'Server error while uploading banners',
-      });
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while uploading banners',
+    });
   }
 };
 

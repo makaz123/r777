@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { FaBan, FaCheckCircle, FaLock, FaRegFilePdf } from 'react-icons/fa';
@@ -14,34 +14,47 @@ import {
   withdrawalAndDeposite,
   userSetting,
   getCreditRefHistory,
+  fetchSubAdminByLevel,
   updateExploserLimit,
   changePasswordByDownline,
   updateUserLock,
 } from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
+import api from '../redux/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AiOutlineFileExcel } from 'react-icons/ai';
 import pdfIcon from '../assets/icons/pdf-icon.svg';
 import excelIcon from '../assets/icons/csv-icon.svg';
 import VirtualTable from '../components/VirtualTable';
+
 export default function Userlist() {
   const downloadPDF = () => {
     const doc = new jsPDF();
     doc.text('User List', 14, 15);
 
-    const filteredUsers = onlyusers.filter((user) =>
+    const exportUsers =
+      (isFetchingAllUsers === false ? users : onlyusers) || [];
+    const filteredUsers = exportUsers.filter((user) =>
       activeTab === 'active'
         ? user.status === 'active'
         : user.status !== 'active'
     );
 
+    const exportExposure = (user) => {
+      if (user.role !== 'user') return user.exposure || 0;
+      if (user.shareExposure != null) return user.shareExposure;
+      const gross = Number(user.totalExposure ?? user.exposure ?? 0);
+      const pct = Number(user.parentSharePercent ?? user.mySharePercent ?? 100);
+      return Math.round(gross * (pct / 100) * 100) / 100;
+    };
+
     const tableData = filteredUsers.map((user) => [
       user.userName,
       user.creditReference || '-',
       user.balance || 0,
-      user.exposure || 0,
+      exportExposure(user),
       user.exposureLimit || 0,
       user.avbalance || 0,
       user.bettingProfitLoss || 0,
@@ -70,17 +83,27 @@ export default function Userlist() {
     doc.save(`${activeTab}-users.pdf`);
   };
   const downloadExcel = () => {
-    const filteredUsers = onlyusers.filter((user) =>
+    const exportUsers =
+      (isFetchingAllUsers === false ? users : onlyusers) || [];
+    const filteredUsers = exportUsers.filter((user) =>
       activeTab === 'active'
         ? user.status === 'active'
         : user.status !== 'active'
     );
 
+    const exportExposure = (user) => {
+      if (user.role !== 'user') return user.exposure || 0;
+      if (user.shareExposure != null) return user.shareExposure;
+      const gross = Number(user.totalExposure ?? user.exposure ?? 0);
+      const pct = Number(user.parentSharePercent ?? user.mySharePercent ?? 100);
+      return Math.round(gross * (pct / 100) * 100) / 100;
+    };
+
     const tableData = filteredUsers.map((user) => ({
       Username: user.userName,
       'Credit Ref.': user.creditReference || '-',
-      Balance: user.balance || 0,
-      Exposure: user.exposure || 0,
+      Balance: user.baseBalance || 0,
+      Exposure: exportExposure(user),
       'Exposure Limit': user.exposureLimit || 0,
       'Avail. Bal.': user.avbalance || 0,
       'Ref. P/L': user.bettingProfitLoss || 0,
@@ -110,10 +133,10 @@ export default function Userlist() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userInfo, currentPage, totalPages, onlyusers, downlineViewer } =
+  const { userInfo, currentPage, totalPages, totalUsers, onlyusers, users } =
     useSelector((state) => state.auth);
   const { id } = useParams();
-  const [entries, setEntries] = useState(10);
+  const [entries, setEntries] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
   const [patnerPopup, setPatnerPopup] = useState(false);
   const [depositPopup, setDepositPopup] = useState(false);
@@ -121,6 +144,7 @@ export default function Userlist() {
   const [settingPopup, setSettingPopup] = useState(false);
   const [currentUser, setcurrentUser] = useState(null);
   const [isFetchingAllUsers, setIsFetchingAllUsers] = useState(null);
+  const [activeListCode, setActiveListCode] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
   const [passwordPopup, setPasswordPopup] = useState(false);
   const [lockPopup, setLockPopup] = useState(false);
@@ -129,6 +153,22 @@ export default function Userlist() {
   const [lockForm, setLockForm] = useState({ remark: '', masterPassword: '' });
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Settlement state
+  const [settlePopup, setSettlePopup] = useState(false);
+  const [settleSelectedUser, setSettleSelectedUser] = useState(null);
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleRemarks, setSettleRemarks] = useState('');
+  const [settlePassword, setSettlePassword] = useState('');
+  const [isSettling, setIsSettling] = useState(false);
+  const [settleUserPL, setSettleUserPL] = useState(0);
+
+  // Exposure modal state
+  const [exposurePopup, setExposurePopup] = useState(false);
+  const [exposureUserId, setExposureUserId] = useState(null);
+  const [exposureData, setExposureData] = useState([]);
+  const [isFetchingExposure, setIsFetchingExposure] = useState(false);
+
   const [type, setType] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -153,7 +193,8 @@ export default function Userlist() {
   }, [dispatch]);
 
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
+    const maxPage = Math.max(1, Number(totalPages) || 1);
+    if (newPage >= 1 && newPage <= maxPage) {
       dispatch(setCurrentPage(newPage));
     }
   };
@@ -211,7 +252,7 @@ export default function Userlist() {
       return;
     }
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -275,6 +316,40 @@ export default function Userlist() {
     }
   };
 
+  const fetchExposureDetails = useCallback(
+    async (userId, showLoader = true) => {
+      if (!userId) return;
+      try {
+        if (showLoader) setIsFetchingExposure(true);
+        const res = await api.get(`/admin/exposure-details?userId=${userId}`);
+        if (res?.data?.status || res?.data?.meta?.status) {
+          setExposureData(res.data.data);
+        } else {
+          setExposureData([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exposure', error);
+        if (showLoader) toast.error('Failed to fetch exposure details');
+        setExposureData([]);
+      } finally {
+        if (showLoader) setIsFetchingExposure(false);
+      }
+    },
+    []
+  );
+
+  const handleExposureClick = async (userId) => {
+    setExposureUserId(userId);
+    setExposurePopup(true);
+    await fetchExposureDetails(userId, true);
+  };
+
+  const closeExposurePopup = () => {
+    setExposurePopup(false);
+    setExposureUserId(null);
+    setExposureData([]);
+  };
+
   const handleSetting = async (e) => {
     e.preventDefault();
     try {
@@ -323,6 +398,7 @@ export default function Userlist() {
 
   useEffect(() => {
     setIsFetchingAllUsers(true);
+    setActiveListCode(null);
     dispatch(
       getDownlineList({
         page: currentPage,
@@ -333,6 +409,103 @@ export default function Userlist() {
     );
   }, [dispatch, currentPage, entries, searchQuery]);
 
+  /** If list shrinks (search, deletes), avoid staying on an empty page. */
+  useEffect(() => {
+    const max = Math.max(1, Number(totalPages) || 1);
+    if (currentPage > max) {
+      dispatch(setCurrentPage(max));
+    }
+  }, [dispatch, currentPage, totalPages]);
+
+  const reloadUserList = useCallback((options = {}) => {
+    const { silent = false } = options;
+    if (isFetchingAllUsers === false && activeListCode) {
+      dispatch(fetchSubAdminByLevel({ code: activeListCode, silent }));
+    } else {
+      dispatch(
+        getDownlineList({
+          page: currentPage,
+          limit: entries,
+          searchQuery,
+          listType: 'all',
+          silent,
+        })
+      );
+    }
+  }, [
+    dispatch,
+    isFetchingAllUsers,
+    activeListCode,
+    currentPage,
+    entries,
+    searchQuery,
+  ]);
+
+  const isAnyBlockingModalOpen =
+    patnerPopup ||
+    depositPopup ||
+    withdrawPopup ||
+    settingPopup ||
+    passwordPopup ||
+    lockPopup ||
+    settlePopup;
+
+  // WebSocket (via PrivateRoute) pushes balance/exposure patches; upline gets
+  // user_refresh_needed → downline-list-refresh for full row P/L without resetting page.
+  useEffect(() => {
+    const onListRefresh = () => {
+      if (isAnyBlockingModalOpen) return;
+      reloadUserList({ silent: true });
+    };
+
+    const onUserUpdated = (event) => {
+      const updatedId = event.detail?.userId;
+      if (
+        exposurePopup &&
+        exposureUserId &&
+        updatedId &&
+        String(updatedId) === String(exposureUserId)
+      ) {
+        fetchExposureDetails(exposureUserId, false);
+      }
+    };
+
+    window.addEventListener('downline-list-refresh', onListRefresh);
+    window.addEventListener('downline-user-updated', onUserUpdated);
+    return () => {
+      window.removeEventListener('downline-list-refresh', onListRefresh);
+      window.removeEventListener('downline-user-updated', onUserUpdated);
+    };
+  }, [
+    reloadUserList,
+    isAnyBlockingModalOpen,
+    exposurePopup,
+    exposureUserId,
+    fetchExposureDetails,
+  ]);
+
+  // Fallback refresh for multi-server deployments where websocket events can be missed.
+  // Keeps list data fresh without requiring manual page refresh.
+  useEffect(() => {
+    const REFRESH_INTERVAL_MS = 8000;
+
+    const refreshIfNeeded = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (isAnyBlockingModalOpen) return;
+      reloadUserList({ silent: true });
+    };
+
+    const intervalId = setInterval(refreshIfNeeded, REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refreshIfNeeded);
+    document.addEventListener('visibilitychange', refreshIfNeeded);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', refreshIfNeeded);
+      document.removeEventListener('visibilitychange', refreshIfNeeded);
+    };
+  }, [reloadUserList, isAnyBlockingModalOpen]);
+
   const formatNumber = (v) => {
     const num = Math.abs(Number(v));
     if (isNaN(num)) return 0;
@@ -341,36 +514,70 @@ export default function Userlist() {
       : num.toFixed(v.toString().split('.')[1]?.length === 1 ? 1 : 2);
   };
 
+  const listUsers = useMemo(
+    () => (isFetchingAllUsers === false ? users : onlyusers) || [],
+    [isFetchingAllUsers, users, onlyusers]
+  );
+
+  const paginationSummary = useMemo(() => {
+    const total = Number(totalUsers) || 0;
+    const size = Number(entries) || 1;
+    const page = Number(currentPage) || 1;
+    if (total === 0) {
+      return { from: 0, to: 0, total: 0 };
+    }
+    const from = (page - 1) * size + 1;
+    const to = Math.min(page * size, total);
+    return { from, to, total };
+  }, [totalUsers, entries, currentPage]);
+
   const filteredUsers = useMemo(
     () =>
-      (onlyusers || []).filter((user) =>
+      listUsers.filter((user) =>
         activeTab === 'active'
           ? user.status === 'active'
           : user.status !== 'active'
       ),
-    [onlyusers, activeTab]
+    [listUsers, activeTab]
   );
 
-  const getRowBalance = (row) =>
-    row.role === 'user'
-      ? Number(row.balance || 0)
-      : Number(row.baseBalance || 0) + Number(row.uplineBettingProfitLoss || 0);
+  const getRowBalance = (row) => Number(row.baseBalance || 0);
 
-  const getRowTotalExposure = (row) =>
-    Number(row.totalExposure ?? row.exposure ?? 0);
+  const getRowTotalExposure = (row) => {
+    return Number(row.totalExposure ?? row.exposure ?? 0);
+  };
+
+  /** Client/Agent exposure at viewer's partnership % (My % on the row). */
+  const getRowShareExposure = (row) => {
+    if (row.shareExposure != null && !Number.isNaN(Number(row.shareExposure))) {
+      return Number(row.shareExposure);
+    }
+    const gross = getRowTotalExposure(row);
+    const pct = Number(row.parentSharePercent ?? row.mySharePercent ?? 100);
+    return Math.round(gross * (pct / 100) * 100) / 100;
+  };
+
+  const getRowDisplayExposure = (row) => getRowShareExposure(row);
 
   const getRowAvbalance = (row) => Number(row.avbalance || 0);
+
+  const getRowCurrentPL = (row) => {
+    if (row.role !== 'user') {
+      // For agents/admins, use backend-enriched currentPL from getDirectSettlementPL
+      return Math.round((Number(row.currentPL) || 0) * 100) / 100;
+    }
+    // For actual users, calculate from avbalance - baseBalance + exposure
+    const current =
+      getRowAvbalance(row) -
+      getRowBalance(row) +
+      Math.abs(getRowTotalExposure(row));
+    return Math.round(current * 100) / 100;
+  };
 
   /** Pending balance = negative of balance */
   const getRowPendingBal = (row) => {
     const pending = -getRowBalance(row);
     return Math.round(pending * 100) / 100;
-  };
-
-  /** Current P&L = available − balance (= −pending balance) */
-  const getRowCurrentPL = (row) => {
-    const current = getRowAvbalance(row) - getRowBalance(row);
-    return Math.round(current * 100) / 100;
   };
 
   const formatTableMoney = (v) => {
@@ -382,10 +589,12 @@ export default function Userlist() {
   const BalanceCell = ({ value }) => {
     const n = Number(value) || 0;
     if (n === 0) {
-      return <span className='text-black'>{formatTableMoney(0)}</span>;
+      return (
+        <span className='font-bold text-black'>{formatTableMoney(0)}</span>
+      );
     }
     return (
-      <span className='font-medium text-green-600'>{formatTableMoney(n)}</span>
+      <span className='font-bold text-[#0e7926]'>{formatTableMoney(n)}</span>
     );
   };
 
@@ -395,40 +604,167 @@ export default function Userlist() {
       return <span className='text-black'>{formatTableMoney(0)}</span>;
     }
     return (
-      <span className='font-medium text-red-600'>{formatTableMoney(n)}</span>
+      <span className='font-bold text-[#c7313f]'>{formatTableMoney(n)}</span>
     );
   };
 
-  const CurrentPLCell = ({ value }) => {
+  const openSettleModal = (row, value) => {
+    if (!row) return;
+
+    if (row.invite !== userInfo?.code) {
+      toast.error('You can only settle with your direct downlines.');
+      return;
+    }
+
+    setSettleSelectedUser(row);
+    setSettleUserPL(value);
+    setSettleAmount('');
+
+    if (value > 0) {
+      setSettleRemarks(
+        `${row.userName} received cash from ${userInfo?.userName || ''}`
+      );
+    } else {
+      setSettleRemarks(
+        `${userInfo?.userName || ''} received cash from ${row.userName}`
+      );
+    }
+
+    setSettlePassword('');
+    setSettlePopup(true);
+  };
+
+  const handleSettleSubmit = async (e) => {
+    e.preventDefault();
+    if (!settleSelectedUser || !settleAmount || !settlePassword) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
+
+    setIsSettling(true);
+    try {
+      const payload = {
+        userId: settleSelectedUser._id,
+        amount: Number(settleAmount),
+        remarks: settleRemarks,
+        masterPassword: settlePassword,
+      };
+      const res = await api.post('/sub-admin/settle', payload, {
+        withCredentials: true,
+      });
+      if (res.data && res.data.success) {
+        toast.success(res.data.message || 'Settled successfully');
+        setSettlePopup(false);
+        dispatch(getAdmin());
+        reloadUserList();
+      } else {
+        toast.error(res.data.message || 'Settlement failed');
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || err.message || 'Settlement failed'
+      );
+    } finally {
+      setIsSettling(false);
+    }
+  };
+
+  const CurrentPLCell = ({ value, row }) => {
     const n = Number(value) || 0;
     if (n === 0) {
-      return <span className='text-black'>{formatTableMoney(0)}</span>;
+      return (
+        <span className='font-bold text-black'>{formatTableMoney(0)}</span>
+      );
     }
     if (n < 0) {
       return (
-        <span className='inline-block rounded-full bg-red-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+        <span
+          onClick={() => openSettleModal(row, n)}
+          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] font-bold text-white'
+        >
           {formatTableMoney(n)}
         </span>
       );
     }
     return (
-      <span className='inline-block rounded-full bg-green-600 px-2.5 py-0.5 text-[12px] font-semibold text-white'>
+      <span
+        onClick={() => openSettleModal(row, n)}
+        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] font-bold text-white'
+      >
         {formatTableMoney(n)}
       </span>
     );
   };
 
   const ExposureCell = ({ row }) => {
-    const exp = getRowTotalExposure(row);
+    const gross = getRowTotalExposure(row);
+    const exp = getRowDisplayExposure(row);
     const display = exp > 0 ? -exp : exp;
-    return <CurrentPLCell value={display} />;
+    const n = Number(display) || 0;
+    const title =
+      Math.abs(gross - exp) > 0.01
+        ? `Gross exposure: ${formatTableMoney(gross)}`
+        : undefined;
+
+    // Allow clicking for everyone so admins/agents can see their downline's exposure details
+    const isClickable = true;
+
+    if (n === 0) {
+      return (
+        <span
+          className={`font-bold text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
+          title={title}
+          onClick={() => isClickable && handleExposureClick(row._id)}
+        >
+          {formatTableMoney(0)}
+        </span>
+      );
+    }
+    if (n < 0) {
+      return (
+        <span
+          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] font-bold text-white'
+          title={title}
+          onClick={() => isClickable && handleExposureClick(row._id)}
+        >
+          {formatTableMoney(n)}
+        </span>
+      );
+    }
+    return (
+      <span
+        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] font-bold text-white'
+        title={title}
+        onClick={() => isClickable && handleExposureClick(row._id)}
+      >
+        {formatTableMoney(n)}
+      </span>
+    );
   };
 
   const roleTypeLabel = (role) => {
     if (role === 'user') return 'Client';
-    if (role === 'white') return 'White Label';
+    if (role === 'white') return 'Admin';
+    if (role === 'admin') return 'Main Admin';
     if (!role) return '—';
     return role.charAt(0).toUpperCase() + role.slice(1);
+  };
+
+  /** My % / downline keep — matches InsertAgent (my share first, then downline). */
+  const formatRowMyPercent = (row) => {
+    if (row.role === 'user') {
+      const pct =
+        row.parentSharePercent ??
+        row.mySharePercent ??
+        row.viewerShareOnRow ??
+        0;
+      return `${pct}%`;
+    }
+    const myShare =
+      row.parentSharePercent ?? row.mySharePercent ?? row.viewerShareOnRow ?? 0;
+    const downlineKeep =
+      row.downlineKeepPercent ?? row.downlineSharePercent ?? 0;
+    return `${myShare}% / ${downlineKeep}%`;
   };
 
   const tableSummaryRow = useMemo(() => {
@@ -439,7 +775,7 @@ export default function Userlist() {
         acc.pendingBal += getRowPendingBal(row);
         acc.avbalance += Number(row.avbalance) || 0;
         acc.currentPL += getRowCurrentPL(row);
-        const exp = getRowTotalExposure(row);
+        const exp = getRowDisplayExposure(row);
         acc.exposure += exp > 0 ? -exp : exp;
         return acc;
       },
@@ -505,7 +841,7 @@ export default function Userlist() {
       return;
     }
     if (!lockForm.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
     try {
@@ -545,7 +881,7 @@ export default function Userlist() {
     }
 
     if (!formData.masterPassword) {
-      toast.error('Please enter master password.');
+      toast.error('Please enter login password.');
       return;
     }
 
@@ -568,26 +904,36 @@ export default function Userlist() {
     }
   };
 
+  const handleLoadNextLevel = (user, code) => {
+    if (user.role !== 'user') {
+      setIsFetchingAllUsers(false);
+      setActiveListCode(code);
+      dispatch(fetchSubAdminByLevel({ code: code }));
+    }
+  };
+
   return (
     <>
       <Navbar />
 
-      <div className='h-fit bg-gray-200 p-4'>
+      <div className='h-fit md:px-[15px] md:py-[13px]'>
         <div className='rounded-md bg-white px-4 py-1'>
-          <div className='mb-2 flex items-center justify-between'>
+          <div className='mt-2 mb-2 items-end justify-between md:flex'>
             <div className='grid'>
-              <div className='text-[14px] font-bold'>Client List</div>
+              <div className='text-[15px] leading-none font-bold'>
+                Client List
+              </div>
               <div className='flex items-center gap-1'>
                 <input
                   type='text'
-                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  className='h-fit w-full rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
                   placeholder='Search'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <input
                   type='text'
-                  className='h-fit rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
+                  className='h-fit w-full rounded border border-gray-300 bg-white px-2 py-1 focus:outline-none'
                   placeholder='Search by client'
                 />
                 <img
@@ -605,16 +951,20 @@ export default function Userlist() {
               </div>
             </div>
 
-            <div className='flex gap-2'>
-              <div className='mb-2 flex items-center justify-center font-semibold text-black md:mb-0'>
+            <div className='mt-1 flex gap-1 md:mt-0'>
+              <div className='mb-2 flex items-start justify-center text-[12px] font-semibold text-black md:mb-0 md:text-[14px]'>
                 <span className='mr-2'>Show</span>
                 <select
-                  className='rounded border border-gray-300 px-2 py-1'
+                  className='rounded border border-gray-300 px-2 py-1 font-normal text-gray-600'
                   value={entries}
-                  onChange={(e) => setEntries(Number(e.target.value))}
+                  onChange={(e) => {
+                    setEntries(Number(e.target.value));
+                    dispatch(setCurrentPage(1));
+                  }}
                 >
                   <option value='10'>10</option>
                   <option value='20'>20</option>
+                  <option value='25'>25</option>
                   <option value='50'>50</option>
                   <option value='100'>100</option>
                   <option value='500'>500</option>
@@ -623,14 +973,14 @@ export default function Userlist() {
               </div>
 
               <button
-                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
+                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-2 py-1 text-[10px] text-white md:px-3 md:text-[14px]'
                 onClick={() => navigate('/agent-download-list/insertagent')}
               >
                 Add Client Account
               </button>
 
               <button
-                className='flex items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-1 text-[14px] text-white'
+                className='flex h-fit items-center rounded border border-[#146578] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-2 py-1 text-[10px] text-white md:px-3 md:text-[14px]'
                 onClick={() =>
                   setActiveTab((tab) =>
                     tab === 'active' ? 'deactive' : 'active'
@@ -653,7 +1003,10 @@ export default function Userlist() {
                 cell: (row) => {
                   const isClient = row.role === 'user';
                   return (
-                    <span className='flex items-center gap-2'>
+                    <span
+                      className={`flex items-center gap-2${!isClient ? ' cursor-pointer' : ''}`}
+                      onClick={() => handleLoadNextLevel(row, row.code)}
+                    >
                       <span className='inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#016a82] text-[10px] font-bold text-white'>
                         {isClient ? 'C' : 'A'}
                       </span>
@@ -674,7 +1027,20 @@ export default function Userlist() {
                 header: 'Credit Reference',
                 accessor: 'creditReference',
                 align: 'right',
-                cell: (row) => formatTableMoney(row.creditReference ?? 0),
+                cell: (row) => {
+                  const n = Number(row.creditReference ?? 0) || 0;
+                  const colorClass =
+                    n < 0
+                      ? 'text-[#c7313f]'
+                      : n === 0
+                        ? 'text-black'
+                        : 'text-[#0e7926]';
+                  return (
+                    <span className={`font-bold ${colorClass}`}>
+                      {formatTableMoney(n)}
+                    </span>
+                  );
+                },
               },
               {
                 header: 'Balance',
@@ -701,12 +1067,14 @@ export default function Userlist() {
                 sortKey: 'currentPL',
                 sortValue: (row) => getRowCurrentPL(row),
                 align: 'right',
-                cell: (row) => <CurrentPLCell value={getRowCurrentPL(row)} />,
+                cell: (row) => (
+                  <CurrentPLCell value={getRowCurrentPL(row)} row={row} />
+                ),
               },
               {
                 header: 'Exposure',
-                sortKey: 'exposure',
-                sortValue: (row) => getRowTotalExposure(row),
+                sortKey: 'shareExposure',
+                sortValue: (row) => getRowDisplayExposure(row),
                 align: 'right',
                 cell: (row) => <ExposureCell row={row} />,
               },
@@ -737,24 +1105,7 @@ export default function Userlist() {
               {
                 header: 'My %',
                 align: 'right',
-                cell: (row) => {
-                  if (row.myPercent && !String(row.myPercent).includes('/')) {
-                    return row.myPercent;
-                  }
-                  if (row.role === 'user') {
-                    const pct =
-                      row.parentSharePercent ??
-                      downlineViewer?.mySharePercent ??
-                      0;
-                    return `${pct}%`;
-                  }
-                  const mine =
-                    row.parentSharePercent ??
-                    row.viewerShareOnRow ??
-                    row.partnership ??
-                    0;
-                  return `${mine}%`;
-                },
+                cell: (row) => formatRowMyPercent(row),
               },
               {
                 header: 'Type',
@@ -782,63 +1133,64 @@ export default function Userlist() {
               // },
               {
                 header: 'Actions',
-                cell: (row) =>
-                  isFetchingAllUsers ? (
-                    <div className='flex gap-1'>
-                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'>
-                        U
-                      </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#008000] text-[11px] leading-none font-bold text-white'
-                        onClick={() => openCreditDepositModal(row)}
-                      >
-                        D/C
-                      </span>
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#274396] text-[11px] leading-none font-bold text-white'
-                        onClick={() => {
-                          setWithdrawPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        W
-                      </span>
-                      {/* <span
-                        className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                        onClick={() => {
-                          setPatnerPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        L
-                      </span> */}
-                      {/* C merged into D/C (Credit / Deposit modal) */}
-                      <span
-                        className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#ff0] text-[11px] leading-none font-bold text-black'
-                        onClick={() => {
-                          setPasswordPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        P
-                      </span>
-                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'>
-                        GC
-                      </span>
-                      <span className='flex h-[20px] w-[20px] items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'>
-                        CC
-                      </span>
-                      {/* <span
-                        className='flex h-[25px] w-[30px] items-center justify-center rounded-sm bg-gray-700 p-1 leading-none text-white'
-                        onClick={() => {
-                          setSettingPopup(true);
-                          setcurrentUser(row);
-                        }}
-                      >
-                        S
-                      </span> */}
-                    </div>
-                  ) : null,
+                cell: (row) => (
+                  <div className='flex gap-1'>
+                    {isFetchingAllUsers ? (
+                      <>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#ff7f50] text-[11px] leading-none font-bold text-white'
+                          onClick={() =>
+                            navigate('/agent-download-list/insertagent', {
+                              state: { editUser: row },
+                            })
+                          }
+                        >
+                          U
+                        </span>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#008000] text-[11px] leading-none font-bold text-white'
+                          onClick={() => openCreditDepositModal(row)}
+                        >
+                          D/C
+                        </span>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#274396] text-[11px] leading-none font-bold text-white'
+                          onClick={() => {
+                            setWithdrawPopup(true);
+                            setcurrentUser(row);
+                          }}
+                        >
+                          W
+                        </span>
+                        <span
+                          className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#ff0] text-[11px] leading-none font-bold text-black'
+                          onClick={() => {
+                            setPasswordPopup(true);
+                            setcurrentUser(row);
+                          }}
+                        >
+                          P
+                        </span>
+                      </>
+                    ) : null}
+                    <span
+                      className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'
+                      onClick={() =>
+                        navigate('/gamebetlock', { state: { targetUser: row } })
+                      }
+                    >
+                      GC
+                    </span>
+                    <span
+                      className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'
+                      onClick={() =>
+                        navigate('/casinolock', { state: { targetUser: row } })
+                      }
+                    >
+                      CC
+                    </span>
+                  </div>
+                ),
               },
             ]}
           />
@@ -846,8 +1198,8 @@ export default function Userlist() {
           {/* Pagination */}
           <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
             <div>
-              Showing {currentPage} to {totalPages} of {onlyusers?.length}{' '}
-              entries
+              Showing {paginationSummary.from} to {paginationSummary.to} of{' '}
+              {paginationSummary.total} entries
             </div>
             <div className='flex flex-wrap'>
               {/* First Button */}
@@ -957,7 +1309,7 @@ export default function Userlist() {
                   </div>
 
                   <div className='mb-[14px] grid grid-cols-3 items-center'>
-                    <div className='col-span-1 px-[15px]'>Master Password</div>
+                    <div className='col-span-1 px-[15px]'>Login Password</div>
                     <div className='col-span-2'>
                       <div className='px-[15px]'>
                         <input
@@ -1142,7 +1494,7 @@ export default function Userlist() {
 
                   <div className='flex flex-wrap items-center gap-2'>
                     <label className='min-w-[175px] shrink-0 text-[14px] text-gray-950'>
-                      Master Password
+                      Login Password
                     </label>
                     <input
                       type='password'
@@ -1286,7 +1638,7 @@ export default function Userlist() {
 
                     <div className='flex flex-wrap items-center gap-2'>
                       <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
-                        Master Password
+                        Login Password
                       </label>
                       <input
                         type='password'
@@ -1397,7 +1749,7 @@ export default function Userlist() {
                 </div>
 
                 <div className='mb-[14px] grid grid-cols-3 items-center'>
-                  <div className='col-span-1 px-[15px]'>Master Password</div>
+                  <div className='col-span-1 px-[15px]'>Login Password</div>
                   <div className='col-span-2'>
                     <div className='px-[15px]'>
                       <input
@@ -1474,7 +1826,7 @@ export default function Userlist() {
 
                   <div className='mb-2 flex items-center gap-3'>
                     <label className='w-[150px] shrink-0 text-[14px] text-gray-900'>
-                      Master Password
+                      Login Password
                     </label>
                     <input
                       type='password'
@@ -1558,7 +1910,7 @@ export default function Userlist() {
 
                   <div className='flex flex-wrap items-center gap-2'>
                     <label className='min-w-[180px] shrink-0 text-[14px] text-gray-950'>
-                      Master Password
+                      Login Password
                     </label>
                     <input
                       type='password'
@@ -1589,6 +1941,241 @@ export default function Userlist() {
                       Cancel
                     </button>
                   </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Settlement Modal */}
+          {settlePopup && settleSelectedUser && (
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.4 }}
+                className='fixed top-7 w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
+              >
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 text-[18px] font-medium text-white'>
+                  Settlement{' '}
+                  <span
+                    className='flex text-[20px] font-bold text-gray-300 hover:text-gray-200'
+                    onClick={() => setSettlePopup(false)}
+                  >
+                    ×
+                  </span>
+                </div>
+                <form
+                  onSubmit={handleSettleSubmit}
+                  className='space-y-4 bg-sky-50 px-4 pt-5 text-[14px]'
+                >
+                  <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
+                    <div className='font-bold text-gray-800'>User Name:</div>
+                    <div className='text-black'>
+                      {settleSelectedUser.userName}
+                    </div>
+
+                    <div className='font-bold text-gray-800'>
+                      My Available Bal
+                    </div>
+                    <div className='font-bold text-gray-800'>P&L</div>
+
+                    <div className='font-bold text-green-600'>
+                      {Number(userInfo?.avbalance || 0).toFixed(2)}
+                    </div>
+                    <div
+                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {Number(settleUserPL || 0).toFixed(2)}
+                    </div>
+
+                    <div className='font-bold text-gray-800'>Exposure</div>
+                    <div className='font-bold text-gray-800'>
+                      Amount To Settle
+                    </div>
+
+                    <div className='text-black'>
+                      {Number(
+                        settleSelectedUser.shareExposure ??
+                          settleSelectedUser.exposure ??
+                          0
+                      ).toFixed(2)}
+                    </div>
+                    <div
+                      className={`font-bold ${settleUserPL >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {Number(settleUserPL || 0).toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div className='mt-4 flex items-center gap-1'>
+                    <label className='w-[140px] font-bold text-gray-800'>
+                      Settle Amount
+                    </label>
+                    <input
+                      type='number'
+                      step='0.01'
+                      className='h-[30px] flex-1 border border-gray-800 px-2 outline-none'
+                      value={settleAmount}
+                      onChange={(e) => setSettleAmount(e.target.value)}
+                      required
+                    />
+                    <button
+                      type='button'
+                      onClick={() =>
+                        setSettleAmount(Math.abs(settleUserPL || 0).toFixed(2))
+                      }
+                      className='rounded-sm border border-black bg-gradient-to-b from-[#545454] to-[#000] px-2 py-1 text-white hover:opacity-90'
+                    >
+                      Full Settle
+                    </button>
+                  </div>
+
+                  <div className='flex items-start gap-1'>
+                    <label className='w-[140px] font-bold text-gray-800'>
+                      Remarks
+                    </label>
+                    <textarea
+                      rows={3}
+                      className='flex-1 border border-gray-800 px-2 py-1 outline-none'
+                      value={settleRemarks}
+                      onChange={(e) => setSettleRemarks(e.target.value)}
+                    />
+                  </div>
+
+                  <div className='flex items-center gap-1'>
+                    <label className='w-[140px] font-bold text-gray-800'>
+                      Master Password
+                    </label>
+                    <input
+                      type='password'
+                      className='h-[30px] flex-1 border border-gray-800 px-2 outline-none'
+                      value={settlePassword}
+                      onChange={(e) => setSettlePassword(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className='flex justify-end gap-1 border-t border-gray-200 py-1.5'>
+                    <button
+                      type='submit'
+                      disabled={isSettling}
+                      className='rounded-[3px] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:bg-gradient-to-t hover:opacity-90 disabled:opacity-50'
+                    >
+                      {isSettling ? 'Processing...' : 'Submit'}
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => setSettlePopup(false)}
+                      className='rounded-[3px] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:bg-gradient-to-t hover:opacity-90'
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Exposure Modal */}
+          {exposurePopup && (
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className='fixed top-7 w-[90%] overflow-hidden rounded bg-white shadow-xl'
+              >
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 leading-none text-white'>
+                  <h2 className='text-[18px] font-medium'>
+                    User Event Exposure
+                  </h2>
+                  <button
+                    onClick={closeExposurePopup}
+                    className='text-[22px] leading-none font-bold text-gray-300 hover:text-gray-100'
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className='max-h-[80vh] overflow-y-auto bg-gray-50 p-4'>
+                  {isFetchingExposure ? (
+                    <div className='py-10 text-center'>Loading...</div>
+                  ) : exposureData && exposureData.length > 0 ? (
+                    <table className='w-full border-collapse border border-gray-300 text-[13px]'>
+                      <thead>
+                        <tr className='bg-[#434141ba] text-white'>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Event Date & Time
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Series Name
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Event Name
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-left font-bold'>
+                            Market Type
+                          </th>
+                          <th className='border border-gray-300 px-2 py-1.5 text-right font-bold'>
+                            Exposure
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {exposureData.map((item, idx) => (
+                          <tr key={idx} className='bg-white'>
+                            <td className='border border-gray-300 px-2 py-1.5'>
+                              {item.eventDate
+                                ? new Date(item.eventDate).toLocaleString(
+                                    'en-IN'
+                                  )
+                                : '—'}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5'>
+                              {item.sportName}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5'>
+                              <span
+                                className='cursor-pointer font-bold text-black underline hover:text-blue-600'
+                                onClick={() => {
+                                  closeExposurePopup();
+                                  const sName =
+                                    item.sportName?.toLowerCase() || '';
+                                  if (
+                                    sName === 'cricket' ||
+                                    sName === 'tennis' ||
+                                    sName === 'soccer'
+                                  ) {
+                                    navigate(
+                                      `/${sName}-bet/${item.sportName}/${item.eventName}/${item.gameId}`
+                                    );
+                                  } else if (sName === 'casino') {
+                                    navigate(`/casino-bet/${item.gameId}`);
+                                  } else {
+                                    // default fallback
+                                    navigate(
+                                      `/cricket-bet/Cricket/${item.eventName}/${item.gameId}`
+                                    );
+                                  }
+                                }}
+                              >
+                                {item.eventName}
+                              </span>
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5 uppercase'>
+                              {item.marketName}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-red-600'>
+                              {Number(item.displayExposure).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className='py-10 text-center'>No exposure found.</div>
+                  )}
                 </div>
               </motion.div>
             </div>

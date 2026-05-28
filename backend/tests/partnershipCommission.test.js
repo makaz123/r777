@@ -1,24 +1,77 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  BET_STATUS_LOSS,
+  BET_STATUS_WIN,
   calculateWinCommission,
   clampDownlineSharingPercent,
+  getAccountMyKeepPercent,
+  getDownlineKeepPercentOnRow,
   getDownlineUplineBettingContribution,
+  getMatchOddsCommissionAmount,
+  getMatchOddsCommissionFromNetWin,
+  getParentShareOnDownlineRow,
   getParentShareStoredOnDownline,
   getPartnershipUplineShare,
   getRemainingMySharePercent,
   getViewerMySharePercent,
+  isMatchOddsBetRecord,
   isMatchOddsGameType,
+  isSettledClientWinPL,
   parseCommissionPercent,
+  resolveMatchOddsWinCommission,
   splitProfitLossByMyShare,
+  toStoredDownlineKeepFromCreateInput,
+  toStoredDownlineKeepPercent,
 } from '../utils/partnershipCommissionUtils.js';
 
 describe('partnershipCommissionUtils', () => {
   test('isMatchOddsGameType matches match odds only', () => {
     expect(isMatchOddsGameType('Match Odds')).toBe(true);
     expect(isMatchOddsGameType('match odds')).toBe(true);
+    expect(isMatchOddsGameType('MATCH_ODDS')).toBe(true);
     expect(isMatchOddsGameType('Bookmaker')).toBe(false);
     expect(isMatchOddsGameType('Casino')).toBe(false);
+  });
+
+  test('isMatchOddsBetRecord checks gameType and marketName', () => {
+    expect(
+      isMatchOddsBetRecord({
+        gameType: 'Soccer Game',
+        marketName: 'MATCH_ODDS',
+      })
+    ).toBe(true);
+    expect(
+      isMatchOddsBetRecord({
+        gameType: 'fancy1',
+        marketName: '1.3 over run SRH',
+      })
+    ).toBe(false);
+  });
+
+  test('commission from net win matches account statement gross-up', () => {
+    expect(getMatchOddsCommissionFromNetWin(98, 2)).toBe(2);
+    expect(getMatchOddsCommissionFromNetWin(90, 2)).toBe(1.84);
+  });
+
+  test('getMatchOddsCommissionAmount handles gross stored wins', () => {
+    expect(getMatchOddsCommissionAmount(100, 2)).toBe(2.04);
+  });
+
+  test('match-odds commission is zero on losses even if P/L sign is wrong in status', () => {
+    expect(isSettledClientWinPL(-100, BET_STATUS_WIN)).toBe(false);
+    expect(isSettledClientWinPL(100, BET_STATUS_LOSS)).toBe(false);
+    expect(getMatchOddsCommissionAmount(100, 2, BET_STATUS_LOSS)).toBe(0);
+    expect(getMatchOddsCommissionAmount(-50, 2, BET_STATUS_WIN)).toBe(0);
+    expect(
+      resolveMatchOddsWinCommission(100, 2, BET_STATUS_LOSS).commission
+    ).toBe(0);
+  });
+
+  test('calculateWinCommission deducts from gross win at settlement', () => {
+    const { netProfit, commission } = calculateWinCommission(100, 2);
+    expect(commission).toBe(2);
+    expect(netProfit).toBe(98);
   });
 
   test('partnership upline share applies to full P/L', () => {
@@ -77,5 +130,60 @@ describe('partnershipCommissionUtils', () => {
     expect(commission).toBe(2);
     expect(netProfit).toBe(98);
     expect(calculateWinCommission(-50, 2).commission).toBe(0);
+  });
+
+  test('stored partnership 15 = agent keeps 15%, master keeps 85%', () => {
+    const master = { role: 'master', partnership: 100, invite: 'ROOT' };
+    const agent = { role: 'agent', partnership: 15, invite: master.code };
+
+    expect(getDownlineKeepPercentOnRow(agent, master)).toBe(15);
+    expect(getParentShareOnDownlineRow(agent, master)).toBe(85);
+    expect(getAccountMyKeepPercent(agent)).toBe(15);
+
+    const gross = 627.1;
+    const { myPL } = splitProfitLossByMyShare(gross, 15);
+    expect(myPL).toBe(94.07);
+  });
+
+  test('partnership on row is downline keep (85% keep → 15% parent take)', () => {
+    const master = { role: 'master', partnership: 100 };
+    const agent = { role: 'agent', partnership: 85 };
+
+    expect(getDownlineKeepPercentOnRow(agent, master)).toBe(85);
+    expect(getParentShareOnDownlineRow(agent, master)).toBe(15);
+    expect(getAccountMyKeepPercent(agent)).toBe(85);
+    expect(toStoredDownlineKeepPercent(85, master)).toBe(15);
+  });
+
+  test('legacy update payload converts parent-take to downline keep', () => {
+    const master = { role: 'master', partnership: 100 };
+    expect(toStoredDownlineKeepPercent(85, master)).toBe(15);
+    expect(toStoredDownlineKeepPercent(15, master)).toBe(15);
+  });
+
+  test('InsertAgent create payload stores downline keep from form', () => {
+    const master = { role: 'master', partnership: 100 };
+    expect(toStoredDownlineKeepFromCreateInput(85, master)).toBe(85);
+    expect(toStoredDownlineKeepFromCreateInput(15, master)).toBe(15);
+
+    const agent = { role: 'agent', partnership: 15, invite: 'M1', code: 'A1' };
+    expect(toStoredDownlineKeepFromCreateInput(5, agent)).toBe(5);
+    expect(toStoredDownlineKeepFromCreateInput(20, agent)).toBe(15);
+  });
+
+  test('list row shows viewer my % then downline keep', () => {
+    const master = {
+      role: 'master',
+      partnership: 100,
+      invite: 'ROOT',
+      code: 'M1',
+    };
+    const agent = { role: 'agent', partnership: 85, invite: master.code };
+
+    const myShare = getParentShareOnDownlineRow(agent, master);
+    const downKeep = getDownlineKeepPercentOnRow(agent, master);
+    expect(myShare).toBe(15);
+    expect(downKeep).toBe(85);
+    expect(`${myShare}% / ${downKeep}%`).toBe('15% / 85%');
   });
 });

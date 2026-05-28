@@ -57,6 +57,102 @@ export function calculateOutcomeScenarios(bets) {
   return scenarios;
 }
 
+/** Loose match for abbreviated team names (e.g. "RC Bengaluru" vs "Royal Challengers Bengaluru"). */
+export function namesMatch(a, b) {
+  const na = String(a || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  const nb = String(b || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+/**
+ * Parse home/away (or side 1 / side 2) from event title or match label.
+ * Handles "Team A v Team B", "Team A vs Team B", and trailing " - date" suffixes.
+ */
+export function parseMatchSides(eventName, matchLabel) {
+  const candidates = [
+    String(matchLabel || '').trim(),
+    String(eventName || '').trim(),
+  ].filter(Boolean);
+
+  for (const raw of candidates) {
+    const clean = raw.replace(/\s+-\s+\d[\d\s:/APM.-]*$/i, '').trim();
+    const parts = clean.split(/\s+v(?:s\.?)?\s+/i);
+    if (parts.length >= 2) {
+      const team1 = parts[0].trim();
+      const team2 = parts[1].trim();
+      if (team1 && team2) return { team1, team2 };
+    }
+  }
+  return null;
+}
+
+/** Map outcome scenarios to event sides for column labels and values. */
+export function mapScenariosToMatchSides(scenarios, eventSides) {
+  if (!eventSides?.team1 || !eventSides?.team2) {
+    const teams = Object.keys(scenarios).filter((t) => t !== '__OTHER__');
+    const team1 = teams[0] || 'Team 1';
+    const team2 =
+      teams[1] ||
+      (scenarios['__OTHER__'] !== undefined ? 'Opponent' : 'Team 2');
+    return {
+      team1,
+      team2,
+      team1Value: Math.round((scenarios[team1] ?? 0) * 100) / 100,
+      team2Value:
+        Math.round((scenarios[team2] ?? scenarios['__OTHER__'] ?? 0) * 100) /
+        100,
+    };
+  }
+
+  const betTeams = Object.keys(scenarios).filter((t) => t !== '__OTHER__');
+  const round = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
+  if (betTeams.length === 1 && scenarios['__OTHER__'] !== undefined) {
+    const only = betTeams[0];
+    if (namesMatch(only, eventSides.team1)) {
+      return {
+        team1: eventSides.team1,
+        team2: eventSides.team2,
+        team1Value: round(scenarios[only]),
+        team2Value: round(scenarios['__OTHER__']),
+      };
+    }
+    if (namesMatch(only, eventSides.team2)) {
+      return {
+        team1: eventSides.team1,
+        team2: eventSides.team2,
+        team1Value: round(scenarios['__OTHER__']),
+        team2Value: round(scenarios[only]),
+      };
+    }
+    return {
+      team1: eventSides.team1,
+      team2: eventSides.team2,
+      team1Value: round(scenarios[only]),
+      team2Value: round(scenarios['__OTHER__']),
+    };
+  }
+
+  const key1 =
+    betTeams.find((t) => namesMatch(t, eventSides.team1)) || betTeams[0];
+  const key2 =
+    betTeams.find((t) => namesMatch(t, eventSides.team2)) ||
+    betTeams[1] ||
+    (scenarios['__OTHER__'] !== undefined ? '__OTHER__' : null);
+
+  return {
+    team1: eventSides.team1,
+    team2: eventSides.team2,
+    team1Value: round(scenarios[key1] ?? 0),
+    team2Value: round(key2 ? (scenarios[key2] ?? 0) : 0),
+  };
+}
+
 export function calculateMarketExposure(scenarios) {
   if (!scenarios || Object.keys(scenarios).length === 0) {
     return 0;

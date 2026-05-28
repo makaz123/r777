@@ -89,10 +89,7 @@ function Fancy1({
     });
   }, [fancy1Data]);
 
-  // Split data into left and right columns
-  const mid = Math.ceil(transformedData.length / 2);
-  const leftData = transformedData.slice(0, mid);
-  const rightData = transformedData.slice(mid);
+  const allData = transformedData;
 
   // Get bet details from pending bets
   const getBetDetails = (team) => {
@@ -135,245 +132,133 @@ function Fancy1({
       </div>
       <div className='grid grid-cols-1 gap-0 lg:gap-2'>
         <div className=''>
-          <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px_60px]'>
-            <div></div>
-            <div className='m-[1px] flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
-              {t('back', 'Back')}
+          <div className='flex border-b border-b-[#c7c8ca]'>
+            <div className='flex-1'></div>
+            <div className='flex w-[40%] items-center justify-center text-[14px] font-bold text-black md:w-[16%]'>
+              <span className='w-1/2 p-[2px] text-center'>
+                {t('back', 'Back')}
+              </span>
+              <span className='w-1/2 p-[2px] text-center'>
+                {t('lay', 'Lay')}
+              </span>
             </div>
-            <div className='m-[1px] flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
-              {t('lay', 'Lay')}
-            </div>
-            <div className='hidden lg:block'></div>
+            <div className='hidden w-[16%] lg:block'></div>
           </div>
-          {leftData.length > 0 ? (
-            leftData.map((item) => (
-              <React.Fragment key={item.id}>
-                <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] lg:grid-cols-[1fr_60px_60px_60px]'>
-                  <div className='ml-2 flex flex-col justify-center text-[13px] font-[400] text-black'>
-                    <div>{item.label}</div>
-                    {(() => {
-                      if (!localStorage.getItem('auth')) return null;
-                      const { otype, totalBetAmount, totalPrice, teamName } =
-                        getBetDetails(item.label);
-                      const existingBet =
-                        (otype && totalBetAmount) || (totalPrice && teamName);
+          {allData.length > 0 ? (
+            allData.map((item) => {
+              const hasStatus = item.status && item.status.trim() !== '';
+              return (
+                <React.Fragment key={item.id}>
+                  <div className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'>
+                    <div className='ml-2 flex w-[60%] flex-col justify-center truncate text-[14px] text-black md:w-[68%]'>
+                      <div className='truncate font-bold'>{item.label}</div>
+                      {(() => {
+                        if (!localStorage.getItem('auth')) return null;
+                        const { otype, totalBetAmount, totalPrice, teamName } =
+                          getBetDetails(item.label);
+                        const existingBet =
+                          (otype && totalBetAmount) || (totalPrice && teamName);
 
-                      if (existingBet) {
-                        const displayValue =
-                          otype === 'back' ? totalBetAmount : totalPrice;
-                        return (
-                          <div className='flex gap-1 text-[11px]'>
-                            {displayValue && (
-                              <span className='flex items-center gap-0.5 text-red-500'>
-                                <FaArrowRight />
-                                {displayValue}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
+                        if (existingBet) {
+                          const displayValue =
+                            otype === 'back' ? totalBetAmount : totalPrice;
+                          return (
+                            <div className='flex gap-1 text-[11px]'>
+                              {displayValue && (
+                                <span className='flex items-center gap-0.5 text-red-500'>
+                                  <FaArrowRight />
+                                  {displayValue}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
 
-                  <div
-                    className={`m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                    onClick={() =>
-                      item.no.rate &&
-                      handleOddsClick(
-                        item.label,
-                        item.no.rate,
-                        'back',
-                        item.sid,
-                        item.min,
-                        item.max,
-                        item.no.stake
-                      )
-                    }
-                  >
-                    {item.no.rate ? (
-                      <>
-                        <span className='text-[14px] leading-none font-bold text-black'>
-                          {item.no.rate}
-                        </span>
-                        <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
-                          {item.no.stake}
-                        </span>
-                      </>
-                    ) : (
-                      <span className='text-[15px] font-bold text-black'>
-                        -
+                    <div
+                      className={`relative flex w-[40%] md:w-[16%] ${hasStatus ? 'suspended-event' : ''} `}
+                    >
+                      <div
+                        className={`m-[1px] flex min-h-[36px] w-1/2 flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          item.no.rate &&
+                          handleOddsClick(
+                            item.label,
+                            item.no.rate,
+                            'back',
+                            item.sid,
+                            item.min,
+                            item.max,
+                            item.no.stake
+                          )
+                        }
+                      >
+                        {item.no.rate ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-black'>
+                              {item.no.rate}
+                            </span>
+                            <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
+                              {item.no.stake}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-black'>
+                            -
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={`m-[1px] flex min-h-[36px] w-1/2 flex-col items-center justify-center rounded-[3px] bg-[#faa9ba] ${item.yes.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          item.yes.rate &&
+                          handleOddsClick(
+                            item.label,
+                            item.yes.rate,
+                            'lay',
+                            item.sid,
+                            item.min,
+                            item.max,
+                            item.yes.stake
+                          )
+                        }
+                      >
+                        {item.yes.rate ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-black'>
+                              {item.yes.rate}
+                            </span>
+                            <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
+                              {item.yes.stake}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-black'>
+                            -
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className='hidden w-[40%] flex-col items-end justify-center px-2 md:w-[16%] lg:flex'>
+                      <span className='text-[10px] leading-4 font-bold capitalize'>
+                        {t('min', 'Min')}:{item.min}
                       </span>
-                    )}
-                  </div>
-
-                  <div
-                    className={`m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#faa9ba] ${item.yes.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                    onClick={() =>
-                      item.yes.rate &&
-                      handleOddsClick(
-                        item.label,
-                        item.yes.rate,
-                        'lay',
-                        item.sid,
-                        item.min,
-                        item.max,
-                        item.yes.stake
-                      )
-                    }
-                  >
-                    {item.yes.rate ? (
-                      <>
-                        <span className='text-[14px] leading-none font-bold text-black'>
-                          {item.yes.rate}
-                        </span>
-                        <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
-                          {item.yes.stake}
-                        </span>
-                      </>
-                    ) : (
-                      <span className='text-[15px] font-bold text-black'>
-                        -
+                      <span className='text-[10px] leading-4 font-bold'>
+                        {t('max', 'Max')}:{item.max}
                       </span>
-                    )}
+                    </div>
                   </div>
-
-                  <div className='hidden flex-col items-center justify-center lg:flex'>
-                    <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      {t('min', 'Min')}:{item.min}
-                    </span>
-                    <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      {t('max', 'Max')}:{item.max}
-                    </span>
-                  </div>
-                </div>
-                {renderInlineBetSlip(item)}
-              </React.Fragment>
-            ))
+                  {renderInlineBetSlip(item)}
+                </React.Fragment>
+              );
+            })
           ) : (
             <div className='py-4 text-center text-gray-500'>
               {t('no_data_available', 'No data available')}
             </div>
-          )}
-        </div>
-        <div className=''>
-          <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] lg:grid-cols-[1fr_60px_60px_60px]'>
-            <div></div>
-            <div className='m-[1px] hidden items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black lg:flex'>
-              {t('back', 'Back')}
-            </div>
-            <div className='m-[1px] hidden items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black lg:flex'>
-              {t('lay', 'Lay')}
-            </div>
-            <div></div>
-          </div>
-          {rightData.length > 0 ? (
-            rightData.map((item) => (
-              <React.Fragment key={item.id}>
-                <div className='grid grid-cols-[1fr_60px_60px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7] lg:grid-cols-[1fr_60px_60px_60px]'>
-                  <div className='ml-2 flex flex-col justify-center text-[13px] font-[400] text-black'>
-                    <div>{item.label}</div>
-                    {(() => {
-                      if (!localStorage.getItem('auth')) return null;
-                      const { otype, totalBetAmount, totalPrice, teamName } =
-                        getBetDetails(item.label);
-                      const existingBet =
-                        (otype && totalBetAmount) || (totalPrice && teamName);
-
-                      if (existingBet) {
-                        const displayValue =
-                          otype === 'back' ? totalBetAmount : totalPrice;
-                        return (
-                          <div className='flex gap-1 text-[11px]'>
-                            {displayValue && (
-                              <span className='flex items-center gap-0.5 text-red-500'>
-                                <FaArrowRight />
-                                {displayValue}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-
-                  <div
-                    className={`m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                    onClick={() =>
-                      item.no.rate &&
-                      handleOddsClick(
-                        item.label,
-                        item.no.rate,
-                        'back',
-                        item.sid,
-                        item.min,
-                        item.max,
-                        item.no.stake
-                      )
-                    }
-                  >
-                    {item.no.rate ? (
-                      <>
-                        <span className='text-[14px] leading-none font-bold text-black'>
-                          {item.no.rate}
-                        </span>
-                        <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
-                          {item.no.stake}
-                        </span>
-                      </>
-                    ) : (
-                      <span className='text-[15px] font-bold text-black'>
-                        -
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    className={`m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#faa9ba] ${item.yes.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                    onClick={() =>
-                      item.yes.rate &&
-                      handleOddsClick(
-                        item.label,
-                        item.yes.rate,
-                        'lay',
-                        item.sid,
-                        item.min,
-                        item.max,
-                        item.yes.stake
-                      )
-                    }
-                  >
-                    {item.yes.rate ? (
-                      <>
-                        <span className='text-[14px] leading-none font-bold text-black'>
-                          {item.yes.rate}
-                        </span>
-                        <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
-                          {item.yes.stake}
-                        </span>
-                      </>
-                    ) : (
-                      <span className='text-[15px] font-bold text-black'>
-                        -
-                      </span>
-                    )}
-                  </div>
-
-                  <div className='hidden flex-col items-center justify-center lg:flex'>
-                    <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      {t('min', 'Min')}:{item.min}
-                    </span>
-                    <span className='text-[10px] leading-4 font-bold text-[#097c93]'>
-                      {t('max', 'Max')}:{item.max}
-                    </span>
-                  </div>
-                </div>
-                {renderInlineBetSlip(item)}
-              </React.Fragment>
-            ))
-          ) : (
-            <div></div>
           )}
         </div>
       </div>

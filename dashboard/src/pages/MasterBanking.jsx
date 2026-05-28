@@ -323,7 +323,7 @@ const MasterBanking = () => {
                         {item.userName}
                       </td>
                       <td className='border border-gray-300 p-2'>
-                        {formatNumber(item.balance)}
+                        {formatNumber(item.baseBalance || 0)}
                       </td>
                       <td className='border border-gray-300 p-2'>
                         {formatNumber(item.avbalance)}

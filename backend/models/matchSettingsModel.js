@@ -23,6 +23,10 @@ const deactivateMatchSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: subAdmin,
     },
+    isTournament: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

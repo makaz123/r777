@@ -6,7 +6,18 @@ import { fetchCricketData } from '../redux/reducer/cricketSlice';
 import { fetchSoccerData } from '../redux/reducer/soccerSlice';
 import { fetchTennisData } from '../redux/reducer/tennisSlice';
 import { MdOutlineArrowDropDown } from 'react-icons/md';
+import cricketIcon from '../assets/icons/Cricket.svg'
+import soccerIcon from '../assets/icons/Soccer.svg'
+import tennisIcon from '../assets/icons/Tennis.svg'
+import casinoControlIcon from '../assets/icons/CasinoControl.svg'
+import gameControlIcon from '../assets/icons/GameControl.svg'
+import reportIcon from '../assets/icons/Reports.svg'
+import casinoAnalysisIcon from '../assets/icons/CasinoAnalysis.svg'
+import clientIcon from '../assets/icons/Clients.svg'
+import marketAnalysisIcon from '../assets/icons/MarketAnalysis.svg'
+import settlementIcon from '../assets/icons/Settlement.svg'
 import { AiOutlineCloseSquare } from 'react-icons/ai';
+import { FEATURES } from '../config/featureFlags';
 
 function SportsSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -14,6 +25,8 @@ function SportsSidebar({ isOpen, onClose }) {
   const { matches: cricketMatches } = useSelector((state) => state.cricket);
   const { matches: tennisMatches } = useSelector((state) => state.tennis);
   const { matches: soccerMatches } = useSelector((state) => state.soccer);
+  const [openSettlement, setOpenSettlement] = useState(false);
+  const [openReport, setOpenReport] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCricketData());
@@ -69,7 +82,8 @@ function SportsSidebar({ isOpen, onClose }) {
     sportName,
     groupedData,
     sportKey,
-    routePrefix
+    routePrefix,
+    sportIcon = null
   ) => {
     // console.log('renderSportSection:', { sportName, groupedData, sportKey });
     const titles = Object.keys(groupedData);
@@ -79,12 +93,16 @@ function SportsSidebar({ isOpen, onClose }) {
       <>
         <button
           onClick={() => toggleItem(sportKey)}
-          className='flex w-full cursor-pointer items-center justify-between gap-1.5 px-4 py-1.5 text-white hover:bg-[#18b0c8]'
+          className='flex w-full cursor-pointer items-center justify-between gap-1.5 border-b border-[#18b0c8] pl-2 pr-1 py-2 text-white last:border-b-0 hover:bg-[#18b0c8]'
         >
-          {sportName} <MdOutlineArrowDropDown />
+          <span className='flex items-center gap-1.5 text-[14px] font-medium'>
+            {sportIcon}
+            {sportName}
+          </span>
+          <MdOutlineArrowDropDown size={18}/>
         </button>
         {isExpanded(sportKey) && hasData && (
-          <div className='bg-blue-100 pr-2 pl-6'>
+          <div className='bg-blue-100 pr-2 pl-4'>
             {titles.map((title) => {
               const titleKey = createTitleKey(sportKey, title);
               const matches = groupedData[title];
@@ -92,9 +110,11 @@ function SportsSidebar({ isOpen, onClose }) {
                 <>
                   <button
                     onClick={() => toggleItem(titleKey)}
-                    className='flex w-full cursor-pointer items-center gap-1.5 py-[5px] text-black'
+                    className='flex w-full cursor-pointer items-center items-start gap-2 py-[7px] text-[12px] text-black md:text-[14px]'
                   >
-                    <ToggleIcon expanded={isExpanded(titleKey)} />
+                    <span>
+                      <ToggleIcon expanded={isExpanded(titleKey)} />
+                    </span>
                     <span className='text-left'>{title}</span>{' '}
                   </button>
                   {isExpanded(titleKey) && matches && matches.length > 0 && (
@@ -102,11 +122,12 @@ function SportsSidebar({ isOpen, onClose }) {
                       {matches.map((match) => (
                         <a
                           href='#'
-                          className='flex items-center gap-1 py-1 text-black transition-colors'
+                          className='flex items-center gap-1 py-1 text-[12px] text-black transition-colors md:text-[14px]'
                           onClick={(e) => {
                             e.preventDefault();
                             navigate(
-                              `${routePrefix}/${match.title}/${match.game}/${match.id}`
+                              `${routePrefix}/${match.title}/${match.game}/${match.id}`,
+                              { state: { time: match.time } }
                             );
                             onClose();
                           }}
@@ -129,25 +150,192 @@ function SportsSidebar({ isOpen, onClose }) {
   return (
     <>
       <aside
-        className={`fixed top-[52px] left-0 z-50 h-[calc(100vh-52px)] w-[250px] transform border-r border-gray-300 bg-[#007082] text-white shadow-xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-[40px] md:top-[52px] left-0 z-50 h-[calc(100vh-40px)] md:h-[calc(100vh-52px)] w-[50%] transform border-r border-gray-300 bg-gradient-to-b from-[#007082] to-[#18b0c8] text-white shadow-xl transition-transform duration-300 ease-in-out md:w-[240px] md:bg-[#007082] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } overflow-y-auto`}
+        } overflow-y-auto scrollbar-hide`}
       >
+        <ul className='block md:hidden'>
+          <li
+            className='border-b border-[#18b0c8] pl-2 pr-1 py-2'
+            onClick={() => navigate('/')}
+          >
+            <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={clientIcon} alt="" className='w-[14px]' /> Dashboard</span>
+          </li>
+
+          <li
+            className='border-b border-[#18b0c8] pl-2 pr-1 py-2'
+            onClick={() => navigate('/user-download-list')}
+          >
+            <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={clientIcon} alt="" className='w-[14px]' /> Client</span>
+          </li>
+
+          <li
+            className='border-b border-[#18b0c8] pl-2 pr-1 py-2'
+            onClick={() => navigate('/my-market')}
+          >
+            <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={marketAnalysisIcon} alt="" className='w-[14px]' />Sport Analysis</span>
+          </li>
+
+          <li
+            className='border-b border-[#18b0c8] pl-2 pr-1 py-2'
+            onClick={() => navigate('/casino-analysis')}
+          >
+            <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={casinoAnalysisIcon} alt="" className='w-[14px]' />Casino Analysis</span>
+          </li>
+
+          {/* Settlement Dropdown */}
+          <li>
+            <button
+              type='button'
+              onClick={() => setOpenSettlement(!openSettlement)}
+              className='border-b border-[#18b0c8] pl-2 pr-1 py-2 flex w-full justify-between'
+            >
+              <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={settlementIcon} alt="" className='w-[14px]' />Settlement</span>
+
+              <MdOutlineArrowDropDown
+                className={`text-xl transition-transform duration-300 ${
+                  openSettlement ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {openSettlement && (
+              <ul>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/user-settlement')}
+                >
+                  User
+                </li>
+
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/master-settlement')}
+                >
+                  Master
+                </li>
+              </ul>
+            )}
+          </li>
+
+          <li>
+            <button
+              type='button'
+              onClick={() => setOpenReport(!openReport)}
+              className='border-b border-[#18b0c8] pl-2 pr-1 py-2 flex w-full justify-between'
+            >
+              <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={reportIcon} alt="" className='w-[14px]' />Reports</span>
+
+              <MdOutlineArrowDropDown
+                className={`text-xl transition-transform duration-300 ${
+                  openReport ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {openReport && (
+              <ul>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/user-details')}
+                >
+                  User Detail
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/AccountStatement')}
+                >
+                  Account Statement
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/SettlementReport')}
+                >
+                  Settlement/Balance Report
+                </li>
+                {FEATURES.transactionReport && (
+                  <li
+                    className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                    onClick={() => navigate('/TransactionReport')}
+                  >
+                    Transaction Report
+                  </li>
+                )}
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/CurrentBets')}
+                >
+                  Current Bets
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/ProfitLossReport')}
+                >
+                  Profit & Loss Report
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/EventLossReport')}
+                >
+                  Event Profit & Loss Report
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/BetHistoryReport')}
+                >
+                  Bet History
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/LiveBetsReport')}
+                >
+                  Live Bets
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/SportRevenue')}
+                >
+                  Sports Revenue
+                </li>
+                <li
+                  className='border-b border-[#18b0c8] pl-4 pr-1 py-2 text-[12px] md:text-[14px] font-medium'
+                  onClick={() => navigate('/IpLookupReport')}
+                >
+                  IP lookup
+                </li>
+              </ul>
+            )}
+          </li>
+
+          <li
+            className='border-b border-[#18b0c8] pl-2 pr-1 py-2'
+            onClick={() => navigate('/gamebetlock')}
+          >
+            <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={gameControlIcon} alt="" className='w-[14px]' />Game Control</span>
+          </li>
+
+          <li
+            className='border-b border-[#18b0c8] pl-2 pr-1 py-2'
+            onClick={() => navigate('/casinolock')}
+          >
+            <span className='flex items-center gap-1.5 text-[12px] md:text-[14px] font-medium'><img src={casinoControlIcon} alt="" className='w-[14px]' />Casino Control</span>
+          </li>
+        </ul>
         {/* Cricket */}
         {renderSportSection(
           'Cricket',
           groupedCricket,
           'cricket',
           '/cricket-bet',
-          false
+          <img src={cricketIcon} alt="" className='w-[14px]' />
         )}
         {/* Football */}
         {renderSportSection(
-          'Football',
+          'Soccer',
           groupedSoccer,
           'football',
           '/soccerbet',
-          false
+          <img src={soccerIcon} alt="" className='w-[14px]' />
         )}
         {/* Tennis */}
         {renderSportSection(
@@ -155,7 +343,7 @@ function SportsSidebar({ isOpen, onClose }) {
           groupedTennis,
           'tennis',
           '/tennis-bet',
-          false
+          <img src={tennisIcon} alt="" className='w-[14px]' />
         )}
       </aside>
     </>

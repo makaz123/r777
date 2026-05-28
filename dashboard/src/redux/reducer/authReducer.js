@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { jwtDecode } from 'jwt-decode';
 
 import api from '../api';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 
 export const loginAdmin = createAsyncThunk(
   'user/login',
@@ -43,15 +44,7 @@ export const addAdmin = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        return rejectWithValue(error.response.data.message);
-      } else {
-        return rejectWithValue(error.message);
-      }
+      return rejectWithValue(getApiErrorMessage(error));
     }
   }
 );
@@ -205,7 +198,10 @@ export const getAllOnlyUserAndDownline = createAsyncThunk(
 /** Unified API: listType `agents` | `clients` | `all` (all direct downline roles) + viewer partnership % */
 export const getDownlineList = createAsyncThunk(
   'user/get-downline-list',
-  async ({ page, limit, searchQuery, listType }, { rejectWithValue }) => {
+  async (
+    { page, limit, searchQuery, listType, silent = false },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await api.get('/get/downline-list', {
         params: { page, limit, searchQuery, listType },
@@ -272,6 +268,24 @@ export const updatePartnership = createAsyncThunk(
   async (info, { rejectWithValue }) => {
     try {
       const response = await api.put('/update/partnership', info, {
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Update admin details (name, commition, partnership)
+export const updateAdminDetails = createAsyncThunk(
+  'subAdmin/updateAdminDetails',
+  async (info, { rejectWithValue }) => {
+    try {
+      const response = await api.put('/update/admin-details', info, {
         withCredentials: true,
       });
       return response.data;
@@ -732,9 +746,10 @@ const initialState = {
   totalUsers: 0,
   totalPages: 1,
   currentPage: 1,
+  /** Latest getDownlineList thunk requestId — ignore stale fulfilled/rejected responses. */
+  downlineListLatestRequestId: null,
   totalRecords: 0,
-  // userInfo: null,
-  userInfo: decodeToken(localStorage.getItem('auth')) || null,
+  userInfo: null,
   loading: false,
   error: null,
   singleadmin: null,
@@ -880,17 +895,23 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(getDownlineList.pending, (state) => {
-        state.loading = true;
+      .addCase(getDownlineList.pending, (state, action) => {
+        state.downlineListLatestRequestId = action.meta.requestId;
+        if (!action.meta.arg?.silent) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(getDownlineList.fulfilled, (state, action) => {
+        if (action.meta.requestId !== state.downlineListLatestRequestId) {
+          return;
+        }
         state.loading = false;
         state.downlineList = action.payload.data || [];
         state.downlineViewer = action.payload.viewer || null;
         state.totalUsers = action.payload.totalUsers;
         state.totalPages = action.payload.totalPages;
-        state.currentPage = action.payload.currentPage;
+        // Keep client-owned page (avoids race when overlapping requests return page 1)
         if (action.payload.listType === 'agents') {
           state.users = action.payload.data;
         } else {
@@ -898,6 +919,9 @@ const userSlice = createSlice({
         }
       })
       .addCase(getDownlineList.rejected, (state, action) => {
+        if (action.meta.requestId !== state.downlineListLatestRequestId) {
+          return;
+        }
         state.loading = false;
         state.error = action.payload;
       })
@@ -951,12 +975,34 @@ const userSlice = createSlice({
       })
       .addCase(updatePartnership.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = action.payload.data;
+        if (Array.isArray(state.users)) {
+          const index = state.users.findIndex(
+            (u) => u._id === action.payload.data._id
+          );
+          if (index !== -1) {
+            state.users[index] = action.payload.data;
+          }
+        }
         state.successMessage = action.payload.message;
       })
       .addCase(updatePartnership.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Update Admin Details
+      .addCase(updateAdminDetails.fulfilled, (state, action) => {
+        const updatedUser = action.payload.data;
+        if (updatedUser) {
+          const updateArray = (arr) => {
+            if (Array.isArray(arr)) {
+              const index = arr.findIndex((u) => u._id === updatedUser._id);
+              if (index !== -1) arr[index] = updatedUser;
+            }
+          };
+          updateArray(state.users);
+          updateArray(state.onlyusers);
+          updateArray(state.downlineList);
+        }
       })
 
       // Get credit ref history by userId
@@ -1034,16 +1080,17 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(fetchSubAdminByLevel.pending, (state) => {
-        state.loading = true;
+      .addCase(fetchSubAdminByLevel.pending, (state, action) => {
+        if (!action.meta.arg?.silent) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchSubAdminByLevel.fulfilled, (state, action) => {
         state.loading = false;
         state.users = action.payload.data;
-        // state.totalUsers = action.payload.totalUsers;
+        state.downlineViewer = action.payload.viewer || null;
         state.totalPages = action.payload.totalPages;
-        // state.currentPage = action.payload.currentPage;
       })
       .addCase(fetchSubAdminByLevel.rejected, (state, action) => {
         state.loading = false;
@@ -1190,8 +1237,52 @@ const userSlice = createSlice({
         state.error = action.payload;
       });
   },
+  reducers: {
+    messageClear: (state) => {
+      state.errorMessage = '';
+      state.successMessage = '';
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    user_reset: (state) => {
+      state.user = null;
+      state.userInfo = null;
+      state.isPasswordChanged = null;
+      state.singleadmin = null;
+    },
+    setCurrentPage: (state, action) => {
+      state.currentPage = action.payload;
+    },
+    updateReduxUserBalance: (state, action) => {
+      const { userId, newBalance, newExposure } = action.payload;
+      const targetId = String(userId);
+      const updateUser = (users) =>
+        users?.map((u) => {
+          if (String(u._id) !== targetId) return u;
+          const updated = { ...u };
+          if (newBalance !== undefined) updated.avbalance = newBalance;
+          if (newExposure !== undefined) {
+            const gross = Number(newExposure) || 0;
+            updated.exposure = gross;
+            updated.totalExposure = gross;
+            const pct = Number(u.parentSharePercent ?? u.mySharePercent ?? 100);
+            updated.shareExposure = Math.round(gross * (pct / 100) * 100) / 100;
+          }
+          return updated;
+        });
+      state.users = updateUser(state.users);
+      state.onlyusers = updateUser(state.onlyusers);
+    },
+  },
 });
 
-export const { clearError, user_reset, setCurrentPage } = userSlice.actions;
+export const {
+  messageClear,
+  clearError,
+  user_reset,
+  setCurrentPage,
+  updateReduxUserBalance,
+} = userSlice.actions;
 
 export default userSlice.reducer;

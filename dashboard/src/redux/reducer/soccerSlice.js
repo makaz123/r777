@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '../api';
+import { formatApiMatchDateTime } from '../../utils/formatMatchDateTime';
 
 export const fetchSoccerData = createAsyncThunk(
   'soccer/fetchSoccerData',
@@ -35,6 +36,8 @@ const soccerSlice = createSlice({
           id: match.id,
           title: match.title,
           game: match.match || '',
+          time: formatApiMatchDateTime(match.date),
+          date: match.date,
         }));
         state.error = null;
       })

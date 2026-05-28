@@ -30,6 +30,7 @@ import Navbar from './Navbar';
 import LoginPopup from '../auth/LoginPopup';
 import LanguageSelector from '../language/LanguageSelector';
 import { useTranslation } from '../../context/LanguageContext';
+import { useUserLockSync } from '../../hooks/useUserLockSync';
 
 function Header({
   onMenuToggle,
@@ -64,6 +65,8 @@ function Header({
   const dispatch = useDispatch();
   const { userInfo } = useSelector((state) => state.auth);
 
+  useUserLockSync(Boolean(userInfo?._id));
+
   useEffect(() => {
     if (!localStorage.getItem('auth')) return;
     dispatch(getUser());
@@ -71,7 +74,7 @@ function Header({
 
   useEffect(() => {
     if (userInfo?._id) {
-      wsService.connect(dispatch, userInfo._id);
+      wsService.connect(dispatch, String(userInfo._id));
     }
   }, [dispatch, userInfo?._id]);
 
@@ -234,7 +237,11 @@ function Header({
               <div className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'>
                 <p>{t('p_and_l', 'P&L')}</p>
                 <p className='text-black'>
-                  {userInfo?.bettingProfitLoss?.toFixed(2)}
+                  {(
+                    Number(userInfo?.avbalance || 0) -
+                    Number(userInfo?.baseBalance || 0) +
+                    Math.abs(Number(userInfo?.exposure || 0))
+                  ).toFixed(2)}
                 </p>
               </div>
             </div>

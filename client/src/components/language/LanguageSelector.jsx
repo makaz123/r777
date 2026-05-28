@@ -27,12 +27,12 @@ export default function LanguageSelector() {
         aria-expanded={isOpen}
       >
         <span className='lang-icon'>🌐</span>
-        <span className='lang-label'>{activeLang.label}</span>
+        <span className='lang-label'>{activeLang.symbol}</span>
         <span className={`lang-arrow ${isOpen ? 'open' : ''}`}>▼</span>
       </button>
 
       {isOpen && (
-        <ul className='lang-dropdown-menu'>
+        <ul className='lang-dropdown-menu scrollbar-hide max-h-screen overflow-y-scroll pb-50'>
           {Object.entries(languages).map(([code, item]) => (
             <li key={code}>
               <button
@@ -94,7 +94,7 @@ export default function LanguageSelector() {
 
         .lang-dropdown-menu {
           position: absolute;
-          top: calc(100% + 6px);
+          top: 40px;
           right: 0;
           min-width: 140px;
           background: rgba(26, 26, 36, 0.95);
@@ -109,8 +109,6 @@ export default function LanguageSelector() {
           animation: langSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           margin: 0;
           z-index: 99;
-          overflow-y: scroll;
-          max-height: 250px;
         }
 
         @keyframes langSlideIn {

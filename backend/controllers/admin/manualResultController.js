@@ -23,14 +23,17 @@ import {
 } from '../../socket/bettingSocket.js';
 import {
   applyMatchOddsWinCommissionOnSettlement,
-  creditAgentCommissionEarned,
+  distributeCommissionUpChain,
   updateAllUplines,
 } from './subAdminController.js';
 import {
   calculateWinCommission,
+  isSettledClientWinPL,
+  isMatchOddsBetRecord,
   isMatchOddsGameType,
   parseCommissionPercent,
 } from '../../utils/partnershipCommissionUtils.js';
+import { notifyBetSettlementAfterSave } from '../../utils/betSettlementToastNotify.js';
 
 // Fancy game types that require score-based settlement
 const FANCY_GAME_TYPES = ['Normal', 'meter', 'line', 'ball', 'khado'];
@@ -508,8 +511,8 @@ export const settleManualResult = async (req, res) => {
           }
 
           if (
-            isMatchOddsGameType(bet.gameType) &&
-            historyProfitLossChange > 0
+            isMatchOddsBetRecord(historyRecord) &&
+            isSettledClientWinPL(historyProfitLossChange, historyStatus)
           ) {
             const rate = parseCommissionPercent(user?.commition);
             const { netProfit, commission } = calculateWinCommission(
@@ -553,6 +556,7 @@ export const settleManualResult = async (req, res) => {
         // Update user balance & P/L atomically
         // balance uses betModel settlement (handles offset exposure correctly)
         // bettingProfitLoss uses betHistoryModel sum (single source of truth for P/L)
+        let bplForToast = 0;
         if (settlementResult.userUpdates) {
           let finalUpdates = settlementResult.userUpdates;
           let bplChange =
@@ -570,7 +574,8 @@ export const settleManualResult = async (req, res) => {
                 totalMatchOddsCommission,
               profitLossChange: betHistoryTotalPL,
             };
-            await creditAgentCommissionEarned(user, totalMatchOddsCommission);
+            // Distribute commission up the chain
+            await distributeCommissionUpChain(user, totalMatchOddsCommission);
           } else if (betHistoryRecords.length === 0) {
             const commissionResult =
               await applyMatchOddsWinCommissionOnSettlement(
@@ -591,7 +596,14 @@ export const settleManualResult = async (req, res) => {
               bettingProfitLoss: bplChange,
             },
           });
+          bplForToast = bplChange;
         }
+
+        await notifyBetSettlementAfterSave({
+          bet,
+          bettorUser: user,
+          bplChange: bplForToast,
+        });
 
         processedUserIds.add(user._id.toString());
 

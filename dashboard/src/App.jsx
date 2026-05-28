@@ -18,8 +18,19 @@ import UserWinLoss from './pages/UserWinLoss';
 import TotalProfitLoss from './pages/TotalProfitLoss';
 import CasinoResultReport from './pages/CasinoResultReport';
 import RegisterDetail from './pages/RegisterDetail';
+import UserDetails from './pages/UserDetails';
 import AccountStatement from './pages/AccountStatement';
-import ProfitLoss from './pages/ProfitLoss';
+import SettlementReport from './pages/SettlementReport';
+import TransactionReport from './pages/TransactionReport ';
+import CurrentBets from './pages/CurrentBets';
+import ProfitLossReport from './pages/ProfitLossReport';
+import EventLossReport from './pages/EventLossReport';
+import BetHistoryReport from './pages/BetHistoryReport';
+import LiveBetsReport from './pages/LiveBetsReport';
+import IpLookupReport from './pages/IpLookupReport';
+import SportRevenue from './pages/SportRevenue';
+
+import ProfitLoss from './pages/ProfitLossCopy';
 import GeneralReport from './pages/GeneralReport';
 import MyMarket from './pages/MyMarket';
 import Banking from './pages/Banking';
@@ -32,6 +43,12 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AgentLIst from './pages/AgentLIst';
 import PrivateRoute from './components/PrivateRoute';
+import PublicRoute from './components/PublicRoute';
+
+function RootRedirect() {
+  const hasToken = Boolean(localStorage.getItem('auth'));
+  return <Navigate to={hasToken ? '/home' : '/login'} replace />;
+}
 import MasterBanking from './pages/MasterBanking';
 import UserProfile from './pages/UserProfile';
 import EventPLteams from './pages/EventPLteams';
@@ -49,12 +66,14 @@ import HorseRacingbet from './pages/HorseRacingbet';
 import InsertUser from './pages/InsertUser';
 import InsertAgent from './pages/InsertAgent';
 import LiveCasino from './pages/LiveCasino';
-import TransactionPasswordSuccess from './pages/TransactionPasswordSuccess';
+import { FEATURES } from './config/featureFlags';
 import ChangePassword from './pages/ChangePassword';
 import BannerSettings from './pages/BannerSettings';
 import Notifications from './pages/Notifications';
 import CasinoAnalysis from './pages/CasinoAnalysis';
 import UserSettlement from './pages/UserSettlement';
+import GameBetLock from './pages/GameBetLock';
+import CasinoLock from './pages/CasinoLock';
 
 function App() {
   return (
@@ -64,8 +83,10 @@ function App() {
           <div className='relative'>
             <div className='w-full'>
               <Routes>
-                <Route path='/login' element={<Login />} />
-                <Route path='/' element={<Navigate to='/login' replace />} />
+                <Route element={<PublicRoute />}>
+                  <Route path='/login' element={<Login />} />
+                </Route>
+                <Route path='/' element={<RootRedirect />} />
                 <Route element={<PrivateRoute />}>
                   <Route path='/home' element={<Home />} />
                   <Route path='/notifications' element={<Notifications />} />
@@ -106,6 +127,8 @@ function App() {
                     path='/userbethistory/:userName'
                     element={<UserBetHistory />}
                   />
+                  <Route path='/gamebetlock' element={<GameBetLock />} />
+                  <Route path='/casinolock' element={<CasinoLock />} />
                   <Route path='/downpl' element={<DownPL />} />
                   <Route path='/downplteam/:id' element={<DownPLteam />} />
                   <Route path='/betlist' element={<BetList />} />
@@ -120,7 +143,34 @@ function App() {
                     path='/AccountStatement'
                     element={<AccountStatement />}
                   />
+                  {FEATURES.transactionReport && (
+                    <Route
+                      path='/TransactionReport'
+                      element={<TransactionReport />}
+                    />
+                  )}
+                  <Route
+                    path='/EventLossReport'
+                    element={<EventLossReport />}
+                  />
+                  <Route path='/SportRevenue' element={<SportRevenue />} />
+                  <Route path='/IpLookupReport' element={<IpLookupReport />} />
+                  <Route path='/LiveBetsReport' element={<LiveBetsReport />} />
+                  <Route
+                    path='/BetHistoryReport'
+                    element={<BetHistoryReport />}
+                  />
+                  <Route
+                    path='/SettlementReport'
+                    element={<SettlementReport />}
+                  />
+                  <Route path='/CurrentBets' element={<CurrentBets />} />
+                  <Route
+                    path='/ProfitLossReport'
+                    element={<ProfitLossReport />}
+                  />
                   <Route path='/RegisterDetail' element={<RegisterDetail />} />
+                  <Route path='/user-details' element={<UserDetails />} />
                   <Route
                     path='/CasinoResultReport'
                     element={<CasinoResultReport />}
@@ -162,7 +212,7 @@ function App() {
                   <Route path='/live-casino' element={<LiveCasino />} />
                   <Route
                     path='/transaction-password-success'
-                    element={<TransactionPasswordSuccess />}
+                    element={<Navigate to='/home' replace />}
                   />
                   <Route path='/banner-settings' element={<BannerSettings />} />
                   <Route path='/casino-bet/:gameid' element={<CasinoBet />} />
@@ -170,14 +220,16 @@ function App() {
                     path='/horse-racing-bet/:gameid'
                     element={<HorseRacingbet />}
                   />
+                  <Route path='*' element={<Navigate to='/home' replace />} />
                 </Route>
+                <Route path='*' element={<Navigate to='/login' replace />} />
               </Routes>
             </div>
           </div>
         </div>
         <ToastContainer
           position='top-right'
-          autoClose={800}
+          autoClose={2000}
           hideProgressBar={true}
           newestOnTop={false}
           closeOnClick={true}

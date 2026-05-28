@@ -90,6 +90,64 @@ export const startCasinoGame = async (req, res) => {
 };
 
 import CasinoBetHistory from '../models/casinoBetHistory.model.js';
+import { getDateRangeUTC } from '../utils/dateUtils.js';
+import { hasCasinoRoundActivity } from '../utils/casinoPlUtils.js';
+
+/** Map live-casino round to client bet-history table row shape. */
+export const mapCasinoBetToClientHistoryRow = (cb) => ({
+  _id: cb._id,
+  userId: cb.userId,
+  userName: cb.userName,
+  gameName: 'Casino',
+  eventName: cb.game_name || cb.game_uid || 'Casino Game',
+  marketName: `Round ${cb.game_round}`,
+  teamName: cb.game_name || '-',
+  xValue: '-',
+  otype: 'back',
+  price: cb.bet_amount ?? 0,
+  betAmount: cb.bet_amount ?? 0,
+  createdAt: cb.createdAt,
+  betType: 'live_casino',
+  resultAmount: Math.abs(cb.change || 0),
+  profitLossChange: cb.change || 0,
+  status: (cb.change || 0) >= 0 ? 1 : 2,
+});
+
+/**
+ * Live casino rounds for user bet-history page (separate from sports betHistory).
+ */
+export const fetchUserLiveCasinoBetsForHistory = async ({
+  userId,
+  startDate,
+  endDate,
+  selectedVoid = 'unsettel',
+}) => {
+  const query = {
+    userId: String(userId),
+    $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+  };
+
+  if (startDate && endDate) {
+    query.createdAt = getDateRangeUTC(startDate, endDate);
+  }
+
+  if (selectedVoid === 'unsettel') {
+    query.bet_amount = { $gt: 0 };
+    query.win_amount = 0;
+  } else if (selectedVoid === 'settel') {
+    query.win_amount = { $gt: 0 };
+  } else if (selectedVoid === 'void') {
+    return [];
+  }
+
+  const rows = await CasinoBetHistory.find(query)
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return rows
+    .filter(hasCasinoRoundActivity)
+    .map(mapCasinoBetToClientHistoryRow);
+};
 
 // export const casinoCallback = async (req, res) => {
 //   try {
@@ -422,8 +480,6 @@ export const casinoCallback = async (req, res) => {
           $inc: {
             balance: balanceChange, // Update balance
             avbalance: balanceChange, // Update avbalance by same amount
-            baseBalance: balanceChange, // Keep baseBalance in sync for settlement calculation
-            creditReferenceProfitLoss: balanceChange, // Keep P/L in sync for Settlement page
             bettingProfitLoss: balanceChange, // Keep P/L in sync for reporting
           },
         },
@@ -499,8 +555,6 @@ export const casinoCallback = async (req, res) => {
           $inc: {
             balance: balanceChange, // Update balance
             avbalance: balanceChange, // Update avbalance by same amount
-            baseBalance: balanceChange, // Keep baseBalance in sync for settlement calculation
-            creditReferenceProfitLoss: balanceChange, // Keep P/L in sync for Settlement page
             bettingProfitLoss: balanceChange, // Keep P/L in sync for reporting
           },
         },
@@ -519,7 +573,13 @@ export const casinoCallback = async (req, res) => {
       );
 
       betRecord.win_amount = win;
-      betRecord.change = Number(change || win);
+      const stake = Number(betRecord.bet_amount || bet) || 0;
+      const netRoundPL = win - stake;
+      betRecord.change = Number(
+        change !== undefined && change !== null && change !== ''
+          ? change
+          : netRoundPL
+      );
       betRecord.wallet_after = Number(updatedUser.avbalance);
       betRecord.providerRaw = req.body;
       betRecord.processedAt = new Date();
@@ -642,8 +702,11 @@ export const getCasinoBetHistory = async (req, res) => {
       });
     }
 
-    // Build query
-    const query = { userId: userId };
+    // Build query — only real casino rounds
+    const query = {
+      userId: userId,
+      $or: [{ bet_amount: { $gt: 0 } }, { win_amount: { $gt: 0 } }],
+    };
 
     // Add date filtering if provided
     if (startDate && endDate) {
@@ -872,11 +935,17 @@ export const getAllDownlineCasinoBetHistory = async (req, res) => {
       CasinoBetHistory.countDocuments(filter),
     ]);
 
+    // Flip change to show Admin P&L (bet - win) instead of User P&L (win - bet)
+    const adminPerspectiveData = betData.map((bet) => ({
+      ...bet,
+      change: -(bet.change || 0),
+    }));
+
     return res.status(200).json({
       success: true,
       totalUsers: userIds.length,
       totalBets: betData.length,
-      data: betData,
+      data: adminPerspectiveData,
       pagination: {
         total: totalCount,
         page: pageNum,
@@ -944,32 +1013,10 @@ export const getAllCasinoProfitLoss = async (req, res) => {
       });
     }
 
-    // 3️⃣ For each direct downline, get ALL their descendants and aggregate casino P/L
-    const userPLReport = [];
+    // 3️⃣ Use a SINGLE graphLookup to get all descendants for all direct downlines
+    let userPLReport = [];
 
-    for (const downline of downlineResult) {
-      // Get all descendants of this downline (recursive)
-      const descendantsAggregation = await SubAdmin.aggregate([
-        { $match: { _id: downline._id } },
-        {
-          $graphLookup: {
-            from: 'subadmins',
-            startWith: '$code',
-            connectFromField: 'code',
-            connectToField: 'invite',
-            as: 'descendants',
-          },
-        },
-      ]);
-
-      // Extract all descendant IDs including the downline itself
-      const descendantIds =
-        descendantsAggregation[0]?.descendants.map((u) => u._id.toString()) ||
-        [];
-      if (!descendantIds.includes(downline._id.toString())) {
-        descendantIds.push(downline._id.toString());
-      }
-
+    if (targetUser.role === 'user') {
       // Build date filter
       const dateFilter = {};
       if (startDate && endDate) {
@@ -978,12 +1025,10 @@ export const getAllCasinoProfitLoss = async (req, res) => {
           $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
         };
       }
-
-      // Aggregate casino P/L for this downline + all their descendants
       const casinoPLData = await CasinoBetHistory.aggregate([
         {
           $match: {
-            userId: { $in: descendantIds },
+            userId: targetUser._id.toString(),
             ...dateFilter,
           },
         },
@@ -995,18 +1040,110 @@ export const getAllCasinoProfitLoss = async (req, res) => {
           },
         },
       ]);
-
       const plData = casinoPLData[0] || { totalStake: 0, totalChange: 0 };
-      const casinoPL = plData.totalChange || 0;
+      const casinoPL = -(plData.totalChange || 0);
+
       userPLReport.push({
-        userId: downline._id.toString(),
-        userName: downline.userName || '',
-        role: downline.role || '',
+        userId: targetUser._id.toString(),
+        userName: targetUser.userName || '',
+        role: targetUser.role || '',
         stake: plData.totalStake || 0,
-        casinoPL: plData.totalChange || 0,
+        casinoPL: casinoPL,
         internationalCasinoPL: 0,
         uplinePL: -casinoPL || 0,
       });
+    } else {
+      const branches = await SubAdmin.aggregate([
+        { $match: { invite: targetUser.code, status: { $ne: 'delete' } } },
+        {
+          $graphLookup: {
+            from: 'subadmins',
+            startWith: '$code',
+            connectFromField: 'code',
+            connectToField: 'invite',
+            as: 'descendants',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            userName: 1,
+            role: 1,
+            userIds: {
+              $concatArrays: [
+                [{ $toString: '$_id' }],
+                {
+                  $map: {
+                    input: '$descendants',
+                    as: 'd',
+                    in: { $toString: '$$d._id' },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ]);
+
+      const allUserIdsMap = {};
+      const allIds = [];
+
+      for (const branch of branches) {
+        branch.totalStake = 0;
+        branch.totalChange = 0;
+        for (const uid of branch.userIds) {
+          allUserIdsMap[uid] = branch;
+          allIds.push(uid);
+        }
+      }
+
+      // Build date filter
+      const dateFilter = {};
+      if (startDate && endDate) {
+        dateFilter.createdAt = {
+          $gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
+          $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+        };
+      }
+
+      // 4️⃣ Aggregate ALL bets in one query
+      const betStats = await CasinoBetHistory.aggregate([
+        {
+          $match: {
+            userId: { $in: allIds },
+            ...dateFilter,
+          },
+        },
+        {
+          $group: {
+            _id: '$userId',
+            stake: { $sum: '$bet_amount' },
+            change: { $sum: '$change' },
+          },
+        },
+      ]);
+
+      // Aggregate stats back to their respective branches
+      for (const stat of betStats) {
+        const branch = allUserIdsMap[stat._id];
+        if (branch) {
+          branch.totalStake += stat.stake;
+          branch.totalChange += stat.change;
+        }
+      }
+
+      for (const branch of branches) {
+        const casinoPL = -(branch.totalChange || 0); // Flipped to Admin P&L
+        userPLReport.push({
+          userId: branch._id.toString(),
+          userName: branch.userName || '',
+          role: branch.role || '',
+          stake: branch.totalStake || 0,
+          casinoPL: casinoPL,
+          internationalCasinoPL: 0,
+          uplinePL: -casinoPL || 0,
+        });
+      }
     }
 
     // 4️⃣ Calculate totals
@@ -1074,43 +1211,28 @@ export const getCasinoProfitLossByDate = async (req, res) => {
       });
     }
 
-    // 2️⃣ Get ALL downlines (direct + recursive) for the target user
+    // 2️⃣ Get ALL downlines (direct + recursive) for the target user using a single $graphLookup
     let allDownlineIds = [];
 
     if (targetUser.role === 'user') {
-      // If user is a regular user, include only themselves
       allDownlineIds = [targetUser._id.toString()];
     } else {
-      // Get direct downlines
-      let downlineResult = await SubAdmin.find({
-        invite: targetUser.code,
-        status: { $ne: 'delete' },
-      });
-
-      // For each direct downline, get ALL their descendants (recursive)
-      for (const downline of downlineResult) {
-        const descendantsAggregation = await SubAdmin.aggregate([
-          { $match: { _id: downline._id } },
-          {
-            $graphLookup: {
-              from: 'subadmins',
-              startWith: '$code',
-              connectFromField: 'code',
-              connectToField: 'invite',
-              as: 'descendants',
-            },
+      const hierarchy = await SubAdmin.aggregate([
+        { $match: { _id: targetUser._id } },
+        {
+          $graphLookup: {
+            from: 'subadmins',
+            startWith: '$code',
+            connectFromField: 'code',
+            connectToField: 'invite',
+            as: 'descendants',
           },
-        ]);
+        },
+      ]);
 
-        // Extract all descendant IDs including the downline itself
-        const descendantIds =
-          descendantsAggregation[0]?.descendants.map((u) => u._id.toString()) ||
-          [];
-        if (!descendantIds.includes(downline._id.toString())) {
-          descendantIds.push(downline._id.toString());
-        }
-
-        allDownlineIds = [...allDownlineIds, ...descendantIds];
+      allDownlineIds = hierarchy[0]?.descendants.map((u) => u._id.toString()) || [];
+      if (!allDownlineIds.includes(targetUser._id.toString())) {
+        allDownlineIds.push(targetUser._id.toString());
       }
     }
 

@@ -146,5 +146,8 @@ subAdminSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
+subAdminSchema.index({ code: 1 });
+subAdminSchema.index({ invite: 1 });
+
 const SubAdmin = mongoose.model('SubAdmin', subAdminSchema);
 export default SubAdmin;

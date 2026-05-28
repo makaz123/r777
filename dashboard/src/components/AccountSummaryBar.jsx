@@ -116,7 +116,23 @@ const AccountSummaryBar = () => {
   const totalExposure = Number(
     summary?.totalExposure ?? userInfo?.totalExposure ?? userInfo?.exposure ?? 0
   );
-  const mySharePct = Number(summary?.mySharePercent ?? 100);
+  const resolveSharePercent = () => {
+    const candidates = [
+      summary?.mySharePercent,
+      downlineViewer?.mySharePercent,
+      userInfo?.mySharePercent,
+      userInfo?.parentSharePercent,
+      downlineViewer?.viewerShareOnRow,
+    ];
+
+    for (const value of candidates) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n >= 0 && n <= 100) return n;
+    }
+    return 0;
+  };
+
+  const mySharePct = resolveSharePercent();
   const myExposureAmount = Number(
     summary?.myShareExposure ??
       Math.round(totalExposure * (mySharePct / 100) * 100) / 100
@@ -284,7 +300,7 @@ const AccountSummaryBar = () => {
 
             <div className='space-y-1 md:col-span-1'>
               <MetricTooltipRow
-                label='Dashboard P&L : '
+                label='My P&L : '
                 tooltip='Shows ONLY your percentage (P x My % / 100). Lifetime betting P&L from downline.'
                 alignTooltip='center'
               >

@@ -18,7 +18,8 @@ const SPORT_FIELDS = [
   'markets',
 ];
 
-const safeIncludes = (arr, val) => arr && arr.some(x => String(x).toLowerCase() === String(val).toLowerCase());
+const safeIncludes = (arr, val) =>
+  arr && arr.some((x) => String(x).toLowerCase() === String(val).toLowerCase());
 
 export const mapGameNameToSport = (gameName, sid) => {
   const sidMap = { 4: 'cricket', 1: 'soccer', 2: 'tennis', 52: 'kabaddi' };
@@ -199,27 +200,64 @@ export const checkBetLockedForChain = (chain, betDetails) => {
   if (!sportLocks) return { locked: false };
 
   // 1. Check if the entire sport is locked (e.g. "Cricket" in types)
-  if (safeIncludes(sportLocks.types, sportStr) || safeIncludes(sportLocks.types, gameName)) {
-    return { locked: true, message: `Sport ${sportStr} is locked by an upline` };
+  if (
+    safeIncludes(sportLocks.types, sportStr) ||
+    safeIncludes(sportLocks.types, gameName)
+  ) {
+    return {
+      locked: true,
+      message: `Sport ${sportStr} is locked by an upline`,
+    };
   }
 
   // 2. Check "Type:" UI checkboxes which are stored in sportLocks.types
-  const isOdds = ['match odds', 'winner', 'tied match', 'tournament_winner'].includes(String(gameType).toLowerCase());
+  const isOdds = [
+    'match odds',
+    'winner',
+    'tied match',
+    'tournament_winner',
+  ].includes(String(gameType).toLowerCase());
   const isBookie = String(gameType).toLowerCase().includes('bookmaker');
-  const isFancy = ['fancy1', 'normal', 'meter', 'line', 'ball', 'khado', 'fancy'].includes(String(gameType).toLowerCase());
+  const isFancy = [
+    'fancy1',
+    'normal',
+    'meter',
+    'line',
+    'ball',
+    'khado',
+    'fancy',
+  ].includes(String(gameType).toLowerCase());
 
   if (isOdds && safeIncludes(sportLocks.types, 'All Odds')) {
-    return { locked: true, message: `Match Odds betting is locked by an upline` };
+    return {
+      locked: true,
+      message: `Match Odds betting is locked by an upline`,
+    };
   }
-  if (isBookie && (safeIncludes(sportLocks.types, 'All Bookmaker') || safeIncludes(sportLocks.types, 'Exch Bookmaker'))) {
-    return { locked: true, message: `Bookmaker betting is locked by an upline` };
+  if (
+    isBookie &&
+    (safeIncludes(sportLocks.types, 'All Bookmaker') ||
+      safeIncludes(sportLocks.types, 'Exch Bookmaker'))
+  ) {
+    return {
+      locked: true,
+      message: `Bookmaker betting is locked by an upline`,
+    };
   }
-  if (isFancy && (safeIncludes(sportLocks.types, 'Betfair Fancy') || safeIncludes(sportLocks.types, 'Exch Fancy') || safeIncludes(sportLocks.types, 'Other Fancy'))) {
+  if (
+    isFancy &&
+    (safeIncludes(sportLocks.types, 'Betfair Fancy') ||
+      safeIncludes(sportLocks.types, 'Exch Fancy') ||
+      safeIncludes(sportLocks.types, 'Other Fancy'))
+  ) {
     return { locked: true, message: `Fancy betting is locked by an upline` };
   }
 
   // 3. Check "Market Type:" UI checkboxes
-  if (safeIncludes(sportLocks.marketTypes, marketName) || safeIncludes(sportLocks.marketTypes, gameType)) {
+  if (
+    safeIncludes(sportLocks.marketTypes, marketName) ||
+    safeIncludes(sportLocks.marketTypes, gameType)
+  ) {
     return {
       locked: true,
       message: `Market Type ${marketName || gameType} is locked by an upline`,
@@ -251,7 +289,12 @@ export const checkAdvancedBetLocks = async (user, betDetails) => {
   console.log(`[LOCK CHECK DETAILS] betDetails:`, betDetails);
   const chain = await buildUplineChain(user);
   console.log(`[LOCK CHECK CHAIN] Chain length: ${chain.length}`);
-  chain.forEach((acc, i) => console.log(`  Level ${i}: ${acc.userName} (${acc.role}), advancedBetLocks:`, JSON.stringify(acc.advancedBetLocks || {})));
+  chain.forEach((acc, i) =>
+    console.log(
+      `  Level ${i}: ${acc.userName} (${acc.role}), advancedBetLocks:`,
+      JSON.stringify(acc.advancedBetLocks || {})
+    )
+  );
   const result = checkBetLockedForChain(chain, betDetails);
   console.log(`[LOCK CHECK RESULT]`, result);
   return result;

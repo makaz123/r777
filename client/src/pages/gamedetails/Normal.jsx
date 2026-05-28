@@ -129,11 +129,13 @@ function Normal({
         <div className=''>
           <div className='flex border-b border-b-[#c7c8ca]'>
             <div className='flex-1'></div>
-            <div className='text-[14px] font-bold text-black flex justify-center items-center md:w-[16%] w-[40%]'>
-              <span className='text-center p-[2px] w-1/2'>{t('no', 'No')}</span>
-              <span className='text-center p-[2px] w-1/2'>{t('yes', 'Yes')}</span>
+            <div className='flex w-[40%] items-center justify-center text-[14px] font-bold text-black md:w-[16%]'>
+              <span className='w-1/2 p-[2px] text-center'>{t('no', 'No')}</span>
+              <span className='w-1/2 p-[2px] text-center'>
+                {t('yes', 'Yes')}
+              </span>
             </div>
-            <div className='hidden lg:block w-[16%]'></div>
+            <div className='hidden w-[16%] lg:block'></div>
           </div>
           {allData.length > 0 ? (
             allData.map((item) => {
@@ -142,8 +144,8 @@ function Normal({
               return (
                 <React.Fragment key={item.id}>
                   <div className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'>
-                    <div className='w-[60%] truncate md:w-[68%] ml-2 flex flex-col justify-center text-[14px] text-black'>
-                      <div className='font-bold truncate'>{item.label}</div>
+                    <div className='ml-2 flex w-[60%] flex-col justify-center truncate text-[14px] text-black md:w-[68%]'>
+                      <div className='truncate font-bold'>{item.label}</div>
                       {(() => {
                         if (!localStorage.getItem('auth')) return null;
                         const { otype, totalBetAmount, totalPrice, teamName } =
@@ -169,79 +171,79 @@ function Normal({
                       })()}
                     </div>
 
-
-                      <div className={`flex w-[40%] md:w-[16%] relative ${hasStatus ? 'suspended-event':''} `}>
-                        <div className={`w-1/2 m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#faa9ba] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                          onClick={() =>
-                            item.no.rate &&
-                            handleOddsClick(
-                              item.label,
-                              item.no.rate,
-                              'lay',
-                              item.sid,
-                              item.min,
-                              item.max,
-                              item.no.size
-                            )
-                          }
-                        >
-                          {item.no.rate ? (
-                            <>
-                              <span className='text-[14px] leading-none font-bold text-black'>
-                                {item.no.rate}
-                              </span>
-                              <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
-                                {item.no.size}
-                              </span>
-                            </>
-                          ) : (
-                            <span className='text-[15px] font-bold text-black'>
-                              -
+                    <div
+                      className={`relative flex w-[40%] md:w-[16%] ${hasStatus ? 'suspended-event' : ''} `}
+                    >
+                      <div
+                        className={`m-[1px] flex min-h-[36px] w-1/2 flex-col items-center justify-center rounded-[3px] bg-[#faa9ba] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          item.no.rate &&
+                          handleOddsClick(
+                            item.label,
+                            item.no.rate,
+                            'lay',
+                            item.sid,
+                            item.min,
+                            item.max,
+                            item.no.size
+                          )
+                        }
+                      >
+                        {item.no.rate ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-black'>
+                              {item.no.rate}
                             </span>
-                          )}
-                        </div>
-                        <div
-                          className={`w-1/2 m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.yes.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                          onClick={() =>
-                            item.yes.rate &&
-                            handleOddsClick(
-                              item.label,
-                              item.yes.rate,
-                              'back',
-                              item.sid,
-                              item.min,
-                              item.max,
-                              item.yes.size
-                            )
-                          }
-                        >
-                          {item.yes.rate ? (
-                            <>
-                              <span className='text-[14px] leading-none font-bold text-black'>
-                                {item.yes.rate}
-                              </span>
-                              <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
-                                {item.yes.size}
-                              </span>
-                            </>
-                          ) : (
-                            <span className='text-[15px] font-bold text-black'>
-                              -
+                            <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
+                              {item.no.size}
                             </span>
-                          )}
-                        </div>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-black'>
+                            -
+                          </span>
+                        )}
                       </div>
+                      <div
+                        className={`m-[1px] flex min-h-[36px] w-1/2 flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.yes.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          item.yes.rate &&
+                          handleOddsClick(
+                            item.label,
+                            item.yes.rate,
+                            'back',
+                            item.sid,
+                            item.min,
+                            item.max,
+                            item.yes.size
+                          )
+                        }
+                      >
+                        {item.yes.rate ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-black'>
+                              {item.yes.rate}
+                            </span>
+                            <span className='pt-[1px] text-[10px] leading-none font-[100] text-black'>
+                              {item.yes.size}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-black'>
+                            -
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                      <div className='w-[40%] md:w-[16%] hidden flex-col items-end justify-center lg:flex px-2'>
-                        <span className='text-[10px] leading-4 font-bold capitalize'>
-                          {t('min', 'Min')}:{item.min}
-                        </span>
-                        <span className='text-[10px] leading-4 font-bold'>
-                          {t('max', 'Max')}:{item.max}
-                        </span>
-                      </div>
-                      
-                    
+                    <div className='hidden w-[40%] flex-col items-end justify-center px-2 md:w-[16%] lg:flex'>
+                      <span className='text-[10px] leading-4 font-bold capitalize'>
+                        {t('min', 'Min')}:{item.min}
+                      </span>
+                      <span className='text-[10px] leading-4 font-bold'>
+                        {t('max', 'Max')}:{item.max}
+                      </span>
+                    </div>
                   </div>
                   {renderInlineBetSlip(item)}
                 </React.Fragment>

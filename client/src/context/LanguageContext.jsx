@@ -15,18 +15,18 @@ import telugu from '../lang/telugu.json';
 import assm from '../lang/assm.json';
 
 const languages = {
-  en: { symbol:'EN', label: 'English', data: english },
-  hi: { symbol:'HI', label: 'Hindi', data: hindi },
-  bn: { symbol:'BN', label: 'Bangla', data: ban },
-  gu: { symbol:'GU', label: 'Gujarati', data: Gurjati },
-  kn: { symbol:'KN', label: 'Kannada', data: kan },
-  ml: { symbol:'ML', label: 'Malayalam', data: mal },
-  mr: { symbol:'MR', label: 'Marathi', data: mar },
-  or: { symbol:'OR', label: 'Odia', data: odia },
-  pa: { symbol:'PA', label: 'Punjabi', data: pan },
-  ta: { symbol:'TA', label: 'Tamil', data: tamil },
-  te: { symbol:'TE', label: 'Telugu', data: telugu },
-  as: { symbol:'AS', label: 'Assamese', data: assm },
+  en: { symbol: 'EN', label: 'English', data: english },
+  hi: { symbol: 'HI', label: 'Hindi', data: hindi },
+  bn: { symbol: 'BN', label: 'Bangla', data: ban },
+  gu: { symbol: 'GU', label: 'Gujarati', data: Gurjati },
+  kn: { symbol: 'KN', label: 'Kannada', data: kan },
+  ml: { symbol: 'ML', label: 'Malayalam', data: mal },
+  mr: { symbol: 'MR', label: 'Marathi', data: mar },
+  or: { symbol: 'OR', label: 'Odia', data: odia },
+  pa: { symbol: 'PA', label: 'Punjabi', data: pan },
+  ta: { symbol: 'TA', label: 'Tamil', data: tamil },
+  te: { symbol: 'TE', label: 'Telugu', data: telugu },
+  as: { symbol: 'AS', label: 'Assamese', data: assm },
 };
 
 const LanguageContext = createContext();

@@ -123,8 +123,8 @@ const AccountSummaryBar = () => {
   );
 
   return (
-    <div className='relative z-20 w-full overflow-visible bg-[#016a82] text-sm text-white'>
-      <div className='flex w-full items-center justify-center py-2'>
+    <div className='relative z-20 w-full overflow-visible bg-[#007082] py-[7px] text-sm text-white'>
+      <div className='flex h-[27px] w-full items-center justify-center'>
         <button
           type='button'
           aria-expanded={open}

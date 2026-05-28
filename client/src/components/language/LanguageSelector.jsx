@@ -32,7 +32,7 @@ export default function LanguageSelector() {
       </button>
 
       {isOpen && (
-        <ul className='lang-dropdown-menu max-h-screen overflow-y-scroll scrollbar-hide pb-50'>
+        <ul className='lang-dropdown-menu scrollbar-hide max-h-screen overflow-y-scroll pb-50'>
           {Object.entries(languages).map(([code, item]) => (
             <li key={code}>
               <button
@@ -94,7 +94,7 @@ export default function LanguageSelector() {
 
         .lang-dropdown-menu {
           position: absolute;
-          top:40px;
+          top: 40px;
           right: 0;
           min-width: 140px;
           background: rgba(26, 26, 36, 0.95);

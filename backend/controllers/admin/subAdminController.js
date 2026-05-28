@@ -1456,19 +1456,19 @@ export const getSubAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Admin ID is required' });
     }
 
-    const admin = await SubAdmin.findById(id);
+    const admin = await SubAdmin.findById(id).lean();
     if (!admin) {
       return res.status(404).json({ message: 'Sub-admin not found' });
     }
 
-    const payload = await loadAccountSummaryForAdmin(id);
-    if (!payload) {
-      return res.status(404).json({ message: 'Sub-admin not found' });
-    }
+    // Run background account summary if needed, but don't block response
+    loadAccountSummaryForAdmin(id).catch(err => 
+      console.error('Background summary error:', err)
+    );
 
     res.status(200).json({
       message: 'Sub-admin details retrieved successfully',
-      data: { ...payload.admin, accountSummary: payload.accountSummary },
+      data: { ...admin, accountSummary: null },
     });
   } catch (error) {
     console.error('Error fetching sub-admin:', error);
@@ -4272,24 +4272,30 @@ export const settleUser = async (req, res) => {
       });
     }
 
-    await refreshSettlementHierarchy(id, userId);
+    // Run heavy calculations in the background for 30k+ user performance
+    refreshSettlementHierarchy(id, userId).catch(console.error);
 
-    let summaryPayload = await loadAccountSummaryForAdmin(id);
-    const settledAt = new Date();
+    (async () => {
+      try {
+        let summaryPayload = await loadAccountSummaryForAdmin(id);
+        const settledAt = new Date();
 
-    if (summaryPayload?.linesFullyCleared) {
-      await setWeekPLResetNow(SubAdmin, id, settledAt);
-    } else {
-      await SubAdmin.findByIdAndUpdate(id, {
-        $unset: { weekPLResetAt: 1 },
-      });
-    }
-    summaryPayload = await loadAccountSummaryForAdmin(id);
+        if (summaryPayload?.linesFullyCleared) {
+          await setWeekPLResetNow(SubAdmin, id, settledAt);
+        } else {
+          await SubAdmin.findByIdAndUpdate(id, {
+            $unset: { weekPLResetAt: 1 },
+          });
+        }
+      } catch (err) {
+        console.error('Background settlement summary error:', err);
+      }
+    })();
 
     return res.status(200).json({
       success: true,
       message: 'Settlement completed successfully',
-      accountSummary: summaryPayload?.accountSummary ?? null,
+      accountSummary: null,
     });
   } catch (error) {
     console.error('Error in settleUser:', error);

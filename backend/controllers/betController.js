@@ -4806,18 +4806,29 @@ export const getAccountStatementHistory = async (req, res) => {
       'supperadmin',
     ];
     const isPrivileged = allowedProfileRoles.includes(role);
-    let targetUserId = null;
+    let targetUserIds = [];
 
     if (userName && isPrivileged) {
       const selectedUser = await SubAdmin.findOne(
-        { userName, role: 'user', status: { $ne: 'delete' } },
+        { userName, status: { $ne: 'delete' } },
         { _id: 1 }
       ).lean();
       if (selectedUser?._id) {
-        targetUserId = selectedUser._id.toString();
+        targetUserIds = [selectedUser._id.toString()];
+      } else {
+        targetUserIds = ['non_existent_user'];
       }
     } else if (!isPrivileged) {
-      targetUserId = id;
+      targetUserIds = [id];
+    } else {
+      const admin = await SubAdmin.findById(id, { code: 1 }).lean();
+      const filter =
+        role === 'supperadmin'
+          ? { status: { $ne: 'delete' } }
+          : { invite: admin?.code, status: { $ne: 'delete' } };
+      const users = await SubAdmin.find(filter, { _id: 1 }).lean();
+      targetUserIds = users.map((u) => u._id.toString());
+      if (targetUserIds.length === 0) targetUserIds = ['no_downline_users'];
     }
 
     const pageNum = Math.max(parseInt(page), 1);
@@ -4835,25 +4846,32 @@ export const getAccountStatementHistory = async (req, res) => {
 
     // 1. Get Target User's Current Balance
     let currentBalance = 0;
-    if (targetUserId) {
-      const u = await SubAdmin.findById(targetUserId, {
-        avbalance: 1,
-        balance: 1,
-        role: 1,
-      }).lean();
-      if (u) {
-        currentBalance = Number(
-          u.role === 'user' ? u.avbalance || 0 : u.balance || 0
+    if (
+      targetUserIds.length > 0 &&
+      targetUserIds[0] !== 'non_existent_user' &&
+      targetUserIds[0] !== 'no_downline_users'
+    ) {
+      const users = await SubAdmin.find(
+        { _id: { $in: targetUserIds } },
+        { avbalance: 1, balance: 1, role: 1 }
+      ).lean();
+      currentBalance = users.reduce((acc, u) => {
+        return (
+          acc + Number(u.role === 'user' ? u.avbalance || 0 : u.balance || 0)
         );
-      }
+      }, 0);
     }
 
-    const transactionQuery = {};
-    if (targetUserId) transactionQuery.userId = targetUserId;
+    const transactionQuery = { userId: { $in: targetUserIds } };
     if (dateFilter) transactionQuery.createdAt = dateFilter;
 
-    const betQuery = { status: { $in: [1, 2] } };
-    if (targetUserId) betQuery.userId = targetUserId;
+    if (accountType === 'deposit') {
+      transactionQuery.remark = { $not: /Settlement/i };
+    } else if (accountType === 'settlement') {
+      transactionQuery.remark = /Settlement/i;
+    }
+
+    const betQuery = { status: { $in: [1, 2] }, userId: { $in: targetUserIds } };
     if (dateFilter) betQuery.createdAt = dateFilter;
 
     if (accountType === 'casino') betQuery.betType = 'casino';
@@ -4877,7 +4895,17 @@ export const getAccountStatementHistory = async (req, res) => {
           date: { $ifNull: ['$createdAt', '$date'] },
           credit: { $toDouble: { $ifNull: ['$deposite', 0] } },
           debit: { $toDouble: { $ifNull: ['$withdrawl', 0] } },
-          description: { $ifNull: ['$remark', 'Transaction'] },
+          description: {
+            $trim: {
+              input: {
+                $replaceAll: {
+                  input: { $ifNull: ['$remark', 'Transaction'] },
+                  find: 'Settlement: ',
+                  replacement: '',
+                },
+              },
+            },
+          },
           fromto: {
             $concat: [
               { $ifNull: ['$from', '-'] },
@@ -4942,6 +4970,11 @@ export const getAccountStatementHistory = async (req, res) => {
     } else if (accountType === 'deposit' || accountType === 'settlement') {
       mainColl = TransactionHistory;
       pipeline = [...transactionPipeline, { $sort: { date: -1 } }];
+    } else if (accountType === 'bonus') {
+      mainColl = TransactionHistory;
+      // Bonus usually has a specific remark, but for now we just return empty or matching bonus
+      transactionQuery.remark = /Bonus/i; 
+      pipeline = [...transactionPipeline, { $sort: { date: -1 } }];
     } else {
       mainColl = betHistoryModel;
       pipeline = [...betPipeline, { $sort: { date: -1 } }];
@@ -4963,7 +4996,13 @@ export const getAccountStatementHistory = async (req, res) => {
 
     // Base Balance calculation helpers
     const getSums = async (dateCond) => {
-      if (!targetUserId) return { credit: 0, debit: 0 };
+      if (
+        targetUserIds.length === 0 ||
+        targetUserIds[0] === 'non_existent_user' ||
+        targetUserIds[0] === 'no_downline_users'
+      ) {
+        return { credit: 0, debit: 0 };
+      }
 
       const matchTxn = { ...transactionQuery, ...dateCond };
       let tCredit = 0,

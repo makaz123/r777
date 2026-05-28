@@ -50,6 +50,11 @@ const transactionHistorySchema = new mongoose.Schema(
   }
 );
 
+// Indexes for Account Statement performance
+transactionHistorySchema.index({ userId: 1, createdAt: -1 });
+transactionHistorySchema.index({ invite: 1 });
+transactionHistorySchema.index({ createdAt: -1 });
+
 const TransactionHistory = mongoose.model(
   'TransactionHistory',
   transactionHistorySchema

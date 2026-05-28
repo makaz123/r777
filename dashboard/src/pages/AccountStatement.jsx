@@ -50,6 +50,7 @@ const AccountStatement = () => {
   const [openingBalance, setOpeningBalance] = useState(0);
   const [closingBalance, setClosingBalance] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [userSuggestions, setUserSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
@@ -78,8 +79,8 @@ const AccountStatement = () => {
     }
 
     try {
-      const res = await api.get('/get/all-only-user', {
-        params: { searchQuery: query, page: 1, limit: 10 },
+      const res = await api.get('/get/downline-list', {
+        params: { searchQuery: query, listType: 'all', page: 1, limit: 10 },
         withCredentials: true,
       });
       const suggestions = (res.data?.data || [])
@@ -116,6 +117,7 @@ const AccountStatement = () => {
     setTotalPages(1);
     setOpeningBalance(0);
     setClosingBalance(0);
+    setHasSearched(false);
   };
 
   const loadReport = async () => {
@@ -166,7 +168,9 @@ const AccountStatement = () => {
 
   // Trigger load on component mount or filter changes
   useEffect(() => {
-    loadReport();
+    if (hasSearched) {
+      loadReport();
+    }
   }, [page, limit]);
 
   const renderClientSearch = () =>
@@ -300,7 +304,14 @@ const AccountStatement = () => {
             <div className='col-span-1 flex gap-1 outline-0'>
               <button
                 type='button'
-                onClick={loadReport}
+                onClick={() => {
+                  setHasSearched(true);
+                  if (page === 1) {
+                    loadReport();
+                  } else {
+                    setPage(1);
+                  }
+                }}
                 className='cursor-pointer rounded-l border border-[#247c8f] bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-3 py-1.5 text-white'
               >
                 Go
@@ -315,8 +326,10 @@ const AccountStatement = () => {
             </div>
           </div>
 
-          <div className='mb-5 flex flex-wrap items-end justify-between gap-5'>
-            <div className='flex items-end'>
+          {hasSearched && (
+            <>
+              <div className='mb-5 flex flex-wrap items-end justify-between gap-5'>
+                <div className='flex items-end'>
               <input
                 type='text'
                 placeholder='Search'
@@ -332,7 +345,7 @@ const AccountStatement = () => {
                     Opening Balance
                   </td>
                   <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                    1234567890
+                    {openingBalance !== undefined ? Number(openingBalance).toFixed(2) : '0.00'}
                   </td>
                 </tr>
                 <tr>
@@ -340,7 +353,7 @@ const AccountStatement = () => {
                     Closing Balance
                   </td>
                   <td className='w-1/2 border border-gray-200 px-1 py-1 text-end text-[12px] font-bold text-green-700'>
-                    1234567890
+                    {closingBalance !== undefined ? Number(closingBalance).toFixed(2) : '0.00'}
                   </td>
                 </tr>
               </tbody>
@@ -393,27 +406,37 @@ const AccountStatement = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr className='border border-gray-300 odd:bg-gray-100'>
-                  <td className='border border-gray-300 px-2 py-1.5'>
-                    25-05-2026
-                  </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                    1000000000000.00
-                  </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                    -
-                  </td>
-
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
-                    2500000.00
-                  </td>
-
-                  <td className='border border-gray-300 px-2 py-1.5'>
-                    Settlement
-                  </td>
-
-                  <td className='px-2 py-1.5'>Admin → User</td>
-                </tr>
+                {rows && rows.length > 0 ? (
+                  rows.map((row, index) => (
+                    <tr
+                      key={index}
+                      className='border border-gray-300 odd:bg-gray-100 text-[14px]'
+                    >
+                      <td className='border border-gray-300 px-2 py-1.5'>
+                        {row.date ? new Date(row.date).toLocaleString('en-US') : '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600'>
+                        {row.credit > 0 ? Number(row.credit).toFixed(2) : '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600'>
+                        {row.debit > 0 ? Number(row.debit).toFixed(2) : '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold'>
+                        {row.closing !== undefined ? Number(row.closing).toFixed(2) : '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5'>
+                        {row.description || '-'}
+                      </td>
+                      <td className='px-2 py-1.5 whitespace-nowrap'>{row.fromto || row.userName || '-'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="py-4 text-center text-gray-500">
+                      {loading ? 'Loading...' : 'No records found'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -465,7 +488,9 @@ const AccountStatement = () => {
                 Last
               </button>
             </div>
-          </div>
+            </div>
+            </>
+          )}
         </div>
       </div>
     </>

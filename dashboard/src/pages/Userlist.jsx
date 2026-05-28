@@ -484,6 +484,28 @@ export default function Userlist() {
     fetchExposureDetails,
   ]);
 
+  // Fallback refresh for multi-server deployments where websocket events can be missed.
+  // Keeps list data fresh without requiring manual page refresh.
+  useEffect(() => {
+    const REFRESH_INTERVAL_MS = 8000;
+
+    const refreshIfNeeded = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (isAnyBlockingModalOpen) return;
+      reloadUserList({ silent: true });
+    };
+
+    const intervalId = setInterval(refreshIfNeeded, REFRESH_INTERVAL_MS);
+    window.addEventListener('focus', refreshIfNeeded);
+    document.addEventListener('visibilitychange', refreshIfNeeded);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', refreshIfNeeded);
+      document.removeEventListener('visibilitychange', refreshIfNeeded);
+    };
+  }, [reloadUserList, isAnyBlockingModalOpen]);
+
   const formatNumber = (v) => {
     const num = Math.abs(Number(v));
     if (isNaN(num)) return 0;

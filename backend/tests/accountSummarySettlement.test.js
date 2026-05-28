@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyDebtorSettlementNetAddback,
+  applySettlementCashToPassedUpPL,
   applySettlementCashToUplineShare,
   buildAccountSummary,
   buildViewerShareRatioByUserId,
@@ -109,6 +110,23 @@ describe('applyDebtorSettlementNetAddback', () => {
         base
       )
     ).toBe(-200);
+  });
+});
+
+describe('applySettlementCashToPassedUpPL', () => {
+  it('returns 0 when passed-up share is clear even if settlement cash exists', () => {
+    expect(
+      applySettlementCashToPassedUpPL(0, { withdrawl: 500, deposite: 0 })
+    ).toBe(0);
+    expect(
+      applySettlementCashToPassedUpPL(0, { withdrawl: 0, deposite: 200 })
+    ).toBe(0);
+  });
+
+  it('still applies cash when passed-up share is open', () => {
+    expect(
+      applySettlementCashToPassedUpPL(100, { withdrawl: 100, deposite: 0 })
+    ).toBe(0);
   });
 });
 

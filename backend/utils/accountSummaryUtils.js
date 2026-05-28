@@ -1049,6 +1049,19 @@ export function expectedBettingPLFromHistory(trueTotalPL, settlementCash) {
 }
 
 /**
+ * Apply settlement cash only when there is outstanding passed-up P/L.
+ * If branch outstanding is already 0, prior upline/downline cash must not reopen Up Line.
+ */
+export function applySettlementCashToPassedUpPL(
+  passedUpAmount,
+  settlementCash
+) {
+  const base = roundMoney(passedUpAmount);
+  if (Math.abs(base) < 0.01) return 0;
+  return expectedBettingPLFromHistory(base, settlementCash);
+}
+
+/**
  * Upline bar (dena/lena): cash settlement on this account clears partnership due
  * (same idea as end-user outstanding: move balance toward zero).
  */

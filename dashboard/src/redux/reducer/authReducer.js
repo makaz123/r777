@@ -967,7 +967,9 @@ const userSlice = createSlice({
       .addCase(updatePartnership.fulfilled, (state, action) => {
         state.loading = false;
         if (Array.isArray(state.users)) {
-          const index = state.users.findIndex(u => u._id === action.payload.data._id);
+          const index = state.users.findIndex(
+            (u) => u._id === action.payload.data._id
+          );
           if (index !== -1) {
             state.users[index] = action.payload.data;
           }
@@ -984,7 +986,7 @@ const userSlice = createSlice({
         if (updatedUser) {
           const updateArray = (arr) => {
             if (Array.isArray(arr)) {
-              const index = arr.findIndex(u => u._id === updatedUser._id);
+              const index = arr.findIndex((u) => u._id === updatedUser._id);
               if (index !== -1) arr[index] = updatedUser;
             }
           };
@@ -1255,11 +1257,8 @@ const userSlice = createSlice({
             const gross = Number(newExposure) || 0;
             updated.exposure = gross;
             updated.totalExposure = gross;
-            const pct = Number(
-              u.parentSharePercent ?? u.mySharePercent ?? 100
-            );
-            updated.shareExposure =
-              Math.round(gross * (pct / 100) * 100) / 100;
+            const pct = Number(u.parentSharePercent ?? u.mySharePercent ?? 100);
+            updated.shareExposure = Math.round(gross * (pct / 100) * 100) / 100;
           }
           return updated;
         });

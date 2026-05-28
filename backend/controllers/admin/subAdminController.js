@@ -1060,7 +1060,8 @@ export const loginSubAdmin = async (req, res) => {
     }
 
     // Reuse existing session token to allow multiple devices, or generate new if none
-    const sessionToken = subAdmin.sessionToken || crypto.randomBytes(32).toString('hex');
+    const sessionToken =
+      subAdmin.sessionToken || crypto.randomBytes(32).toString('hex');
     const deviceId = req.headers['user-agent'] || 'unknown-device';
     const ipAddress =
       req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -2281,7 +2282,10 @@ export const updatePartnership = async (req, res) => {
     }
 
     const parentMyShareCap = getAccountMyKeepPercent(admin);
-    const downlineKeep = toStoredDownlineKeepFromCreateInput(parsedPartnership, admin);
+    const downlineKeep = toStoredDownlineKeepFromCreateInput(
+      parsedPartnership,
+      admin
+    );
     if (downlineKeep > parentMyShareCap) {
       return res.status(400).json({
         message: `Downline share cannot exceed your keep (${parentMyShareCap}%)`,
@@ -2344,7 +2348,12 @@ export const updateAdminDetails = async (req, res) => {
     }
 
     // Update partnership if not an end user
-    if (editUser.role !== 'user' && partnership !== undefined && partnership !== null && partnership !== '') {
+    if (
+      editUser.role !== 'user' &&
+      partnership !== undefined &&
+      partnership !== null &&
+      partnership !== ''
+    ) {
       const parsedPartnership = Number(partnership);
       if (
         !isNaN(parsedPartnership) &&
@@ -2352,7 +2361,10 @@ export const updateAdminDetails = async (req, res) => {
         parsedPartnership <= 100
       ) {
         const parentMyShareCap = getAccountMyKeepPercent(admin);
-        const downlineKeep = toStoredDownlineKeepFromCreateInput(parsedPartnership, admin);
+        const downlineKeep = toStoredDownlineKeepFromCreateInput(
+          parsedPartnership,
+          admin
+        );
         if (downlineKeep > parentMyShareCap) {
           return res.status(400).json({
             message: `Downline share cannot exceed your keep (${parentMyShareCap}%)`,
@@ -4007,7 +4019,9 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
       downline.code,
       null
     );
-    const passedUpHistory = roundMoney((-historyGross * parentSharePercent) / 100);
+    const passedUpHistory = roundMoney(
+      (-historyGross * parentSharePercent) / 100
+    );
     const clientPL = expectedBettingPLFromHistory(
       passedUpHistory,
       adminSettlementCash
@@ -4048,7 +4062,9 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   }
   grossClientPL = roundMoney(grossClientPL);
 
-  const passedUpHistory = roundMoney((grossClientPL * parentSharePercent) / 100);
+  const passedUpHistory = roundMoney(
+    (grossClientPL * parentSharePercent) / 100
+  );
   const clientPL = expectedBettingPLFromHistory(
     passedUpHistory,
     adminSettlementCash

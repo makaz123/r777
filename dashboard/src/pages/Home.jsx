@@ -121,9 +121,9 @@ const Home = () => {
   return (
     <>
       <Navbar />
-      <div className='min-h-screen bg-[#e9edf2] px-[15px] py-3'>
-        <h1 className='mb-2 text-[16px] font-bold'>Dashboard</h1>
-        <div className='mb-6 rounded-[3px] bg-white p-2 shadow-[0_2px_7px_0_#00708285]'>
+      <div className='min-h-screen bg-[#e9edf2] px-2 py-1 md:px-[15px] md:py-3'>
+        <h5 className='mb-2 text-[16px] font-bold leading-[1.2]'>Dashboard</h5>
+        <div className='mb-4 rounded-[3px] bg-white p-2 shadow-[0_2px_7px_0_#00708285]'>
           <div className='flex flex-wrap items-end items-start gap-[2%] gap-y-4 text-[12px] md:gap-x-8 md:pb-4'>
             <div className='w-[49%] md:w-fit'>
               <label className='mb-1 block'>From Date:</label>
@@ -171,13 +171,13 @@ const Home = () => {
             </div>
           </div>
         </div>
-        <div className='mb-5 grid gap-4 md:gap-8 grid-cols-2 lg:grid-cols-6'>
+        <div className='mb-4 grid grid-cols-2 gap-4 md:gap-8 lg:grid-cols-6'>
           {summaryCards.map((item, index) => (
             <div
               key={index}
               className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'
             >
-              <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
+              <div className='bg-[#16a3bb] px-[10px] py-[2px] text-[16px] font-medium text-black'>
                 {item.title}
               </div>
 
@@ -193,32 +193,32 @@ const Home = () => {
             </div>
           ))}
         </div>
-        <div className='mb-5 grid grid-cols-1 gap-8 lg:grid-cols-4'>
+        <div className='mb-4 grid grid-cols-1 gap-4 md:gap-8 lg:grid-cols-4'>
           {/* Winning Player */}
           <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
-            <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
+            <div className='bg-[#16a3bb] px-[10px] py-[2px] text-[16px] font-medium text-black'>
               TOP 5 WINNING PLAYER
             </div>
 
             <table className='w-full'>
               <thead>
-                <tr className='border-b border-gray-200 text-[12px]'>
-                  <th className='w-80 border-r border-gray-200 p-1.5 text-left'>
+                <tr className='text-[12px]'>
+                  <th className='w-[75%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Player
                   </th>
-                  <th className='w-20 p-1.5 text-right'>Amount</th>
+                  <th className='w-[25%] border-b-[2px] border-[#dee2e6] p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {stats?.topWinningPlayers?.map((player, idx) => (
                   <tr
                     key={idx}
-                    className='border-b border-gray-200 text-[12px]'
+                    className='text-[12px] odd:bg-[#0000000d]'
                   >
-                    <td className='w-80 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[75%] border border-[#dee2e6] p-1.5 text-left'>
                       {player.userName}
                     </td>
-                    <td className='w-20 p-1.5 text-right text-green-500'>
+                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right text-green-500'>
                       {player.amount}
                     </td>
                   </tr>
@@ -235,23 +235,23 @@ const Home = () => {
 
             <table className='w-full'>
               <thead>
-                <tr className='border-b border-gray-200 text-[12px]'>
-                  <th className='w-80 border-r border-gray-200 p-1.5 text-left'>
+                <tr className='text-[12px]'>
+                  <th className='w-[75%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Player
                   </th>
-                  <th className='w-20 p-1.5 text-right'>Amount</th>
+                  <th className='w-[25%] border-b-[2px] border-[#dee2e6] p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {stats?.topLosingPlayers?.map((player, idx) => (
                   <tr
                     key={idx}
-                    className='border-b border-gray-200 text-[12px]'
+                    className='text-[12px] odd:bg-[#0000000d]'
                   >
-                    <td className='w-80 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[75%] border border-[#dee2e6] p-1.5 text-left'>
                       {player.userName}
                     </td>
-                    <td className='w-20 p-1.5 text-right text-red-500'>
+                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right text-red-500'>
                       {player.amount}
                     </td>
                   </tr>
@@ -268,29 +268,29 @@ const Home = () => {
 
             <table className='w-full'>
               <thead>
-                <tr className='border-b border-gray-200 text-[12px]'>
-                  <th className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                <tr className='text-[12px]'>
+                  <th className='w-[30%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Sport
                   </th>
-                  <th className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                  <th className='w-[30%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Market
                   </th>
-                  <th className='w-30 p-1.5 text-right'>Amount</th>
+                  <th className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {stats?.topWinningMarkets?.map((market, idx) => (
                   <tr
                     key={idx}
-                    className='border-b border-gray-200 text-[12px]'
+                    className='text-[12px] odd:bg-[#0000000d]'
                   >
-                    <td className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>
                       {market.sport}
                     </td>
-                    <td className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>
                       {market.market}
                     </td>
-                    <td className='w-30 p-1.5 text-right text-green-500'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-right text-green-500'>
                       {market.amount}
                     </td>
                   </tr>
@@ -307,29 +307,29 @@ const Home = () => {
 
             <table className='w-full'>
               <thead>
-                <tr className='border-b border-gray-200 text-[12px]'>
-                  <th className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                <tr className='text-[12px]'>
+                  <th className='w-[30%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Sport
                   </th>
-                  <th className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                  <th className='w-[30%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Market
                   </th>
-                  <th className='w-30 p-1.5 text-right'>Amount</th>
+                  <th className='w-[30%] border-b-[2px] border-[#dee2e6] p-1.5 text-right'>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {stats?.topLosingMarkets?.map((market, idx) => (
                   <tr
                     key={idx}
-                    className='border-b border-gray-200 text-[12px]'
+                    className='text-[12px] odd:bg-[#0000000d]' 
                   >
-                    <td className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>
                       {market.sport}
                     </td>
-                    <td className='w-30 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-left'>
                       {market.market}
                     </td>
-                    <td className='w-30 p-1.5 text-right text-red-500'>
+                    <td className='w-[30%] border border-[#dee2e6] p-1.5 text-right text-red-500'>
                       {market.amount}
                     </td>
                   </tr>
@@ -338,24 +338,24 @@ const Home = () => {
             </table>
           </div>
         </div>
-        <div className='grid grid-cols-1 gap-8 lg:grid-cols-4'>
+        <div className='grid grid-cols-1 gap-4 md:gap-8 lg:grid-cols-4'>
           {/* User Count */}
           <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
-            <div className='flex justify-between bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] text-black'>
+            <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black flex items-center justify-between'>
               <span>USER COUNT</span>
 
-              <span className='text-[13px] text-white underline'>
+              <span className='text-[12px] text-white underline font-normal'>
                 Overall Count
               </span>
             </div>
 
             <table className='w-full'>
               <thead>
-                <tr className='border-b border-gray-200 text-[12px]'>
-                  <th className='w-80 border-r border-gray-200 p-1.5 text-left'>
+                <tr className='text-[12px]'>
+                  <th className='w-[75%] border-b-[2px] border-r border-[#dee2e6] p-1.5 text-left'>
                     Role
                   </th>
-                  <th className='w-20 p-1.5 text-right'>Count</th>
+                  <th className='w-[25%] border-b-[2px] border-[#dee2e6] p-1.5 text-right'>Count</th>
                 </tr>
               </thead>
 
@@ -363,12 +363,12 @@ const Home = () => {
                 {stats?.userCount?.map((user, idx) => (
                   <tr
                     key={idx}
-                    className='border-b border-gray-200 text-[12px]'
+                    className='text-[12px] odd:bg-[#0000000d]'
                   >
-                    <td className='w-80 border-r border-gray-200 p-1.5 text-left'>
+                    <td className='w-[75%] border border-[#dee2e6] p-1.5 text-left'>
                       {user.role}
                     </td>
-                    <td className='w-20 p-1.5 text-right'>{user.count}</td>
+                    <td className='w-[25%] border border-[#dee2e6] p-1.5 text-right'>{user.count}</td>
                   </tr>
                 ))}
               </tbody>
@@ -377,7 +377,7 @@ const Home = () => {
 
           {/* Sports Gameplay */}
           <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
-            <div className='flex justify-between bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] text-black'>
+            <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               SPORTS GAMEPLAY DETAILS
             </div>
 
@@ -385,8 +385,9 @@ const Home = () => {
               <select
                 value={selectedSport}
                 onChange={(e) => setSelectedSport(e.target.value)}
-                className='rounded border border-[#ced4da] px-2 py-2 outline-none'
+                className='rounded border border-[#ced4da] px-2 py-[1px] outline-none h-[30px] text-[12px] text-[#495057]'
               >
+                <option value='Cricket'>Select Sports</option>
                 <option value='Cricket'>Cricket</option>
                 <option value='Tennis'>Tennis</option>
                 <option value='Soccer'>Soccer</option>
@@ -395,27 +396,27 @@ const Home = () => {
 
             <table className='w-full'>
               <tbody>
-                <tr className='border-y border-gray-200 bg-[#0000000d]'>
-                  <td className='border-r border-gray-200 p-1.5'>Total Bets</td>
-                  <td className='p-1.5 text-right'>
+                <tr className='text-[12px] bg-[#0000000d]'>
+                  <td className='border border-[#dee2e6] p-1.5 text-left'>Total Bets</td>
+                  <td className='border border-[#dee2e6] p-1.5 text-right'>
                     {stats?.sportsGameplay?.[selectedSport]?.totalBets || 0}
                   </td>
                 </tr>
 
-                <tr className='border-y border-gray-200'>
-                  <td className='border-r border-gray-200 p-1.5'>
+                <tr className='text-[12px]'>
+                  <td className='border border-[#dee2e6] p-1.5 text-left'>
                     Total Bet Amount
                   </td>
-                  <td className='p-1.5 text-right'>
+                  <td className='border border-[#dee2e6] p-1.5 text-right'>
                     {stats?.sportsGameplay?.[selectedSport]?.totalBetAmount ||
                       0}
                   </td>
                 </tr>
 
-                <tr className='border-y border-gray-200 bg-[#0000000d]'>
-                  <td className='border-r border-gray-200 p-1.5'>Total P&L</td>
+                <tr className='text-[12px] bg-[#0000000d]'>
+                  <td className='border border-[#dee2e6] p-1.5 text-left'>Total P&L</td>
                   <td
-                    className={`p-1.5 text-right ${(stats?.sportsGameplay?.[selectedSport]?.totalPL || 0) < 0 ? 'text-red-500' : ''}`}
+                    className={`border border-[#dee2e6] p-1.5 text-right ${(stats?.sportsGameplay?.[selectedSport]?.totalPL || 0) < 0 ? 'text-red-500' : ''}`}
                   >
                     {stats?.sportsGameplay?.[selectedSport]?.totalPL || 0}
                   </td>
@@ -426,38 +427,38 @@ const Home = () => {
 
           {/* Others Gameplay */}
           <div className='h-fit overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
-            <div className='flex justify-between bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] text-black'>
+            <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               OTHERS GAMEPLAY DETAILS
             </div>
 
             <div className='p-1'>
-              <select className='rounded border border-[#ced4da] px-2 py-2 outline-none'>
+              <select className='rounded border border-[#ced4da] px-2 py-[1px] outline-none h-[30px] text-[12px] text-[#495057]'>
                 <option>Select Other</option>
               </select>
             </div>
 
             <table className='w-full'>
               <tbody>
-                <tr className='border-y border-gray-200 bg-[#0000000d]'>
-                  <td className='border-r border-gray-200 p-1.5'>Total Bets</td>
-                  <td className='p-1.5 text-right'>
+                <tr className='text-[12px] bg-[#0000000d]'>
+                  <td className='border border-[#dee2e6] p-1.5 text-left'>Total Bets</td>
+                  <td className='border border-[#dee2e6] p-1.5 text-right'>
                     {stats?.othersGameplay?.totalBets || 0}
                   </td>
                 </tr>
 
-                <tr className='border-y border-gray-200'>
-                  <td className='border-r border-gray-200 p-1.5'>
+                <tr className='text-[12px]'>
+                  <td className='border border-[#dee2e6] p-1.5 text-left'>
                     Total Bet Amount
                   </td>
-                  <td className='p-1.5 text-right'>
+                  <td className='border border-[#dee2e6] p-1.5 text-right'>
                     {stats?.othersGameplay?.totalBetAmount || 0}
                   </td>
                 </tr>
 
-                <tr className='border-y border-gray-200 bg-[#0000000d]'>
-                  <td className='border-r border-gray-200 p-1.5'>Total P&L</td>
+                <tr className='text-[12px] bg-[#0000000d]'>
+                  <td className='border border-[#dee2e6] p-1.5 text-left'>Total P&L</td>
                   <td
-                    className={`p-1.5 text-right ${(stats?.othersGameplay?.totalPL || 0) < 0 ? 'text-red-500' : ''}`}
+                    className={`border border-[#dee2e6] p-1.5 text-right ${(stats?.othersGameplay?.totalPL || 0) < 0 ? 'text-red-500' : ''}`}
                   >
                     {stats?.othersGameplay?.totalPL || 0}
                   </td>
@@ -468,7 +469,7 @@ const Home = () => {
 
           {/* Casino Gameplay */}
           <div className='overflow-hidden rounded bg-white shadow-[0_2px_7px_0_#00708285]'>
-            <div className='flex justify-between bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] text-black'>
+            <div className='bg-[#16a3bb] px-[10px] pt-[5px] pb-[3px] text-[14px] font-medium text-black'>
               CASINO GAMEPLAY DETAILS
             </div>
 
@@ -477,11 +478,11 @@ const Home = () => {
                 {casinoData.map((item, index) => (
                   <tr
                     key={index}
-                    className='border-y border-gray-200 odd:bg-[#0000000d]'
+                    className='text-[12px] odd:bg-[#0000000d]'
                   >
-                    <td className='border-r border-gray-200 p-1.5'>{item}</td>
+                    <td className='border border-[#dee2e6] p-1.5 text-left'>{item}</td>
                     <td
-                      className={`p-1.5 text-right ${(stats?.casinoGameplay?.[item] || 0) < 0 ? 'text-red-500' : ''}`}
+                      className={`border border-[#dee2e6] p-1.5 text-right ${(stats?.casinoGameplay?.[item] || 0) < 0 ? 'text-red-500' : ''}`}
                     >
                       {stats?.casinoGameplay?.[item] || 0}
                     </td>

@@ -52,7 +52,7 @@ const VirtualTable = ({
 
   return (
     <div className='scrollbar-hide overflow-x-auto rounded-md'>
-      <table className='w-[1500px] md:w-full border-collapse text-[14px]'>
+      <table className='w-[1500px] border-collapse text-[14px] md:w-full'>
         <thead className={headerClass}>
           <tr>
             {columns.map((col, i) => (

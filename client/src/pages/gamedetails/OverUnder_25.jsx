@@ -196,8 +196,8 @@ function OverUnder_25({
             disabled={!showCashoutOptions}
             className={`p-1 font-[400] text-white ${
               showCashoutOptions
-                ? 'cursor-pointer bg-black px-2.5 py-0.5 rounded-[3px] text-[12px] font-[600] text-white'
-                : 'cursor-not-allowed bg-[#959595] px-2.5 py-0.5 rounded-[3px] text-[12px] font-[600] text-white'
+                ? 'cursor-pointer rounded-[3px] bg-black px-2.5 py-0.5 text-[12px] font-[600] text-white'
+                : 'cursor-not-allowed rounded-[3px] bg-[#959595] px-2.5 py-0.5 text-[12px] font-[600] text-white'
             }`}
           >
             Cashout
@@ -213,17 +213,17 @@ function OverUnder_25({
             {t('max', 'Max')}:{maxValue}
           </span>
         </div>
-        <div className='w-[40%] md:w-[48%] flex'>
-          <div className='hidden md:block w-1/3 p-[2px]' />
-          <div className='hidden md:block w-1/3 p-[2px]' />
-          <div className='m-[1px] w-1/2 md:w-1/3 flex items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black'>
+        <div className='flex w-[40%] md:w-[48%]'>
+          <div className='hidden w-1/3 p-[2px] md:block' />
+          <div className='hidden w-1/3 p-[2px] md:block' />
+          <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tl-xl bg-[#72bbef] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
             {t('back', 'Back')}
           </div>
-          <div className='m-[1px] w-1/2 md:w-1/3 flex items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black'>
+          <div className='m-[1px] flex w-1/2 items-center justify-center rounded-tr-xl bg-[#faa9ba] p-[2px] text-[14px] font-bold text-black md:w-1/3'>
             {t('lay', 'Lay')}
           </div>
-          <div className='hidden md:block w-1/3 p-[2px]' />
-          <div className='hidden md:block w-1/3 p-[2px]' />
+          <div className='hidden w-1/3 p-[2px] md:block' />
+          <div className='hidden w-1/3 p-[2px] md:block' />
         </div>
       </div>
       {/* <div className="grid grid-cols-[1fr_12%_12%_12%_12%_12%_12%] lg:grid-cols-[1fr_60px_60px_60px_60px_60px_60px] border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]">
@@ -352,7 +352,7 @@ function OverUnder_25({
             const formattedOdds = item ? item.odds : null;
             return (
               <div
-                className={`${bgClass} m-[1px] w-1/2 flex min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                className={`${bgClass} m-[1px] flex min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                 onClick={() =>
                   formattedOdds &&
                   handleOddsClick(team, formattedOdds, type, sid, item?.oname)
@@ -538,85 +538,89 @@ function OverUnder_25({
                 </div>
 
                 {/* Mobile: primary back & lay */}
-                <div className={`relative md:hidden w-[40%] md:w-[48%] flex ${isSuspended ? 'suspended-event':''}`}>
+                <div
+                  className={`relative flex w-[40%] md:hidden md:w-[48%] ${isSuspended ? 'suspended-event' : ''}`}
+                >
                   {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
                   {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
                 </div>
 
-                <div className={`relative w-[40%] md:w-[48%] md:flex hidden ${isSuspended ? 'suspended-event':''}`}>
-                {/* Desktop: BACK - 3 slots */}
-                {[0, 1, 2].map((i) => {
-                  const backItem = backOdds[i];
-                  const formattedOdds = backItem ? backItem.odds : null;
-                  return (
-                    <div
-                      key={`back-${i}`}
-                      className={`${backBg[i]} m-[1px] w-1/2 md:w-1/3 hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                      onClick={() =>
-                        formattedOdds &&
-                        handleOddsClick(
-                          team,
-                          formattedOdds,
-                          'back',
-                          sid,
-                          backItem?.oname
-                        )
-                      }
-                    >
-                      {formattedOdds ? (
-                        <>
-                          <span className='text-[14px] leading-none font-bold text-black lg:text-[14px]'>
-                            {formattedOdds}
+                <div
+                  className={`relative hidden w-[40%] md:flex md:w-[48%] ${isSuspended ? 'suspended-event' : ''}`}
+                >
+                  {/* Desktop: BACK - 3 slots */}
+                  {[0, 1, 2].map((i) => {
+                    const backItem = backOdds[i];
+                    const formattedOdds = backItem ? backItem.odds : null;
+                    return (
+                      <div
+                        key={`back-${i}`}
+                        className={`${backBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          formattedOdds &&
+                          handleOddsClick(
+                            team,
+                            formattedOdds,
+                            'back',
+                            sid,
+                            backItem?.oname
+                          )
+                        }
+                      >
+                        {formattedOdds ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-black lg:text-[14px]'>
+                              {formattedOdds}
+                            </span>
+                            <span className='pt-[1px] text-[8px] leading-none font-[100] text-black lg:text-[10px]'>
+                              {formatStake(backItem.size)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-black lg:text-[16px]'>
+                            -
                           </span>
-                          <span className='pt-[1px] text-[8px] leading-none font-[100] text-black lg:text-[10px]'>
-                            {formatStake(backItem.size)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className='text-[15px] font-bold text-black lg:text-[16px]'>
-                          -
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
 
-                {/* Desktop: LAY - 3 slots */}
-                {[0, 1, 2].map((i) => {
-                  const layItem = layOdds[i];
-                  const formattedOdds = layItem ? layItem.odds : null;
-                  return (
-                    <div
-                      key={`lay-${i}`}
-                      className={`${layBg[i]} m-[1px] w-1/2 md:w-1/3 hidden min-h-[36px] max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
-                      onClick={() =>
-                        formattedOdds &&
-                        handleOddsClick(
-                          team,
-                          formattedOdds,
-                          'lay',
-                          sid,
-                          layItem?.oname
-                        )
-                      }
-                    >
-                      {formattedOdds ? (
-                        <>
-                          <span className='text-[14px] leading-none font-bold text-[#333] lg:text-[14px]'>
-                            {formattedOdds}
+                  {/* Desktop: LAY - 3 slots */}
+                  {[0, 1, 2].map((i) => {
+                    const layItem = layOdds[i];
+                    const formattedOdds = layItem ? layItem.odds : null;
+                    return (
+                      <div
+                        key={`lay-${i}`}
+                        className={`${layBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        onClick={() =>
+                          formattedOdds &&
+                          handleOddsClick(
+                            team,
+                            formattedOdds,
+                            'lay',
+                            sid,
+                            layItem?.oname
+                          )
+                        }
+                      >
+                        {formattedOdds ? (
+                          <>
+                            <span className='text-[14px] leading-none font-bold text-[#333] lg:text-[14px]'>
+                              {formattedOdds}
+                            </span>
+                            <span className='pt-[1px] text-[8px] leading-none font-[100] text-[#333] lg:text-[10px]'>
+                              {formatStake(layItem.size)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className='text-[15px] font-bold text-[#333] lg:text-[16px]'>
+                            -
                           </span>
-                          <span className='pt-[1px] text-[8px] leading-none font-[100] text-[#333] lg:text-[10px]'>
-                            {formatStake(layItem.size)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className='text-[15px] font-bold text-[#333] lg:text-[16px]'>
-                          -
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               {showInlineBetSlip && (

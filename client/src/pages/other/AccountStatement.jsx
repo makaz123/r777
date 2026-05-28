@@ -30,23 +30,51 @@ const formatBalance = (value) => {
   return n.toFixed(2);
 };
 
+const getFormattedDateTime = (date) => {
+  const d = new Date(date);
+  let month = '' + (d.getMonth() + 1);
+  let day = '' + d.getDate();
+  const year = d.getFullYear();
+  let hours = '' + d.getHours();
+  let minutes = '' + d.getMinutes();
+
+  if (month.length < 2) month = '0' + month;
+  if (day.length < 2) day = '0' + day;
+  if (hours.length < 2) hours = '0' + hours;
+  if (minutes.length < 2) minutes = '0' + minutes;
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 function AccountStatement() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const { transHistory, accountStatementSummary, loading, pagination } =
     useSelector((state) => state.bet);
 
-  const currentDate = new Date();
-  const fourMonthsAgo = new Date();
-  fourMonthsAgo.setMonth(currentDate.getMonth() - 4);
-  const formatDate = (date) => date.toISOString().split('T')[0];
-
   const [reportType, setReportType] = useState('all');
-  const [startDate, setStartDate] = useState(formatDate(fourMonthsAgo));
-  const [endDate, setEndDate] = useState(formatDate(currentDate));
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    return getFormattedDateTime(d);
+  });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const mapReportTypeToApiAccountType = (type) => {
+    if (type === 'all') return undefined;
+    if (type === 'sports') return 'bet';
+    return type;
+  };
 
   const fetchStatement = useCallback(() => {
     if (!startDate || !endDate) return;
@@ -56,26 +84,41 @@ function AccountStatement() {
         endDate,
         page,
         limit,
-        accountType: reportType !== 'all' ? reportType : undefined,
+        accountType: mapReportTypeToApiAccountType(reportType),
       })
     );
   }, [dispatch, startDate, endDate, page, limit, reportType]);
 
   useEffect(() => {
-    fetchStatement();
-  }, [fetchStatement]);
+    if (hasSearched) {
+      fetchStatement();
+    }
+  }, [page, limit, hasSearched]); // only fetch when page/limit/hasSearched change
 
   const handleSubmit = () => {
-    setPage(1);
-    fetchStatement();
+    setHasSearched(true);
+    if (page === 1) {
+      fetchStatement();
+    } else {
+      setPage(1);
+    }
   };
 
   const handleReset = () => {
-    setStartDate(formatDate(fourMonthsAgo));
-    setEndDate(formatDate(currentDate));
+    const dStart = new Date();
+    dStart.setDate(dStart.getDate() - 1);
+    dStart.setHours(0, 0, 0, 0);
+    setStartDate(getFormattedDateTime(dStart));
+
+    const dEnd = new Date();
+    dEnd.setDate(dEnd.getDate() + 1);
+    dEnd.setHours(0, 0, 0, 0);
+    setEndDate(getFormattedDateTime(dEnd));
+
     setReportType('all');
     setPage(1);
     setSearchTerm('');
+    setHasSearched(false);
   };
 
   const filteredData =
@@ -110,25 +153,23 @@ function AccountStatement() {
                 onChange={(e) => setReportType(e.target.value)}
               >
                 <option value='all'>{t('all', 'ALL')}</option>
-                <option value='deposit'>{t('deposit', 'DEPOSIT')}</option>
-                <option value='withdraw'>{t('withdraw', 'WITHDRAW')}</option>
-                <option value='bet'>{t('bet', 'BET')}</option>
-                <option value='commission'>
-                  {t('commission', 'COMMISSION')}
-                </option>
+                <option value='deposit'>{t('balance_report', 'BALANCE REPORT')}</option>
+                <option value='sports'>{t('game_report', 'GAME REPORT')}</option>
+                <option value='settlement'>{t('settlement_report', 'SETTLEMENT REPORT')}</option>
+                <option value='bonus'>{t('bonus_report', 'BONUS REPORT')}</option>
               </select>
 
               <input
                 type='datetime-local'
-                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
-                value={`${startDate}T00:00`}
-                onChange={(e) => setStartDate(e.target.value.split('T')[0])}
+                className='h-[32px] w-[130px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
               />
               <input
                 type='datetime-local'
-                className='h-[32px] w-[160px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
-                value={`${endDate}T00:00`}
-                onChange={(e) => setEndDate(e.target.value.split('T')[0])}
+                className='h-[32px] w-[130px] border border-[#ccc] p-1 text-[13px] text-[#555] outline-none'
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
               />
 
               <button
@@ -145,29 +186,32 @@ function AccountStatement() {
               </button>
             </div>
 
-            {/* Balances */}
-            <div className='border border-[#ccc] bg-white text-[13px]'>
-              <div className='flex border-b border-[#ccc]'>
-                <div className='w-[130px] border-r border-[#ccc] p-1.5'>
-                  {t('closing_balance', 'Closing Balance')}
+            {hasSearched && (
+              <div className='border border-[#ccc] bg-white text-[13px]'>
+                <div className='flex border-b border-[#ccc]'>
+                  <div className='w-[130px] border-r border-[#ccc] p-1.5'>
+                    {t('closing_balance', 'Closing Balance')}
+                  </div>
+                  <div className='w-[100px] p-1.5 font-bold'>
+                    {formatBalance(accountStatementSummary?.closingBalance || 0)}
+                  </div>
                 </div>
-                <div className='w-[100px] p-1.5 font-bold'>
-                  {formatBalance(accountStatementSummary?.closingBalance)}
+                <div className='flex'>
+                  <div className='w-[130px] border-r border-[#ccc] p-1.5'>
+                    {t('opening_balance', 'Opening Balance')}
+                  </div>
+                  <div className='w-[100px] p-1.5 font-bold'>
+                    {formatBalance(accountStatementSummary?.openingBalance || 0)}
+                  </div>
                 </div>
               </div>
-              <div className='flex'>
-                <div className='w-[130px] border-r border-[#ccc] p-1.5'>
-                  {t('opening_balance', 'Opening Balance')}
-                </div>
-                <div className='w-[100px] p-1.5 font-bold'>
-                  {formatBalance(accountStatementSummary?.openingBalance)}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Search and Entries Row */}
-          <div className='mb-2 flex flex-col justify-between gap-3 lg:flex-row lg:items-center'>
+          {hasSearched && (
+            <>
+              {/* Search and Entries Row */}
+              <div className='mb-2 flex flex-col justify-between gap-3 lg:flex-row lg:items-center'>
             <div className='flex items-center gap-2'>
               <input
                 type='text'
@@ -243,9 +287,7 @@ function AccountStatement() {
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-[13px]'></td>
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-right text-[13px] font-bold text-[#0e9d57]'>
-                          {formatBalance(
-                            accountStatementSummary?.closingBalance
-                          )}
+                          {formatBalance(accountStatementSummary?.closingBalance || 0)}
                         </td>
                         <td className='h-[35px] border-b border-[#eee] px-2 text-[13px] font-bold'>
                           Closing Balance
@@ -268,7 +310,7 @@ function AccountStatement() {
                           {formatMoney(row.debit)}
                         </td>
                         <td className='h-[35px] border-r border-b border-[#eee] px-2 text-right text-[13px] font-bold text-[#0e9d57]'>
-                          {formatBalance(row.balance)}
+                          {formatBalance(row.balance ?? row.closing)}
                         </td>
                         <td className='h-[35px] border-b border-[#eee] px-2 text-left text-[13px] text-[#333]'>
                           {row.type === 'bet' ? (
@@ -311,7 +353,14 @@ function AccountStatement() {
               <div className='flex items-center gap-0'>
                 <button
                   disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
+                  onClick={() => setPage(1)}
+                  className='rounded-l-[3px] border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
+                >
+                  First
+                </button>
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
                   className='rounded-l-[3px] border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {t('previous', 'Prev')}
@@ -324,14 +373,23 @@ function AccountStatement() {
                 </button>
                 <button
                   disabled={page >= (pagination?.pages || 1)}
-                  onClick={() => setPage((p) => p + 1)}
-                  className='rounded-r-[3px] border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
+                  onClick={() => setPage((p) => Math.min(p + 1, pagination?.pages || 1))}
+                  className='border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
                 >
                   {t('next', 'Next')}
+                </button>
+                <button
+                  disabled={page >= (pagination?.pages || 1)}
+                  onClick={() => setPage(pagination?.pages || 1)}
+                  className='rounded-r-[3px] border border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
+                >
+                  Last
                 </button>
               </div>
             </div>
           )}
+              </>
+            )}
         </div>
       </div>
     </div>

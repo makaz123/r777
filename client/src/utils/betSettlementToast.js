@@ -39,9 +39,9 @@ export function handleBetSettlementWebSocketPayload(data) {
     }
     const pl = Number(profitLossChange) || 0;
     if (pl > 0) {
-      toast.success(`Congratulations! You won ${fmt(pl)} on ${head}${runner}`);
+      toast.success(`🎉 Congratulations! You won ${fmt(pl)} on ${head}${runner}`);
     } else if (pl < 0) {
-      toast.warning(`Result: You lost ${fmt(pl)} on ${head}${runner}`);
+      toast.error(`😔 Result: You lost ${fmt(pl)} on ${head}${runner}`);
     } else {
       toast.info(`Settled — ${head}${runner} (no P/L change)`);
     }

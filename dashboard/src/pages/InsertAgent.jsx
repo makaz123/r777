@@ -9,7 +9,11 @@ import {
   getRemainingMySharePercent,
 } from '@partnership-utils';
 import { LOGIN_PASSWORD_CONFIRM_LABEL } from '../config/featureFlags';
-import { addAdmin, getAdmin, updateAdminDetails } from '../redux/reducer/authReducer';
+import {
+  addAdmin,
+  getAdmin,
+  updateAdminDetails,
+} from '../redux/reducer/authReducer';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 
@@ -175,7 +179,10 @@ export default function InsertAgent() {
         toast.error(
           typeof error === 'string'
             ? error
-            : error?.message || (isEditMode ? 'Failed to update account' : 'Failed to create account')
+            : error?.message ||
+                (isEditMode
+                  ? 'Failed to update account'
+                  : 'Failed to create account')
         );
       }
     } else {
@@ -190,8 +197,10 @@ export default function InsertAgent() {
     <>
       <Navbar />
       <div className='scrollbar-hide overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full rounded-lg bg-white px-[15px] py-[7px] min-h-[600px] pb-10'>
-          <span className='text-[16px] font-bold'>{isEditMode ? 'Update Client Account' : 'Add Client Account'}</span>
+        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px] pb-10'>
+          <span className='text-[16px] font-bold'>
+            {isEditMode ? 'Update Client Account' : 'Add Client Account'}
+          </span>
 
           <form onSubmit={handleSubmit}>
             <div className='mt-6 flex flex-wrap'>
@@ -319,7 +328,7 @@ export default function InsertAgent() {
                 )}
               </div>
 
-              <div className='w-full md:w-1/2 md:pl-[15px] mt-4 md:mt-0'>
+              <div className='mt-4 w-full md:mt-0 md:w-1/2 md:pl-[15px]'>
                 <div className='relative rounded-md border border-black p-4'>
                   {/* Title */}
                   <span className='absolute -top-3 left-3 bg-white px-1 text-[14px] font-semibold'>
@@ -450,7 +459,9 @@ export default function InsertAgent() {
                           onChange={(e) => {
                             const openingValue = e.target.value;
                             if (openingValue.includes('.')) {
-                              toast.error('The bank balance must be an integer');
+                              toast.error(
+                                'The bank balance must be an integer'
+                              );
                               return;
                             }
                             setFormData({ ...formData, balance: openingValue });
@@ -474,7 +485,9 @@ export default function InsertAgent() {
                 </div>
               )}
 
-              <div className={`w-full md:w-1/2 mt-2 md:mt-0 ${!isEditMode ? 'md:pl-[15px]' : ''}`}>
+              <div
+                className={`mt-2 w-full md:mt-0 md:w-1/2 ${!isEditMode ? 'md:pl-[15px]' : ''}`}
+              >
                 <div className='grid grid-cols-1 items-end gap-6 md:grid-cols-2'>
                   <div className='flex flex-col'>
                     <label className='mb-2 text-[13px] font-medium'>

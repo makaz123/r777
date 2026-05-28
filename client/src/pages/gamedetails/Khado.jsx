@@ -98,12 +98,12 @@ function Khado({
         <div className=''>
           <div className='flex border-b border-b-[#c7c8ca]'>
             <div className='flex-1'></div>
-            <div className='text-[14px] font-bold text-black flex justify-center items-center md:w-[16%] w-[40%]'>
-              <span className='text-center p-[2px] w-full'>
+            <div className='flex w-[40%] items-center justify-center text-[14px] font-bold text-black md:w-[16%]'>
+              <span className='w-full p-[2px] text-center'>
                 {t('back', 'Back')}
               </span>
             </div>
-            <div className='hidden lg:block w-[16%]'></div>
+            <div className='hidden w-[16%] lg:block'></div>
           </div>
           {transformedData.length > 0 ? (
             transformedData.map((item) => {
@@ -120,8 +120,8 @@ function Khado({
               return (
                 <React.Fragment key={item.id}>
                   <div className='flex border-b border-b-[#c7c8ca] hover:bg-[#f7f7f7]'>
-                    <div className='w-[60%] truncate md:w-[68%] ml-2 flex flex-col justify-center text-[14px] text-black'>
-                      <div className='font-bold truncate'>{item.label}</div>
+                    <div className='ml-2 flex w-[60%] flex-col justify-center truncate text-[14px] text-black md:w-[68%]'>
+                      <div className='truncate font-bold'>{item.label}</div>
                       {(() => {
                         if (!localStorage.getItem('auth')) return null;
                         const { otype, totalBetAmount, totalPrice, teamName } =
@@ -147,10 +147,11 @@ function Khado({
                       })()}
                     </div>
 
-
-                    <div className={`flex w-[40%] md:w-[16%] relative ${hasStatus ? 'suspended-event':''} `}>
+                    <div
+                      className={`relative flex w-[40%] md:w-[16%] ${hasStatus ? 'suspended-event' : ''} `}
+                    >
                       <div
-                        className={`w-full m-[1px] flex min-h-[36px] flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        className={`m-[1px] flex min-h-[36px] w-full flex-col items-center justify-center rounded-[3px] bg-[#72bbef] ${item.no.rate ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                         onClick={() =>
                           item.no.rate &&
                           handleOddsClick(
@@ -180,7 +181,7 @@ function Khado({
                       </div>
                     </div>
 
-                    <div className='w-[40%] md:w-[16%] hidden flex-col items-end justify-center lg:flex px-2'>
+                    <div className='hidden w-[40%] flex-col items-end justify-center px-2 md:w-[16%] lg:flex'>
                       <span className='text-[10px] leading-4 font-bold capitalize'>
                         {t('min', 'Min')}:{item.min}
                       </span>

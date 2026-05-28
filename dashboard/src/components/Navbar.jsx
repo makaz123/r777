@@ -25,7 +25,7 @@ import AccountSummaryBar from './AccountSummaryBar';
 import NotificationBell from './NotificationBell';
 import { isSuperAdmin } from '../utils/roleUtils';
 import { FEATURES } from '../config/featureFlags';
-
+import varahiLogo from '../assets/icons/varahiLogo.png'
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -233,8 +233,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         }`}
       >
         {/* Desktop Header */}
-        <header className='flex h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
-          <div className='flex h-[52px] items-center'>
+        <header className='flex h-[40px] md:h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
+          <div className='flex items-center'>
             <button
               type='button'
               onClick={() => setSportsSidebarOpen((prev) => !prev)}
@@ -246,7 +246,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </button>
             <NavLink
               to='/user-download-list'
-              className='mr-10 h-[32px]'
+              className='md:mr-10 h-[25px] md:h-[32px]'
               onClick={(e) => {
                 if (onLogoClick) {
                   e.preventDefault();
@@ -333,7 +333,10 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </nav>
           </div>
 
-          <div className='mr-4 flex items-center gap-1'>
+          <div className='mr-1 md:mr-4 flex items-center gap-0.5 md:gap-1'>
+            {userInfo?.role === 'supperadmin' && (
+              <img src={varahiLogo} alt="" className='w-[40px] md:w-[50px]'/>
+            )}
             <div className='relative flex items-center'>
               {/* <p
                 className='rounded-sm bg-[#292929] px-1.5 text-[10px] text-white uppercase'
@@ -341,22 +344,12 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
               >
                 {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
               </p> */}
-              <p
-                className='text-sm text-white'
-                onClick={() => setShowLogoutPopup((prev) => !prev)}
-              >
+
+
+              <p className='text-[12px] md:text-sm text-white' onClick={() => setShowLogoutPopup((prev) => !prev)}>
                 {userInfo?.name}
               </p>
               <RiArrowDownSFill size={16} className='text-white' />
-              {/* <div className='text-sm text-[13px] font-semibold text-white'>
-                {loading ? (
-                  <p>Loading...</p>
-                ) : (
-                  <p>
-                    IRP (<span className=''>{userInfo?.avbalance || 0}</span>)
-                  </p>
-                )}
-              </div> */}
               {showLogoutPopup && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

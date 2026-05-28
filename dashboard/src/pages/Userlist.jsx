@@ -316,24 +316,27 @@ export default function Userlist() {
     }
   };
 
-  const fetchExposureDetails = useCallback(async (userId, showLoader = true) => {
-    if (!userId) return;
-    try {
-      if (showLoader) setIsFetchingExposure(true);
-      const res = await api.get(`/admin/exposure-details?userId=${userId}`);
-      if (res?.data?.status || res?.data?.meta?.status) {
-        setExposureData(res.data.data);
-      } else {
+  const fetchExposureDetails = useCallback(
+    async (userId, showLoader = true) => {
+      if (!userId) return;
+      try {
+        if (showLoader) setIsFetchingExposure(true);
+        const res = await api.get(`/admin/exposure-details?userId=${userId}`);
+        if (res?.data?.status || res?.data?.meta?.status) {
+          setExposureData(res.data.data);
+        } else {
+          setExposureData([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch exposure', error);
+        if (showLoader) toast.error('Failed to fetch exposure details');
         setExposureData([]);
+      } finally {
+        if (showLoader) setIsFetchingExposure(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch exposure', error);
-      if (showLoader) toast.error('Failed to fetch exposure details');
-      setExposureData([]);
-    } finally {
-      if (showLoader) setIsFetchingExposure(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const handleExposureClick = async (userId) => {
     setExposureUserId(userId);
@@ -564,7 +567,9 @@ export default function Userlist() {
   const BalanceCell = ({ value }) => {
     const n = Number(value) || 0;
     if (n === 0) {
-      return <span className='text-black font-bold'>{formatTableMoney(0)}</span>;
+      return (
+        <span className='font-bold text-black'>{formatTableMoney(0)}</span>
+      );
     }
     return (
       <span className='font-bold text-[#0e7926]'>{formatTableMoney(n)}</span>
@@ -645,13 +650,15 @@ export default function Userlist() {
   const CurrentPLCell = ({ value, row }) => {
     const n = Number(value) || 0;
     if (n === 0) {
-      return <span className='text-black font-bold'>{formatTableMoney(0)}</span>;
+      return (
+        <span className='font-bold text-black'>{formatTableMoney(0)}</span>
+      );
     }
     if (n < 0) {
       return (
         <span
           onClick={() => openSettleModal(row, n)}
-          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] text-white font-bold'
+          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] font-bold text-white'
         >
           {formatTableMoney(n)}
         </span>
@@ -660,7 +667,7 @@ export default function Userlist() {
     return (
       <span
         onClick={() => openSettleModal(row, n)}
-        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] text-white font-bold'
+        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] font-bold text-white'
       >
         {formatTableMoney(n)}
       </span>
@@ -683,7 +690,7 @@ export default function Userlist() {
     if (n === 0) {
       return (
         <span
-          className={`text-black font-bold ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
+          className={`font-bold text-black ${isClickable ? 'cursor-pointer hover:underline' : ''}`}
           title={title}
           onClick={() => isClickable && handleExposureClick(row._id)}
         >
@@ -694,7 +701,7 @@ export default function Userlist() {
     if (n < 0) {
       return (
         <span
-          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] text-white font-bold'
+          className='cursor-pointer rounded-[4px] bg-[#fb6064] px-3 py-[5px] font-bold text-white'
           title={title}
           onClick={() => isClickable && handleExposureClick(row._id)}
         >
@@ -704,7 +711,7 @@ export default function Userlist() {
     }
     return (
       <span
-        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] text-white font-bold'
+        className='cursor-pointer rounded-[4px] bg-[#2fa20e] px-3 py-[5px] font-bold text-white'
         title={title}
         onClick={() => isClickable && handleExposureClick(row._id)}
       >
@@ -889,9 +896,11 @@ export default function Userlist() {
 
       <div className='h-fit md:px-[15px] md:py-[13px]'>
         <div className='rounded-md bg-white px-4 py-1'>
-          <div className='mb-2 items-end justify-between md:flex mt-2'>
+          <div className='mt-2 mb-2 items-end justify-between md:flex'>
             <div className='grid'>
-              <div className='text-[15px] font-bold leading-none'>Client List</div>
+              <div className='text-[15px] leading-none font-bold'>
+                Client List
+              </div>
               <div className='flex items-center gap-1'>
                 <input
                   type='text'
@@ -999,7 +1008,11 @@ export default function Userlist() {
                 cell: (row) => {
                   const n = Number(row.creditReference ?? 0) || 0;
                   const colorClass =
-                    n < 0 ? 'text-[#c7313f]' : n === 0 ? 'text-black' : 'text-[#0e7926]';
+                    n < 0
+                      ? 'text-[#c7313f]'
+                      : n === 0
+                        ? 'text-black'
+                        : 'text-[#0e7926]';
                   return (
                     <span className={`font-bold ${colorClass}`}>
                       {formatTableMoney(n)}
@@ -1138,15 +1151,19 @@ export default function Userlist() {
                         </span>
                       </>
                     ) : null}
-                    <span 
+                    <span
                       className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#eb99e0] text-[11px] leading-none font-bold text-black'
-                      onClick={() => navigate('/gamebetlock', { state: { targetUser: row } })}
+                      onClick={() =>
+                        navigate('/gamebetlock', { state: { targetUser: row } })
+                      }
                     >
                       GC
                     </span>
-                    <span 
+                    <span
                       className='flex h-[20px] w-[20px] cursor-pointer items-center justify-center rounded-sm bg-[#47ee31] text-[11px] leading-none font-bold text-black'
-                      onClick={() => navigate('/casinolock', { state: { targetUser: row } })}
+                      onClick={() =>
+                        navigate('/casinolock', { state: { targetUser: row } })
+                      }
                     >
                       CC
                     </span>
@@ -1915,12 +1932,20 @@ export default function Userlist() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.4 }}
-                className='w-full max-w-[500px] fixed top-7 overflow-hidden rounded bg-white shadow-lg'
+                className='fixed top-7 w-full max-w-[500px] overflow-hidden rounded bg-white shadow-lg'
               >
-                <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 text-white text-[18px] font-medium pb-1 flex justify-between items-center'>Settlement <span className='text-[20px] flex font-bold text-gray-300 hover:text-gray-200' onClick={() => setSettlePopup(false)}>×</span></div>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 text-[18px] font-medium text-white'>
+                  Settlement{' '}
+                  <span
+                    className='flex text-[20px] font-bold text-gray-300 hover:text-gray-200'
+                    onClick={() => setSettlePopup(false)}
+                  >
+                    ×
+                  </span>
+                </div>
                 <form
                   onSubmit={handleSettleSubmit}
-                  className='space-y-4 px-4 pt-5 text-[14px] bg-sky-50'
+                  className='space-y-4 bg-sky-50 px-4 pt-5 text-[14px]'
                 >
                   <div className='grid grid-cols-2 gap-x-2 gap-y-4'>
                     <div className='font-bold text-gray-800'>User Name:</div>
@@ -2009,18 +2034,18 @@ export default function Userlist() {
                     />
                   </div>
 
-                  <div className='flex justify-end gap-1 py-1.5 border-t border-gray-200'>
+                  <div className='flex justify-end gap-1 border-t border-gray-200 py-1.5'>
                     <button
                       type='submit'
                       disabled={isSettling}
-                      className='rounded-[3px] bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:opacity-90 disabled:opacity-50'
+                      className='rounded-[3px] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:bg-gradient-to-t hover:opacity-90 disabled:opacity-50'
                     >
                       {isSettling ? 'Processing...' : 'Submit'}
                     </button>
                     <button
                       type='button'
                       onClick={() => setSettlePopup(false)}
-                      className='rounded-[3px] bg-gradient-to-b hover:bg-gradient-to-t from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:opacity-90'
+                      className='rounded-[3px] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-6 py-1.5 text-white shadow hover:bg-gradient-to-t hover:opacity-90'
                     >
                       Cancel
                     </button>
@@ -2037,10 +2062,12 @@ export default function Userlist() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className='w-[90%] fixed top-7 overflow-hidden rounded bg-white shadow-xl'
+                className='fixed top-7 w-[90%] overflow-hidden rounded bg-white shadow-xl'
               >
-                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 text-white leading-none'>
-                  <h2 className='text-[18px] font-medium'>User Event Exposure</h2>
+                <div className='flex items-center justify-between bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-4 pb-1 leading-none text-white'>
+                  <h2 className='text-[18px] font-medium'>
+                    User Event Exposure
+                  </h2>
                   <button
                     onClick={closeExposurePopup}
                     className='text-[22px] leading-none font-bold text-gray-300 hover:text-gray-100'

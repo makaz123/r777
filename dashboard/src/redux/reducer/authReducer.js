@@ -215,6 +215,19 @@ export const getDownlineList = createAsyncThunk(
           'Failed to load downline list'
       );
     }
+  },
+  {
+    condition: ({ page, limit, searchQuery, listType }, { getState }) => {
+      const state = getState()?.auth;
+      if (!state) return true;
+      const requestKey = JSON.stringify({
+        page: Number(page) || 1,
+        limit: Number(limit) || 25,
+        searchQuery: (searchQuery ?? '').toString(),
+        listType: (listType ?? 'clients').toString(),
+      });
+      return state.downlineListInFlightKey !== requestKey;
+    },
   }
 );
 
@@ -748,6 +761,7 @@ const initialState = {
   currentPage: 1,
   /** Latest getDownlineList thunk requestId — ignore stale fulfilled/rejected responses. */
   downlineListLatestRequestId: null,
+  downlineListInFlightKey: null,
   totalRecords: 0,
   userInfo: null,
   loading: false,
@@ -896,6 +910,12 @@ const userSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(getDownlineList.pending, (state, action) => {
+        state.downlineListInFlightKey = JSON.stringify({
+          page: Number(action.meta.arg?.page) || 1,
+          limit: Number(action.meta.arg?.limit) || 25,
+          searchQuery: (action.meta.arg?.searchQuery ?? '').toString(),
+          listType: (action.meta.arg?.listType ?? 'clients').toString(),
+        });
         state.downlineListLatestRequestId = action.meta.requestId;
         if (!action.meta.arg?.silent) {
           state.loading = true;
@@ -906,6 +926,7 @@ const userSlice = createSlice({
         if (action.meta.requestId !== state.downlineListLatestRequestId) {
           return;
         }
+        state.downlineListInFlightKey = null;
         state.loading = false;
         state.downlineList = action.payload.data || [];
         state.downlineViewer = action.payload.viewer || null;
@@ -922,6 +943,7 @@ const userSlice = createSlice({
         if (action.meta.requestId !== state.downlineListLatestRequestId) {
           return;
         }
+        state.downlineListInFlightKey = null;
         state.loading = false;
         state.error = action.payload;
       })

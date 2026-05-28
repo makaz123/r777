@@ -651,7 +651,10 @@ export async function aggregateViewerProfitLoss(
   dateRange = null
 ) {
   const downlineUserIds = await getDownlineUserIds(SubAdmin, viewer.code);
-  if (!downlineUserIds.length) return 0;
+  if (!downlineUserIds.length) {
+    console.log(`[aggregateViewerProfitLoss] No downline users found for viewer ${viewer.userName} (code: ${viewer.code})`);
+    return 0;
+  }
 
   const [users, plByUser, accountByCode] = await Promise.all([
     SubAdmin.find({ _id: { $in: downlineUserIds } }).lean(),
@@ -665,6 +668,22 @@ export async function aggregateViewerProfitLoss(
   ]);
 
   const normalizedPL = normalizePLByUserIds(users, plByUser);
+
+  // Debug: log per-user P/L and share computation
+  let debugTotal = 0;
+  for (const user of users) {
+    if (user.role !== 'user') continue;
+    const userId = user._id.toString();
+    const clientPL = normalizedPL.get(userId) ?? 0;
+    if (!clientPL) continue;
+    const share = getViewerShareOfUserClientPL(viewer.code, user, accountByCode, clientPL);
+    debugTotal += share;
+    if (Math.abs(clientPL) > 0.01) {
+      console.log(`[aggregateViewerProfitLoss] viewer=${viewer.userName}, user=${user.userName}, clientPL=${clientPL}, viewerShare=${share}, invite=${user.invite}, viewerCode=${viewer.code}`);
+    }
+  }
+  console.log(`[aggregateViewerProfitLoss] viewer=${viewer.userName}, totalUsers=${users.length}, totalEndUsers=${users.filter(u => u.role === 'user').length}, debugTotal=${roundMoney(debugTotal)}, accountByCodeSize=${accountByCode.size}`);
+
   return computeViewerPeriodPL(viewer, users, normalizedPL, accountByCode);
 }
 

@@ -404,8 +404,8 @@ const GameBetLock = () => {
   return (
     <>
       <Navbar />
-      <div className="scrollbar-hide pt-[15px]' bg-[#f0f0f5] md:px-[15px] md:py-[13px]">
-        <div className='grid grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className="scrollbar-hide md:px-[15px] md:pt-[13px] pb-10 w-full">
+        <div className='grid w-full md:grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='col-span-2'>
             <div className='mb-2 flex justify-between text-[15px] font-bold'>
               <span>Lock Application - {targetUserName}</span>
@@ -490,23 +490,24 @@ const GameBetLock = () => {
               </select>
             </div>
 
-            <div className='scrollbar-hide mb-3 flex items-center overflow-x-auto border-b border-gray-300'>
-              {SPORTS_TABS.map((tab, index) => (
-                <button
-                  key={index}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 text-[14px] whitespace-nowrap ${
-                    activeTab === tab
-                      ? '-mb-px border border-gray-300 border-b-white bg-white font-bold'
-                      : ''
-                  } `}
-                >
-                  {tab}
-                </button>
-              ))}
+            <div className='overflow-x-scroll scrollbar-hide w-full'>
+              <div className='mb-3 flex items-center border-b border-gray-300 w-full'>
+                {SPORTS_TABS.map((tab, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 text-[14px] whitespace-nowrap ${
+                      activeTab === tab
+                        ? '-mb-px border border-gray-300 border-b-white bg-white font-bold'
+                        : ''
+                    } `}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
             </div>
-
-            <div className='min-h-[200px] space-y-3'>
+            <div className='md:min-h-[200px] space-y-3'>
               {loading ? (
                 <div className='flex justify-center p-4'>Loading...</div>
               ) : competitionData.length === 0 ? (
@@ -615,7 +616,7 @@ const GameBetLock = () => {
               )}
             </div>
           </div>
-          <div className='col-span-1 pr-[15px] pl-[30px]'>
+          <div className='col-span-1 pr-[15px] md:pl-[30px]'>
             <p className='mb-2 text-[11px] text-gray-600'>
               Uncheck a lock or click Del, then Save Changes. Del saves
               immediately.

@@ -1230,7 +1230,8 @@ export const getCasinoProfitLossByDate = async (req, res) => {
         },
       ]);
 
-      allDownlineIds = hierarchy[0]?.descendants.map((u) => u._id.toString()) || [];
+      allDownlineIds =
+        hierarchy[0]?.descendants.map((u) => u._id.toString()) || [];
       if (!allDownlineIds.includes(targetUser._id.toString())) {
         allDownlineIds.push(targetUser._id.toString());
       }

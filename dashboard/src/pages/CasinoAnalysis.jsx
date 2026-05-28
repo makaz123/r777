@@ -311,7 +311,7 @@ const CasinoAnalysis = () => {
     <>
       <Navbar />
 
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
         <div className='min-h-[600px] rounded-sm bg-white px-[15px] py-[7px]'>
           {/* Header */}
           <div className='flex items-center justify-between'>
@@ -328,7 +328,7 @@ const CasinoAnalysis = () => {
           )}
 
           {/* live casino Table */}
-          <div className='mt-2 border border-[#159eb6]'>
+          <div className='mt-1 border border-[#159eb6]'>
             {/* Table Heading */}
             <div className='bg-[#159eb6] px-2.5 py-0.5 text-[16px] font-bold text-white'>
               Live Casino
@@ -342,24 +342,24 @@ const CasinoAnalysis = () => {
                 <table className='w-[1000px] border-collapse md:w-full'>
                   {/* Table Head */}
                   <thead>
-                    <tr className='bg-[#045662] text-white'>
-                      <th className='w-[54%] border-r border-white px-2.5 py-1 text-left'>
+                    <tr className='bg-[#045662] text-white text-[14px]'>
+                      <th className='w-[54%] border-r border-white px-2.5 py-0.5 text-left'>
                         Event Name
                       </th>
 
-                      <th className='w-[10%] border-r border-white px-2.5 py-1 text-right'>
+                      <th className='w-[10%] border-r border-white px-2.5 py-0.5 text-right'>
                         Total Order
                       </th>
 
-                      <th className='w-[12%] border-r border-white px-2.5 py-1 text-right'>
+                      <th className='w-[12%] border-r border-white px-2.5 py-0.5 text-right'>
                         Exposure
                       </th>
 
-                      <th className='w-[12%] border-r border-white px-2.5 py-1 text-right'>
+                      <th className='w-[12%] border-r border-white px-2.5 py-0.5 text-right'>
                         Total Amount
                       </th>
 
-                      <th className='w-[12%] px-2.5 py-1 text-right'>
+                      <th className='w-[12%] px-2.5 py-0.5 text-right'>
                         Max Profit
                       </th>
                     </tr>
@@ -370,25 +370,25 @@ const CasinoAnalysis = () => {
                     {casinoAnalysisData.map((item, index) => (
                       <tr
                         key={index}
-                        className='border border-gray-200 hover:bg-gray-50'
+                        className='border border-gray-200 hover:bg-gray-50 text-[14px]'
                       >
-                        <td className='border-r border-gray-200 px-2.5 py-1 font-bold underline hover:text-blue-600'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 font-bold underline hover:text-blue-600'>
                           {item.eventName}
                         </td>
 
-                        <td className='border-r border-gray-200 px-2.5 py-1 text-right font-bold'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 text-right font-bold'>
                           {item.totalOrder}
                         </td>
 
-                        <td className='border-r border-gray-200 px-2.5 py-1 text-right font-bold text-green-600'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 text-right font-bold text-green-600'>
                           {item.exposure}
                         </td>
 
-                        <td className='border-r border-gray-200 px-2.5 py-1 text-right font-bold'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 text-right font-bold'>
                           {item.totalAmount}
                         </td>
 
-                        <td className='px-2.5 py-1 text-right font-bold'>
+                        <td className='px-2.5 py-0.5 text-right font-bold'>
                           {item.maxProfit}
                         </td>
                       </tr>
@@ -414,24 +414,24 @@ const CasinoAnalysis = () => {
                 <table className='w-[1000px] border-collapse md:w-full'>
                   {/* Table Head */}
                   <thead>
-                    <tr className='bg-[#045662] text-white'>
-                      <th className='w-[54%] border-r border-white px-2.5 py-1 text-left'>
+                    <tr className='bg-[#045662] text-white text-[14px]'>
+                      <th className='w-[54%] border-r border-white px-2.5 py-0.5 text-left'>
                         Event Name
                       </th>
 
-                      <th className='w-[10%] border-r border-white px-2.5 py-1 text-right'>
+                      <th className='w-[10%] border-r border-white px-2.5 py-0.5 text-right'>
                         Total Order
                       </th>
 
-                      <th className='w-[12%] border-r border-white px-2.5 py-1 text-right'>
+                      <th className='w-[12%] border-r border-white px-2.5 py-0.5 text-right'>
                         Exposure
                       </th>
 
-                      <th className='w-[12%] border-r border-white px-2.5 py-1 text-right'>
+                      <th className='w-[12%] border-r border-white px-2.5 py-0.5 text-right'>
                         Total Amount
                       </th>
 
-                      <th className='w-[12%] px-2.5 py-1 text-right'>
+                      <th className='w-[12%] px-2.5 py-0.5 text-right'>
                         Max Profit
                       </th>
                     </tr>
@@ -444,23 +444,23 @@ const CasinoAnalysis = () => {
                         key={index}
                         className='border border-gray-200 hover:bg-gray-50'
                       >
-                        <td className='border-r border-gray-200 px-2.5 py-1 font-bold underline hover:text-blue-600'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 font-bold underline hover:text-blue-600'>
                           {item.eventName}
                         </td>
 
-                        <td className='border-r border-gray-200 px-2.5 py-1 text-right font-bold'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 text-right font-bold'>
                           {item.totalOrder}
                         </td>
 
-                        <td className='border-r border-gray-200 px-2.5 py-1 text-right font-bold text-green-600'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 text-right font-bold text-green-600'>
                           {item.exposure}
                         </td>
 
-                        <td className='border-r border-gray-200 px-2.5 py-1 text-right font-bold'>
+                        <td className='border-r border-gray-200 px-2.5 py-0.5 text-right font-bold'>
                           {item.totalAmount}
                         </td>
 
-                        <td className='px-2.5 py-1 text-right font-bold'>
+                        <td className='px-2.5 py-0.5 text-right font-bold'>
                           {item.maxProfit}
                         </td>
                       </tr>

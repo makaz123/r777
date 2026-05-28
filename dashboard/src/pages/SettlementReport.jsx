@@ -213,13 +213,13 @@ const SettlementReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>
             Settlement/Balance Transaction Report
           </div>
 
-          <div className='mt-2 mb-10 grid grid-cols-6 gap-6'>
+          <div className='mt-2 mb-4 md:mb-10 grid md:grid-cols-6 gap-4 md:gap-6'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
@@ -274,147 +274,156 @@ const SettlementReport = () => {
 
           {hasSearched && (
             <>
-              <div className='mb-5 flex items-end justify-between'>
+              <div className='mb-5 flex flex-wrap items-end justify-between gap-2'>
                 <div className='flex items-end'>
-              <input
-                type='text'
-                placeholder='Search'
-                className='h-fit rounded-sm border border-gray-300 px-2 py-1 outline-0'
-              />
-              <img src={excelIcon} alt='' className='w-[35px]' />
-              <img src={pdfIcon} alt='' className='w-[35px]' />
-            </div>
+                  <input
+                    type='text'
+                    placeholder='Search'
+                    className='h-fit rounded-sm border border-gray-300 px-2 py-1 outline-0'
+                  />
+                  <img src={excelIcon} alt='' className='w-[35px]' />
+                  <img src={pdfIcon} alt='' className='w-[35px]' />
+                </div>
 
-            <div className='mr-10'>
-              <span>Show</span>
-              <select
-                name='limit'
-                id='limit'
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className='mx-2 rounded-sm border border-gray-300 px-2 py-1 text-gray-500 outline-0'
-              >
-                <option value='25'>25</option>
-                <option value='50'>50</option>
-                <option value='100'>100</option>
-              </select>
-              <span>entries</span>
-            </div>
-          </div>
+                <div className='md:mr-10 ml-auto'>
+                  <span>Show</span>
+                  <select
+                    name='limit'
+                    id='limit'
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className='mx-2 rounded-sm border border-gray-300 px-2 py-1 text-gray-500 outline-0'
+                  >
+                    <option value='25'>25</option>
+                    <option value='50'>50</option>
+                    <option value='100'>100</option>
+                  </select>
+                  <span>entries</span>
+                </div>
+              </div>
+              <div className='overflow-x-scroll w-full scrollbar-hide'>
+              <table className='w-full table-auto border-collapse border border-gray-300'>
+                <thead>
+                  <tr className='bg-[#016a82] text-white'>
+                    <th className='border-r border-white px-2 py-1 text-left'>
+                      Date & Time
+                    </th>
 
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Date & Time
-                </th>
+                    <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                      Credit
+                    </th>
 
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Credit
-                </th>
+                    <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                      Debit
+                    </th>
 
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Debit
-                </th>
+                    <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                      Closing
+                    </th>
 
-                <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                  Closing
-                </th>
+                    <th className='border-r border-white px-2 py-1 text-left'>
+                      Description
+                    </th>
 
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Description
-                </th>
-
-                <th className='px-2 py-1 text-left'>From → to</th>
-              </tr>
-            </thead>
-            <tbody>
-                {rows && rows.length > 0 ? (
-                  rows.map((row, index) => (
-                    <tr
-                      key={index}
-                      className='border border-gray-300 odd:bg-gray-100 text-[14px]'
-                    >
-                      <td className='border border-gray-300 px-2 py-1.5'>
-                        {row.date ? new Date(row.date).toLocaleString('en-US') : '-'}
-                      </td>
-                      <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600'>
-                        {row.credit > 0 ? Number(row.credit).toFixed(2) : '-'}
-                      </td>
-                      <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600'>
-                        {row.debit > 0 ? Number(row.debit).toFixed(2) : '-'}
-                      </td>
-                      <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold'>
-                        {row.closing !== undefined ? Number(row.closing).toFixed(2) : '-'}
-                      </td>
-                      <td className='border border-gray-300 px-2 py-1.5'>
-                        {row.description || '-'}
-                      </td>
-                      <td className='px-2 py-1.5 whitespace-nowrap'>{row.fromto || row.userName || '-'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="py-4 text-center text-gray-500">
-                      {loading ? 'Loading...' : 'No records found'}
-                    </td>
+                    <th className='px-2 py-1 text-left'>From → to</th>
                   </tr>
-                )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {rows && rows.length > 0 ? (
+                    rows.map((row, index) => (
+                      <tr
+                        key={index}
+                        className='border border-gray-300 text-[14px] odd:bg-gray-100'
+                      >
+                        <td className='border border-gray-300 px-2 py-1.5'>
+                          {row.date
+                            ? new Date(row.date).toLocaleString('en-US')
+                            : '-'}
+                        </td>
+                        <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600'>
+                          {row.credit > 0 ? Number(row.credit).toFixed(2) : '-'}
+                        </td>
+                        <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600'>
+                          {row.debit > 0 ? Number(row.debit).toFixed(2) : '-'}
+                        </td>
+                        <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold'>
+                          {row.closing !== undefined
+                            ? Number(row.closing).toFixed(2)
+                            : '-'}
+                        </td>
+                        <td className='border border-gray-300 px-2 py-1.5'>
+                          {row.description || '-'}
+                        </td>
+                        <td className='px-2 py-1.5 whitespace-nowrap'>
+                          {row.fromto || row.userName || '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan='6'
+                        className='py-4 text-center text-gray-500'
+                      >
+                        {loading ? 'Loading...' : 'No records found'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              </div>
+              {/* Pagination */}
+              <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
+                <div>
+                  Showing {rows.length > 0 ? (page - 1) * limit + 1 : 0} to{' '}
+                  {rows.length > 0 ? (page - 1) * limit + rows.length : 0} of{' '}
+                  {total} entries
+                </div>
+                <div className='flex flex-wrap'>
+                  <button
+                    type='button'
+                    disabled={page === 1}
+                    onClick={() => setPage(1)}
+                    className='pgBtn rounded-l-sm px-[13px] py-[6.5px] disabled:opacity-50'
+                  >
+                    First
+                  </button>
 
-          {/* Pagination */}
-          <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
-            <div>
-              Showing {rows.length > 0 ? (page - 1) * limit + 1 : 0} to{' '}
-              {rows.length > 0 ? (page - 1) * limit + rows.length : 0} of{' '}
-              {total} entries
-            </div>
-            <div className='flex flex-wrap'>
-              <button
-                type='button'
-                disabled={page === 1}
-                onClick={() => setPage(1)}
-                className='pgBtn rounded-l-sm px-[13px] py-[6.5px] disabled:opacity-50'
-              >
-                First
-              </button>
+                  <button
+                    type='button'
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className='pgBtn px-[12px] py-[6px] disabled:opacity-50'
+                  >
+                    Prev
+                  </button>
 
-              <button
-                type='button'
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className='pgBtn px-[12px] py-[6px] disabled:opacity-50'
-              >
-                Prev
-              </button>
+                  <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
+                    {page}
+                  </button>
 
-              <button className='bg-gradient-to-b from-[#11859c] to-[#181818] px-[13px] py-[6.5px] leading-none text-white'>
-                {page}
-              </button>
+                  <button
+                    type='button'
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className='pgBtn px-[13px] py-[6.5px] disabled:opacity-50'
+                  >
+                    Next
+                  </button>
 
-              <button
-                type='button'
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className='pgBtn px-[13px] py-[6.5px] disabled:opacity-50'
-              >
-                Next
-              </button>
-
-              <button
-                type='button'
-                disabled={page === totalPages}
-                onClick={() => setPage(totalPages)}
-                className='pgBtn rounded-r-sm px-[13px] py-[6.5px] disabled:opacity-50'
-              >
-                Last
-              </button>
-            </div>
-          </div>
+                  <button
+                    type='button'
+                    disabled={page === totalPages}
+                    onClick={() => setPage(totalPages)}
+                    className='pgBtn rounded-r-sm px-[13px] py-[6.5px] disabled:opacity-50'
+                  >
+                    Last
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </div>

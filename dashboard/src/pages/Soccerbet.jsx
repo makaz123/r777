@@ -597,11 +597,11 @@ export default function Soccerbet() {
                       0
                     </span>
                   </div>
-                  <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white'>
+                  <div className='hidden items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[3px] text-[12px] text-white md:flex'>
                     Reset <FaFilter className='text-white' size={10} />
                   </div>
                 </div>
-                <div className='flex gap-2'>
+                <div className='hidden gap-2 md:flex'>
                   <div className='flex items-center gap-2 rounded-[5px] border border-black bg-gradient-to-b from-[#545454] to-[#000] px-[7px] py-[5px] text-[12px] text-white'>
                     P&L <BsGraphUpArrow className='text-white' size={12} />
                   </div>

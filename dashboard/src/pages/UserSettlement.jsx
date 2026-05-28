@@ -175,7 +175,7 @@ const UserSettlement = ({ type = 'user' }) => {
     <>
       <Navbar />
       <div className='h-[calc(100vh-52px)] bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <h1 className='mb-2 text-[16px] font-bold text-gray-800'>
             {type === 'master' ? 'Master Settlement' : 'User Settlement'}
           </h1>
@@ -395,7 +395,7 @@ const UserSettlement = ({ type = 'user' }) => {
           )}
         </div>
       </div>
-      <div className='fixed bottom-0 left-0 w-full bg-[#045662] py-2'>
+      <div className='fixed bottom-[25px] left-0 w-full bg-[#045662] py-2'>
         <div className='flex flex-wrap justify-center gap-1'>
           <div className='flex w-full gap-1 px-4 md:w-fit md:px-0'>
             <input

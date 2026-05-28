@@ -4871,7 +4871,10 @@ export const getAccountStatementHistory = async (req, res) => {
       transactionQuery.remark = /Settlement/i;
     }
 
-    const betQuery = { status: { $in: [1, 2] }, userId: { $in: targetUserIds } };
+    const betQuery = {
+      status: { $in: [1, 2] },
+      userId: { $in: targetUserIds },
+    };
     if (dateFilter) betQuery.createdAt = dateFilter;
 
     if (accountType === 'casino') betQuery.betType = 'casino';
@@ -4973,7 +4976,7 @@ export const getAccountStatementHistory = async (req, res) => {
     } else if (accountType === 'bonus') {
       mainColl = TransactionHistory;
       // Bonus usually has a specific remark, but for now we just return empty or matching bonus
-      transactionQuery.remark = /Bonus/i; 
+      transactionQuery.remark = /Bonus/i;
       pipeline = [...transactionPipeline, { $sort: { date: -1 } }];
     } else {
       mainColl = betHistoryModel;

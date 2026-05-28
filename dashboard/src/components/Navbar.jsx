@@ -9,6 +9,7 @@ import { AiOutlineLogout } from 'react-icons/ai';
 import { NavLink, useLocation } from 'react-router-dom';
 import { MdArrowRightAlt, MdLogout } from 'react-icons/md';
 import { RiArrowDownSFill } from 'react-icons/ri';
+import { FaBullhorn } from 'react-icons/fa';
 import logo from '../assets/brand_logo.svg';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -25,7 +26,7 @@ import AccountSummaryBar from './AccountSummaryBar';
 import NotificationBell from './NotificationBell';
 import { isSuperAdmin } from '../utils/roleUtils';
 import { FEATURES } from '../config/featureFlags';
-import varahiLogo from '../assets/icons/varahiLogo.png'
+import varahiLogo from '../assets/icons/varahiLogo.png';
 const Navbar = ({ onLogoClick, onNavClick }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -233,8 +234,8 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         }`}
       >
         {/* Desktop Header */}
-        <header className='flex h-[40px] md:h-[52px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8]'>
-          <div className='flex items-center h-[40px] md:h-[52px]'>
+        <header className='flex h-[40px] items-center justify-between bg-gradient-to-b from-[#022c43] to-[#18b0c8] md:h-[52px]'>
+          <div className='flex h-[40px] items-center md:h-[52px]'>
             <button
               type='button'
               onClick={() => setSportsSidebarOpen((prev) => !prev)}
@@ -246,7 +247,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </button>
             <NavLink
               to='/user-download-list'
-              className='md:mr-10 h-[25px] md:h-[32px]'
+              className='h-[25px] md:mr-10 md:h-[32px]'
               onClick={(e) => {
                 if (onLogoClick) {
                   e.preventDefault();
@@ -333,9 +334,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
             </nav>
           </div>
 
-          <div className='mr-1 md:mr-4 flex items-center gap-0.5 md:gap-1'>
+          <div className='mr-1 flex items-center gap-0.5 md:mr-4 md:gap-1'>
             {userInfo?.role === 'supperadmin' && (
-              <img src={varahiLogo} alt="" className='w-[40px] md:w-[50px]'/>
+              <img src={varahiLogo} alt='' className='w-[40px] md:w-[50px]' />
             )}
             <div className='relative flex items-center'>
               {/* <p
@@ -345,8 +346,10 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
                 {userInfo?.role === 'white' ? 'white_label' : userInfo?.role}
               </p> */}
 
-
-              <p className='text-[12px] md:text-sm text-white' onClick={() => setShowLogoutPopup((prev) => !prev)}>
+              <p
+                className='text-[12px] text-white md:text-sm'
+                onClick={() => setShowLogoutPopup((prev) => !prev)}
+              >
                 {userInfo?.name}
               </p>
               <RiArrowDownSFill size={16} className='text-white' />
@@ -529,6 +532,21 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
           </div>
         </div>
       )}
+
+      <div className='fixed bottom-0 left-0 flex h-[25px] w-full items-center justify-center bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-[14px] text-white z-99'>
+        <div className='rfm-marquee-container'>
+          <span className='rfm-marquee'>
+            <FaBullhorn className='mr-2 inline-block' />
+            1️⃣Welcome To
+            Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫
+          </span>
+          <span className='rfm-marquee'>
+            <FaBullhorn className='mr-2 inline-block' />
+            1️⃣Welcome To
+            Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫
+          </span>
+        </div>
+      </div>
     </>
   );
 };

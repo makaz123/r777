@@ -1464,7 +1464,7 @@ export const getSubAdmin = async (req, res) => {
     }
 
     // Run background account summary if needed, but don't block response
-    loadAccountSummaryForAdmin(id).catch(err => 
+    loadAccountSummaryForAdmin(id).catch((err) =>
       console.error('Background summary error:', err)
     );
 
@@ -2906,8 +2906,12 @@ export const withdrowalAndDeposite = async (req, res) => {
     }
 
     // ✅ Run heavy aggregations in background for performance with 30k+ users
-    updateAdmin(id).catch(err => console.error('Background updateAdmin error:', err));
-    updateAllUplines(userId).catch(err => console.error('Background updateAllUplines error:', err));
+    updateAdmin(id).catch((err) =>
+      console.error('Background updateAdmin error:', err)
+    );
+    updateAllUplines(userId).catch((err) =>
+      console.error('Background updateAllUplines error:', err)
+    );
 
     // ✅ Fetch updated user list
     const filter =
@@ -3439,7 +3443,7 @@ export const getAllDownlineBets = async (req, res) => {
       selectedMarketType,
       selectedMarket,
       selectedStatus,
-      userName
+      userName,
     } = req.query;
 
     const admin = await SubAdmin.findById(id);
@@ -3458,7 +3462,7 @@ export const getAllDownlineBets = async (req, res) => {
           connectFromField: 'code',
           connectToField: 'invite',
           as: 'downlines',
-          restrictSearchWithMatch: { status: { $ne: 'delete' } }
+          restrictSearchWithMatch: { status: { $ne: 'delete' } },
         },
       },
       {
@@ -3469,19 +3473,19 @@ export const getAllDownlineBets = async (req, res) => {
                 $filter: {
                   input: '$downlines',
                   as: 'd',
-                  cond: { $eq: ['$$d.role', 'user'] }
-                }
+                  cond: { $eq: ['$$d.role', 'user'] },
+                },
               },
               as: 'u',
-              in: { $toString: '$$u._id' }
-            }
-          }
-        }
-      }
+              in: { $toString: '$$u._id' },
+            },
+          },
+        },
+      },
     ]);
 
     let userIds = hierarchy[0]?.userIds || [];
-    
+
     // Add admin itself if role is user (edge case)
     if (admin.role === 'user') {
       userIds.push(admin._id.toString());
@@ -3717,21 +3721,21 @@ export const getTotalProfitLossReport = async (req, res) => {
       const isSports = isSportsBet(bet);
       let sport = 'Casino';
       if (isSports) {
-        sport = String(bet.gameName || 'Sports').charAt(0).toUpperCase() + String(bet.gameName || 'Sports').slice(1).toLowerCase();
+        sport =
+          String(bet.gameName || 'Sports')
+            .charAt(0)
+            .toUpperCase() +
+          String(bet.gameName || 'Sports')
+            .slice(1)
+            .toLowerCase();
       }
 
-      let marketName = String(bet.marketName || bet.gameType || bet.eventName || '-').toUpperCase();
-      
-      let pl = Number(bet.profitLossChange || 0);
-      let commission = 0;
-      let grossWin = pl;
+      let marketName = String(
+        bet.marketName || bet.gameType || bet.eventName || '-'
+      ).toUpperCase();
 
-      if (isSports && isMatchOddsBetRecord(bet) && isSettledClientWinPL(pl, bet.status)) {
-        const rate = usersCommitionMap.get(bet.userId) || 0;
-        const resolved = resolveMatchOddsWinCommission(pl, rate, bet.status);
-        commission = resolved.commission;
-        pl = resolved.netProfit; // The actual P&L should be the Net P&L for the user
-      }
+      const pl = Number(bet.profitLossChange || 0);
+      const commission = Number(bet.commission || 0);
 
       const key = `${sport}__${marketName}`;
       if (!reportMap.has(key)) {
@@ -3743,7 +3747,7 @@ export const getTotalProfitLossReport = async (req, res) => {
           amount: 0,
         });
       }
-      
+
       const row = reportMap.get(key);
       row.pl += pl;
       row.commission += commission;
@@ -3820,7 +3824,8 @@ export const getEventProfitLossReport = async (req, res) => {
       filter.createdAt = { $gte: start, $lte: end };
     }
 
-    const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapeRegex = (value) =>
+      String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     if (userName) {
       filter.userName = { $regex: `^${escapeRegex(userName)}$`, $options: 'i' };
@@ -3835,7 +3840,7 @@ export const getEventProfitLossReport = async (req, res) => {
     for (const bet of settledBets) {
       let sport = String(bet.gameName || 'Sports');
       sport = sport.charAt(0).toUpperCase() + sport.slice(1).toLowerCase();
-      
+
       const competition = String(bet.gameType || '-');
       const event = String(bet.eventName || '-');
       const pl = Number(bet.profitLossChange || 0);
@@ -3853,13 +3858,15 @@ export const getEventProfitLossReport = async (req, res) => {
           marketsMap: new Map(),
         });
       }
-      
+
       const row = reportMap.get(key);
       row.orderCount += 1;
       row.totalAmount += amount;
       row.pl += pl;
 
-      const marketName = String(bet.marketName || bet.gameType || '-').toUpperCase();
+      const marketName = String(
+        bet.marketName || bet.gameType || '-'
+      ).toUpperCase();
       if (!row.marketsMap.has(marketName)) {
         row.marketsMap.set(marketName, {
           market: marketName,
@@ -3874,7 +3881,7 @@ export const getEventProfitLossReport = async (req, res) => {
       mRow.pl += pl;
     }
 
-    const data = [...reportMap.values()].map(row => ({
+    const data = [...reportMap.values()].map((row) => ({
       ...row,
       markets: [...row.marketsMap.values()],
       marketsMap: undefined, // remove map from final output

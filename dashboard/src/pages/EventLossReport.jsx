@@ -50,7 +50,11 @@ const EventLossReport = () => {
   const [limit, setLimit] = useState(25);
   const [hasSearched, setHasSearched] = useState(false);
   const [totals, setTotals] = useState({ pl: 0, amount: 0, orders: 0 });
-  const [displayedTotals, setDisplayedTotals] = useState({ pl: 0, amount: 0, orders: 0 });
+  const [displayedTotals, setDisplayedTotals] = useState({
+    pl: 0,
+    amount: 0,
+    orders: 0,
+  });
   const [selectedSport, setSelectedSport] = useState('all');
   const [localSearch, setLocalSearch] = useState('');
   const [loading, setLoading] = useState(false);
@@ -151,12 +155,9 @@ const EventLossReport = () => {
         query.append('searchQuery', searchQuery);
       }
 
-      const res = await api.get(
-        `/get/event-profit-loss?${query.toString()}`,
-        {
-          withCredentials: true,
-        }
-      );
+      const res = await api.get(`/get/event-profit-loss?${query.toString()}`, {
+        withCredentials: true,
+      });
 
       const data = res.data?.data?.report || [];
       setRows(data);
@@ -176,20 +177,23 @@ const EventLossReport = () => {
 
   useEffect(() => {
     let result = [...rows];
-    
+
     if (selectedSport && selectedSport !== 'all') {
-      result = result.filter(row => String(row.sport).toLowerCase() === selectedSport.toLowerCase());
-    }
-    
-    if (localSearch) {
-      const lower = localSearch.toLowerCase();
-      result = result.filter(row => 
-        String(row.event).toLowerCase().includes(lower) || 
-        String(row.competition).toLowerCase().includes(lower) ||
-        String(row.sport).toLowerCase().includes(lower)
+      result = result.filter(
+        (row) => String(row.sport).toLowerCase() === selectedSport.toLowerCase()
       );
     }
-    
+
+    if (localSearch) {
+      const lower = localSearch.toLowerCase();
+      result = result.filter(
+        (row) =>
+          String(row.event).toLowerCase().includes(lower) ||
+          String(row.competition).toLowerCase().includes(lower) ||
+          String(row.sport).toLowerCase().includes(lower)
+      );
+    }
+
     setFilteredRows(result);
     setPage(1);
 
@@ -245,13 +249,13 @@ const EventLossReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide h-[calc(100vh-52px)] overflow-y-scroll bg-[#f0f0f5] md:px-[15px] md:py-[13px]'>
-        <div className='h-full min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
+      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+        <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>
             Event Profit & Loss Report
           </div>
 
-          <div className='mt-2 mb-4 grid grid-cols-6 gap-6'>
+          <div className='mt-2 mb-4 grid md:grid-cols-6 gap-4 md:gap-6'>
             {renderClientSearch()}
 
             <input
@@ -291,7 +295,7 @@ const EventLossReport = () => {
 
           {hasSearched && (
             <>
-              <div className='mb-2 grid grid-cols-6 items-end gap-6'>
+              <div className='mb-2 grid grid-cols-2 md:grid-cols-6 items-end gap-2 md:gap-6'>
                 <input
                   type='text'
                   placeholder='Search'
@@ -305,20 +309,27 @@ const EventLossReport = () => {
                   onChange={(e) => setSelectedSport(e.target.value)}
                 >
                   <option value='all'>Select Sport</option>
-                  {[...new Set(rows.map(r => r.sport))].map(s => (
-                    <option key={s} value={s}>{s}</option>
+                  {[...new Set(rows.map((r) => r.sport))].map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
                   ))}
                 </select>
 
                 <div className='flex'>
-                  <img src={excelIcon} alt='' className='w-[35px] cursor-pointer' />
-                  <img src={pdfIcon} alt='' className='w-[35px] cursor-pointer' />
+                  <img
+                    src={excelIcon}
+                    alt=''
+                    className='w-[35px] cursor-pointer'
+                  />
+                  <img
+                    src={pdfIcon}
+                    alt=''
+                    className='w-[35px] cursor-pointer'
+                  />
                 </div>
 
-                <div></div>
-                <div></div>
-
-                <div className='mr-10 ml-auto'>
+                <div className='mr-2 ml-auto col-span-1 md:col-span-3 text-[14px]'>
                   <span>Show</span>
                   <select
                     name='limit'
@@ -337,88 +348,129 @@ const EventLossReport = () => {
                   <span>entries</span>
                 </div>
               </div>
-
+              <div className='overflow-x-scroll scrollbar-hide w-full'>
               <table className='w-full table-auto border-collapse border border-gray-300'>
                 <thead>
                   <tr className='bg-[#016a82] text-white'>
-                    <th className='border-r border-white px-2 py-1 text-left'>SportType</th>
-                    <th className='border-r border-white px-2 py-1 text-left'>Competition</th>
-                    <th className='border-r border-white px-2 py-1 text-left'>Event</th>
-                    <th className='border-r border-white px-2 py-1 text-right'>Order Count</th>
-                    <th className='border-r border-white px-2 py-1 text-right'>Total Amount</th>
+                    <th className='border-r border-white px-2 py-1 text-left'>
+                      SportType
+                    </th>
+                    <th className='border-r border-white px-2 py-1 text-left'>
+                      Competition
+                    </th>
+                    <th className='border-r border-white px-2 py-1 text-left'>
+                      Event
+                    </th>
+                    <th className='border-r border-white px-2 py-1 text-right'>
+                      Order Count
+                    </th>
+                    <th className='border-r border-white px-2 py-1 text-right'>
+                      Total Amount
+                    </th>
                     <th className='px-2 py-1 text-right'>P/L</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows && rows.length > 0 && (
                     <tr className='border border-gray-300 bg-gray-50 text-[14px] font-bold'>
-                      <td className='border border-gray-300 px-2 py-1.5 text-right' colSpan={3}>
+                      <td
+                        className='border border-gray-300 px-2 py-1.5 text-right'
+                        colSpan={3}
+                      >
                         Grand Total (All Records)
                       </td>
                       <td className='border border-gray-300 px-2 py-1.5 text-right text-gray-700'>
                         {totals.orders}
                       </td>
-                      <td className={`border border-gray-300 px-2 py-1.5 text-right ${totals.amount > 0 ? 'text-green-600' : totals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                      <td
+                        className={`border border-gray-300 px-2 py-1.5 text-right ${totals.amount > 0 ? 'text-green-600' : totals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                      >
                         {totals.amount.toFixed(2)}
                       </td>
-                      <td className={`px-2 py-1.5 text-right ${totals.pl > 0 ? 'text-green-600' : totals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                      <td
+                        className={`px-2 py-1.5 text-right ${totals.pl > 0 ? 'text-green-600' : totals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                      >
                         {totals.pl.toFixed(2)}
                       </td>
                     </tr>
                   )}
                   {currentRows && currentRows.length > 0 ? (
                     currentRows.map((row, idx) => (
-                      <tr key={idx} className='border border-gray-300 odd:bg-gray-100 text-[14px] font-semibold'>
-                        <td className='border border-gray-300 px-2 py-1.5 text-gray-700 font-normal'>{row.sport}</td>
-                        <td className='border border-gray-300 px-2 py-1.5 text-gray-700 font-normal'>{row.competition}</td>
-                        <td 
-                          className='border border-gray-300 px-2 py-1.5 text-gray-700 font-normal underline cursor-pointer hover:text-[#016a82]'
+                      <tr
+                        key={idx}
+                        className='border border-gray-300 text-[14px] font-semibold odd:bg-gray-100'
+                      >
+                        <td className='border border-gray-300 px-2 py-1.5 font-normal text-gray-700'>
+                          {row.sport}
+                        </td>
+                        <td className='border border-gray-300 px-2 py-1.5 font-normal text-gray-700'>
+                          {row.competition}
+                        </td>
+                        <td
+                          className='cursor-pointer border border-gray-300 px-2 py-1.5 font-normal text-gray-700 underline hover:text-[#016a82]'
                           onClick={() => setSelectedEventForModal(row)}
                         >
                           {row.event}
                         </td>
-                        <td className='border border-gray-300 px-2 py-1.5 text-right text-gray-700 font-normal'>
+                        <td className='border border-gray-300 px-2 py-1.5 text-right font-normal text-gray-700'>
                           {row.orderCount}
                         </td>
-                        <td className={`border border-gray-300 px-2 py-1.5 text-right ${row.totalAmount > 0 ? 'text-green-600' : row.totalAmount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        <td
+                          className={`border border-gray-300 px-2 py-1.5 text-right ${row.totalAmount > 0 ? 'text-green-600' : row.totalAmount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
                           {row.totalAmount.toFixed(2)}
                         </td>
-                        <td className={`px-2 py-1.5 text-right ${row.pl > 0 ? 'text-green-600' : row.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        <td
+                          className={`px-2 py-1.5 text-right ${row.pl > 0 ? 'text-green-600' : row.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
                           {row.pl.toFixed(2)}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="py-4 text-center text-gray-500 font-semibold">
+                      <td
+                        colSpan='6'
+                        className='py-4 text-center font-semibold text-gray-500'
+                      >
                         {loading ? 'Loading...' : 'No data available'}
                       </td>
                     </tr>
                   )}
                   {currentRows && currentRows.length > 0 && (
                     <tr className='border border-gray-300 bg-gray-50 text-[14px] font-bold'>
-                      <td className='border border-gray-300 px-2 py-1.5 text-right' colSpan={3}>
+                      <td
+                        className='border border-gray-300 px-2 py-1.5 text-right'
+                        colSpan={3}
+                      >
                         Total (Display Records)
                       </td>
                       <td className='border border-gray-300 px-2 py-1.5 text-right text-gray-700'>
                         {displayedTotals.orders}
                       </td>
-                      <td className={`border border-gray-300 px-2 py-1.5 text-right ${displayedTotals.amount > 0 ? 'text-green-600' : displayedTotals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                      <td
+                        className={`border border-gray-300 px-2 py-1.5 text-right ${displayedTotals.amount > 0 ? 'text-green-600' : displayedTotals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                      >
                         {displayedTotals.amount.toFixed(2)}
                       </td>
-                      <td className={`px-2 py-1.5 text-right ${displayedTotals.pl > 0 ? 'text-green-600' : displayedTotals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                      <td
+                        className={`px-2 py-1.5 text-right ${displayedTotals.pl > 0 ? 'text-green-600' : displayedTotals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                      >
                         {displayedTotals.pl.toFixed(2)}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
-
+              </div>
               <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>
                 <div>
-                  Showing {filteredRows.length > 0 ? (page - 1) * limit + 1 : 0} to{' '}
-                  {filteredRows.length > 0 ? Math.min(page * limit, filteredRows.length) : 0} of{' '}
-                  {filteredRows.length} entries
+                  Showing {filteredRows.length > 0 ? (page - 1) * limit + 1 : 0}{' '}
+                  to{' '}
+                  {filteredRows.length > 0
+                    ? Math.min(page * limit, filteredRows.length)
+                    : 0}{' '}
+                  of {filteredRows.length} entries
                 </div>
                 <div className='flex flex-wrap'>
                   <button
@@ -466,58 +518,84 @@ const EventLossReport = () => {
           )}
 
           {selectedEventForModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-white rounded shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center p-3 border-b bg-[#016a82] text-white">
-                  <h3 className="font-bold text-lg">{selectedEventForModal.event}</h3>
-                  <button onClick={() => setSelectedEventForModal(null)} className="text-white hover:text-gray-300 text-2xl font-bold leading-none cursor-pointer">
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+              <div className='flex max-h-[90vh] w-full max-w-4xl flex-col rounded bg-white shadow-lg'>
+                <div className='flex items-center justify-between border-b bg-[#016a82] p-3 text-white'>
+                  <h3 className='text-lg font-bold'>
+                    {selectedEventForModal.event}
+                  </h3>
+                  <button
+                    onClick={() => setSelectedEventForModal(null)}
+                    className='cursor-pointer text-2xl leading-none font-bold text-white hover:text-gray-300'
+                  >
                     &times;
                   </button>
                 </div>
-                <div className="overflow-y-auto p-4 flex-1">
+                <div className='flex-1 overflow-y-auto p-4'>
                   <table className='w-full table-auto border-collapse border border-gray-300'>
                     <thead>
                       <tr className='bg-[#016a82] text-white'>
-                        <th className='border-r border-white px-2 py-1 text-left'>Market</th>
-                        <th className='border-r border-white px-2 py-1 text-right'>Order Count</th>
-                        <th className='border-r border-white px-2 py-1 text-right'>Total Amount</th>
+                        <th className='border-r border-white px-2 py-1 text-left'>
+                          Market
+                        </th>
+                        <th className='border-r border-white px-2 py-1 text-right'>
+                          Order Count
+                        </th>
+                        <th className='border-r border-white px-2 py-1 text-right'>
+                          Total Amount
+                        </th>
                         <th className='px-2 py-1 text-right'>P/L</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className='border border-gray-300 bg-gray-50 text-[14px] font-bold'>
-                        <td className='border border-gray-300 px-2 py-1.5 text-right'>Total</td>
+                        <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                          Total
+                        </td>
                         <td className='border border-gray-300 px-2 py-1.5 text-right text-gray-700'>
                           {selectedEventForModal.orderCount}
                         </td>
-                        <td className={`border border-gray-300 px-2 py-1.5 text-right ${selectedEventForModal.totalAmount > 0 ? 'text-green-600' : selectedEventForModal.totalAmount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        <td
+                          className={`border border-gray-300 px-2 py-1.5 text-right ${selectedEventForModal.totalAmount > 0 ? 'text-green-600' : selectedEventForModal.totalAmount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
                           {selectedEventForModal.totalAmount.toFixed(2)}
                         </td>
-                        <td className={`px-2 py-1.5 text-right ${selectedEventForModal.pl > 0 ? 'text-green-600' : selectedEventForModal.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                        <td
+                          className={`px-2 py-1.5 text-right ${selectedEventForModal.pl > 0 ? 'text-green-600' : selectedEventForModal.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
                           {selectedEventForModal.pl.toFixed(2)}
                         </td>
                       </tr>
-                      {selectedEventForModal.markets && selectedEventForModal.markets.map((marketRow, idx) => (
-                        <tr key={idx} className='border border-gray-300 odd:bg-gray-100 text-[14px]'>
-                          <td className='border border-gray-300 px-2 py-1.5 text-gray-700'>{marketRow.market}</td>
-                          <td className='border border-gray-300 px-2 py-1.5 text-right text-gray-700'>
-                            {marketRow.orderCount}
-                          </td>
-                          <td className={`border border-gray-300 px-2 py-1.5 text-right ${marketRow.totalAmount > 0 ? 'text-green-600' : marketRow.totalAmount < 0 ? 'text-red-600' : 'text-gray-700'}`}>
-                            {marketRow.totalAmount.toFixed(2)}
-                          </td>
-                          <td className={`px-2 py-1.5 text-right ${marketRow.pl > 0 ? 'text-green-600' : marketRow.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}>
-                            {marketRow.pl.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
+                      {selectedEventForModal.markets &&
+                        selectedEventForModal.markets.map((marketRow, idx) => (
+                          <tr
+                            key={idx}
+                            className='border border-gray-300 text-[14px] odd:bg-gray-100'
+                          >
+                            <td className='border border-gray-300 px-2 py-1.5 text-gray-700'>
+                              {marketRow.market}
+                            </td>
+                            <td className='border border-gray-300 px-2 py-1.5 text-right text-gray-700'>
+                              {marketRow.orderCount}
+                            </td>
+                            <td
+                              className={`border border-gray-300 px-2 py-1.5 text-right ${marketRow.totalAmount > 0 ? 'text-green-600' : marketRow.totalAmount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                            >
+                              {marketRow.totalAmount.toFixed(2)}
+                            </td>
+                            <td
+                              className={`px-2 py-1.5 text-right ${marketRow.pl > 0 ? 'text-green-600' : marketRow.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                            >
+                              {marketRow.pl.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </>

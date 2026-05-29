@@ -4598,13 +4598,15 @@ const getDirectSettlementPL = async (parentAdmin, downline) => {
   outstandingClientPL = roundMoney(outstandingClientPL);
   grossHistoryClientPL = roundMoney(grossHistoryClientPL);
 
-  // The amount passed up is based on outstanding (settlement-adjusted) client P/L
-  const passedUpOutstanding = roundMoney(
-    (outstandingClientPL * parentSharePercent) / 100
+  // The amount passed up must be based on lifetime history, not outstanding downline PL.
+  // The admin owes the upline based on the branch's lifetime PL, and that debt is
+  // only cleared by the admin's own settlement cash with the upline.
+  const passedUpHistory = roundMoney(
+    (grossHistoryClientPL * parentSharePercent) / 100
   );
-  // Apply admin's own settlement cash only while passed-up share is still open
+  // Apply admin's own settlement cash to the lifetime passed-up share
   const clientPL = applySettlementCashToPassedUpPL(
-    passedUpOutstanding,
+    passedUpHistory,
     adminSettlementCash
   );
 

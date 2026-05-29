@@ -157,10 +157,10 @@ const IpLookupReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>IP Lookup Report</div>
-          <div className='mt-2 mb-4 md:mb-10 grid md:grid-cols-6 gap-x-6 gap-y-4'>
+          <div className='mt-2 mb-4 grid gap-x-6 gap-y-4 md:mb-10 md:grid-cols-6'>
             {renderIpSearch()}
 
             <div className='col-span-1 flex gap-1 outline-0'>
@@ -187,36 +187,38 @@ const IpLookupReport = () => {
               className='h-fit rounded-sm border border-gray-300 px-2 py-1 outline-0'
             />
           </div>
-          <div className='overflow-x-scroll scrollbar-hide w-full'>
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Date & Time
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  User
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Role
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Device
-                </th>
-              </tr>
-            </thead>
+          <div className='scrollbar-hide w-full overflow-x-scroll'>
+            <table className='w-full table-auto border-collapse border border-gray-300'>
+              <thead>
+                <tr className='bg-[#016a82] text-white'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Date & Time
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    User
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Role
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Device
+                  </th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr className='border border-gray-300 odd:bg-gray-100'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25/5/2026, 4:10:55 pm
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                <td className='border border-gray-300 px-2 py-1.5'>Admin</td>
-                <td className='px-2 py-1.5'>Desktop</td>
-              </tr>
-            </tbody>
-          </table>
+              <tbody>
+                <tr className='border border-gray-300 odd:bg-gray-100'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    25/5/2026, 4:10:55 pm
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    lalli123
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>Admin</td>
+                  <td className='px-2 py-1.5 text-[14px]'>Desktop</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination */}

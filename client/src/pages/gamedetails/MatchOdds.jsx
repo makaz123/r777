@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaArrowRight, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -37,6 +37,9 @@ function MatchOdds({
 
   const [showCashoutOptions, setShowCashoutOptions] = useState(false);
   const [cashedOutBetIds, setCashedOutBetIds] = useState(new Set());
+  const [highlightedCells, setHighlightedCells] = useState({});
+  const previousCellsRef = useRef({});
+  const highlightTimeoutsRef = useRef({});
 
   useEffect(() => {
     if (!gameid) return;
@@ -51,6 +54,14 @@ function MatchOdds({
       dispatch(clearCashoutValues());
     }
   }, [selectedBet, dispatch]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(highlightTimeoutsRef.current).forEach((timeoutId) =>
+        clearTimeout(timeoutId)
+      );
+    };
+  }, []);
 
   const backBg = ['bg-[#72bbef7f]', 'bg-[#72bbefbf]', 'bg-[#72bbef]'];
   const layBg = ['bg-[#faa9ba]', 'bg-[#faa9babf]', 'bg-[#faa9ba7f]'];
@@ -68,6 +79,63 @@ function MatchOdds({
         status: matchOddsList[0].status,
       }))
     : [];
+
+  useEffect(() => {
+    if (!oddsData.length) return;
+
+    const nextCells = {};
+
+    oddsData.forEach(({ team, odds }) => {
+      const backOdds = odds
+        .filter((odd) => odd.otype === 'back' && odd.odds > 0)
+        .slice(0, 3);
+      const layOdds = odds
+        .filter((odd) => odd.otype === 'lay' && odd.odds > 0)
+        .slice(0, 3);
+
+      const primaryBack = backOdds[2] ?? backOdds[1] ?? backOdds[0];
+      const primaryLay = layOdds[0] ?? layOdds[1] ?? layOdds[2];
+
+      const buildSignature = (item) =>
+        item
+          ? `${item.odds ?? ''}|${item.size ?? ''}|${item.oname ?? ''}`
+          : 'empty';
+
+      nextCells[`${team}-mobile-back`] = buildSignature(primaryBack);
+      nextCells[`${team}-mobile-lay`] = buildSignature(primaryLay);
+
+      [0, 1, 2].forEach((index) => {
+        nextCells[`${team}-desktop-back-${index}`] = buildSignature(
+          backOdds[index]
+        );
+        nextCells[`${team}-desktop-lay-${index}`] = buildSignature(
+          layOdds[index]
+        );
+      });
+    });
+
+    const previousCells = previousCellsRef.current;
+    Object.entries(nextCells).forEach(([cellKey, signature]) => {
+      if (previousCells[cellKey] && previousCells[cellKey] !== signature) {
+        setHighlightedCells((prev) => ({ ...prev, [cellKey]: true }));
+
+        if (highlightTimeoutsRef.current[cellKey]) {
+          clearTimeout(highlightTimeoutsRef.current[cellKey]);
+        }
+
+        highlightTimeoutsRef.current[cellKey] = setTimeout(() => {
+          setHighlightedCells((prev) => {
+            const updated = { ...prev };
+            delete updated[cellKey];
+            return updated;
+          });
+          delete highlightTimeoutsRef.current[cellKey];
+        }, 1000);
+      }
+    });
+
+    previousCellsRef.current = nextCells;
+  }, [oddsData]);
 
   const CASHOUT_GAME_TYPES = ['Match Odds', 'MATCH_ODDS'];
 
@@ -398,7 +466,8 @@ function MatchOdds({
   };
 
   // Get max value from API
-  const maxValue = matchOddsList?.[0]?.max || matchOddsList?.[0]?.maxb || 0;
+  const minValue = matchOddsList?.[0]?.min || 0;
+  const maxValue = matchOddsList?.[0]?.maxb || 0;
 
   return (
     <div>
@@ -423,14 +492,14 @@ function MatchOdds({
             </button>
           )}
           <span className='ml-2 hidden md:inline-block'>
-            {t('max', 'Max')}:{maxValue}
+            {t('min', 'Min')}:{minValue} | {t('max', 'Max')}:{maxValue}
           </span>
         </div>
       </div>
       <div className='flex border-b border-b-[#c7c8ca]'>
         <div className='ml-2 flex-1 items-center text-[12px] font-bold text-[#097c93]'>
           <span className='block text-gray-400 md:hidden'>
-            {t('max', 'Max')}:{maxValue}
+          {t('min', 'Min')}:{minValue} | {t('max', 'Max')}:{maxValue}
           </span>
         </div>
         <div className='flex w-[40%] md:w-[48%]'>
@@ -462,11 +531,11 @@ function MatchOdds({
           const primaryBack = backOdds[2] ?? backOdds[1] ?? backOdds[0];
           const primaryLay = layOdds[0] ?? layOdds[1] ?? layOdds[2];
 
-          const renderOddsCell = (item, type, bgClass) => {
+          const renderOddsCell = (item, type, bgClass, cellKey) => {
             const formattedOdds = item ? item.odds : null;
             return (
               <div
-                className={`${bgClass} m-[1px] flex min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                className={`${highlightedCells[cellKey] ? 'bg-yellow-300' : bgClass} m-[1px] flex min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                 onClick={() =>
                   formattedOdds &&
                   handleOddsClick(team, formattedOdds, type, sid, item?.oname)
@@ -617,8 +686,18 @@ function MatchOdds({
                 <div
                   className={`relative flex w-[40%] md:hidden md:w-[48%] ${isSuspended ? 'suspended-event' : ''}`}
                 >
-                  {renderOddsCell(primaryBack, 'back', 'bg-[#72bbef]')}
-                  {renderOddsCell(primaryLay, 'lay', 'bg-[#faa9ba]')}
+                  {renderOddsCell(
+                    primaryBack,
+                    'back',
+                    'bg-[#72bbef]',
+                    `${team}-mobile-back`
+                  )}
+                  {renderOddsCell(
+                    primaryLay,
+                    'lay',
+                    'bg-[#faa9ba]',
+                    `${team}-mobile-lay`
+                  )}
                 </div>
 
                 <div
@@ -631,7 +710,7 @@ function MatchOdds({
                     return (
                       <div
                         key={`back-${i}`}
-                        className={`${backBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        className={`${highlightedCells[`${team}-desktop-back-${i}`] ? 'bg-yellow-300' : backBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                         onClick={() =>
                           formattedOdds &&
                           handleOddsClick(
@@ -668,7 +747,7 @@ function MatchOdds({
                     return (
                       <div
                         key={`lay-${i}`}
-                        className={`${layBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
+                        className={`${highlightedCells[`${team}-desktop-lay-${i}`] ? 'bg-yellow-300' : layBg[i]} m-[1px] hidden min-h-[36px] w-1/2 max-w-[100%] flex-col items-center justify-center rounded-[3px] md:flex md:w-1/3 ${formattedOdds ? 'cursor-pointer transition-opacity hover:opacity-80' : ''}`}
                         onClick={() =>
                           formattedOdds &&
                           handleOddsClick(

@@ -13,7 +13,7 @@ import { useTranslation } from '../../context/LanguageContext';
 
 const Cell = ({ value, type }) => (
   <div
-    className={`mx-[1px] my-[2px] flex h-6 items-center justify-center rounded-sm text-sm font-semibold ${type === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
+    className={`flex w-[49%] mr-[1%] h-6 items-center justify-center rounded-sm text-sm font-semibold ${type === 'back' ? 'bg-[#72bbef]' : 'bg-[#faa9ba]'}`}
   >
     {value}
   </div>
@@ -84,35 +84,41 @@ export default function Cricket({
       {/* ROWS */}
       {visibleMatches?.length > 0 ? (
         <>
-          <div className='hidden grid-cols-[1fr_55px_55px_55px_55px_55px_55px] border border-b-0 border-gray-300 bg-gray-100 font-bold md:grid'>
-            <div className='px-2 py-2'></div>
-            <div className='col-span-2 text-center'>1</div>
-            <div className='col-span-2 text-center'>X</div>
-            <div className='col-span-2 text-center'>2</div>
+          <div className='hidden font-bold md:flex my-[2px]'>
+            <div className='px-2 py-2 w-[63%]'></div>
+            <div className='col-span-2 text-center w-[12%]'>1</div>
+            <div className='col-span-2 text-center w-[12%]'>x</div>
+            <div className='col-span-2 text-center w-[12%]'>2</div>
           </div>
 
           {visibleMatches.map((m) => (
-            <div key={m.id} className='border border-t-0 border-gray-300'>
+            <div key={m.id} className='border-y border-gray-300'>
               {/* ================= DESKTOP VIEW ================= */}
               <div
-                className='hidden cursor-pointer grid-cols-[1fr_55px_55px_55px_55px_55px_55px] hover:bg-gray-50 md:grid'
+                className='hidden cursor-pointer hover:bg-gray-50 md:flex'
                 onClick={() =>
                   navigate(`/cricket-bet/${m.game}/${m.id}`, {
                     state: { time: m.time },
                   })
                 }
               >
-                <div className='flex items-center justify-between px-1.5'>
-                  <div className='flex items-center gap-1'>
+                <div className='flex items-center justify-between pl-1.5 pr-1 w-[63%]'>
+                  <div className='flex items-center gap-1 text-[14px] font-semibold'>
                     {!showOnlyInplay && (
-                      <div className='text-[14px] font-[400] text-[#333]'>
-                        {m.time}
-                      </div>
+                      <>
+                        <div className='text-[#333]'>
+                          {m.time}
+                        </div>
+                        <span>
+                          |
+                        </span>
+                      </>
                     )}
+                    
                     {m.inplay && (
                       <FaCircle className='h-[12px] w-[12px] text-[#33c054]' />
                     )}
-                    <div className='text-[14px] font-[400] text-[#333]'>
+                    <div className='text-[#333]'>
                       {m.game}
                     </div>
                   </div>
@@ -122,22 +128,26 @@ export default function Cricket({
                     {m.f && <img src={F} alt='F' className='h-[17px]' />}
                   </div>
                 </div>
-
-                <Cell value={m.one.back} type='back' />
-                <Cell value={m.one.lay} type='lay' />
-
-                <Cell value={m.x.back} type='back' />
-                <Cell value={m.x.lay} type='lay' />
-
-                <Cell value={m.two.back} type='back' />
-                <Cell value={m.two.lay} type='lay' />
+                
+                <div className='w-[12%] flex py-[2px] px-[1px]'>
+                  <Cell value={m.one.back} type='back' />
+                  <Cell value={m.one.lay} type='lay' />
+                </div>
+                <div className='w-[12%] flex py-[2px] px-[1px]'>
+                  <Cell value={m.x.back} type='back' />
+                  <Cell value={m.x.lay} type='lay' />
+                </div>
+                <div className='w-[12%] flex py-[2px] px-[1px]'>
+                  <Cell value={m.two.back} type='back' />
+                  <Cell value={m.two.lay} type='lay' />
+                </div>
+                <div className='w-[1%]'></div>
               </div>
 
               {/* ================= MOBILE VIEW ================= */}
               <div className='space-y-2 bg-white p-1 md:hidden'>
                 {/* Game info */}
-                <div
-                  className='mb-0 flex items-center justify-between gap-2'
+                <div className='mb-0 flex items-start justify-between gap-2'
                   onClick={() =>
                     navigate(`/cricket-bet/${m.game}/${m.id}`, {
                       state: { time: m.time },
@@ -145,43 +155,43 @@ export default function Cricket({
                   }
                 >
                   <div>
-                    <div className='text-[14px] font-bold text-[#333]'>
+                    <div className='text-[14px] font-bold'>
                       {m.game}
                     </div>
                     {!showOnlyInplay && (
-                      <div className='text-[12px] font-[400] text-[#333]'>
+                      <div className='text-[14px] font-[400] text-[#545454] py-1'>
                         {m.time}
                       </div>
                     )}
                   </div>
-                  <div className='flex items-center gap-2'>
+                  <div className='flex items-center gap-[1px] pt-1'>
                     {m.inplay && (
                       <FaCircle className='h-[12px] w-[12px] text-[#28a745]' />
                     )}
-                    {m.tv && <img src={tv} alt='tv' className='h-[17px]' />}
-                    {m.bm && <img src={Bm} alt='Bm' className='h-[17px]' />}
-                    {m.f && <img src={F} alt='F' className='h-[17px]' />}
+                    {m.tv && <img src={tv} alt='tv' className='h-[14px]' />}
+                    {m.bm && <img src={Bm} alt='Bm' className='h-[14px]' />}
+                    {m.f && <img src={F} alt='F' className='h-[14px]' />}
                   </div>
                 </div>
 
                 {/* Odds */}
                 <div
-                  className='grid grid-cols-3'
+                  className='flex gap-[2px]'
                   onClick={() =>
                     navigate(`/cricket-bet/${m.game}/${m.id}`, {
                       state: { time: m.time },
                     })
                   }
                 >
-                  <div className='grid grid-cols-2'>
+                  <div className='flex w-[100%]'>
                     <Cell value={m.one.back} type='back' />
                     <Cell value={m.one.lay} type='lay' />
                   </div>
-                  <div className='grid grid-cols-2'>
+                  <div className='flex w-[100%]'>
                     <Cell value={m.x.back} type='back' />
                     <Cell value={m.x.lay} type='lay' />
                   </div>
-                  <div className='grid grid-cols-2'>
+                  <div className='flex w-[100%]'>
                     <Cell value={m.two.back} type='back' />
                     <Cell value={m.two.lay} type='lay' />
                   </div>
@@ -201,7 +211,7 @@ export default function Cricket({
           <button
             type='button'
             onClick={() => navigate(viewMorePath)}
-            className='cursor-pointer px-2 text-[14px] font-semibold text-black hover:underline'
+            className='cursor-pointer px-2 text-[14px] md:font-semibold text-black hover:underline'
           >
             {t('view_more', 'View More...')}
           </button>

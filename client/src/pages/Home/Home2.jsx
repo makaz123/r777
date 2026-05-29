@@ -56,7 +56,7 @@ function Home() {
             />
           ))}
         </Slider>
-        <div className='p-1 md:p-2.5'>
+        <div className='p-1 md:p-1.5'>
           <div className='scrollbar-hide mb-1 flex gap-[5px] overflow-x-auto md:mb-2.5 md:grid md:grid-cols-3'>
             <img
               src={bonus1}

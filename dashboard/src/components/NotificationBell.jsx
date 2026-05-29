@@ -109,7 +109,7 @@ const NotificationBell = ({ role }) => {
         type='button'
         aria-label='Notifications'
         onClick={() => setOpen((p) => !p)}
-        className='relative flex items-center justify-center rounded border border-[#18b0c8] p-1 text-white transition hover:bg-white/20 md:p-1.5 bg-gradient-to-b from-[#022c43] to-[#18b0c8]'
+        className='relative flex items-center justify-center rounded border border-[#18b0c8] bg-gradient-to-b from-[#022c43] to-[#18b0c8] p-1 text-white transition hover:bg-white/20 md:p-1.5'
       >
         <IoNotificationsOutline size={20} />
         {unreadCount > 0 && (

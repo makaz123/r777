@@ -211,7 +211,7 @@ const AccountStatement = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Account Statement Report</div>
 
@@ -388,27 +388,27 @@ const AccountStatement = () => {
                 <table className='w-full table-auto border-collapse border border-gray-300'>
                   <thead>
                     <tr className='bg-[#016a82] text-white'>
-                      <th className='border-r border-white px-2 py-1 text-left'>
+                      <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                         Date & Time
                       </th>
 
-                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap text-[14px]'>
                         Credit
                       </th>
 
-                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap text-[14px]'>
                         Debit
                       </th>
 
-                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
+                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap text-[14px]'>
                         Closing
                       </th>
 
-                      <th className='border-r border-white px-2 py-1 text-left'>
+                      <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                         Description
                       </th>
 
-                      <th className='px-2 py-1 text-left'>From → to</th>
+                      <th className='px-2 py-1 text-left text-[14px]'>From → to</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -416,30 +416,30 @@ const AccountStatement = () => {
                       rows.map((row, index) => (
                         <tr
                           key={index}
-                          className='border border-gray-300 text-[14px] odd:bg-gray-100'
+                          className='border border-gray-300 odd:bg-gray-100'
                         >
-                          <td className='border border-gray-300 px-2 py-1.5'>
+                          <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                             {row.date
                               ? new Date(row.date).toLocaleString('en-US')
                               : '-'}
                           </td>
-                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600'>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600 text-[14px]'>
                             {row.credit > 0
                               ? Number(row.credit).toFixed(2)
                               : '-'}
                           </td>
-                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600'>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600 text-[14px]'>
                             {row.debit > 0 ? Number(row.debit).toFixed(2) : '-'}
                           </td>
-                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold'>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-[14px]'>
                             {row.closing !== undefined
                               ? Number(row.closing).toFixed(2)
                               : '-'}
                           </td>
-                          <td className='border border-gray-300 px-2 py-1.5'>
+                          <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                             {row.description || '-'}
                           </td>
-                          <td className='px-2 py-1.5 whitespace-nowrap'>
+                          <td className='px-2 py-1.5 whitespace-nowrap text-[14px]'>
                             {row.fromto || row.userName || '-'}
                           </td>
                         </tr>
@@ -448,7 +448,7 @@ const AccountStatement = () => {
                       <tr>
                         <td
                           colSpan='6'
-                          className='py-4 text-center text-gray-500'
+                          className='py-4 text-center text-gray-500 text-[14px]'
                         >
                           {loading ? 'Loading...' : 'No records found'}
                         </td>

@@ -652,7 +652,9 @@ export async function aggregateViewerProfitLoss(
 ) {
   const downlineUserIds = await getDownlineUserIds(SubAdmin, viewer.code);
   if (!downlineUserIds.length) {
-    console.log(`[aggregateViewerProfitLoss] No downline users found for viewer ${viewer.userName} (code: ${viewer.code})`);
+    console.log(
+      `[aggregateViewerProfitLoss] No downline users found for viewer ${viewer.userName} (code: ${viewer.code})`
+    );
     return 0;
   }
 
@@ -676,13 +678,22 @@ export async function aggregateViewerProfitLoss(
     const userId = user._id.toString();
     const clientPL = normalizedPL.get(userId) ?? 0;
     if (!clientPL) continue;
-    const share = getViewerShareOfUserClientPL(viewer.code, user, accountByCode, clientPL);
+    const share = getViewerShareOfUserClientPL(
+      viewer.code,
+      user,
+      accountByCode,
+      clientPL
+    );
     debugTotal += share;
     if (Math.abs(clientPL) > 0.01) {
-      console.log(`[aggregateViewerProfitLoss] viewer=${viewer.userName}, user=${user.userName}, clientPL=${clientPL}, viewerShare=${share}, invite=${user.invite}, viewerCode=${viewer.code}`);
+      console.log(
+        `[aggregateViewerProfitLoss] viewer=${viewer.userName}, user=${user.userName}, clientPL=${clientPL}, viewerShare=${share}, invite=${user.invite}, viewerCode=${viewer.code}`
+      );
     }
   }
-  console.log(`[aggregateViewerProfitLoss] viewer=${viewer.userName}, totalUsers=${users.length}, totalEndUsers=${users.filter(u => u.role === 'user').length}, debugTotal=${roundMoney(debugTotal)}, accountByCodeSize=${accountByCode.size}`);
+  console.log(
+    `[aggregateViewerProfitLoss] viewer=${viewer.userName}, totalUsers=${users.length}, totalEndUsers=${users.filter((u) => u.role === 'user').length}, debugTotal=${roundMoney(debugTotal)}, accountByCodeSize=${accountByCode.size}`
+  );
 
   return computeViewerPeriodPL(viewer, users, normalizedPL, accountByCode);
 }

@@ -157,11 +157,11 @@ const LiveBetsReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Live Bets</div>
 
-          <div className='mt-2 mb-5 grid md:grid-cols-6 md:gap-x-6 gap-y-4'>
+          <div className='mt-2 mb-5 grid gap-y-4 md:grid-cols-6 md:gap-x-6'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
@@ -211,102 +211,106 @@ const LiveBetsReport = () => {
               </div>
             </div>
           </div>
-          <div className='overflow-x-scroll scrollbar-hide w-full'>
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Time
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  User
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Competition
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Event
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Market
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Runner
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Side
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Line
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Rate
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Amount
-                </th>
-              </tr>
-            </thead>
+          <div className='scrollbar-hide w-full overflow-x-scroll'>
+            <table className='w-full table-auto border-collapse border border-gray-300'>
+              <thead>
+                <tr className='bg-[#016a82] text-white'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Time
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    User
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Competition
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Event
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Market
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Runner
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Side
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Line
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Rate
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Amount
+                  </th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr className='border border-gray-300 bg-[#faa9ba] text-gray-800'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25/5/2026, 4:10:55 pm
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Women's T20 Blast Div 2
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Kent W v Sussex Sharks W - 25 May 26
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Bookmaker 0 Commission
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Sussex Sharks W
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>Lay</td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  120
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  84
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  100.00
-                </td>
-              </tr>
-              <tr className='border border-gray-300 bg-[#72bbef] text-gray-800'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25/5/2026, 4:10:55 pm
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Women's T20 Blast Div 2
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Kent W v Sussex Sharks W - 25 May 26
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Bookmaker 0 Commission
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  Sussex Sharks W
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>Back</td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  120
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  84
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black'>
-                  100.00
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <tbody>
+                <tr className='border border-gray-300 bg-[#faa9ba] text-gray-800'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    25/5/2026, 4:10:55 pm
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    lalli123
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Women's T20 Blast Div 2
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Kent W v Sussex Sharks W - 25 May 26
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Bookmaker 0 Commission
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Sussex Sharks W
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>Lay</td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    120
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    84
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    100.00
+                  </td>
+                </tr>
+                <tr className='border border-gray-300 bg-[#72bbef] text-gray-800'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    25/5/2026, 4:10:55 pm
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    lalli123
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Women's T20 Blast Div 2
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Kent W v Sussex Sharks W - 25 May 26
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Bookmaker 0 Commission
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    Sussex Sharks W
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>Back</td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    120
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    84
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right font-bold text-black text-[14px]'>
+                    100.00
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination */}

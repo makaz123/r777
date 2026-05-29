@@ -328,11 +328,17 @@ const AccountSummaryBar = () => {
               >
                 <span
                   className={`font-semibold ${plColorClass(
-                    summary?.myPLTillDate ?? downlineViewer?.myPLTillDate ?? downlineViewer?.myPL ?? 0
+                    summary?.myPLTillDate ??
+                      downlineViewer?.myPLTillDate ??
+                      downlineViewer?.myPL ??
+                      0
                   )}`}
                 >
                   {formatMoney(
-                    summary?.myPLTillDate ?? downlineViewer?.myPLTillDate ?? downlineViewer?.myPL ?? 0
+                    summary?.myPLTillDate ??
+                      downlineViewer?.myPLTillDate ??
+                      downlineViewer?.myPL ??
+                      0
                   )}
                 </span>
               </MetricTooltipRow>

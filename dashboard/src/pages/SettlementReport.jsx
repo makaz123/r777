@@ -213,13 +213,13 @@ const SettlementReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>
             Settlement/Balance Transaction Report
           </div>
 
-          <div className='mt-2 mb-4 md:mb-10 grid md:grid-cols-6 gap-4 md:gap-6'>
+          <div className='mt-2 mb-4 grid gap-4 md:mb-10 md:grid-cols-6 md:gap-6'>
             <select
               className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 text-gray-500 outline-0'
               value={accountType}
@@ -285,7 +285,7 @@ const SettlementReport = () => {
                   <img src={pdfIcon} alt='' className='w-[35px]' />
                 </div>
 
-                <div className='md:mr-10 ml-auto'>
+                <div className='ml-auto md:mr-10 text-[14px]'>
                   <span>Show</span>
                   <select
                     name='limit'
@@ -304,76 +304,78 @@ const SettlementReport = () => {
                   <span>entries</span>
                 </div>
               </div>
-              <div className='overflow-x-scroll w-full scrollbar-hide'>
-              <table className='w-full table-auto border-collapse border border-gray-300'>
-                <thead>
-                  <tr className='bg-[#016a82] text-white'>
-                    <th className='border-r border-white px-2 py-1 text-left'>
-                      Date & Time
-                    </th>
+              <div className='scrollbar-hide w-full overflow-x-scroll'>
+                <table className='w-full table-auto border-collapse border border-gray-300'>
+                  <thead>
+                    <tr className='bg-[#016a82] text-white'>
+                      <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                        Date & Time
+                      </th>
 
-                    <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                      Credit
-                    </th>
+                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap text-[14px]'>
+                        Credit
+                      </th>
 
-                    <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                      Debit
-                    </th>
+                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap text-[14px]'>
+                        Debit
+                      </th>
 
-                    <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap'>
-                      Closing
-                    </th>
+                      <th className='w-[100px] border-r border-white px-2 py-1 text-right whitespace-nowrap text-[14px]'>
+                        Closing
+                      </th>
 
-                    <th className='border-r border-white px-2 py-1 text-left'>
-                      Description
-                    </th>
+                      <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                        Description
+                      </th>
 
-                    <th className='px-2 py-1 text-left'>From → to</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows && rows.length > 0 ? (
-                    rows.map((row, index) => (
-                      <tr
-                        key={index}
-                        className='border border-gray-300 text-[14px] odd:bg-gray-100'
-                      >
-                        <td className='border border-gray-300 px-2 py-1.5'>
-                          {row.date
-                            ? new Date(row.date).toLocaleString('en-US')
-                            : '-'}
-                        </td>
-                        <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600'>
-                          {row.credit > 0 ? Number(row.credit).toFixed(2) : '-'}
-                        </td>
-                        <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600'>
-                          {row.debit > 0 ? Number(row.debit).toFixed(2) : '-'}
-                        </td>
-                        <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold'>
-                          {row.closing !== undefined
-                            ? Number(row.closing).toFixed(2)
-                            : '-'}
-                        </td>
-                        <td className='border border-gray-300 px-2 py-1.5'>
-                          {row.description || '-'}
-                        </td>
-                        <td className='px-2 py-1.5 whitespace-nowrap'>
-                          {row.fromto || row.userName || '-'}
+                      <th className='px-2 py-1 text-left text-[14px]'>From → to</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows && rows.length > 0 ? (
+                      rows.map((row, index) => (
+                        <tr
+                          key={index}
+                          className='border border-gray-300 odd:bg-gray-100'
+                        >
+                          <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                            {row.date
+                              ? new Date(row.date).toLocaleString('en-US')
+                              : '-'}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-green-600 text-[14px]'>
+                            {row.credit > 0
+                              ? Number(row.credit).toFixed(2)
+                              : '-'}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-red-600 text-[14px]'>
+                            {row.debit > 0 ? Number(row.debit).toFixed(2) : '-'}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 text-right font-semibold text-[14px]'>
+                            {row.closing !== undefined
+                              ? Number(row.closing).toFixed(2)
+                              : '-'}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                            {row.description || '-'}
+                          </td>
+                          <td className='px-2 py-1.5 whitespace-nowrap text-[14px]'>
+                            {row.fromto || row.userName || '-'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan='6'
+                          className='py-4 text-center text-gray-500 text-[14px]'
+                        >
+                          {loading ? 'Loading...' : 'No records found'}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan='6'
-                        className='py-4 text-center text-gray-500'
-                      >
-                        {loading ? 'Loading...' : 'No records found'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
               </div>
               {/* Pagination */}
               <div className='mt-4 flex flex-col justify-between gap-3 text-[13px] md:flex-row md:items-center'>

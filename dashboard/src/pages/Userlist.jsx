@@ -919,8 +919,8 @@ export default function Userlist() {
     <>
       <Navbar />
 
-      <div className='h-fit md:px-[15px] md:pt-[13px] pb-10'>
-        <div className='rounded-md bg-white px-2 md:px-4 py-1'>
+      <div className='h-fit pb-10 md:px-[15px] md:pt-[13px]'>
+        <div className='rounded-md bg-white px-2 py-1 md:px-4'>
           <div className='mt-2 mb-2 items-end justify-between md:flex'>
             <div className='grid'>
               <div className='text-[15px] leading-none font-bold'>

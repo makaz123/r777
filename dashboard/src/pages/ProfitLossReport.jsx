@@ -198,11 +198,11 @@ const ProfitLossReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Profit & Loss</div>
 
-          <div className='mt-2 mb-5 grid md:grid-cols-6 gap-4 md:gap-6'>
+          <div className='mt-2 mb-5 grid gap-4 md:grid-cols-6 md:gap-6'>
             {renderClientSearch()}
 
             <input
@@ -256,92 +256,92 @@ const ProfitLossReport = () => {
                   />
                 </div>
               </div>
-              <div className='overflow-x-scroll scrollbar-hide w-full'>
-              <table className='w-full table-auto border-collapse border border-gray-300'>
-                <thead>
-                  <tr className='bg-[#016a82] text-white'>
-                    <th className='border-r border-white px-2 py-1 text-left'>
-                      Sport
-                    </th>
-                    <th className='border-r border-white px-2 py-1 text-left'>
-                      Market Name
-                    </th>
-                    <th className='border-r border-white px-2 py-1 text-right'>
-                      P&L
-                    </th>
-                    <th className='border-r border-white px-2 py-1 text-right'>
-                      Commission
-                    </th>
-                    <th className='px-2 py-1 text-right'>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows && rows.length > 0 ? (
-                    rows.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className='border border-gray-300 text-[14px] font-semibold odd:bg-gray-100'
-                      >
-                        <td className='border border-gray-300 px-2 py-1.5 font-normal text-gray-700'>
-                          {row.sport}
-                        </td>
-                        <td className='border border-gray-300 px-2 py-1.5 font-normal text-gray-700'>
-                          {row.marketName}
-                        </td>
-                        <td
-                          className={`border border-gray-300 px-2 py-1.5 text-right ${row.pl > 0 ? 'text-green-600' : row.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+              <div className='scrollbar-hide w-full overflow-x-scroll'>
+                <table className='w-full table-auto border-collapse border border-gray-300'>
+                  <thead>
+                    <tr className='bg-[#016a82] text-white'>
+                      <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                        Sport
+                      </th>
+                      <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                        Market Name
+                      </th>
+                      <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                        P&L
+                      </th>
+                      <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                        Commission
+                      </th>
+                      <th className='px-2 py-1 text-right text-[14px]'>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows && rows.length > 0 ? (
+                      rows.map((row, idx) => (
+                        <tr
+                          key={idx}
+                          className='border border-gray-300 font-semibold odd:bg-gray-100'
                         >
-                          {row.pl.toFixed(2)}
-                        </td>
+                          <td className='border border-gray-300 px-2 py-1.5 font-normal text-gray-700 text-[14px]'>
+                            {row.sport}
+                          </td>
+                          <td className='border border-gray-300 px-2 py-1.5 font-normal text-gray-700 text-[14px]'>
+                            {row.marketName}
+                          </td>
+                          <td
+                            className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] ${row.pl > 0 ? 'text-green-600' : row.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                          >
+                            {row.pl.toFixed(2)}
+                          </td>
+                          <td
+                            className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] ${row.commission > 0 ? 'text-green-600' : row.commission < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                          >
+                            {row.commission.toFixed(2)}
+                          </td>
+                          <td
+                            className={`px-2 py-1.5 text-right text-[14px] ${row.amount > 0 ? 'text-green-600' : row.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                          >
+                            {row.amount.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
                         <td
-                          className={`border border-gray-300 px-2 py-1.5 text-right ${row.commission > 0 ? 'text-green-600' : row.commission < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                          colSpan='5'
+                          className='py-4 text-center font-semibold text-gray-500 text-[14px]'
                         >
-                          {row.commission.toFixed(2)}
-                        </td>
-                        <td
-                          className={`px-2 py-1.5 text-right ${row.amount > 0 ? 'text-green-600' : row.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}
-                        >
-                          {row.amount.toFixed(2)}
+                          {loading ? 'Loading...' : 'No data available'}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan='5'
-                        className='py-4 text-center font-semibold text-gray-500'
-                      >
-                        {loading ? 'Loading...' : 'No data available'}
-                      </td>
-                    </tr>
-                  )}
-                  {rows && rows.length > 0 && (
-                    <tr className='border border-gray-300 bg-gray-50 text-[14px] font-bold'>
-                      <td
-                        className='border border-gray-300 px-2 py-1.5'
-                        colSpan={2}
-                      >
-                        Total
-                      </td>
-                      <td
-                        className={`border border-gray-300 px-2 py-1.5 text-right ${totals.pl > 0 ? 'text-green-600' : totals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
-                      >
-                        {totals.pl.toFixed(2)}
-                      </td>
-                      <td
-                        className={`border border-gray-300 px-2 py-1.5 text-right ${totals.commission > 0 ? 'text-green-600' : totals.commission < 0 ? 'text-red-600' : 'text-gray-700'}`}
-                      >
-                        {totals.commission.toFixed(2)}
-                      </td>
-                      <td
-                        className={`px-2 py-1.5 text-right ${totals.amount > 0 ? 'text-green-600' : totals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}
-                      >
-                        {totals.amount.toFixed(2)}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                    {rows && rows.length > 0 && (
+                      <tr className='border border-gray-300 bg-gray-50 text-[14px] font-bold'>
+                        <td
+                          className='border border-gray-300 px-2 py-1.5 text-[14px]'
+                          colSpan={2}
+                        >
+                          Total
+                        </td>
+                        <td
+                          className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] ${totals.pl > 0 ? 'text-green-600' : totals.pl < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
+                          {totals.pl.toFixed(2)}
+                        </td>
+                        <td
+                          className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] ${totals.commission > 0 ? 'text-green-600' : totals.commission < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
+                          {totals.commission.toFixed(2)}
+                        </td>
+                        <td
+                          className={`px-2 py-1.5 text-right text-[14px] ${totals.amount > 0 ? 'text-green-600' : totals.amount < 0 ? 'text-red-600' : 'text-gray-700'}`}
+                        >
+                          {totals.amount.toFixed(2)}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </>
           )}

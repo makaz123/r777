@@ -61,8 +61,8 @@ function Navbar() {
 
   const mainNavItems = [
     { id: 'home', label: 'Home', path: '/' },
-    { id: 'inplay', label: 'In-Play', path: '/inplay' },
-    { id: 'ipl', label: 'IPL 2026', path: iplBetPath },
+    { id: 'In-Play', label: 'In-Play', path: '/inplay' },
+    { id: 'ipl2026', label: 'IPL 2026', path: iplBetPath },
     { id: 'cricket', label: 'Cricket', icon: GiCricketBat, path: '/cricket' },
     { id: 'soccer', label: 'Soccer', icon: FaFootballBall, path: '/football' },
     { id: 'tennis', label: 'Tennis', icon: IoMdTennisball, path: '/tennis' },
@@ -86,7 +86,7 @@ function Navbar() {
     if (path.startsWith('/inplay')) return 'inplay';
 
     if (path.startsWith('/cricket-bet')) {
-      return path === iplBetPath ? 'ipl' : 'cricket';
+      return path === iplBetPath ? 'ipl2026' : 'cricket';
     }
     if (path.startsWith('/cricket')) return 'cricket';
 
@@ -111,7 +111,7 @@ function Navbar() {
 
   const providerSpritePositions = {
     inplay: '0px -1527px',
-    ipl: '0px -1775px',
+    ipl2026: '0px -1775px',
     cricket: '0px -326px',
     soccer: '0px -1026px',
     tennis: '0px -1096px',
@@ -145,10 +145,10 @@ function Navbar() {
               } ${
                 activeNav === item.id &&
                 item.id !== 'ezugi' &&
-                item.id !== 'ipl'
+                item.id !== 'ipl2026'
                   ? 'bg-[#5ecbdd]'
                   : ''
-              } ${item.id === 'ezugi' || item.id === 'ipl' ? 'awesome' : ''} `}
+              } ${item.id === 'ezugi' || item.id === 'ipl2026' ? 'awesome' : ''} `}
             >
               {item.id !== 'spribe' && item.id !== 'inOut' && (
                 <span

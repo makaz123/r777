@@ -134,7 +134,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
   const sportsNav = useMemo(
     () => [
       {
-        key: 'inplay',
+        key: 'In-Play',
         spritePos: '0px -1527px',
         label: 'In-Play',
         path: '/inplay',
@@ -260,7 +260,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
               window.__sidebarMapKey = mapKey; // store globally or pass down
             })()}
             {sectionHeader(t('popular', 'Popular'))}
-            <ul className='text-[13px]'>
+            <ul className='text-[14px]'>
               {sportsNav.map((sport) => {
                 const sk = sportKey(sport.key);
                 const isDirectLink = Boolean(sport.path);
@@ -268,13 +268,11 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                 const leagues = groupMatchesByLeague(sport.matches);
 
                 return (
-                  <li key={sport.key} className='border-b border-gray-300'>
+                  <li key={sport.key} className='border-b border-gray-300 bg-white hover:bg-[#19a6c5]'>
                     <div
                       role='button'
                       tabIndex={0}
-                      className={`flex cursor-pointer items-center gap-2 px-2.5 py-2 text-[#045662] transition-colors hover:bg-[#d4e8ec] ${
-                        leagueOpen ? 'bg-[#d8e8eb]' : ''
-                      }`}
+                      className='flex cursor-pointer items-center gap-2 px-2.5 py-2 text-[#045662] hover:text-white'
                       onClick={() => handleSportHeaderClick(sport)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -304,17 +302,17 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                     </div>
 
                     {leagueOpen && (
-                      <ul className='bg-gray-300'>
+                      <ul className='bg-[#e1e4ef]'>
                         {leagues.map(({ league, matches: lm }, index) => {
                           const ik = innerLeagueKey(sport.key, index);
                           const innerOpen = expandedKeys.has(ik);
 
                           return (
-                            <li key={ik} className='mr-2 ml-5 py-2'>
+                            <li key={ik} className='mr-2 ml-5 py-2 text-[12px]'>
                               <div
                                 role='button'
                                 tabIndex={0}
-                                className={`flex cursor-pointer items-center gap-2 border-l-2 border-gray-500 pl-3 text-[#045662]`}
+                                className={`flex cursor-pointer items-center gap-2 border-l border-gray-500 pl-2`}
                                 onClick={() => toggleKey(ik)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' || e.key === ' ') {
@@ -323,7 +321,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                                   }
                                 }}
                               >
-                                <span className='min-w-0 flex-1 font-semibold'>
+                                <span className='min-w-0 flex-1'>
                                   {league}
                                 </span>
                                 {innerOpen ? (
@@ -352,8 +350,8 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
                                         }
                                       }}
                                     >
-                                      <div className='flex cursor-pointer items-center gap-2 border-l-2 border-gray-500 pl-3 text-[#045662]'>
-                                        <span className='min-w-0 flex-1 font-semibold'>
+                                      <div className='flex cursor-pointer items-center gap-2 border-l border-gray-500 pl-3'>
+                                        <span className='min-w-0 flex-1'>
                                           {m.game || 'Match'}
                                         </span>
                                         <AiOutlineCloseSquare />
@@ -375,7 +373,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
               {providerList.map((p) => (
                 <li
                   key={p.key}
-                  className='flex cursor-pointer items-center gap-2 border-b border-gray-300 px-2.5 py-2 text-[#045662] transition-colors hover:bg-[#19a6c5] hover:text-white'
+                  className='flex cursor-pointer items-center gap-2 border-b border-gray-300 px-2.5 py-2 text-[#045662] bg-white transition-colors hover:bg-[#19a6c5] hover:text-white'
                   onClick={() => handleProviderClick(p)}
                 >
                   {/* SPRITE ICON */}

@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../../redux/api';
 import { wsService } from '../../services/WebsocketService';
+import { FaBullhorn } from 'react-icons/fa';
 import {
   getUser,
   loginUser,
@@ -120,254 +121,275 @@ function Header({
   }, [isUserDropdownOpen]);
 
   return (
-    <header className='bg-primary text-primary fixed top-0 left-0 z-10 w-full'>
-      <div className='flex h-[66px] items-center justify-between md:h-[78px] md:px-[15px]'>
-        <div className='flex h-full flex-1/2 items-center px-[15px]'>
-          {showSidebarToggle ? (
-            <button
-              type='button'
-              onClick={onMenuToggle}
-              className='text-primary mr-2 rounded text-2xl hover:opacity-80 lg:hidden'
-              aria-label='Toggle menu'
-              aria-expanded={isSidebarOpen}
-            >
-              <FiMenu />
-            </button>
-          ) : null}
-          <img
-            src={r777}
-            alt='r777'
-            className='block w-[134px] py-[3px] md:py-[9px]'
-            onClick={() => navigate('/')}
-          />
-        </div>
-        <div className='flex flex-1/2 items-center justify-end gap-2 px-1 text-[12px] md:gap-4'>
-          <LanguageSelector />
-          {isFullyAuthenticated ? (
-            <div className='flex flex-col md:flex-row md:items-center md:gap-4'>
-              <div className='flex gap-1'>
-                <div className='flex flex-col'>
-                  <div
-                    className='mb-[3px] flex min-w-[80px] justify-center gap-1 rounded-[6px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-[5px] py-[2px] text-[12px] md:min-w-[100px] md:px-2 md:text-[14px]'
-                    onClick={() => setRightMenu(!rightMenu)}
-                  >
-                    <img
-                      src={balCoin}
-                      alt=''
-                      className='w-[14px] md:w-[18px]'
-                    />
-                    <span>{userInfo?.avbalance?.toFixed(2)}</span>
-                  </div>
-                  <div
-                    className='flex min-w-[80px] items-end justify-center gap-1 rounded-[6px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-[5px] py-[2px] text-[12px] md:min-w-[100px] md:px-2 md:text-[14px]'
-                    onClick={() => setRightMenu(!rightMenu)}
-                  >
-                    <span className='text-[12px] font-semibold'>Exp:</span>{' '}
-                    {userInfo?.exposure?.toFixed(2)}
-                  </div>
-                </div>
-                {userInfo?.account !== 'demo' && (
-                  <div className='hidden min-w-[40px] items-center justify-center gap-1 rounded-[6px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-2 text-[14px] md:flex'>
-                    <FaBell size={20} />
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <button
-              type='button'
-              onClick={() => setShowLoginPopup(true)}
-              className='flex cursor-pointer items-center justify-center gap-1 rounded-[10px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-[8px] text-[14px] font-bold'
-            >
-              <FaUser /> {t('log_in', 'LOG IN')}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <Navbar />
-      {userInfo?.account === 'demo' && (
-        <div className='fixed top-0 left-1/2 -translate-x-1/2 rounded-b-md bg-red-600 px-8 text-[13px] text-white'>
-          {t('demo_account', 'Demo Account')}
-        </div>
-      )}
-
-      {rightMenu && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setRightMenu(false)}
-            className='fixed inset-0 z-40 bg-black/70'
-          />
-          <motion.div
-            initial={{ x: 300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 300, opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className='fixed top-0 right-0 z-50 h-screen w-[270px] bg-[#005f6b] text-white'
-          >
-            {/* Close Button */}
-            <div
-              className='flex w-full justify-end p-2 text-[36px] leading-none text-white'
-              onClick={() => setRightMenu(false)}
-            >
-              ×
-            </div>
-
-            <div className='flex items-center gap-2 px-2 pb-2 text-[14px]'>
-              <span>
-                <FaUser className='text-yellow-300' />
-              </span>
-              <span className='capitalize'>
-                {userInfo?.account === 'demo' ? 'Demo' : userInfo?.userName} - (
-                {userInfo?.avbalance?.toFixed(2)})
-              </span>
-            </div>
-
-            <div className='flex gap-2 px-1.5 pb-2'>
-              <div
-                className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'
-                onClick={openModal}
+    <>
+      <header className='bg-[linear-gradient(#022c43,#31edff)] text-white fixed top-0 left-0 z-10 w-full'>
+        <div className='flex h-[66px] items-center justify-between md:h-[78px] md:px-[15px]'>
+          <div className='flex h-full flex-1/2 items-center pr-[15px]'>
+            {showSidebarToggle ? (
+              <button
+                type='button'
+                onClick={onMenuToggle}
+                className='text-primary mr-2 rounded text-2xl hover:opacity-80 lg:hidden'
+                aria-label='Toggle menu'
+                aria-expanded={isSidebarOpen}
               >
-                <p>{t('exposure', 'Exposure')}</p>
-                <p className='text-black'>{userInfo?.exposure?.toFixed(2)}</p>
+                <FiMenu />
+              </button>
+            ) : null}
+            <img
+              src={r777}
+              alt='r777'
+              className='block h-[60px]'
+              width={195}
+              
+              onClick={() => navigate('/')}
+            />
+          </div>
+          <div className='flex flex-1/2 items-center justify-end gap-2 px-1 text-[12px] md:gap-4'>
+            <LanguageSelector />
+            {isFullyAuthenticated ? (
+              <div className='flex flex-col md:flex-row md:items-center md:gap-4'>
+                <div className='flex gap-1'>
+                  <div className='flex flex-col'>
+                    <div
+                      className='mb-[3px] flex min-w-[80px] justify-center gap-1 rounded-[6px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-[5px] py-[2px] text-[12px] md:min-w-[100px] md:px-2 md:text-[14px]'
+                      onClick={() => setRightMenu(!rightMenu)}
+                    >
+                      <img
+                        src={balCoin}
+                        alt=''
+                        className='w-[14px] md:w-[18px]'
+                      />
+                      <span>{userInfo?.avbalance?.toFixed(2)}</span>
+                    </div>
+                    <div
+                      className='flex min-w-[80px] items-end justify-center gap-1 rounded-[6px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-[5px] py-[2px] text-[12px] md:min-w-[100px] md:px-2 md:text-[14px]'
+                      onClick={() => setRightMenu(!rightMenu)}
+                    >
+                      <span className='text-[12px] font-semibold'>Exp:</span>{' '}
+                      {userInfo?.exposure?.toFixed(2)}
+                    </div>
+                  </div>
+                  {userInfo?.account !== 'demo' && (
+                    <div className='hidden min-w-[40px] items-center justify-center gap-1 rounded-[6px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-2 text-[14px] md:flex'>
+                      <FaBell size={20} />
+                    </div>
+                  )}
+                </div>
               </div>
-
-              <div className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'>
-                <p>{t('p_and_l', 'P&L')}</p>
-                <p className='text-black'>
-                  {(
-                    Number(userInfo?.avbalance || 0) -
-                    Number(userInfo?.baseBalance || 0) +
-                    Math.abs(Number(userInfo?.exposure || 0))
-                  ).toFixed(2)}
-                </p>
-              </div>
-            </div>
-
-            {userInfo?.account !== 'demo' && (
-              <>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() =>
-                    handleAccountMenuClick({ path: '/account-statement' })
-                  }
-                >
-                  <span>
-                    <img src={accountIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('account_statement', 'Account Statement')}</span>
-                </div>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() =>
-                    handleAccountMenuClick({ path: '/profit-loss' })
-                  }
-                >
-                  <span>
-                    <img src={plIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('profit_loss_report', 'Profit Loss Report')}</span>
-                </div>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() =>
-                    handleAccountMenuClick({ path: '/bethistroy' })
-                  }
-                >
-                  <span>
-                    <img src={historyIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('bet_history', 'Bet History')}</span>
-                </div>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() =>
-                    handleAccountMenuClick({ path: '/unsettled-bet' })
-                  }
-                >
-                  <span>
-                    <img src={unsettledIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('unsettled_bet', 'Unsettled Bet')}</span>
-                </div>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() => handleAccountMenuClick({ path: '/set-stake' })}
-                >
-                  <span>
-                    <img src={valueIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('set_stake', 'Set Stake')}</span>
-                </div>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() =>
-                    handleAccountMenuClick({ path: '/change-password' })
-                  }
-                >
-                  <span>
-                    <img src={passwordIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('change_password_txt', 'Change Password')}</span>
-                </div>
-                <div
-                  role='button'
-                  tabIndex={0}
-                  className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-                  onClick={() =>
-                    handleAccountMenuClick({ path: '/casino-results' })
-                  }
-                >
-                  <span>
-                    <img src={resultIcon} alt='' className='w-[18px]' />
-                  </span>
-                  <span>{t('results', 'Results')}</span>
-                </div>
-              </>
+            ) : (
+              <button
+                type='button'
+                onClick={() => setShowLoginPopup(true)}
+                className='flex cursor-pointer items-center justify-center gap-1 rounded-[10px] border-[1px] border-[#72bbef] bg-gradient-to-b from-[#5ecbdd] to-[#146578] px-3 py-[8px] text-[14px] font-bold'
+              >
+                <FaUser /> {t('log_in', 'LOG IN')}
+              </button>
             )}
+          </div>
+        </div>
 
-            <div className='flex items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'>
-              <span>
-                <img src={rulesIcon} alt='' className='w-[18px]' />
-              </span>
-              <span>{t('rules', 'Rules')}</span>
-            </div>
-            <div
-              className='flex items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
-              onClick={logout}
+        <Navbar />
+        {userInfo?.account === 'demo' && (
+          <div className='fixed top-0 left-1/2 -translate-x-1/2 rounded-b-md bg-red-600 px-8 text-[13px] text-white'>
+            {t('demo_account', 'Demo Account')}
+          </div>
+        )}
+
+        {rightMenu && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setRightMenu(false)}
+              className='fixed inset-0 z-40 bg-black/70'
+            />
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className='fixed top-0 right-0 z-50 h-screen w-[270px] bg-[#005f6b] text-white'
             >
-              <span>
-                <img src={logoutIcon} alt='' className='w-[18px]' />
-              </span>
-              <span>{t('logout', 'Logout')}</span>
-            </div>
-          </motion.div>
-        </>
+              {/* Close Button */}
+              <div
+                className='flex w-full justify-end p-2 text-[36px] leading-none text-white'
+                onClick={() => setRightMenu(false)}
+              >
+                ×
+              </div>
+
+              <div className='flex items-center gap-2 px-2 pb-2 text-[14px]'>
+                <span>
+                  <FaUser className='text-yellow-300' />
+                </span>
+                <span className='capitalize'>
+                  {userInfo?.account === 'demo' ? 'Demo' : userInfo?.userName} - (
+                  {userInfo?.avbalance?.toFixed(2)})
+                </span>
+              </div>
+
+              <div className='flex gap-2 px-1.5 pb-2'>
+                <div
+                  className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'
+                  onClick={openModal}
+                >
+                  <p>{t('exposure', 'Exposure')}</p>
+                  <p className='text-black'>{userInfo?.exposure?.toFixed(2)}</p>
+                </div>
+
+                <div className='flex-1 rounded border border-white bg-[#22b8cf] py-1 pl-2 text-[14px]'>
+                  <p>{t('p_and_l', 'P&L')}</p>
+                  <p className='text-black'>
+                    {(
+                      Number(userInfo?.avbalance || 0) -
+                      Number(userInfo?.baseBalance || 0) +
+                      Math.abs(Number(userInfo?.exposure || 0))
+                    ).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {userInfo?.account !== 'demo' && (
+                <>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() =>
+                      handleAccountMenuClick({ path: '/account-statement' })
+                    }
+                  >
+                    <span>
+                      <img src={accountIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('account_statement', 'Account Statement')}</span>
+                  </div>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() =>
+                      handleAccountMenuClick({ path: '/profit-loss' })
+                    }
+                  >
+                    <span>
+                      <img src={plIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('profit_loss_report', 'Profit Loss Report')}</span>
+                  </div>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() =>
+                      handleAccountMenuClick({ path: '/bethistroy' })
+                    }
+                  >
+                    <span>
+                      <img src={historyIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('bet_history', 'Bet History')}</span>
+                  </div>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() =>
+                      handleAccountMenuClick({ path: '/unsettled-bet' })
+                    }
+                  >
+                    <span>
+                      <img src={unsettledIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('unsettled_bet', 'Unsettled Bet')}</span>
+                  </div>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() => handleAccountMenuClick({ path: '/set-stake' })}
+                  >
+                    <span>
+                      <img src={valueIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('set_stake', 'Set Stake')}</span>
+                  </div>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() =>
+                      handleAccountMenuClick({ path: '/change-password' })
+                    }
+                  >
+                    <span>
+                      <img src={passwordIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('change_password_txt', 'Change Password')}</span>
+                  </div>
+                  <div
+                    role='button'
+                    tabIndex={0}
+                    className='flex cursor-pointer items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                    onClick={() =>
+                      handleAccountMenuClick({ path: '/casino-results' })
+                    }
+                  >
+                    <span>
+                      <img src={resultIcon} alt='' className='w-[18px]' />
+                    </span>
+                    <span>{t('results', 'Results')}</span>
+                  </div>
+                </>
+              )}
+
+              <div className='flex items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'>
+                <span>
+                  <img src={rulesIcon} alt='' className='w-[18px]' />
+                </span>
+                <span>{t('rules', 'Rules')}</span>
+              </div>
+              <div
+                className='flex items-center gap-[5px] px-2.5 py-2 text-[14px] hover:bg-[#22b8cf]'
+                onClick={logout}
+              >
+                <span>
+                  <img src={logoutIcon} alt='' className='w-[18px]' />
+                </span>
+                <span>{t('logout', 'Logout')}</span>
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {isExposureDetailsOpen && userInfo?.exposure > 0 && (
+          <ExposureDetails onClose={closeModal} userId={userInfo?._id} />
+        )}
+        <LoginPopup
+          open={showLoginPopup}
+          onClose={() => setShowLoginPopup(false)}
+        />
+      </header>
+
+      {userInfo && (
+        <div className='fixed bottom-0 left-0 z-99 flex h-[25px] w-full items-center justify-center bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-[14px] text-white'>
+          <div className='rfm-marquee-container'>
+            <span className='rfm-marquee'>
+              <FaBullhorn className='mr-2 inline-block' />
+              1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫 
+            </span>
+            <span className='rfm-marquee'>
+              <FaBullhorn className='mr-2 inline-block' />
+              1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫 
+            </span>
+          </div>
+        </div>
       )}
 
-      {isExposureDetailsOpen && userInfo?.exposure > 0 && (
-        <ExposureDetails onClose={closeModal} userId={userInfo?._id} />
-      )}
-      <LoginPopup
-        open={showLoginPopup}
-        onClose={() => setShowLoginPopup(false)}
-      />
-    </header>
+
+    </>
   );
 }
 

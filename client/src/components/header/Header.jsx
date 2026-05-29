@@ -67,6 +67,22 @@ function Header({
   const { userInfo, isPasswordChanged } = useSelector((state) => state.auth);
   const isFullyAuthenticated = userInfo && isPasswordChanged !== false;
 
+  const [marqueeText, setMarqueeText] = useState('1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get('/settings');
+        if (response.data && response.data.settings && response.data.settings.marqueeText) {
+          setMarqueeText(response.data.settings.marqueeText);
+        }
+      } catch (error) {
+        console.error('Failed to fetch site settings', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   useUserLockSync(Boolean(userInfo?._id));
 
   useEffect(() => {
@@ -378,11 +394,11 @@ function Header({
           <div className='rfm-marquee-container'>
             <span className='rfm-marquee'>
               <FaBullhorn className='mr-2 inline-block' />
-              1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫 
+              {marqueeText} 
             </span>
             <span className='rfm-marquee'>
               <FaBullhorn className='mr-2 inline-block' />
-              1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫 
+              {marqueeText} 
             </span>
           </div>
         </div>

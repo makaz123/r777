@@ -3323,11 +3323,11 @@ export const changePasswordBySelf = async (req, res) => {
     }
 
     // Validate new password: must contain letters AND numbers, NO special characters
-    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,}$/;
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({
         message:
-          'Password must be at least 8 characters with both letters and numbers. Special characters are not allowed.',
+          'Password must be at least 8 characters with both letters and numbers.',
       });
     }
 
@@ -3374,11 +3374,11 @@ export const changePasswordByDownline = async (req, res) => {
     }
 
     // Validate new password: must contain letters AND numbers, NO special characters
-    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,}$/;
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({
         message:
-          'Password must be at least 8 characters with both letters and numbers. Special characters are not allowed.',
+          'Password must be at least 8 characters with both letters and numbers.',
       });
     }
 

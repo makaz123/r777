@@ -404,18 +404,11 @@ const GameBetLock = () => {
   return (
     <>
       <Navbar />
-      <div className="scrollbar-hide md:px-[15px] md:pt-[13px] pb-10 w-full">
-        <div className='grid w-full md:grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
-          <div className='col-span-2'>
+      <div className='scrollbar-hide w-full pb-10 md:px-[15px] md:pt-[13px]'>
+        <div className='grid w-full rounded-lg bg-white px-[15px] py-[7px] md:grid-cols-3'>
+          <div className='md:col-span-2'>
             <div className='mb-2 flex justify-between text-[15px] font-bold'>
               <span>Lock Application - {targetUserName}</span>
-              <button
-                onClick={handleSaveLocks}
-                disabled={saving}
-                className='rounded bg-blue-600 px-4 py-1 text-white hover:bg-blue-700 disabled:opacity-60'
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
             </div>
 
             <SectionBox title='Event Type:'>
@@ -472,7 +465,7 @@ const GameBetLock = () => {
               </div>
             </SectionBox>
 
-            <div className='mt-2 flex items-center justify-between'>
+            <div className='mt-2 flex flex-wrap items-center justify-between'>
               <h2 className='text-[14px] font-semibold'>
                 Competition / Event / Markets
               </h2>
@@ -480,7 +473,7 @@ const GameBetLock = () => {
               <select
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className='min-w-[220px] rounded border border-gray-300 bg-white px-2 py-2 text-[14px] text-gray-600'
+                className='w-full md:w-[220px] rounded border border-gray-300 bg-white px-2 py-2 text-[14px] text-gray-600'
               >
                 {dates.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -490,8 +483,8 @@ const GameBetLock = () => {
               </select>
             </div>
 
-            <div className='overflow-x-scroll scrollbar-hide w-full'>
-              <div className='mb-3 flex items-center border-b border-gray-300 w-full'>
+            <div className='scrollbar-hide w-full overflow-x-scroll'>
+              <div className='mb-3 flex flex-wrap w-full items-center border-b border-gray-300'>
                 {SPORTS_TABS.map((tab, index) => (
                   <button
                     key={index}
@@ -507,7 +500,7 @@ const GameBetLock = () => {
                 ))}
               </div>
             </div>
-            <div className='md:min-h-[200px] space-y-3'>
+            <div className='space-y-1 md:space-y-3 md:min-h-[200px]'>
               {loading ? (
                 <div className='flex justify-center p-4'>Loading...</div>
               ) : competitionData.length === 0 ? (
@@ -521,7 +514,7 @@ const GameBetLock = () => {
 
                   return (
                     <div key={competition.id}>
-                      <div className='flex items-center justify-between bg-[#169bb3] px-2 py-1 font-semibold text-white'>
+                      <div className='flex items-center justify-between bg-[#169bb3] px-2 py-1 font-semibold text-white overflow-x-scroll scrollbar-hide'>
                         <div className='flex items-center gap-2'>
                           <span className='text-[14px]'>
                             {competition.title}
@@ -616,11 +609,8 @@ const GameBetLock = () => {
               )}
             </div>
           </div>
-          <div className='col-span-1 pr-[15px] md:pl-[30px]'>
-            <p className='mb-2 text-[11px] text-gray-600'>
-              Uncheck a lock or click Del, then Save Changes. Del saves
-              immediately.
-            </p>
+          <div className='md:col-span-1 md:pr-[15px] md:pl-[30px] mt-2 md:mt-0'>
+
             <table className='w-full border-collapse'>
               <thead>
                 <tr className='bg-[#066f88] text-[12px] text-white'>

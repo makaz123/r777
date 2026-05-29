@@ -29,14 +29,21 @@ if (!admin) {
   console.log('Admin satyamadmin1 not found!');
   process.exit(1);
 }
-console.log(`\n=== Admin: ${admin.userName}, code: ${admin.code}, role: ${admin.role}, partnership: ${admin.partnership}, invite: ${admin.invite} ===\n`);
+console.log(
+  `\n=== Admin: ${admin.userName}, code: ${admin.code}, role: ${admin.role}, partnership: ${admin.partnership}, invite: ${admin.invite} ===\n`
+);
 
 // 1. Get downline user IDs
 const downlineUserIds = await getDownlineUserIds(SubAdmin, admin.code);
 console.log(`Downline user IDs count: ${downlineUserIds.length}`);
 if (downlineUserIds.length === 0) {
   console.log('No downline users found! Checking direct children...');
-  const directChildren = await SubAdmin.find({ invite: admin.code, status: { $ne: 'delete' } }).select('userName code role partnership invite').lean();
+  const directChildren = await SubAdmin.find({
+    invite: admin.code,
+    status: { $ne: 'delete' },
+  })
+    .select('userName code role partnership invite')
+    .lean();
   console.log('Direct children:', directChildren);
   process.exit(1);
 }
@@ -46,11 +53,16 @@ const users = await SubAdmin.find({ _id: { $in: downlineUserIds } }).lean();
 console.log(`Users found: ${users.length}`);
 
 // 3. Get P/L by user
-const plByUser = await aggregateSettledPLByUser(betHistoryModel, CasinoBetHistory, downlineUserIds, null);
+const plByUser = await aggregateSettledPLByUser(
+  betHistoryModel,
+  CasinoBetHistory,
+  downlineUserIds,
+  null
+);
 console.log(`\nP/L by user:`);
 for (const [id, pl] of plByUser) {
   if (pl !== 0) {
-    const user = users.find(u => u._id.toString() === id);
+    const user = users.find((u) => u._id.toString() === id);
     console.log(`  ${user?.userName || id}: ${pl}`);
   }
 }
@@ -80,7 +92,10 @@ for (const user of users) {
       chainPath.push(`MISSING(code=${node.invite})`);
       break;
     }
-    chainPath.push(parent.userName + `(code=${parent.code},invite=${parent.invite},partnership=${parent.partnership})`);
+    chainPath.push(
+      parent.userName +
+        `(code=${parent.code},invite=${parent.invite},partnership=${parent.partnership})`
+    );
     node = parent;
   }
 
@@ -88,19 +103,34 @@ for (const user of users) {
   if (node?.invite === admin.code) {
     childOfViewer = node;
   }
-  
+
   const viewer = accountByCode.get(admin.code);
   const parentKeep = viewer ? getAccountMyKeepPercent(viewer) : 'N/A';
-  const downKeep = childOfViewer ? getDownlineKeepPercentOnRow(childOfViewer, viewer) : 'N/A';
-  const parentTake = childOfViewer ? getParentShareOnDownlineRow(childOfViewer, viewer) : 'N/A';
+  const downKeep = childOfViewer
+    ? getDownlineKeepPercentOnRow(childOfViewer, viewer)
+    : 'N/A';
+  const parentTake = childOfViewer
+    ? getParentShareOnDownlineRow(childOfViewer, viewer)
+    : 'N/A';
 
-  const share = getViewerShareOfUserClientPL(admin.code, user, accountByCode, clientPL);
+  const share = getViewerShareOfUserClientPL(
+    admin.code,
+    user,
+    accountByCode,
+    clientPL
+  );
   total += share;
 
-  console.log(`  User: ${user.userName}, clientPL: ${clientPL}, viewerShare: ${share}`);
+  console.log(
+    `  User: ${user.userName}, clientPL: ${clientPL}, viewerShare: ${share}`
+  );
   console.log(`    Chain: ${chainPath.join(' → ')}`);
-  console.log(`    childOfViewer: ${childOfViewer?.userName || 'null'}, partnership: ${childOfViewer?.partnership}`);
-  console.log(`    parentKeep: ${parentKeep}, downKeep: ${downKeep}, parentTake: ${parentTake}`);
+  console.log(
+    `    childOfViewer: ${childOfViewer?.userName || 'null'}, partnership: ${childOfViewer?.partnership}`
+  );
+  console.log(
+    `    parentKeep: ${parentKeep}, downKeep: ${downKeep}, parentTake: ${parentTake}`
+  );
 }
 
 console.log(`\nTotal viewer P/L (myPLTillDate): ${total.toFixed(2)}`);
@@ -108,20 +138,34 @@ console.log(`\nTotal viewer P/L (myPLTillDate): ${total.toFixed(2)}`);
 // Also check varahi (supperadmin)
 const varahi = await SubAdmin.findOne({ role: 'supperadmin' }).lean();
 if (varahi) {
-  console.log(`\n=== SuperAdmin: ${varahi.userName}, code: ${varahi.code}, partnership: ${varahi.partnership} ===`);
+  console.log(
+    `\n=== SuperAdmin: ${varahi.userName}, code: ${varahi.code}, partnership: ${varahi.partnership} ===`
+  );
   const varahiDownlineUserIds = await getDownlineUserIds(SubAdmin, varahi.code);
   console.log(`Downline user IDs count: ${varahiDownlineUserIds.length}`);
-  const varahiPlByUser = await aggregateSettledPLByUser(betHistoryModel, CasinoBetHistory, varahiDownlineUserIds, null);
-  const varahiUsers = await SubAdmin.find({ _id: { $in: varahiDownlineUserIds } }).lean();
+  const varahiPlByUser = await aggregateSettledPLByUser(
+    betHistoryModel,
+    CasinoBetHistory,
+    varahiDownlineUserIds,
+    null
+  );
+  const varahiUsers = await SubAdmin.find({
+    _id: { $in: varahiDownlineUserIds },
+  }).lean();
   const varahiAccountByCode = await getAccountByCodeMap(SubAdmin, varahi);
   const varahiNormalizedPL = normalizePLByUserIds(varahiUsers, varahiPlByUser);
-  
+
   let varahiTotal = 0;
   for (const user of varahiUsers) {
     if (user.role !== 'user') continue;
     const clientPL = varahiNormalizedPL.get(user._id.toString()) ?? 0;
     if (Math.abs(clientPL) < 0.01) continue;
-    const share = getViewerShareOfUserClientPL(varahi.code, user, varahiAccountByCode, clientPL);
+    const share = getViewerShareOfUserClientPL(
+      varahi.code,
+      user,
+      varahiAccountByCode,
+      clientPL
+    );
     varahiTotal += share;
   }
   console.log(`Total viewer P/L for varahi: ${varahiTotal.toFixed(2)}`);

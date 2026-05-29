@@ -115,52 +115,118 @@ const SportRevenue = () => {
     }
   };
 
-  const renderIpSearch = () =>
-    hasClientSearchAccess ? (
-      <div className='relative grid' ref={searchRef}>
-        <input
-          type='type'
-          className='col-span-1 h-[30px] rounded-sm border border-gray-300 px-2 py-1.5 outline-0'
-          placeholder='192.12.85.12'
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setSelectedUserName('');
-          }}
-          onFocus={() =>
-            searchQuery.trim().length >= 3 &&
-            userSuggestions.length > 0 &&
-            setShowSuggestions(true)
-          }
-        />
-        {showSuggestions && userSuggestions.length > 0 && (
-          <div className='absolute top-full z-20 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg'>
-            {userSuggestions.map((name) => (
-              <button
-                key={name}
-                type='button'
-                onClick={() => {
-                  setSearchQuery(name);
-                  setSelectedUserName(name);
-                  setShowSuggestions(false);
-                }}
-                className='block w-full cursor-pointer px-2 py-1.5 text-left text-sm hover:bg-gray-100'
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    ) : null;
+  const data = [
+    {
+      user: 'pradeep1110',
+      distributor: 'mike999',
+      sports: {
+        cricket: {
+          matchOdds: 0,
+          bookmaker: 0,
+          fancy: -2250,
+          line: 0,
+          lottery: 0,
+          commission: 0,
+          total: -2250,
+          bets: 4,
+        },
+  
+        soccer: {
+          matchOdds: 0,
+          bookmaker: 0,
+          overUnder: 0,
+          lottery: 0,
+          commission: 0,
+          total: 0,
+          bets: 0,
+        },
+  
+        tennis: {
+          matchOdds: 500,
+          bookmaker: 200,
+          total: 700,
+          bets: 2,
+        },
+      },
+  
+      totalPl: 4487.5,
+      myShare: -2916.88,
+    },
+    {
+      user: 'pradeep1110',
+      distributor: 'mike999',
+      sports: {
+        cricket: {
+          matchOdds: 0,
+          bookmaker: 0,
+          fancy: -2250,
+          line: 0,
+          lottery: 0,
+          commission: 0,
+          total: -2250,
+          bets: 4,
+        },
+  
+        soccer: {
+          matchOdds: 0,
+          bookmaker: 0,
+          overUnder: 0,
+          lottery: 0,
+          commission: 0,
+          total: 0,
+          bets: 0,
+        },
+  
+        tennis: {
+          matchOdds: 500,
+          bookmaker: 200,
+          total: 700,
+          bets: 2,
+        },
+      },
+  
+      totalPl: 4487.5,
+      myShare: -2916.88,
+    },
+  ];
+
+  const SPORTS_CONFIG = {
+    cricket: [
+      { key: 'matchOdds', label: 'MATCH ODDS' },
+      { key: 'bookmaker', label: 'BOOKMAKER' },
+      { key: 'fancy', label: 'FANCY' },
+      { key: 'line', label: 'LINE' },
+      { key: 'lottery', label: 'LOTTERY' },
+      { key: 'commission', label: 'Commission' },
+      { key: 'total', label: 'Total' },
+      { key: 'bets', label: 'Bets' },
+    ],
+  
+    soccer: [
+      { key: 'matchOdds', label: 'MATCH ODDS' },
+      { key: 'bookmaker', label: 'BOOKMAKER' },
+      { key: 'overUnder', label: 'OVER UNDER' },
+      { key: 'lottery', label: 'LOTTERY' },
+      { key: 'commission', label: 'Commission' },
+      { key: 'total', label: 'Total' },
+      { key: 'bets', label: 'Bets' },
+    ],
+  
+    tennis: [
+      { key: 'matchOdds', label: 'MATCH ODDS' },
+      { key: 'bookmaker', label: 'BOOKMAKER' },
+      { key: 'total', label: 'Total' },
+      { key: 'bets', label: 'Bets' },
+    ],
+  };
 
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Sports Revenue</div>
-          <div className='mt-2 mb-6 grid md:grid-cols-6 gap-x-6 gap-y-4'>
+          <div className='mt-2 mb-6 grid gap-x-6 gap-y-4 md:grid-cols-6'>
             <input
               type='date'
               value={startDate}
@@ -192,7 +258,7 @@ const SportRevenue = () => {
               </button>
             </div>
           </div>
-          <div className='mb-2 flex flex-wrap gap-2 items-end justify-between'>
+          <div className='mb-2 flex flex-wrap items-end justify-between gap-2'>
             <div className='flex items-end'>
               <input
                 type='text'
@@ -203,7 +269,7 @@ const SportRevenue = () => {
               <img src={pdfIcon} alt='' className='w-[35px]' />
             </div>
 
-            <div className='ml-auto md:mr-10'>
+            <div className='ml-auto text-[14px]'>
               <span>Show</span>
               <select
                 name=''
@@ -217,36 +283,81 @@ const SportRevenue = () => {
               <span>entries</span>
             </div>
           </div>
-          <div className='overflow-x-scroll scrollbar-hide w-full'>
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Date & Time
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  User
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Role
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Device
-                </th>
-              </tr>
-            </thead>
+          <div className='scrollbar-hide w-full overflow-x-scroll'>
+            <table className='min-w-[1600px] w-full border-collapse text-sm'>
+              {/* Top Header */}
+              <thead>
+                <tr className='bg-[#006d84] text-white'>
+                  <th className='border border-gray-300 px-3 py-1'></th>
+                  <th className='border border-gray-300 px-3 py-1'></th>
 
-            <tbody>
-              <tr className='border border-gray-300 odd:bg-gray-100'>
-                <td className='border border-gray-300 px-2 py-1.5'>
-                  25/5/2026, 4:10:55 pm
-                </td>
-                <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                <td className='border border-gray-300 px-2 py-1.5'>Admin</td>
-                <td className='px-2 py-1.5'>Desktop</td>
-              </tr>
-            </tbody>
-          </table>
+                  {Object.entries(SPORTS_CONFIG).map(([sport, columns]) => (
+                    <th
+                      key={sport}
+                      colSpan={columns.length}
+                      className='border border-gray-300 px-3 py-1 text-center'
+                    >
+                      {sport.toUpperCase()}
+                    </th>
+                  ))}
+
+                  <th className='border border-gray-300 px-3 py-1'></th>
+                  <th className='border border-gray-300 px-3 py-1'></th>
+                </tr>
+
+                <tr className='bg-[#006d84] text-white'>
+                  <th className='border border-gray-300 text-left px-3 py-1'>User</th>
+                  <th className='border border-gray-300 text-left px-3 py-1'>Distributor</th>
+
+                  {Object.entries(SPORTS_CONFIG).map(([sport, columns]) =>
+                    columns.map((column) => (
+                      <th
+                        key={`${sport}-${column.key}`}
+                        className='border border-gray-300 px-3 py-1 whitespace-nowrap'
+                      >
+                        {column.label}
+                      </th>
+                    ))
+                  )}
+
+                  <th className='border border-gray-300 text-left px-3 py-1 whitespace-nowrap'>Total P&L</th>
+                  <th className='border border-gray-300 text-left px-3 py-1 whitespace-nowrap'>My Share</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {data.map((row, index) => (
+                  <tr key={index} className='odd:bg-gray-100'>
+                    <td className='border border-gray-300 px-3 py-1'>
+                      {row.user}
+                    </td>
+
+                    <td className='border border-gray-300 px-3 py-1'>
+                      {row.distributor}
+                    </td>
+
+                    {Object.entries(SPORTS_CONFIG).map(([sport, columns]) =>
+                      columns.map((column) => (
+                        <td
+                          key={`${sport}-${column.key}`}
+                          className='border border-gray-300 px-3 py-1 text-right'
+                        >
+                          {row.sports?.[sport]?.[column.key] ?? 0}
+                        </td>
+                      ))
+                    )}
+
+                    <td className='border border-gray-300 px-3 py-1 text-right'>
+                      {row.totalPl}
+                    </td>
+
+                    <td className='border border-gray-300 px-3 py-1 text-right'>
+                      {row.myShare}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination */}

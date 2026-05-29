@@ -87,7 +87,7 @@ const MyMarket = () => {
     <div>
       <Navbar />
 
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           {loading && Object.keys(sportAnalysis || {}).length === 0 ? (
             <div className='flex items-center justify-center py-20'>

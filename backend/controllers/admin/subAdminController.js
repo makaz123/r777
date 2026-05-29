@@ -1699,8 +1699,7 @@ export const getAccountSummary = async (req, res) => {
       return res.status(400).json({ message: 'Admin ID is required' });
     }
 
-    const skipCache =
-      req.query.fresh === '1' || req.query.fresh === 'true';
+    const skipCache = req.query.fresh === '1' || req.query.fresh === 'true';
     const cached = skipCache ? null : getCachedAccountSummary(id);
     if (cached) {
       sendAccountSummaryUpdate(id, cached);
@@ -2036,7 +2035,7 @@ const buildDownlineViewerPayload = async (admin) => {
       CasinoBetHistory,
       admin,
       null
-    )
+    ),
   ]);
 
   const totalPL = roundMoney(-rawGross);
@@ -2400,7 +2399,8 @@ export const getSubAdminuser = async (req, res) => {
       .limit(limitNum)
       .skip((pageNum - 1) * limitNum);
 
-    const pendingExposureByUserId = await getPendingExposureByUserMap(subAdmins);
+    const pendingExposureByUserId =
+      await getPendingExposureByUserMap(subAdmins);
     const data = await Promise.all(
       subAdmins.map((user) =>
         enrichDownlineRow(user, rootViewer, listParent, {
@@ -3844,7 +3844,7 @@ export const getTotalProfitLossReport = async (req, res) => {
           connectFromField: 'code',
           connectToField: 'invite',
           as: 'downlines',
-          restrictSearchWithMatch: { status: { $ne: 'delete' } }
+          restrictSearchWithMatch: { status: { $ne: 'delete' } },
         },
       },
       {
@@ -3853,11 +3853,11 @@ export const getTotalProfitLossReport = async (req, res) => {
             $filter: {
               input: '$downlines',
               as: 'd',
-              cond: { $eq: ['$$d.role', 'user'] }
-            }
-          }
-        }
-      }
+              cond: { $eq: ['$$d.role', 'user'] },
+            },
+          },
+        },
+      },
     ]);
 
     const users = hierarchy[0]?.users || [];
@@ -3870,7 +3870,10 @@ export const getTotalProfitLossReport = async (req, res) => {
 
     for (const u of users) {
       userIds.push(u._id.toString());
-      usersCommitionMap.set(u._id.toString(), parseCommissionPercent(u.commition));
+      usersCommitionMap.set(
+        u._id.toString(),
+        parseCommissionPercent(u.commition)
+      );
     }
 
     if (!userIds.length) {

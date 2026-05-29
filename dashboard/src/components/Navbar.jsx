@@ -57,7 +57,9 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
       try {
         const response = await api.get('/settings');
         if (response.data && response.data.settings) {
-          setMarqueeText(response.data.settings.marqueeText || 'Welcome To Our Exchange...');
+          setMarqueeText(
+            response.data.settings.marqueeText || 'Welcome To Our Exchange...'
+          );
         }
       } catch (error) {
         console.error('Failed to fetch site settings', error);
@@ -549,7 +551,7 @@ const Navbar = ({ onLogoClick, onNavClick }) => {
         </div>
       )}
 
-      <div className='fixed bottom-0 left-0 flex h-[25px] w-full items-center justify-center bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-[14px] text-white z-99'>
+      <div className='fixed bottom-0 left-0 z-99 flex h-[25px] w-full items-center justify-center bg-gradient-to-b from-[#5ecbdd] to-[#146578] text-[14px] text-white'>
         <div className='rfm-marquee-container'>
           <span className='rfm-marquee'>
             <FaBullhorn className='mr-2 inline-block' />

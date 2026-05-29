@@ -109,7 +109,10 @@ export const getSiteSettings = async (req, res) => {
   try {
     let settings = await SiteSetting.findOne();
     if (!settings) {
-      settings = await SiteSetting.create({ marqueeText: '1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫' });
+      settings = await SiteSetting.create({
+        marqueeText:
+          '1️⃣Welcome To Our Exchange .....✨✨✨2️⃣ IPL Winner Cup Bookmaker Bets Started In Our Exchange 💫💫💫',
+      });
     }
     return res.status(200).json({ success: true, settings });
   } catch (error) {

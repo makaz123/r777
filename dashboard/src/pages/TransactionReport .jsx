@@ -157,7 +157,7 @@ const TransactionReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Transaction Report</div>
 

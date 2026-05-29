@@ -51,9 +51,9 @@ const CasinoLock = () => {
   return (
     <>
       <Navbar />
-      <div className="scrollbar-hide md:px-[15px] md:pt-[13px] pb-10">
-        <div className='grid h-[calc(100vh-123px)] grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
-          <div className='col-span-2'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
+        <div className='md:grid min-h-[600px] md:grid-cols-3 rounded-lg bg-white px-[15px] py-[7px]'>
+          <div className='md:col-span-2'>
             {/* Event Type */}
             <SectionBox title='Provider:'>
               <div className='flex flex-wrap gap-3 px-2 text-[14px]'>
@@ -118,7 +118,7 @@ const CasinoLock = () => {
               )}
             </div>
           </div>
-          <div className='col-span-1 pr-[15px] pl-[30px]'>
+          <div className='md:col-span-1 md:pr-[15px] md:pl-[30px] mt-2 md:mt-0'>
             <table className='w-full'>
               <thead>
                 <tr className='bg-[#066f88] text-[12px] text-white'>

@@ -325,11 +325,11 @@ const BetHistoryReport = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Bet History</div>
 
-          <div className='mt-2 mb-5 grid md:grid-cols-6 gap-4 md:gap-6'>
+          <div className='mt-2 mb-5 grid gap-4 md:grid-cols-6 md:gap-6'>
             <input
               type='datetime-local'
               value={startDate}
@@ -466,7 +466,7 @@ const BetHistoryReport = () => {
             </div>
           </div>
 
-          <div className='mb-2 flex flex-wrap gap-2 items-end justify-between'>
+          <div className='mb-2 flex flex-wrap items-end justify-between gap-2'>
             <div className='flex items-end'>
               <input
                 type='text'
@@ -477,7 +477,7 @@ const BetHistoryReport = () => {
               <img src={pdfIcon} alt='' className='w-[35px]' />
             </div>
 
-            <div className='ml-auto md:mr-10'>
+            <div className='ml-auto md:mr-10 text-[14px]'>
               <span>Show</span>
               <select
                 value={limit}
@@ -494,116 +494,118 @@ const BetHistoryReport = () => {
               <span>entries</span>
             </div>
           </div>
-          <div className='overflow-x-scroll scrollbar-hide w-full'>
-          <table className='w-full table-auto border-collapse border border-gray-300'>
-            <thead>
-              <tr className='bg-[#016a82] text-white'>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Date & Time
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  User
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Competition
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Event
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Market
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Runner
-                </th>
-                <th className='border-r border-white px-2 py-1 text-left'>
-                  Side
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Line
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Rate
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Amount
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  PL
-                </th>
-                <th className='border-r border-white px-2 py-1 text-right'>
-                  Status
-                </th>
-                <th className='px-2 py-1 text-left'>Client IP</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredRows.length > 0 ? (
-                filteredRows.map((row, idx) => (
-                  <tr
-                    key={idx}
-                    className={`border border-gray-300 text-gray-800 ${row.status === 1 ? 'bg-[#72bbef]' : row.status === 2 ? 'bg-[#faa9ba]' : 'odd:bg-gray-100'}`}
-                  >
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] whitespace-nowrap'>
-                      {new Date(row.createdAt).toLocaleString()}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
-                      {row.userName}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
-                      {row.gameType || '-'}
-                    </td>
-                    <td
-                      className='max-w-[200px] truncate border border-gray-300 px-2 py-1.5 text-[14px]'
-                      title={row.eventName}
-                    >
-                      {row.eventName || '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
-                      {row.marketName || '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
-                      {row.teamName || '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-[14px] capitalize'>
-                      {row.otype || '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
-                      {row.fancyScore || '-'}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
-                      {row.price || row.xValue || 0}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
-                      {Number(row.betAmount || 0).toFixed(2)}
-                    </td>
-                    <td
-                      className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold ${row.profitLossChange >= 0 ? 'text-green-700' : 'text-red-700'}`}
-                    >
-                      {Number(row.profitLossChange || 0).toFixed(2)}
-                    </td>
-                    <td className='border border-gray-300 px-2 py-1.5 text-center text-[12px] font-bold uppercase'>
-                      {row.status === 1
-                        ? 'WON'
-                        : row.status === 2
-                          ? 'LOST'
-                          : row.status === 3
-                            ? 'VOID'
-                            : 'DECLARED'}
-                    </td>
-                    <td className='px-2 py-1.5 text-[13px] text-gray-500'>-</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan='13' className='py-4 text-center text-gray-500'>
-                    {loading ? 'Loading...' : 'No data available'}
-                  </td>
+          <div className='scrollbar-hide w-full overflow-x-scroll'>
+            <table className='w-full table-auto border-collapse border border-gray-300'>
+              <thead>
+                <tr className='bg-[#016a82] text-white'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Date & Time
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    User
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Competition
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Event
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Market
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Runner
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
+                    Side
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Line
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Rate
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Amount
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    PL
+                  </th>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
+                    Status
+                  </th>
+                  <th className='px-2 py-1 text-left text-[14px]'>Client IP</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {filteredRows.length > 0 ? (
+                  filteredRows.map((row, idx) => (
+                    <tr
+                      key={idx}
+                      className={`border border-gray-300 text-gray-800 ${row.status === 1 ? 'bg-[#72bbef]' : row.status === 2 ? 'bg-[#faa9ba]' : 'odd:bg-gray-100'}`}
+                    >
+                      <td className='border border-gray-300 px-2 py-1.5 text-[14px] whitespace-nowrap'>
+                        {new Date(row.createdAt).toLocaleString()}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                        {row.userName}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                        {row.gameType || '-'}
+                      </td>
+                      <td
+                        className='max-w-[200px] truncate border border-gray-300 px-2 py-1.5 text-[14px]'
+                        title={row.eventName}
+                      >
+                        {row.eventName || '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                        {row.marketName || '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                        {row.teamName || '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-[14px] capitalize'>
+                        {row.otype || '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
+                        {row.fancyScore || '-'}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
+                        {row.price || row.xValue || 0}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold text-black'>
+                        {Number(row.betAmount || 0).toFixed(2)}
+                      </td>
+                      <td
+                        className={`border border-gray-300 px-2 py-1.5 text-right text-[14px] font-bold ${row.profitLossChange >= 0 ? 'text-green-700' : 'text-red-700'}`}
+                      >
+                        {Number(row.profitLossChange || 0).toFixed(2)}
+                      </td>
+                      <td className='border border-gray-300 px-2 py-1.5 text-center text-[12px] font-bold uppercase'>
+                        {row.status === 1
+                          ? 'WON'
+                          : row.status === 2
+                            ? 'LOST'
+                            : row.status === 3
+                              ? 'VOID'
+                              : 'DECLARED'}
+                      </td>
+                      <td className='px-2 py-1.5 text-[14px] text-gray-500'>
+                        -
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan='13' className='py-4 text-center text-gray-500 text-[14px]'>
+                      {loading ? 'Loading...' : 'No data available'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination */}

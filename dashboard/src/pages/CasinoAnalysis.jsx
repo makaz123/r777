@@ -311,7 +311,7 @@ const CasinoAnalysis = () => {
     <>
       <Navbar />
 
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-sm bg-white px-[15px] py-[7px]'>
           {/* Header */}
           <div className='flex items-center justify-between'>
@@ -342,7 +342,7 @@ const CasinoAnalysis = () => {
                 <table className='w-[1000px] border-collapse md:w-full'>
                   {/* Table Head */}
                   <thead>
-                    <tr className='bg-[#045662] text-white text-[14px]'>
+                    <tr className='bg-[#045662] text-[14px] text-white'>
                       <th className='w-[54%] border-r border-white px-2.5 py-0.5 text-left'>
                         Event Name
                       </th>
@@ -370,7 +370,7 @@ const CasinoAnalysis = () => {
                     {casinoAnalysisData.map((item, index) => (
                       <tr
                         key={index}
-                        className='border border-gray-200 hover:bg-gray-50 text-[14px]'
+                        className='border border-gray-200 text-[14px] hover:bg-gray-50'
                       >
                         <td className='border-r border-gray-200 px-2.5 py-0.5 font-bold underline hover:text-blue-600'>
                           {item.eventName}
@@ -414,7 +414,7 @@ const CasinoAnalysis = () => {
                 <table className='w-[1000px] border-collapse md:w-full'>
                   {/* Table Head */}
                   <thead>
-                    <tr className='bg-[#045662] text-white text-[14px]'>
+                    <tr className='bg-[#045662] text-[14px] text-white'>
                       <th className='w-[54%] border-r border-white px-2.5 py-0.5 text-left'>
                         Event Name
                       </th>

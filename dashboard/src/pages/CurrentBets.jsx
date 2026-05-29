@@ -157,11 +157,11 @@ const CurrentBets = () => {
   return (
     <>
       <Navbar />
-      <div className='scrollbar-hide md:px-[15px] md:pt-[13px] pb-10'>
+      <div className='scrollbar-hide pb-10 md:px-[15px] md:pt-[13px]'>
         <div className='min-h-[600px] rounded-lg bg-white px-[15px] py-[7px]'>
           <div className='text-[15px] font-bold'>Current Bets</div>
 
-          <div className='mt-2 mb-5 grid md:grid-cols-6 gap-4 md:gap-6'>
+          <div className='mt-2 mb-5 grid gap-4 md:grid-cols-6 md:gap-6'>
             <input
               type='date'
               value={startDate}
@@ -218,7 +218,7 @@ const CurrentBets = () => {
             </div>
           </div>
 
-          <div className='mb-2 flex flex-wrap gap-2 items-end justify-between'>
+          <div className='mb-2 flex flex-wrap items-end justify-between gap-2'>
             <div className='flex items-end'>
               <input
                 type='text'
@@ -229,7 +229,7 @@ const CurrentBets = () => {
               <img src={pdfIcon} alt='' className='w-[35px]' />
             </div>
 
-            <div className='ml-auto md:mr-10'>
+            <div className='ml-auto md:mr-10 text-[14px]'>
               <span>Show</span>
               <select
                 name=''
@@ -244,120 +244,124 @@ const CurrentBets = () => {
             </div>
           </div>
 
-          <div className='overflow-x-scroll scrollbar-hide w-full'>
+          <div className='scrollbar-hide w-full overflow-x-scroll'>
             <table className='w-full table-auto border-collapse border border-gray-300'>
               <thead>
                 <tr className='bg-[#016a82] text-white'>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     Date & Time
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     User
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     Competition
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     Event
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     Market
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     Runner
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-left'>
+                  <th className='border-r border-white px-2 py-1 text-left text-[14px]'>
                     Side
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-right'>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
                     Line
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-right'>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
                     Rate
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-right'>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
                     Amount
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-right'>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
                     PP
                   </th>
-                  <th className='border-r border-white px-2 py-1 text-right'>
+                  <th className='border-r border-white px-2 py-1 text-right text-[14px]'>
                     PL
                   </th>
-                  <th className='px-2 py-1 text-left'>Client IP</th>
+                  <th className='px-2 py-1 text-left text-[14px]'>Client IP</th>
                 </tr>
               </thead>
 
               <tbody>
                 <tr className='border border-gray-300 bg-[#faa9ba]'>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     25/5/2026, 4:10:55 pm
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    lalli123
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Women's T20 Blast Div 2
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Kent W v Sussex Sharks W - 25 May 26
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Bookmaker 0 Commission
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Sussex Sharks W
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>Lay</td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>Lay</td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     -
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     84
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     100.00
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     100.00
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     -84.00
                   </td>
-                  <td className='px-2 py-1.5'>24.125.164.235</td>
+                  <td className='px-2 py-1.5 text-[14px]'>24.125.164.235</td>
                 </tr>
                 <tr className='border border-gray-300 bg-[#72bbef]'>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     25/5/2026, 4:10:55 pm
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>lalli123</td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
+                    lalli123
+                  </td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Women's T20 Blast Div 2
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Kent W v Sussex Sharks W - 25 May 26
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Bookmaker 0 Commission
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>
                     Sussex Sharks W
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5'>Back</td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-[14px]'>Back</td>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     -
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     84
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     100.00
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     100.00
                   </td>
-                  <td className='border border-gray-300 px-2 py-1.5 text-right'>
+                  <td className='border border-gray-300 px-2 py-1.5 text-right text-[14px]'>
                     -84.00
                   </td>
-                  <td className='px-2 py-1.5'>24.125.164.235</td>
+                  <td className='px-2 py-1.5 text-[14px]'>24.125.164.235</td>
                 </tr>
               </tbody>
             </table>

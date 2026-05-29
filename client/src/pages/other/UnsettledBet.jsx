@@ -106,7 +106,9 @@ const UnsettledBet = () => {
       <div className='w-full border border-[#00000020] bg-white shadow-[0_0_5px_#a4a4a4]'>
         {/* Header */}
         <div className='bg-[#18b0c8] p-2 text-white'>
-          <h4 className='text-[16px] font-bold'>{t('unsettled_bet', 'Unsettled Bet')}</h4>
+          <h4 className='text-[16px] font-bold'>
+            {t('unsettled_bet', 'Unsettled Bet')}
+          </h4>
         </div>
 
         <div className='w-full p-3'>
@@ -292,7 +294,9 @@ const UnsettledBet = () => {
                     </button>
                     <button
                       disabled={page >= totalPages}
-                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                      onClick={() =>
+                        setPage((p) => Math.min(p + 1, totalPages))
+                      }
                       className='border-y border-[#18b0c8] bg-[#18b0c8] px-3 py-1 text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-70'
                     >
                       {t('next', 'Next')}

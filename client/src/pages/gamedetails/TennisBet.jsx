@@ -382,8 +382,9 @@ function TennisBet() {
           />
         )}
       </div>
-      <div className='sticky top-0 hidden h-fit lg:block'>
+      <div className='sticky top-[118px] hidden h-[calc(100vh-143px)] lg:block'>
         <div className='w-[350px]'>
+        {userInfo?.account !== 'demo' && (
           <div className='mb-1'>
             <div className='flex cursor-pointer items-center justify-between bg-[#18adc5] p-1 text-[15px] text-white'>
               <span className='font-bold'>{t('live_tv', 'Live TV')}</span>
@@ -427,6 +428,7 @@ function TennisBet() {
               </div>
             )}
           </div>
+        )}
 
           <div className='bg-gradient-to-b from-[#5ecbdd] to-[#146578] p-1 text-white'>
             <span className='text-[14px]'>

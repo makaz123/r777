@@ -617,7 +617,7 @@ function CricketBet() {
             )} */}
       </div>
 
-      <div className='sticky top-[117px] hidden h-[calc(100vh-118px)] lg:block'>
+      <div className='sticky top-[118px] hidden h-[calc(100vh-143px)] lg:block'>
         <div className='w-[350px]'>
           {userInfo?.account !== 'demo' && (
             <div className='mb-1'>

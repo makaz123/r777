@@ -45,7 +45,7 @@ function Home() {
   };
   return (
     <>
-      <div className='w-full min-w-0 overflow-hidden'>
+      <div className='w-full min-w-0 overflow-hidden -mb-[25px]'>
         <Slider {...bannerSetting}>
           {banner.map((item, i) => (
             <img

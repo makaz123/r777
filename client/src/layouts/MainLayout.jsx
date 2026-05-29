@@ -17,8 +17,8 @@ const MAIN_MENU_PATHS = [
 function MainLayout() {
   const dispatch = useDispatch();
   const { pathname } = useLocation();
-  const userInfo = useSelector((state) => state.auth.userInfo);
-  const showSidebar = !(pathname === '/' && !userInfo);
+  const { userInfo, isPasswordChanged } = useSelector((state) => state.auth);
+  const showSidebar = !(pathname === '/' && (!userInfo || isPasswordChanged === false));
   const [sidebarView, setSidebarView] = useState('popular');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [rightMenu, setRightMenu] = useState(false);

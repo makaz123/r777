@@ -660,6 +660,7 @@ export default function Userlist() {
         setSettlePopup(false);
         dispatch(getAdmin());
         reloadUserList();
+        window.dispatchEvent(new Event('account-summary-refresh'));
       } else {
         toast.error(res.data.message || 'Settlement failed');
       }

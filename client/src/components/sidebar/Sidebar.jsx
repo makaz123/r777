@@ -241,7 +241,7 @@ function Sidebar({ onClose, view = 'popular', isOpen = false }) {
           opacity: window.innerWidth >= 1024 ? 1 : isOpen ? 1 : 0,
         }}
         transition={{ duration: 0.4 }}
-        className={`scrollbar-hide fixed top-0 left-0 z-10 h-full w-full overflow-y-auto border-r border-gray-200 bg-[#ececec] sm:w-[270px] md:top-[129px] md:z-1 md:h-[calc(100vh-129px)] lg:sticky lg:w-[15%] xl:top-[117px] xl:h-[calc(100vh-117px)] ${
+        className={`scrollbar-hide fixed top-0 left-0 z-10 h-full w-full overflow-y-auto border-r border-gray-200 bg-[#ececec] sm:w-[270px] md:top-[129px] md:z-1 md:h-[calc(100vh-129px)] lg:sticky lg:w-[15%] xl:top-[117px] xl:h-[calc(100vh-117px)] pb-[25px] ${
           !isOpen ? 'pointer-events-none lg:pointer-events-auto' : ''
         } `}
       >

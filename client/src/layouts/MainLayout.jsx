@@ -65,7 +65,7 @@ function MainLayout() {
             onClose={closeSidebar}
           />
         )}
-        <main className='scrollbar-hide min-w-0 flex-1'>
+        <main className='scrollbar-hide min-w-0 flex-1 pb-[25px]'>
           <Outlet />
         </main>
       </div>

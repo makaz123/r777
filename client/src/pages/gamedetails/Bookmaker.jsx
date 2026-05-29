@@ -405,14 +405,14 @@ function Bookmaker({
           {hasCashoutAvailable ? (
             <button
               onClick={handleCashOutClick}
-              className='cursor-pointer bg-[#198754] p-1 font-[400] text-white'
+              className='cursor-pointer bg-black px-2.5 rounded-[2px] text-[10px] py-0.5 font-medium text-white'
             >
               {t('cashout', 'Cashout')}
             </button>
           ) : (
             <button
               disabled
-              className='cursor-not-allowed rounded-[3px] bg-[#959595] px-2.5 py-0.5 text-[12px] font-[600] text-white'
+              className='cursor-not-allowed rounded-[2px] bg-[#959595] text-[10px] px-2.5 py-0.5 font-medium text-white'
             >
               {t('cashout', 'Cashout')}
             </button>

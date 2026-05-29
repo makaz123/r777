@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import ForcePasswordPopup from './components/ForcePasswordPopup';
 import { fetchDeactivatedMatches } from './redux/reducer/authReducer';
 import Login from './pages/auth/Login';
 import MainLayout from './layouts/MainLayout';
@@ -32,13 +33,24 @@ import Casino3 from './pages/GgrCasino/Casino3';
 import LiveCasino from './pages/GgrCasino/LiveCasino';
 import Inplay from './pages/Home/Inplay';
 function HomeGate() {
-  const userInfo = useSelector((state) => state.auth.userInfo);
+  const { userInfo, isPasswordChanged } = useSelector((state) => state.auth);
+  
+  if (userInfo && isPasswordChanged === false) {
+    return (
+      <>
+        <Home2/>
+        <ForcePasswordPopup />
+      </>
+    );
+  }
+
   return userInfo ? <Home /> : <Home2 />;
 }
 
 function App() {
   const location = useLocation();
   const dispatch = useDispatch();
+  const { userInfo } = useSelector((state) => state.auth);
 
   useEffect(() => {
     // Fetch immediately on mount

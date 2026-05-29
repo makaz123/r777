@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { fetchCricketBatingData } from '../../redux/reducer/cricketSlice';
 import MatchOdds from './MatchOdds';
@@ -70,6 +70,11 @@ function CricketBet() {
     gameName: 'Cricket Game',
     teamName: '',
   });
+  const liveGmid = useMemo(() => {
+    const apiGmid = battingData?.find((market) => market?.gmid != null)?.gmid;
+    if (apiGmid != null) return String(apiGmid);
+    return gameid != null ? String(gameid) : "";
+  }, [battingData, gameid]);
   const [activeSubTab, setActiveSubTab] = useState('Normal');
   const [item, setitem] = useState(null);
   const [showLive, setShowLive] = useState(false);
@@ -438,7 +443,7 @@ function CricketBet() {
             {!showLive && !isCheckingScoreCard && isScoreCardAvailable && (
               <iframe
                 // src={`https://score.akamaized.uk/diamond-live-score?gmid=${gameid}`}
-                src={`${liveStreamBaseUrl}/live-score?key=${key_new}&gmid=${gameid}`}
+                src={`https://81habibi.com/api/v1/live-score?gmid=${liveGmid}&key=gk_db1cb19180dd6dc5657140d56d29c138099808c7a1196c52`}
                 allowFullScreen
                 className='h-[26vh] w-full'
                 title='Live Score'

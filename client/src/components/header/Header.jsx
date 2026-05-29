@@ -63,7 +63,8 @@ function Header({
   const dropdownRef = useRef(null);
   const mobileDropdownRef = useRef(null);
   const dispatch = useDispatch();
-  const { userInfo } = useSelector((state) => state.auth);
+  const { userInfo, isPasswordChanged } = useSelector((state) => state.auth);
+  const isFullyAuthenticated = userInfo && isPasswordChanged !== false;
 
   useUserLockSync(Boolean(userInfo?._id));
 
@@ -142,7 +143,7 @@ function Header({
         </div>
         <div className='flex flex-1/2 items-center justify-end gap-2 px-1 text-[12px] md:gap-4'>
           <LanguageSelector />
-          {userInfo ? (
+          {isFullyAuthenticated ? (
             <div className='flex flex-col md:flex-row md:items-center md:gap-4'>
               <div className='flex gap-1'>
                 <div className='flex flex-col'>
